@@ -1,0 +1,19 @@
+{# app/super_admin/templates/super_admin/index.html #} {% extends 'admin_base.html' %} {% block title %}Dashboard | Super-Admin{% endblock %} {% block content %}
+<h1 class="text-3xl font-bold mb-6">Super-Admin Dashboard</h1>
+
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+    <!-- Total Hospitals Card -->
+    <div class="p-6 bg-white rounded-lg shadow hover:shadow-lg transition">
+        <div class="text-sm uppercase font-semibold text-gray-500">Hospitals
+        </div>
+        <div class="text-2xl font-bold mt-2">{{ total_hospitals }}</div>
+        <div class="mt-4">
+            <a href="{{ url_for('admin_web.list_hospitals') }}" class="text-blue-600 hover:underline">
+          View all hospitals →
+        </a>
+        </div>
+    </div>
+
+    <!-- You can add more summary cards here, e.g. total users, total reports, etc. -->
+</div>
+{% endblock %}

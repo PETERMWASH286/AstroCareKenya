@@ -1,0 +1,384 @@
+{% extends "base.html" %}
+{% block title %}Employee Notifications | AstroCare{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-6">
+  <div class="max-w-6xl mx-auto">
+    <!-- Header -->
+    <header class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div>
+        <h1 class="text-3xl md:text-4xl font-bold text-gray-900">Employee Notifications</h1>
+        <p class="text-gray-600 mt-2">Send system notifications to employees</p>
+      </div>
+      
+      <div class="flex items-center gap-3">
+        <button class="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors">
+          <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+          </svg>
+          Send Notification
+        </button>
+      </div>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Notification Form -->
+      <div class="lg:col-span-2 bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+        <div class="p-6 border-b border-gray-100 bg-gradient-to-r from-indigo-50 to-white">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="p-2.5 bg-indigo-100 rounded-lg">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              </svg>
+            </div>
+            <h2 class="text-xl font-semibold text-gray-800">Compose Notification</h2>
+          </div>
+          
+          <form class="space-y-6">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Notification Title</label>
+              <input type="text" placeholder="Important announcement" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-transparent">
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Notification Message</label>
+              <textarea rows="4" placeholder="Write your message here..." class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-transparent"></textarea>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Select Recipients</label>
+              <div class="space-y-4">
+                <!-- All Employees -->
+                <div class="flex items-start">
+                  <div class="flex items-center h-5">
+                    <input id="all-employees" name="recipients" type="radio" class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300" checked>
+                  </div>
+                  <div class="ml-3 text-sm">
+                    <label for="all-employees" class="font-medium text-gray-700">All Employees</label>
+                    <p class="text-gray-500 mt-1">Send to all active employees in the organization</p>
+                  </div>
+                </div>
+                
+                <!-- By Department -->
+                <div class="flex items-start">
+                  <div class="flex items-center h-5">
+                    <input id="by-department" name="recipients" type="radio" class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300">
+                  </div>
+                  <div class="ml-3 text-sm w-full">
+                    <label for="by-department" class="font-medium text-gray-700">By Department</label>
+                    <p class="text-gray-500 mt-1 mb-2">Send to employees in specific departments</p>
+                    <div id="department-selection" class="hidden mt-2 grid grid-cols-2 md:grid-cols-3 gap-3">
+                      <div class="flex items-center">
+                        <input id="dept-1" type="checkbox" class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                        <label for="dept-1" class="ml-2 text-sm text-gray-700">Medical Staff</label>
+                      </div>
+                      <div class="flex items-center">
+                        <input id="dept-2" type="checkbox" class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                        <label for="dept-2" class="ml-2 text-sm text-gray-700">Nursing</label>
+                      </div>
+                      <div class="flex items-center">
+                        <input id="dept-3" type="checkbox" class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                        <label for="dept-3" class="ml-2 text-sm text-gray-700">Administration</label>
+                      </div>
+                      <div class="flex items-center">
+                        <input id="dept-4" type="checkbox" class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                        <label for="dept-4" class="ml-2 text-sm text-gray-700">Support Staff</label>
+                      </div>
+                      <div class="flex items-center">
+                        <input id="dept-5" type="checkbox" class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                        <label for="dept-5" class="ml-2 text-sm text-gray-700">IT Department</label>
+                      </div>
+                      <div class="flex items-center">
+                        <input id="dept-6" type="checkbox" class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                        <label for="dept-6" class="ml-2 text-sm text-gray-700">Finance</label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Specific Employees -->
+                <div class="flex items-start">
+                  <div class="flex items-center h-5">
+                    <input id="specific-employees" name="recipients" type="radio" class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300">
+                  </div>
+                  <div class="ml-3 text-sm w-full">
+                    <label for="specific-employees" class="font-medium text-gray-700">Specific Employees</label>
+                    <p class="text-gray-500 mt-1 mb-2">Select individual employees to notify</p>
+                    <div id="employee-selection" class="hidden mt-2">
+                      <div class="relative">
+                        <input type="text" placeholder="Search employees..." class="w-full px-4 py-2 border border-gray-300 rounded-lg mb-3">
+                      </div>
+                      <div class="max-h-60 overflow-y-auto border border-gray-200 rounded-lg">
+                        <div class="flex items-center p-3 border-b border-gray-100 hover:bg-gray-50">
+                          <input id="emp-1" type="checkbox" class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                          <label for="emp-1" class="ml-3 flex items-center">
+                            <div class="bg-gray-200 border-2 border-dashed rounded-xl w-10 h-10"></div>
+                            <div class="ml-3">
+                              <p class="text-sm font-medium text-gray-900">Dr. Sarah Johnson</p>
+                              <p class="text-xs text-gray-500">Cardiology</p>
+                            </div>
+                          </label>
+                        </div>
+                        <div class="flex items-center p-3 border-b border-gray-100 hover:bg-gray-50">
+                          <input id="emp-2" type="checkbox" class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                          <label for="emp-2" class="ml-3 flex items-center">
+                            <div class="bg-gray-200 border-2 border-dashed rounded-xl w-10 h-10"></div>
+                            <div class="ml-3">
+                              <p class="text-sm font-medium text-gray-900">Michael Chen</p>
+                              <p class="text-xs text-gray-500">Nursing</p>
+                            </div>
+                          </label>
+                        </div>
+                        <div class="flex items-center p-3 border-b border-gray-100 hover:bg-gray-50">
+                          <input id="emp-3" type="checkbox" class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                          <label for="emp-3" class="ml-3 flex items-center">
+                            <div class="bg-gray-200 border-2 border-dashed rounded-xl w-10 h-10"></div>
+                            <div class="ml-3">
+                              <p class="text-sm font-medium text-gray-900">Robert Davis</p>
+                              <p class="text-xs text-gray-500">Administration</p>
+                            </div>
+                          </label>
+                        </div>
+                        <div class="flex items-center p-3 border-b border-gray-100 hover:bg-gray-50">
+                          <input id="emp-4" type="checkbox" class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                          <label for="emp-4" class="ml-3 flex items-center">
+                            <div class="bg-gray-200 border-2 border-dashed rounded-xl w-10 h-10"></div>
+                            <div class="ml-3">
+                              <p class="text-sm font-medium text-gray-900">Emma Wilson</p>
+                              <p class="text-xs text-gray-500">IT Department</p>
+                            </div>
+                          </label>
+                        </div>
+                        <div class="flex items-center p-3 hover:bg-gray-50">
+                          <input id="emp-5" type="checkbox" class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                          <label for="emp-5" class="ml-3 flex items-center">
+                            <div class="bg-gray-200 border-2 border-dashed rounded-xl w-10 h-10"></div>
+                            <div class="ml-3">
+                              <p class="text-sm font-medium text-gray-900">James Thompson</p>
+                              <p class="text-xs text-gray-500">Finance</p>
+                            </div>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="pt-4 flex justify-end">
+              <button type="button" class="px-6 py-2.5 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors">
+                Send Notification
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+      
+      <!-- Recent Notifications -->
+      <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+        <div class="p-6 border-b border-gray-100 bg-gradient-to-r from-teal-50 to-white">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="p-2.5 bg-teal-100 rounded-lg">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              </svg>
+            </div>
+            <h2 class="text-xl font-semibold text-gray-800">Recent Notifications</h2>
+          </div>
+          
+          <div class="space-y-4">
+            <div class="p-4 bg-teal-50 rounded-lg border border-teal-100">
+              <div class="flex justify-between">
+                <h3 class="font-medium text-gray-900">System Maintenance Tonight</h3>
+                <span class="text-xs bg-teal-100 text-teal-800 px-2 py-1 rounded-full">Sent</span>
+              </div>
+              <p class="mt-2 text-sm text-gray-600">System will be down for maintenance from 10 PM to 2 AM. Please save your work.</p>
+              <div class="mt-3 flex justify-between items-center text-xs text-gray-500">
+                <span>To: All Employees</span>
+                <span>Today, 3:45 PM</span>
+              </div>
+            </div>
+            
+            <div class="p-4 bg-indigo-50 rounded-lg border border-indigo-100">
+              <div class="flex justify-between">
+                <h3 class="font-medium text-gray-900">Training Session Reminder</h3>
+                <span class="text-xs bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full">Sent</span>
+              </div>
+              <p class="mt-2 text-sm text-gray-600">Mandatory training session for nursing staff tomorrow at 9 AM in Conference Room B.</p>
+              <div class="mt-3 flex justify-between items-center text-xs text-gray-500">
+                <span>To: Nursing Department</span>
+                <span>Yesterday, 2:30 PM</span>
+              </div>
+            </div>
+            
+            <div class="p-4 bg-amber-50 rounded-lg border border-amber-100">
+              <div class="flex justify-between">
+                <h3 class="font-medium text-gray-900">Payroll Update</h3>
+                <span class="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">Draft</span>
+              </div>
+              <p class="mt-2 text-sm text-gray-600">New payroll system implementation details for the finance team.</p>
+              <div class="mt-3 flex justify-between items-center text-xs text-gray-500">
+                <span>To: Finance Department</span>
+                <span>Yesterday, 10:15 AM</span>
+              </div>
+            </div>
+            
+            <div class="p-4 bg-white rounded-lg border border-gray-200">
+              <div class="flex justify-between">
+                <h3 class="font-medium text-gray-900">New Policy Documents</h3>
+                <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">Sent</span>
+              </div>
+              <p class="mt-2 text-sm text-gray-600">Updated HR policies are now available on the portal. Please review.</p>
+              <div class="mt-3 flex justify-between items-center text-xs text-gray-500">
+                <span>To: All Employees</span>
+                <span>Jun 15, 9:30 AM</span>
+              </div>
+            </div>
+            
+            <div class="p-4 bg-white rounded-lg border border-gray-200">
+              <div class="flex justify-between">
+                <h3 class="font-medium text-gray-900">IT Security Alert</h3>
+                <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">Sent</span>
+              </div>
+              <p class="mt-2 text-sm text-gray-600">Important security update required for all devices. Please follow instructions.</p>
+              <div class="mt-3 flex justify-between items-center text-xs text-gray-500">
+                <span>To: IT Department</span>
+                <span>Jun 14, 4:45 PM</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Notification Statistics -->
+    <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+        <div class="p-6">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4">Notification Analytics</h3>
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-sm text-gray-600">Total Sent</span>
+            <span class="text-lg font-bold text-indigo-600">248</span>
+          </div>
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-sm text-gray-600">Read Rate</span>
+            <span class="text-lg font-bold text-teal-600">92%</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-gray-600">Response Rate</span>
+            <span class="text-lg font-bold text-amber-600">78%</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden md:col-span-2">
+        <div class="p-6">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4">Notification Distribution</h3>
+          <div class="grid grid-cols-3 gap-4">
+            <div class="text-center p-4 bg-indigo-50 rounded-lg">
+              <p class="text-3xl font-bold text-indigo-600">48%</p>
+              <p class="text-sm text-gray-600 mt-1">All Employees</p>
+            </div>
+            <div class="text-center p-4 bg-teal-50 rounded-lg">
+              <p class="text-3xl font-bold text-teal-600">32%</p>
+              <p class="text-sm text-gray-600 mt-1">By Department</p>
+            </div>
+            <div class="text-center p-4 bg-amber-50 rounded-lg">
+              <p class="text-3xl font-bold text-amber-600">20%</p>
+              <p class="text-sm text-gray-600 mt-1">Specific Employees</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Recipient selection logic
+    const allEmployees = document.getElementById('all-employees');
+    const byDepartment = document.getElementById('by-department');
+    const specificEmployees = document.getElementById('specific-employees');
+    const departmentSelection = document.getElementById('department-selection');
+    const employeeSelection = document.getElementById('employee-selection');
+    
+    allEmployees.addEventListener('change', function() {
+      if (this.checked) {
+        departmentSelection.classList.add('hidden');
+        employeeSelection.classList.add('hidden');
+      }
+    });
+    
+    byDepartment.addEventListener('change', function() {
+      if (this.checked) {
+        departmentSelection.classList.remove('hidden');
+        employeeSelection.classList.add('hidden');
+      }
+    });
+    
+    specificEmployees.addEventListener('change', function() {
+      if (this.checked) {
+        departmentSelection.classList.add('hidden');
+        employeeSelection.classList.remove('hidden');
+      }
+    });
+    
+    // Search functionality for employees
+    const employeeSearch = document.querySelector('#employee-selection input[type="text"]');
+    if (employeeSearch) {
+      employeeSearch.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        const employeeItems = document.querySelectorAll('#employee-selection .flex.items-center');
+        
+        employeeItems.forEach(item => {
+          const name = item.querySelector('.text-gray-900').textContent.toLowerCase();
+          if (name.includes(searchTerm)) {
+            item.classList.remove('hidden');
+          } else {
+            item.classList.add('hidden');
+          }
+        });
+      });
+    }
+    
+    // Notification animation
+    const notifications = document.querySelectorAll('.bg-teal-50, .bg-indigo-50, .bg-amber-50, .bg-white');
+    notifications.forEach(notification => {
+      notification.addEventListener('click', function() {
+        this.classList.toggle('bg-opacity-50');
+      });
+    });
+  });
+</script>
+
+<style>
+  .notification-card {
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+  
+  .notification-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+  }
+  
+  input[type="text"], textarea {
+    transition: border-color 0.3s, box-shadow 0.3s;
+  }
+  
+  input[type="text"]:focus, textarea:focus {
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-out;
+  }
+</style>
+{% endblock %}

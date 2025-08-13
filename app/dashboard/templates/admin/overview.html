@@ -1,0 +1,494 @@
+{% extends "base.html" %} {% block title %}Admin Dashboard - Overview{% endblock %} {% block content %}
+
+<div class="container mx-auto px-4">
+    <!-- Dashboard Header -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+        <div>
+            <h1 class="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white mb-2">Hospital Admin Dashboard</h1>
+            <p class="text-gray-600 dark:text-gray-300">Welcome back, <span class="font-semibold text-blue-600 dark:text-blue-400">Dr. Administrator</span>. Here's your hospital overview.</p>
+        </div>
+        <div class="mt-4 md:mt-0 flex items-center space-x-4">
+            <div class="relative">
+                <button class="flex items-center space-x-2 bg-white dark:bg-gray-800 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <i class="fas fa-calendar-alt text-blue-600 dark:text-blue-400"></i>
+                    <span class="text-gray-700 dark:text-gray-300">May 16, 2025</span>
+                </button>
+            </div>
+            <div class="hidden md:block">
+                <span class="text-sm text-gray-500 dark:text-gray-400">Last Updated: </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Key Metrics Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-2 mb-8">
+        <!-- Patients Card -->
+        <div class="dark:bg-gray-800 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 dark:text-gray-400 mb-1">Total Patients</p>
+                    <h2 class="text-3xl font-bold text-indigo-600 dark:text-indigo-400">2,548</h2>
+                </div>
+                <div class="p-3 bg-indigo-100 dark:bg-indigo-900 rounded-lg">
+                    <i class="fas fa-hospital-user text-indigo-600 dark:text-indigo-300 text-2xl"></i>
+                </div>
+            </div>
+            <div class="mt-4">
+                <span class="text-green-500 text-sm"><i class="fas fa-arrow-up"></i> 12.5%</span>
+                <span class="text-gray-500 dark:text-gray-400 text-sm ml-2">Last 30 days</span>
+            </div>
+        </div>
+
+        <!-- Appointments Card -->
+        <div class=" dark:bg-gray-800 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 dark:text-gray-400 mb-1">Today's Appointments</p>
+                    <h2 class="text-3xl font-bold text-purple-600 dark:text-purple-400">84</h2>
+                </div>
+                <div class="p-3 bg-purple-100 dark:bg-purple-900 rounded-lg">
+                    <i class="fas fa-calendar-check text-purple-600 dark:text-purple-300 text-2xl"></i>
+                </div>
+            </div>
+            <div class="mt-4">
+                <span class="text-red-500 text-sm"><i class="fas fa-arrow-down"></i> 3.2%</span>
+                <span class="text-gray-500 dark:text-gray-400 text-sm ml-2">From yesterday</span>
+            </div>
+        </div>
+
+        <!-- Staff Availability -->
+        <div class=" dark:bg-gray-800 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 dark:text-gray-400 mb-1">Available Staff</p>
+                    <h2 class="text-3xl font-bold text-green-600 dark:text-green-400">62</h2>
+                </div>
+                <div class="p-3 bg-green-100 dark:bg-green-900 rounded-lg">
+                    <i class="fas fa-user-md text-green-600 dark:text-green-300 text-2xl"></i>
+                </div>
+            </div>
+            <div class="mt-4">
+                <span class="text-green-500 text-sm"><i class="fas fa-arrow-up"></i> 8.7%</span>
+                <span class="text-gray-500 dark:text-gray-400 text-sm ml-2">This week</span>
+            </div>
+        </div>
+
+        <!-- Bed Occupancy -->
+        <div class=" dark:bg-gray-800 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 dark:text-gray-400 mb-1">Bed Occupancy</p>
+                    <h2 class="text-3xl font-bold text-red-600 dark:text-red-400">82%</h2>
+                </div>
+                <div class="p-3 bg-red-100 dark:bg-red-900 rounded-lg">
+                    <i class="fas fa-bed text-red-600 dark:text-red-300 text-2xl"></i>
+                </div>
+            </div>
+            <div class="mt-4">
+                <span class="text-red-500 text-sm"><i class="fas fa-arrow-up"></i> 5.1%</span>
+                <span class="text-gray-500 dark:text-gray-400 text-sm ml-2">Capacity</span>
+            </div>
+        </div>
+        <!-- Revenue Card -->
+        <div class="dark:bg-gray-800 rounded-xl shadow-md p-6 border-l-4 border-purple-500 dark:border-purple-600 transition-all hover:shadow-lg">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-semibold text-gray-600 dark:text-gray-300">Monthly Revenue</h3>
+                <span class="bg-purple-100 dark:bg-purple-900 p-2 rounded-lg">
+                            <i class="fas fa-dollar-sign text-purple-500 dark:text-purple-400 text-xl"></i>
+                        </span>
+            </div>
+            <div class="flex items-end space-x-3">
+                <span class="text-3xl font-bold text-gray-800 dark:text-white">$983.2K</span>
+                <span class="text-sm text-green-600 dark:text-green-400 flex items-center">
+                            <i class="fas fa-arrow-up mr-1"></i>8.1%
+                        </span>
+            </div>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">$86.4K more than last month</p>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <!-- Patient Admissions Chart -->
+        <div class="dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Patient Admissions (30 days)</h3>
+            <div class="h-64">
+                <canvas id="admissionsChart" class="dark:text-gray-300"></canvas>
+            </div>
+        </div>
+
+        <!-- Appointment Types Chart -->
+        <div class=" dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Appointment Types</h3>
+            <div class="h-64">
+                <canvas id="appointmentTypesChart" class="dark:text-gray-300"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Recent Appointments -->
+        <div class="dark:bg-gray-800 rounded-xl p-6 shadow-sm">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">Recent Appointments</h3>
+                <a href="#" class="text-indigo-600 dark:text-indigo-400 hover:underline">View All</a>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="text-left text-gray-500 dark:text-gray-400 border-b">
+                            <th class="pb-3">Patient</th>
+                            <th class="pb-3">Department</th>
+                            <th class="pb-3">Time</th>
+                            <th class="pb-3">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                            <td class="py-3">John Doe</td>
+                            <td>Cardiology</td>
+                            <td>09:00 AM</td>
+                            <td><span class="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300 rounded-full text-sm">Completed</span></td>
+                        </tr>
+                        <!-- Add more rows -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Doctors on Duty -->
+        <div class=" dark:bg-gray-800 rounded-xl shadow-md p-6 transition-all">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Doctors On Duty</h3>
+                <a href="#" class="text-sm text-blue-600 dark:text-blue-400 hover:underline">View All</a>
+            </div>
+            <div class="space-y-4">
+                <!-- Doctor 1 -->
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="relative">
+                            <div class="h-10 w-10 bg-indigo-100 dark:bg-indigo-900 rounded-full flex items-center justify-center">
+                                <span class="font-medium text-indigo-600 dark:text-indigo-400">MW</span>
+                            </div>
+                            <span class="absolute bottom-0 right-0 h-3 w-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-800"></span>
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-800 dark:text-white">Dr. Mark Williams</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Cardiology</p>
+                        </div>
+                    </div>
+                    <button class="text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400">
+                            <i class="fas fa-comment-alt"></i>
+                        </button>
+                </div>
+                <!-- Doctor 2 -->
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="relative">
+                            <div class="h-10 w-10 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center">
+                                <span class="font-medium text-red-600 dark:text-red-400">AP</span>
+                            </div>
+                            <span class="absolute bottom-0 right-0 h-3 w-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-800"></span>
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-800 dark:text-white">Dr. Alicia Patel</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Neurology</p>
+                        </div>
+                    </div>
+                    <button class="text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400">
+                            <i class="fas fa-comment-alt"></i>
+                        </button>
+                </div>
+                <!-- Doctor 3 -->
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="relative">
+                            <div class="h-10 w-10 bg-amber-100 dark:bg-amber-900 rounded-full flex items-center justify-center">
+                                <span class="font-medium text-amber-600 dark:text-amber-400">JL</span>
+                            </div>
+                            <span class="absolute bottom-0 right-0 h-3 w-3 bg-gray-300 dark:bg-gray-600 rounded-full border-2 border-white dark:border-gray-800"></span>
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-800 dark:text-white">Dr. James Lee</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Pediatrics</p>
+                        </div>
+                    </div>
+                    <button class="text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400">
+                            <i class="fas fa-comment-alt"></i>
+                        </button>
+                </div>
+                <!-- Doctor 4 -->
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="relative">
+                            <div class="h-10 w-10 bg-emerald-100 dark:bg-emerald-900 rounded-full flex items-center justify-center">
+                                <span class="font-medium text-emerald-600 dark:text-emerald-400">SG</span>
+                            </div>
+                            <span class="absolute bottom-0 right-0 h-3 w-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-800"></span>
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-800 dark:text-white">Dr. Sophia Garcia</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Surgery</p>
+                        </div>
+                    </div>
+                    <button class="text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400">
+                            <i class="fas fa-comment-alt"></i>
+                        </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    <!-- Recent Patients List -->
+    <div class=" mt-10 dark:bg-gray-800 rounded-xl shadow-md transition-all">
+        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+            <div class="flex justify-between items-center">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Recent Patients</h3>
+                <a href="#" class="text-blue-600 dark:text-blue-400 hover:underline text-sm flex items-center">
+                            View All <i class="fas fa-chevron-right ml-1 text-xs"></i>
+                        </a>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full">
+                <thead class="bg-gray-50 dark:bg-gray-700">
+                    <tr>
+                        <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Patient</th>
+                        <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Admission Date</th>
+                        <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Doctor</th>
+                        <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
+                        <th class="py-3 px-6 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                    <!-- Patient 1 -->
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors">
+                        <td class="py-4 px-6">
+                            <div class="flex items-center space-x-3">
+                                <div class="h-8 w-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
+                                    <span class="font-medium text-blue-600 dark:text-blue-400">JD</span>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-gray-800 dark:text-white">John Doe</p>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">#PT-38219</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-4 px-6 text-sm text-gray-600 dark:text-gray-300">May 15, 2025</td>
+                        <td class="py-4 px-6 text-sm text-gray-600 dark:text-gray-300">Dr. Sarah Johnson</td>
+                        <td class="py-4 px-6">
+                            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+                                        Active
+                                    </span>
+                        </td>
+                        <td class="py-4 px-6 text-right">
+                            <button class="text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                            <button class="ml-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                        </td>
+                    </tr>
+                    <!-- Patient 2 -->
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors">
+                        <td class="py-4 px-6">
+                            <div class="flex items-center space-x-3">
+                                <div class="h-8 w-8 bg-pink-100 dark:bg-pink-900 rounded-full flex items-center justify-center">
+                                    <span class="font-medium text-pink-600 dark:text-pink-400">ES</span>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-gray-800 dark:text-white">Emily Smith</p>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">#PT-38215</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-4 px-6 text-sm text-gray-600 dark:text-gray-300">May 14, 2025</td>
+                        <td class="py-4 px-6 text-sm text-gray-600 dark:text-gray-300">Dr. Michael Chen</td>
+                        <td class="py-4 px-6">
+                            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
+                                        In Treatment
+                                    </span>
+                        </td>
+                        <td class="py-4 px-6 text-right">
+                            <button class="text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                            <button class="ml-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                        </td>
+                    </tr>
+                    <!-- Patient 3 -->
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors">
+                        <td class="py-4 px-6">
+                            <div class="flex items-center space-x-3">
+                                <div class="h-8 w-8 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center">
+                                    <span class="font-medium text-purple-600 dark:text-purple-400">RJ</span>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-gray-800 dark:text-white">Robert Johnson</p>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">#PT-38208</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-4 px-6 text-sm text-gray-600 dark:text-gray-300">May 12, 2025</td>
+                        <td class="py-4 px-6 text-sm text-gray-600 dark:text-gray-300">Dr. Amanda Patel</td>
+                        <td class="py-4 px-6">
+                            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300">
+                                        Pending Discharge
+                                    </span>
+                        </td>
+                        <td class="py-4 px-6 text-right">
+                            <button class="text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                            <button class="ml-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                        </td>
+                    </tr>
+                    <!-- Patient 4 -->
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors">
+                        <td class="py-4 px-6">
+                            <div class="flex items-center space-x-3">
+                                <div class="h-8 w-8 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
+                                    <span class="font-medium text-green-600 dark:text-green-400">LK</span>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-gray-800 dark:text-white">Lisa Kim</p>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">#PT-38203</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-4 px-6 text-sm text-gray-600 dark:text-gray-300">May 10, 2025</td>
+                        <td class="py-4 px-6 text-sm text-gray-600 dark:text-gray-300">Dr. David Wilson</td>
+                        <td class="py-4 px-6">
+                            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">
+                                        Critical
+                                    </span>
+                        </td>
+                        <td class="py-4 px-6 text-right">
+                            <button class="text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                            <button class="ml-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js Script -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Patient Admissions Chart
+    const admissionsCtx = document.getElementById('admissionsChart').getContext('2d');
+    new Chart(admissionsCtx, {
+        type: 'line',
+        data: {
+            labels: Array.from({
+                length: 30
+            }, (_, i) => i + 1),
+            datasets: [{
+                label: 'Daily Admissions',
+                data: Array.from({
+                    length: 30
+                }, () => Math.floor(Math.random() * 50) + 20),
+                borderColor: '#4F46E5',
+                tension: 0.4,
+                fill: true,
+                backgroundColor: context => {
+                    const ctx = context.chart.ctx;
+                    const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+                    gradient.addColorStop(0, 'rgba(79, 70, 229, 0.2)');
+                    gradient.addColorStop(1, 'rgba(79, 70, 229, 0.05)');
+                    return gradient;
+                }
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    grid: {
+                        color: '#e5e7eb'
+                    },
+                    ticks: {
+                        color: '#6b7280'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        color: '#6b7280'
+                    }
+                }
+            }
+        }
+    });
+
+    // Appointment Types Chart
+    const typesCtx = document.getElementById('appointmentTypesChart').getContext('2d');
+    new Chart(typesCtx, {
+        type: 'bar',
+        data: {
+            labels: ['General', 'Cardiology', 'Pediatrics', 'Orthopedics', 'Dermatology'],
+            datasets: [{
+                label: 'Appointments',
+                data: [65, 59, 80, 81, 56],
+                backgroundColor: [
+                    '#4F46E5',
+                    '#10B981',
+                    '#3B82F6',
+                    '#F59E0B',
+                    '#EF4444'
+                ],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    grid: {
+                        color: '#e5e7eb'
+                    },
+                    ticks: {
+                        color: '#6b7280'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        color: '#6b7280'
+                    }
+                }
+            }
+        }
+    });
+</script>
+
+{% endblock %}

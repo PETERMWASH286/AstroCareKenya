@@ -1,0 +1,199 @@
+{% extends "base.html" %} {% block content %}
+<div class="container mx-auto p-6 max-w-4xl">
+    <!-- Header with Gradient Background -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-2 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            {{ title }}
+        </h1>
+        <p class="text-gray-600 dark:text-gray-400">Configure laboratory test parameters and result templates</p>
+    </div>
+
+    <!-- Form Container with Glass Effect -->
+    <div class="bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800  dark:bg-gray-900 dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 backdrop-blur-lg bg-opacity-50">
+        <form method="POST" class="p-8 space-y-8">
+            <!-- Test Name Field -->
+            <div class="space-y-2">
+                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300">Test Name *</label>
+                <div class="relative">
+                    <input type="text" name="name" value="{{ test_type.name if test_type }}" class="w-full px-4 py-3 rounded-xl border-0 ring-2 ring-gray-200 dark:ring-gray-700 focus:ring-2 focus:ring-blue-500 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white transition-all"
+                        required>
+                    <i class="fas fa-flask absolute right-4 top-4 text-gray-400 dark:text-gray-600"></i>
+                </div>
+            </div>
+
+            <!-- Price & Duration Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-2">
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                      Price (KES) *
+                    </label>
+                    <div class="relative">
+                        <input type="number" step="0.01" name="price" value="{{ test_type.price if test_type and test_type.price is not none else 0 }}" readonly class="w-full px-4 py-3 rounded-xl border-0
+                               ring-2 ring-gray-200 dark:ring-gray-700
+                               bg-gray-100 dark:bg-gray-800
+                               text-gray-500 dark:text-gray-500
+                               focus:ring-2 focus:ring-blue-500
+                               cursor-not-allowed">
+                        <span class="absolute right-4 top-4 text-gray-400 dark:text-gray-600">
+                        kes
+                      </span>
+                    </div>
+                </div>
+
+
+                <div class="space-y-2">
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300">Processing Time</label>
+                    <div class="relative">
+                        <input type="number" name="duration" value="{{ test_type.duration if test_type }}" class="w-full px-4 py-3 rounded-xl border-0 ring-2 ring-gray-200 dark:ring-gray-700 focus:ring-2 focus:ring-blue-500 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white">
+                        <span class="absolute right-4 top-4 text-gray-400 dark:text-gray-600">minutes</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Description Field -->
+            <div class="space-y-2">
+                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300">Description</label>
+                <textarea name="description" rows="3" class="w-full px-4 py-3 rounded-xl border-0 ring-2 ring-gray-200 dark:ring-gray-700 focus:ring-2 focus:ring-blue-500 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white">{{ test_type.description if test_type }}</textarea>
+            </div>
+
+            <!-- Predefined Results Section -->
+            <div class="space-y-4">
+                <div class="flex justify-between items-center">
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300">Predefined Result Templates</label>
+                    <button type="button" onclick="addResultTemplate()" class="px-3 py-1.5 text-sm bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors">
+                        <i class="fas fa-plus mr-2"></i>Add Template
+                    </button>
+                </div>
+
+                <div id="result-templates" class="space-y-4">
+                    {% for result in test_type.predefined_results if test_type %}
+                    <div class="result-template-group flex gap-4 items-start">
+                        <div class="flex-1 space-y-2">
+                            <input type="text" name="result_text[]" value="{{ result.text }}" placeholder="Display text (e.g., 'Negative for Malaria')" class="w-full px-4 py-2 rounded-lg border-0 ring-1 ring-gray-200 dark:ring-gray-700 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white">
+                            <textarea name="result_value[]" rows="2" placeholder="Full result text (supports Markdown)" class="w-full px-4 py-2 rounded-lg border-0 ring-1 ring-gray-200 dark:ring-gray-700 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white">{{ result.value }}</textarea>
+                        </div>
+                        <button type="button" onclick="removeResultTemplate(this)" class="mt-2 px-2 py-1 text-red-500 hover:text-red-600">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Prescription Toggle -->
+            <div class="flex items-center space-x-3 p-4 bg-gray-50 dark:bg-gray-900 rounded-xl">
+                <div class="relative">
+                    <input type="checkbox" name="requires_prescription" id="requires_prescription" class="sr-only peer" {% if test_type and test_type.requires_prescription %}checked{% endif %}>
+                    <div class="w-11 h-6 bg-gray-200 dark:bg-gray-700 rounded-full peer-checked:bg-blue-500 transition-colors">
+                        <div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform peer-checked:translate-x-5"></div>
+                    </div>
+                </div>
+                <label for="requires_prescription" class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Requires Prescription
+                </label>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="pt-8 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-4">
+                <a href="{{ url_for('lab_web.manage_test_types') }}" class="px-6 py-2.5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors">
+                    Cancel
+                </a>
+                <button type="submit" class="px-6 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all">
+                    Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function addResultTemplate() {
+        const container = document.getElementById('result-templates');
+        const template = `
+        <div class="result-template-group flex gap-4 items-start">
+            <div class="flex-1 space-y-2">
+                <input type="text" name="result_text[]" 
+                       placeholder="Display text" 
+                       class="w-full px-4 py-2 rounded-lg border-0 ring-1 ring-gray-200 dark:ring-gray-700 bg-white dark:bg-gray-900">
+                <textarea name="result_value[]" 
+                          rows="2"
+                          placeholder="Full result text (supports Markdown)"
+                          class="w-full px-4 py-2 rounded-lg border-0 ring-1 ring-gray-200 dark:ring-gray-700 bg-white dark:bg-gray-900"></textarea>
+            </div>
+            <button type="button" onclick="removeResultTemplate(this)" 
+                    class="mt-2 px-2 py-1 text-red-500 hover:text-red-600">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    `;
+        container.insertAdjacentHTML('beforeend', template);
+    }
+
+    function removeResultTemplate(button) {
+        button.closest('.result-template-group').remove();
+    }
+</script>
+
+<style>
+    .dot {
+        transition: transform 0.2s ease-in-out;
+    }
+    
+    .result-template-group {
+        animation: slideIn 0.3s ease-out;
+    }
+    
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
+{% endblock %}
+
+
+@lab_web_bp.route('/lab/tests/create', methods=['GET', 'POST'])
+@login_required
+def create_test_type():
+    """Create new lab test type"""
+    try:
+        if request.method == 'POST':
+            # Validate required fields
+            required_fields = ['name', 'price', 'description']
+            if not all(request.form.get(field) for field in required_fields):
+                flash('Please fill all required fields', 'danger')
+                return redirect(url_for('lab_web.create_test_type'))
+            
+            new_test = Service(
+                name=request.form['name'],
+                category='Laboratory',
+                price=float(request.form['price']),
+                description=request.form['description'],
+                duration=int(request.form.get('duration', 0)),
+                predefined_results=request.form.get('predefined_results', '').split(','),
+                storage_conditions=request.form.get('storage_conditions'),
+                requires_prescription='requires_prescription' in request.form
+            )
+            
+            db.session.add(new_test)
+            db.session.commit()
+            
+            flash('Lab test type created successfully', 'success')
+            return redirect(url_for('lab_web.manage_test_types'))
+        
+        return render_template(
+            'edit_test_type.html',
+            title="Create New Lab Test Type",
+            test_type=None
+        )
+
+    
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error creating test type: {str(e)}', 'danger')
+        return redirect(url_for('lab_web.manage_test_types'))

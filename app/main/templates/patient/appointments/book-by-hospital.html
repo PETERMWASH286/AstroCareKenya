@@ -1,0 +1,98 @@
+{% extends "patient-base.html" %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto">
+        <div class="mb-8 md:mb-10 text-center md:text-left">
+            <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white leading-tight">
+                <i class="fas fa-hospital text-indigo-600 dark:text-indigo-400 mr-3"></i> Choose Your Hospital
+            </h1>
+            <p class="mt-3 text-lg text-gray-600 dark:text-gray-300">
+                Select a hospital from our extensive network to begin booking your appointment.
+            </p>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-8">
+            <label for="hospital-search" class="sr-only">Search Hospitals</label>
+            <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <i class="fas fa-search text-gray-400 dark:text-gray-500"></i>
+                </div>
+                <input type="text" id="hospital-search" name="hospital-search" placeholder="Search for a hospital by name or location..."
+                       class="block w-full pl-10 pr-3 py-3 rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 sm:text-lg">
+            </div>
+        </div>
+
+        {% if hospitals %}
+        <div id="hospital-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {% for hospital in hospitals %}
+            <div class="hospital-card bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden transform hover:scale-105 hover:shadow-lg transition-all duration-300 ease-in-out cursor-pointer"
+                 data-hospital-name="{{ hospital.name | lower }}"
+                 data-hospital-location="{{ hospital.location | lower }}"
+                 onclick="window.location.href = ''">
+
+                <div class="relative h-40 bg-gradient-to-br from-indigo-500 to-purple-600 dark:from-gray-700 dark:to-gray-900 flex items-center justify-center overflow-hidden">
+                    {% if hospital.image %}
+                        <img src="{{ hospital.image }}" alt="{{ hospital.name }} Logo" class="absolute inset-0 w-full h-full object-cover opacity-70 transition-opacity duration-300 group-hover:opacity-80">
+                        <div class="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center">
+                            <img src="{{ hospital.image }}" alt="{{ hospital.name }} Logo" class="h-20 w-20 object-contain rounded-full border-2 border-white dark:border-gray-300 p-2 bg-white dark:bg-gray-900 shadow-lg">
+                        </div>
+                    {% else %}
+                        <div class="p-4 text-white text-5xl opacity-80">
+                            <i class="fas fa-clinic-medical"></i>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="p-5 text-center">
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-2">{{ hospital.name }}</h2>
+                    <p class="text-gray-600 dark:text-gray-300 text-sm flex items-center justify-center mb-4">
+                        <i class="fas fa-map-marker-alt text-indigo-500 mr-2"></i> {{ hospital.location }}
+                    </p>
+                    <a href=""
+                       class="mt-4 w-full inline-flex items-center justify-center px-5 py-2 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200">
+                        <i class="fas fa-arrow-right mr-2"></i> Select Hospital
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-8 text-center border border-dashed border-gray-300 dark:border-gray-600">
+            <i class="fas fa-sad-tear text-indigo-400 text-6xl mb-4"></i>
+            <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">No Hospitals Available</h3>
+            <p class="text-gray-600 dark:text-gray-400 mb-4">It looks like there are no hospitals connected to AstroCare at the moment.</p>
+            <p class="text-gray-600 dark:text-gray-400 mb-6">Please check back later or contact support if you believe this is an error.</p>
+            <a href="{{ url_for('main_bp.patient_dashboard') }}"
+               class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-full shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200">
+                <i class="fas fa-home mr-2"></i> Go to Dashboard
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('hospital-search');
+        const hospitalCards = document.querySelectorAll('.hospital-card');
+
+        searchInput.addEventListener('input', function() {
+            const searchTerm = searchInput.value.toLowerCase().trim();
+
+            hospitalCards.forEach(card => {
+                const hospitalName = card.dataset.hospitalName;
+                const hospitalLocation = card.dataset.hospitalLocation;
+
+                if (hospitalName.includes(searchTerm) || hospitalLocation.includes(searchTerm)) {
+                    card.style.display = 'block'; // Or 'flex' if you use flexbox
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

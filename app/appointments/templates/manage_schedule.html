@@ -1,0 +1,130 @@
+{% extends "base.html" %} {% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <!-- Header + New Button -->
+    <div class="flex items-center justify-between">
+        <h1 class="text-3xl font-semibold text-gray-900 dark:text-white">All Appointments</h1>
+        <a href="{{ url_for('appointments_web.schedule_new') }}" class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg shadow-md transition-all">
+            <i class="fas fa-calendar-plus mr-2"></i> New Appointment
+        </a>
+    </div>
+
+    <!-- Appointments Table -->
+    <div class="border rounded-2xl shadow-md overflow-x-auto dark:border-gray-800">
+        <table class="min-w-full">
+            <thead class="bg-gradient-to-r from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-800 border-b dark:border-gray-700">
+                <tr>
+                    <th class="px-6 py-4 text-left font-medium text-gray-500 dark:text-gray-400">ID</th>
+                    <th class="px-6 py-4 text-left font-medium text-gray-500 dark:text-gray-400">Patient</th>
+                    <th class="px-6 py-4 text-left font-medium text-gray-500 dark:text-gray-400">Clinic</th>
+                    <th class="px-6 py-4 text-left font-medium text-gray-500 dark:text-gray-400">Doctor</th>
+                    <th class="px-6 py-4 text-left font-medium text-gray-500 dark:text-gray-400">Date &amp; Time</th>
+                    <th class="px-6 py-4 text-left font-medium text-gray-500 dark:text-gray-400">Reason</th>
+                    <th class="px-6 py-4 text-left font-medium text-gray-500 dark:text-gray-400">Status</th>
+                    <th class="px-6 py-4"></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y dark:divide-gray-700">
+                {% for appt in appointments %}
+                <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                    <!-- Appointment ID -->
+                    <td class="px-6 py-4 text-sm text-gray-700 dark:text-gray-200">{{ appt.id }}</td>
+
+                    <!-- Patient (reg no & name) -->
+                    <td class="px-6 py-4">
+                        <div class="flex items-center space-x-2">
+                            <i class="fas fa-user-circle text-indigo-500 dark:text-indigo-300"></i>
+                            <div>
+                                <p class="font-medium dark:text-white">{{ appt.patient.reg_no }}</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">{{ appt.patient.full_name }}</p>
+                            </div>
+                        </div>
+                    </td>
+
+                    <!-- Clinic Name -->
+                    <td class="px-6 py-4 text-sm text-gray-700 dark:text-gray-200">
+                        <i class="fas fa-clinic-medical text-green-500 dark:text-green-300 mr-1"></i> {{ appt.clinic.name }}
+                    </td>
+
+                    <!-- Doctor Name -->
+                    <td class="px-6 py-4 text-sm text-gray-700 dark:text-gray-200">
+                        <i class="fas fa-user-md text-blue-500 dark:text-blue-300 mr-1"></i> {{ appt.doctor.full_name }}
+                    </td>
+
+                    <!-- Date & Time -->
+                    <td class="px-6 py-4 text-sm text-gray-700 dark:text-gray-200">
+                        {{ appt.scheduled_for.strftime('%b %d, %Y') }}
+                        <span class="text-xs text-gray-500 dark:text-gray-400">
+              {{ appt.scheduled_for.strftime('%I:%M %p') }}
+            </span>
+                    </td>
+
+                    <!-- Reason -->
+                    <td class="px-6 py-4 text-sm text-gray-700 dark:text-gray-200">
+                        {{ appt.reason[:30] }}{% if appt.reason|length > 30 %}…{% endif %}
+                    </td>
+
+                    <!-- Status Badge -->
+                    <td class="px-6 py-4">
+                        {% if appt.status == 'scheduled' %}
+                        <span class="px-2 py-1 rounded-full bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 text-xs font-semibold">
+                Scheduled
+              </span> {% elif appt.status == 'completed' %}
+                        <span class="px-2 py-1 rounded-full bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-xs font-semibold">
+                Completed
+              </span> {% elif appt.status == 'cancelled' %}
+                        <span class="px-2 py-1 rounded-full bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 text-xs font-semibold">
+                Cancelled
+              </span> {% elif appt.status == 'no_show' %}
+                        <span class="px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700/30 text-gray-800 dark:text-gray-300 text-xs font-semibold">
+                No-Show
+              </span> {% else %}
+                        <span class="px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700/30 text-gray-800 dark:text-gray-300 text-xs font-semibold">
+                {{ appt.status|capitalize }}
+              </span> {% endif %}
+                    </td>
+
+                    <!-- Actions: View/Edit + Cancel (if still scheduled) -->
+                    <td class="px-6 py-4 text-right">
+                        <div class="flex justify-end space-x-2">
+                            <!-- Edit button -->
+                            <a href="{{ url_for('appointments_web.edit_appointment', appt_id=appt.id) }}" class="p-2 bg-indigo-100 dark:bg-indigo-800 rounded-lg hover:bg-indigo-200 dark:hover:bg-indigo-700 transition-colors" data-tippy-content="View / Edit">
+                                <i class="fas fa-edit text-indigo-600 dark:text-indigo-300"></i>
+                            </a>
+
+                            <!-- Cancel button only if status is 'scheduled' -->
+                            {% if appt.status == 'scheduled' %}
+                            <button onclick="cancelAppt({{ appt.id }})" class="p-2 bg-red-100 dark:bg-red-800 rounded-lg hover:bg-red-200 dark:hover:bg-red-700 transition-colors" data-tippy-content="Cancel Appointment">
+                  <i class="fas fa-times text-red-600 dark:text-red-300"></i>
+                </button> {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" class="px-6 py-12 text-center text-gray-400 dark:text-gray-500">
+                        <i class="fas fa-calendar-times fa-2x mb-4"></i>
+                        <p>No appointments found.</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    function cancelAppt(apptId) {
+        if (confirm('Cancel appointment #' + apptId + '?')) {
+            fetch(`/appointments/${apptId}/cancel`, {
+                    method: 'POST',
+                    headers: {}
+                })
+                .then(res => {
+                    if (res.ok) location.reload();
+                    else alert('Failed to cancel');
+                })
+                .catch(err => console.error(err));
+        }
+    }
+</script>
+{% endblock %}

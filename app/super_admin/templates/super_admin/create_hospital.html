@@ -1,0 +1,257 @@
+{# app/super_admin/templates/super_admin/create_hospital.html #} {% extends 'admin_base.html' %} {% block title %}{{ action }} Hospital | AstroCare Super-Admin{% endblock %} {% block content %}
+<div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-12 px-4 sm:px-6">
+    <div class="max-w-6xl mx-auto">
+        <div class="text-center mb-12">
+            <div class="flex items-center justify-center mb-4">
+                <i class="fas fa-stethoscope text-3xl text-indigo-600 mr-3"></i>
+                <h1 class="text-4xl font-bold text-gray-800">AstroCare</h1>
+            </div>
+            <h2 class="text-2xl font-semibold text-gray-700 mb-2">{{ action }} Hospital</h2>
+            <div class="w-32 h-1 bg-gradient-to-r from-indigo-400 to-purple-500 mx-auto rounded-full"></div>
+        </div>
+
+        <div class="bg-white rounded-3xl shadow-2xl overflow-hidden">
+            <div class="grid md:grid-cols-2">
+                <!-- Left Side - Hospital Illustration -->
+                <div class="bg-gradient-to-br from-indigo-600 to-purple-700 p-10 hidden md:block">
+                    <div class="h-full flex flex-col justify-center">
+                        <div class="text-white text-center mb-10">
+                            <div class="relative inline-block">
+                                <i class="fas fa-hospital text-8xl opacity-30 absolute -top-4 -left-4"></i>
+                                <i class="fas fa-hospital text-7xl mb-6 opacity-90 relative"></i>
+                            </div>
+                            <h2 class="text-3xl font-bold mb-4">Healthcare Infrastructure Management</h2>
+                            <p class="opacity-90 text-lg">Create a new hospital instance with dedicated database and custom subdomain</p>
+                        </div>
+
+                        <div class="mt-8 grid grid-cols-2 gap-5">
+                            <div class="bg-white bg-opacity-20 p-5 rounded-2xl backdrop-blur-md border border-white border-opacity-30 transform transition duration-300 hover:scale-105">
+                                <div class="flex items-start">
+                                    <i class="fas fa-database text-3xl mr-3 mt-1 text-blue-200"></i>
+                                    <div>
+                                        <h3 class="font-bold text-lg">Isolated Database</h3>
+                                        <p class="text-sm mt-1 opacity-90">Dedicated data storage</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bg-white bg-opacity-20 p-5 rounded-2xl backdrop-blur-md border border-white border-opacity-30 transform transition duration-300 hover:scale-105">
+                                <div class="flex items-start">
+                                    <i class="fas fa-shield-alt text-3xl mr-3 mt-1 text-green-200"></i>
+                                    <div>
+                                        <h3 class="font-bold text-lg">HIPAA Security</h3>
+                                        <p class="text-sm mt-1 opacity-90">Compliant infrastructure</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bg-white bg-opacity-20 p-5 rounded-2xl backdrop-blur-md border border-white border-opacity-30 transform transition duration-300 hover:scale-105">
+                                <div class="flex items-start">
+                                    <i class="fas fa-bolt text-3xl mr-3 mt-1 text-yellow-200"></i>
+                                    <div>
+                                        <h3 class="font-bold text-lg">High Performance</h3>
+                                        <p class="text-sm mt-1 opacity-90">Optimized workflows</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bg-white bg-opacity-20 p-5 rounded-2xl backdrop-blur-md border border-white border-opacity-30 transform transition duration-300 hover:scale-105">
+                                <div class="flex items-start">
+                                    <i class="fas fa-sync-alt text-3xl mr-3 mt-1 text-purple-200"></i>
+                                    <div>
+                                        <h3 class="font-bold text-lg">Auto Updates</h3>
+                                        <p class="text-sm mt-1 opacity-90">Seamless migrations</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Side - Form -->
+                <div class="p-10">
+                    <form id="hospitalForm" method="post" class="space-y-8">
+                        {{ form.csrf_token }}
+
+                        <div class="relative">
+                            <div class="flex items-center mb-2">
+                                <i class="fas fa-hospital text-indigo-500 mr-2"></i> {{ form.name.label(class="text-gray-700 font-medium") }}
+                            </div>
+                            <div class="relative rounded-lg overflow-hidden border border-gray-300 focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-200 transition-all duration-200 shadow-sm">
+                                {{ form.name(class="w-full px-5 py-4 text-gray-800 bg-white focus:outline-none", placeholder="Enter hospital name") }}
+                            </div>
+                            {% if form.name.errors %}
+                            <p class="text-red-500 text-sm mt-2 flex items-center">
+                                <i class="fas fa-exclamation-circle mr-2"></i> {{ form.name.errors[0] }}
+                            </p>
+                            {% endif %}
+                        </div>
+
+                        <div class="relative">
+                            <div class="flex items-center mb-2">
+                                <i class="fas fa-globe text-indigo-500 mr-2"></i> {{ form.subdomain.label(class="text-gray-700 font-medium") }}
+                            </div>
+                            <div class="relative rounded-lg overflow-hidden border border-gray-300 focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-200 transition-all duration-200 shadow-sm">
+                                {{ form.subdomain(class="w-full px-5 py-4 text-gray-800 bg-white focus:outline-none", placeholder="Enter subdomain") }}
+                            </div>
+                            <p class="text-gray-600 text-sm mt-3 flex items-center">
+                                <i class="fas fa-link mr-2"></i> Your URL: <span class="ml-2 font-mono bg-indigo-50 px-3 py-1.5 rounded-lg text-indigo-700">https://<span id="subdomainPreview" class="font-bold">SUBDOMAIN</span>.astrocare.com</span>
+                            </p>
+                            {% if form.subdomain.errors %}
+                            <p class="text-red-500 text-sm mt-2 flex items-center">
+                                <i class="fas fa-exclamation-circle mr-2"></i> {{ form.subdomain.errors[0] }}
+                            </p>
+                            {% endif %}
+                        </div>
+
+                        <div class="relative">
+                            <div class="flex items-center mb-2">
+                                <i class="fas fa-database text-indigo-500 mr-2"></i> {{ form.db_uri.label(class="text-gray-700 font-medium") }}
+                            </div>
+                            <div class="relative rounded-lg overflow-hidden border border-gray-300 focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-200 transition-all duration-200 shadow-sm">
+                                {{ form.db_uri(class="w-full px-5 py-4 text-gray-800 bg-white focus:outline-none font-mono text-sm", placeholder="Enter database URI") }}
+                            </div>
+                            <p class="text-gray-600 text-sm mt-3 flex items-start">
+                                <i class="fas fa-info-circle mr-2 mt-1"></i> SQLAlchemy URI format: <code class="ml-2 bg-gray-100 px-3 py-1 rounded-lg font-mono">mysql+pymysql://user:pass@host:3306/dbname</code>
+                            </p>
+                            {% if form.db_uri.errors %}
+                            <p class="text-red-500 text-sm mt-2 flex items-center">
+                                <i class="fas fa-exclamation-circle mr-2"></i> {{ form.db_uri.errors[0] }}
+                            </p>
+                            {% endif %}
+                        </div>
+
+                        <div class="pt-8 flex items-center space-x-4">
+                            <button id="submitBtn" type="submit" class="relative px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl flex items-center group transition-transform duration-300 hover:-translate-y-0.5">
+                                <span id="btnText" class="font-medium text-lg">{{ form.submit.label.text }}</span>
+                                <span id="btnIcon" class="ml-3 text-xl">
+                                    <i class="fas fa-plus"></i>
+                                </span>
+                                <div id="loadingSpinner" class="hidden absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center">
+                                    <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+                                </div>
+                            </button>
+                            <a href="{{ url_for('admin_web.list_hospitals') }}" class="px-6 py-3.5 text-gray-600 hover:text-gray-900 transition-colors flex items-center border border-gray-300 rounded-lg hover:bg-gray-50">
+                                <i class="fas fa-times mr-2"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+
+                    <div class="mt-14 p-6 bg-gradient-to-r from-amber-50 to-yellow-50 border-l-4 border-amber-500 rounded-2xl shadow-sm">
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0 mt-1">
+                                <div class="bg-amber-100 p-3 rounded-full">
+                                    <i class="fas fa-exclamation-circle text-amber-600 text-xl"></i>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <h3 class="text-xl font-bold text-gray-800 mb-3">Important Setup Steps</h3>
+                                <ul class="space-y-4 text-sm">
+                                    <li class="flex items-start">
+                                        <span class="bg-blue-100 text-blue-800 rounded-full w-7 h-7 flex items-center justify-center mr-3 flex-shrink-0 font-bold">1</span>
+                                        <div>
+                                            <span class="font-medium">Run Alembic migrations against the new database:</span>
+                                            <div class="mt-2 bg-gray-800 text-gray-100 p-4 rounded-lg font-mono text-sm overflow-x-auto">
+                                                <span class="text-green-400">$ </span>FLASK_APP=run.py flask db upgrade --database <span id="subdomainCommand" class="text-amber-300 font-bold">{{ form.subdomain.data or 'SUBDOMAIN' }}</span>
+                                            </div>
+                                        </div>
+                                    </li>
+                                    <li class="flex items-start mt-5">
+                                        <span class="bg-blue-100 text-blue-800 rounded-full w-7 h-7 flex items-center justify-center mr-3 flex-shrink-0 font-bold">2</span>
+                                        <div>
+                                            <span class="font-medium">Create database and set privileges in MariaDB:</span>
+                                            <div class="mt-2 bg-gray-800 text-gray-100 p-4 rounded-lg font-mono text-sm overflow-x-auto">
+                                                <span class="text-purple-400">MariaDB</span> [<span class="text-cyan-400">none</span>]&gt; <span class="text-yellow-200">CREATE DATABASE</span> astrocare_<span id="dbNamePreview" class="text-amber-300 font-bold">{{ form.subdomain.data or 'SUBDOMAIN' }}</span>;<br>
+                                                <span class="text-purple-400">MariaDB</span> [<span class="text-cyan-400">none</span>]&gt; <span class="text-yellow-200">GRANT ALL PRIVILEGES</span> ON astrocare_<span class="text-amber-300 font-bold">{{ form.subdomain.data or 'SUBDOMAIN' }}</span>.*
+                                                TO 'root'@'localhost' <span class="text-yellow-200">IDENTIFIED BY</span> 'pass';
+                                            </div>
+                                        </div>
+                                    </li>
+                                    <li class="flex items-start mt-5">
+                                        <span class="bg-blue-100 text-blue-800 rounded-full w-7 h-7 flex items-center justify-center mr-3 flex-shrink-0 font-bold">3</span>
+                                        <div>
+                                            <span class="font-medium">Insert initial data (default roles, permissions, etc.)</span>
+                                            <div class="mt-2 bg-gray-800 text-gray-100 p-4 rounded-lg font-mono text-sm overflow-x-auto">
+                                                <span class="text-green-400">$ </span>FLASK_APP=run.py flask init-data --hospital <span class="text-amber-300 font-bold">{{ form.subdomain.data or 'SUBDOMAIN' }}</span>
+                                            </div>
+                                        </div>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    @keyframes pulse {
+        0%,
+        100% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(1.03);
+        }
+    }
+    
+    .group:hover {
+        animation: pulse 1.5s ease-in-out infinite;
+    }
+    
+    input,
+    textarea {
+        transition: all 0.3s ease;
+    }
+    
+    input:focus,
+    textarea:focus {
+        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('hospitalForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const btnText = document.getElementById('btnText');
+        const btnIcon = document.getElementById('btnIcon');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const subdomainInput = document.getElementById('subdomain');
+        const subdomainPreview = document.getElementById('subdomainPreview');
+        const subdomainCommand = document.getElementById('subdomainCommand');
+        const dbNamePreview = document.getElementById('dbNamePreview');
+
+        // Update subdomain preview
+        if (subdomainInput) {
+            // Initialize preview
+            updateSubdomainPreview();
+
+            subdomainInput.addEventListener('input', function() {
+                updateSubdomainPreview();
+            });
+        }
+
+        function updateSubdomainPreview() {
+            const val = subdomainInput.value.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+            subdomainPreview.textContent = val || 'SUBDOMAIN';
+            subdomainCommand.textContent = val || 'SUBDOMAIN';
+            dbNamePreview.textContent = val || 'SUBDOMAIN';
+        }
+
+        // Form submission handler
+        form.addEventListener('submit', function(e) {
+            // Show loading state
+            submitBtn.classList.add('pointer-events-none');
+            btnText.textContent = 'Processing...';
+            btnIcon.innerHTML = '<i class="fas fa-cog animate-spin"></i>';
+            loadingSpinner.classList.remove('hidden');
+
+            // Disable form elements
+            const formElements = form.elements;
+            for (let i = 0; i < formElements.length; i++) {
+                formElements[i].readOnly = true;
+            }
+        });
+    });
+</script>
+{% endblock %}

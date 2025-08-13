@@ -1,0 +1,266 @@
+{% extends "base.html" %} {% block title %}{{ patient.full_name }} - Patient Profile{% endblock %} {% block content %}
+<div class="min-h-screen">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- Patient Header Section -->
+        <div class="relative mb-12">
+            <div class="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-600 rounded-3xl shadow-2xl transform -skew-y-3"></div>
+            <div class="relative bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800  dark:bg-gray-900 rounded-3xl p-8 shadow-2xl">
+                <div class="flex flex-col md:flex-row items-center gap-8">
+                    <div class="w-32 h-32 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
+                        <span class="text-4xl font-bold text-white">{{ patient.full_name|first }}</span>
+                    </div>
+                    <div class="flex-1">
+                        <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+                            {{ patient.full_name }}
+                            <span class="text-blue-500">#{{ patient.reg_no }}</span>
+                        </h1>
+                        <div class="flex flex-wrap gap-4 text-gray-600 dark:text-gray-300">
+                            <div class="flex items-center">
+                                <i class="fas fa-birthday-cake mr-2 text-purple-500"></i> {{ patient.date_of_birth.strftime('%b %d, %Y') }} ({{ patient.age }} years)
+                            </div>
+                            <div class="flex items-center">
+                                <i class="fas fa-mobile-alt mr-2 text-blue-500"></i> {{ patient.phone }}
+                            </div>
+                            <div class="flex items-center">
+                                <i class="fas fa-heartbeat mr-2 text-red-500"></i> Blood Group: {{ patient.blood_group or 'N/A' }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+            <!-- Left Column - Vital Stats -->
+            <div class="lg:col-span-1 space-y-8">
+
+                <!-- Health Overview Card -->
+                <div class="bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800  dark:bg-gray-900 rounded-2xl p-6 shadow-xl">
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center">
+                        <i class="fas fa-chart-line text-green-500 mr-2"></i> Health Overview
+                    </h2>
+                    <div class="space-y-4">
+                        {% if latest_vitals %}
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-blue-50 dark:bg-blue-900 p-4 rounded-xl">
+                                <div class="text-sm text-blue-600 dark:text-blue-200">Blood Pressure</div>
+                                <div class="text-2xl font-bold">{{ latest_vitals.bp_systolic }}/{{ latest_vitals.bp_diastolic }}</div>
+                                <div class="text-xs mt-1 {% if latest_vitals.bp_systolic > 140 or latest_vitals.bp_diastolic > 90 %}text-red-500{% else %}text-green-500{% endif %}">
+                                    {% if latest_vitals.bp_systolic > 140 %}High{% elif latest_vitals.bp_systolic
+                                    < 90 %}Low{% else %}Normal{% endif %} </div>
+                                </div>
+
+                                <div class="bg-purple-50 dark:bg-purple-900 p-4 rounded-xl">
+                                    <div class="text-sm text-purple-600 dark:text-purple-200">Temperature</div>
+                                    <div class="text-2xl font-bold">{{ "%.1f"|format(latest_vitals.temperature) }}°C</div>
+                                    <div class="text-xs mt-1 {% if latest_vitals.temperature > 37.5 %}text-red-500{% else %}text-green-500{% endif %}">
+                                        {% if latest_vitals.temperature > 37.5 %}Fever{% else %}Normal{% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center">
+                                    <div class="text-gray-600 dark:text-gray-300">SPO₂</div>
+                                    <div class="font-bold {% if latest_vitals.spo2 < 95 %}text-yellow-500{% else %}text-green-500{% endif %}">
+                                        {{ latest_vitals.spo2 }}%
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <div class="text-gray-600 dark:text-gray-300">Respiratory Rate</div>
+                                    <div class="font-bold">{{ latest_vitals.resp_rate }} bpm</div>
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+                                <i class="fas fa-exclamation-circle text-3xl mb-4"></i>
+                                <p>No vital signs recorded yet</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Emergency Contacts -->
+                    <div class="bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800  dark:bg-gray-900 rounded-2xl p-6 shadow-xl">
+                        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center">
+                            <i class="fas fa-life-ring text-red-500 mr-2"></i> Emergency Contacts
+                        </h2>
+                        <div class="space-y-4">
+                            <div class="flex items-center p-4 bg-red-50 dark:bg-red-900 rounded-xl">
+                                <div class="flex-1">
+                                    <div class="font-medium text-gray-900 dark:text-white">{{ patient.kin_name }}</div>
+                                    <div class="text-sm text-gray-500 dark:text-gray-300">{{ patient.kin_relationship }}</div>
+                                    <div class="text-blue-500 dark:text-blue-300">{{ patient.kin_phone }}</div>
+                                </div>
+                                <button class="p-2 text-red-500 hover:text-red-700 dark:hover:text-red-400" onclick="window.location.href='tel:{{ patient.kin_phone }}'">
+                <i class="fas fa-phone-volume text-2xl"></i>
+              </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Patient Documents -->
+                    <div class="bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800  dark:bg-gray-900 rounded-2xl p-6 shadow-xl">
+                        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center">
+                            <i class="fas fa-file-medical text-blue-500 mr-2"></i> Medical Reports
+                        </h2>
+                        <div class="space-y-2">
+                            {% for consultation in consultations %}
+                            <div class="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                                <div class="flex items-center">
+                                    <i class="fas fa-file-pdf text-red-500 mr-3"></i>
+                                    <span class="text-gray-600 dark:text-gray-300">
+                    Report - {{ consultation.created_at|date }}
+                </span>
+                                </div>
+                                <a href="{{ url_for('consultations_web.download_report', consultation_id=consultation.id) }}" class="text-blue-500 hover:text-blue-700 dark:hover:text-blue-400" aria-label="Download report">
+                                    <i class="fas fa-download"></i>
+                                </a>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-4 text-gray-500 dark:text-gray-400">
+                                No reports available
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Right Column - Medical History -->
+                <div class="lg:col-span-2">
+                    <div class="bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800  dark:bg-gray-900 rounded-2xl p-6 shadow-xl">
+                        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
+                            <i class="fas fa-file-medical text-purple-500 mr-2"></i> Medical Timeline
+                        </h2>
+
+                        <div class="flow-root">
+                            <ul class="-mb-8">
+                                {% for consultation in consultations %}
+                                <li class="group" id="consultation-{{ consultation.id }}">
+                                    <div class="relative pb-8">
+                                        <span class="absolute left-5 top-5 -ml-px h-full w-0.5 bg-gray-200 dark:bg-gray-600" aria-hidden="true"></span>
+                                        <div class="relative flex items-start space-x-4">
+                                            <div class="relative">
+                                                <div class="h-10 w-10 bg-blue-500 rounded-full flex items-center justify-center">
+                                                    <i class="fas fa-stethoscope text-white"></i>
+                                                </div>
+                                            </div>
+                                            <div class="min-w-0 flex-1">
+                                                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 shadow-sm transition-all duration-200 hover:shadow-md">
+                                                    <div class="flex justify-between items-center mb-2">
+                                                        <div class="text-sm">
+                                                            <span class="font-medium text-gray-900 dark:text-white">
+                              {{ consultation.created_at|date }}
+                            </span>
+                                                            <span class="text-gray-500 dark:text-gray-400 ml-2">
+                              {{ consultation.created_at|datetime('time') }}
+                            </span>
+                                                        </div>
+                                                        <span class="inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium 
+                                    {% if consultation.visit.visit_status == 'completed' %}bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100
+                                    {% else %}bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-100{% endif %}">
+                            {{ consultation.visit.visit_status|title }}
+                          </span>
+                                                    </div>
+
+                                                    <!-- Collapsible Content -->
+                                                    <div class="text-sm text-gray-600 dark:text-gray-300">
+                                                        <div class="mb-2">
+                                                            <span class="font-medium">Diagnosis:</span> {{ consultation.diagnosis|default('No diagnosis recorded', true) }}
+                                                        </div>
+
+                                                        <div id="details-{{ consultation.id }}" class="hidden space-y-4">
+                                                            <div class="border-t pt-4">
+                                                                <h4 class="font-medium mb-2">Treatment Plan:</h4>
+                                                                <p class="whitespace-pre-wrap">{{ consultation.treatment_plan }}</p>
+                                                            </div>
+
+                                                            {% if consultation.medications %}
+                                                            <div class="border-t pt-4">
+                                                                <h4 class="font-medium mb-2">Medications Prescribed:</h4>
+                                                                <div class="grid gap-2">
+                                                                    {% for med in consultation.medications %}
+                                                                    <div class="flex items-center justify-between p-2 bg-gray-100 dark:bg-gray-800 rounded">
+                                                                        <div>
+                                                                            <span class="font-medium">{{ med.service.name }}</span>
+                                                                            <span class="text-sm text-gray-500">{{ med.dose }} {{ med.frequency }} for {{ med.duration }} days</span>
+                                                                        </div>
+                                                                        <span class="text-sm font-medium">Ksh {{ med.service.price * med.quantity }}</span>
+                                                                    </div>
+                                                                    {% endfor %}
+                                                                </div>
+                                                            </div>
+                                                            {% endif %}
+
+                                                            <div class="border-t pt-4">
+                                                                <h4 class="font-medium mb-2">Clinical Notes:</h4>
+                                                                <p class="whitespace-pre-wrap">{{ consultation.notes|default('No additional notes', true) }}</p>
+                                                            </div>
+                                                        </div>
+
+                                                        <button ria-label="View full details" onclick="toggleDetails('{{ consultation.id }}')" class="text-blue-500 hover:text-blue-700 dark:hover:text-blue-400 flex items-center mt-2">
+                            <span class="mr-1">View Full Details</span>
+                            <i class="fas fa-chevron-down text-sm transition-transform" id="arrow-{{ consultation.id }}"></i>
+                          </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </li>
+                                {% else %}
+                                <li class="text-center py-12 text-gray-500 dark:text-gray-400">
+                                    <i class="fas fa-clipboard-list text-3xl mb-4"></i>
+                                    <p>No medical history recorded yet</p>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleDetails(consultationId) {
+            const details = document.getElementById(`details-${consultationId}`);
+            const arrow = document.getElementById(`arrow-${consultationId}`);
+            details.classList.toggle('hidden');
+            arrow.classList.toggle('rotate-180');
+        }
+
+        // Initialize interactive elements
+        document.querySelectorAll('.flow-root li').forEach(item => {
+            item.addEventListener('mouseenter', () => {
+                item.querySelector('.bg-gray-50').classList.add('shadow-md');
+            });
+            item.addEventListener('mouseleave', () => {
+                item.querySelector('.bg-gray-50').classList.remove('shadow-md');
+            });
+        });
+        document.querySelectorAll('[data-pdf-download]').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.target.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+            });
+        });
+    </script>
+
+    <style>
+        .rotate-180 {
+            transform: rotate(180deg);
+            transition: transform 0.2s ease-in-out;
+        }
+        
+        .whitespace-pre-wrap {
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+    </style>
+
+    {% endblock %}

@@ -1,0 +1,780 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold text-gray-800 mb-6">Blood Bank Management</h1>
+    
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+    {% for group in ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] %}
+    <div class="bg-white rounded-lg shadow p-4">
+        <h3 class="font-semibold text-gray-700">{{ group }}</h3>
+        <div class="mt-2">
+            {% set total = group_counts.get(group, 0) %}
+            <span class="text-2xl font-bold {% if total < 500 %}text-red-500{% else %}text-green-500{% endif %}">
+                {{ total }} ml
+            </span>
+            <div class="text-xs text-gray-500 mt-1">
+                {% set expiring = inventory|selectattr('blood_group', 'equalto', group)|selectattr('is_expiring_soon')|list|count %}
+                {{ expiring }} units expiring soon
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+    
+    <div class="flex flex-wrap gap-3 mb-6">
+        <button onclick="openModal('add-modal')" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md flex items-center">
+            <i class="fas fa-plus mr-2"></i> New Donation
+        </button>
+        <button onclick="openModal('request-modal')" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md flex items-center">
+            <i class="fas fa-tint mr-2"></i> Blood Request
+        </button>
+        <button onclick="openModal('external-modal')" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-md flex items-center">
+            <i class="fas fa-user-plus mr-2"></i> External Donor
+        </button>
+        <button class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-md flex items-center">
+            <i class="fas fa-file-export mr-2"></i> Export Report
+        </button>
+    </div>
+    
+<div class="relative bg-white rounded-xl shadow-2xl border border-gray-200 ring-1 ring-gray-100">
+    <div class="absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-white via-white/80 to-transparent pointer-events-none z-10 opacity-0 transition-opacity duration-300" id="scroll-shadow-left"></div>
+    <div class="absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-white via-white/80 to-transparent pointer-events-none z-10 transition-opacity duration-300" id="scroll-shadow-right"></div>
+
+    <div class="overflow-x-auto custom-scrollbar" id="inventory-table-container">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gradient-to-br from-blue-700 to-indigo-800 text-white shadow-md sticky top-0 z-10">
+                <tr>
+                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Donation ID</th>
+                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Blood Group</th>
+                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Component</th>
+                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Quantity</th>
+                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Donor Details</th>
+                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Staff Info</th>
+                    <th scope="col" class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Status & Health</th>
+                    <th scope="col" class="px-6 py-4 text-right text-xs font-bold uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-100">
+                {% for item in inventory %}
+                <tr class="transition-all duration-300 ease-in-out hover:bg-gray-50 hover:shadow-lg
+                    {% if item.status == 'Expired' %}bg-red-50{% elif item.status == 'Reserved' %}bg-yellow-50{% elif item.status == 'Waiting Screening' %}bg-blue-50{% endif %}">
+                    
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                        <div class="flex items-center">
+                            <span class="truncate max-w-[150px]">{{ item.donation_id }}</span>
+                            {% if item.expiry_date and item.is_expiring_soon %}
+                            <span class="ml-2 px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-xs font-medium animate-pulse flex items-center" title="Expiring soon">
+                                <i class="fas fa-exclamation-triangle mr-1"></i> Expires in {{ item.days_to_expire }} days
+                            </span>
+                            {% elif item.expiry_date and item.expiry_date < now_date %} {# Assuming 'now_date' is passed from Flask context as datetime.date.today() #}
+                            <span class="ml-2 px-2 py-0.5 rounded-full bg-red-100 text-red-700 text-xs font-medium flex items-center" title="Expired">
+                                <i class="fas fa-calendar-times mr-1"></i> Expired!
+                            </span>
+                            {% endif %}
+                        </div>
+                    </td>
+                    
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-3 py-1 rounded-full text-sm font-bold shadow-sm 
+                            {% if item.blood_group.startswith('A') %}bg-purple-100 text-purple-800
+                            {% elif item.blood_group.startswith('B') %}bg-green-100 text-green-800
+                            {% elif item.blood_group.startswith('O') %}bg-indigo-100 text-indigo-800
+                            {% elif item.blood_group.startswith('AB') %}bg-teal-100 text-teal-800
+                            {% else %}bg-gray-200 text-gray-800{% endif %}">
+                            {{ item.blood_group }}
+                        </span>
+                    </td>
+                    
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 font-medium">
+                        <div class="flex items-center">
+                            {% if item.component == 'Whole Blood' %}<i class="fas fa-tint text-red-500 mr-2"></i>
+                            {% elif item.component == 'Platelets' %}<i class="fas fa-plus-square text-orange-500 mr-2"></i>
+                            {% elif item.component == 'Plasma' %}<i class="fas fa-flask text-blue-500 mr-2"></i>
+                            {% elif item.component == 'Cryoprecipitate' %}<i class="fas fa-snowflake text-cyan-500 mr-2"></i>
+                            {% endif %}
+                            <span>{{ item.component }}</span>
+                        </div>
+                    </td>
+                    
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold 
+                        {% if item.quantity < 250 %}text-red-600 animate-bounce-low{% else %}text-green-600{% endif %}">
+                        {{ item.quantity }} ml
+                    </td>
+                    
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                        {% if item.donor_type == 'Patient' %}
+                            <div class="flex items-center">
+                                <i class="fas fa-hospital-user text-blue-500 mr-2" title="Patient Donor"></i>
+                                <a href="{{ url_for('lab_web.view_patient', patient_id=item.donor_id) }}" class="text-blue-600 hover:text-blue-800 hover:underline font-medium">
+                                    Patient #{{ item.donor_id }}
+                                </a>
+                            </div>
+                        {% else %}
+                            <div class="group relative inline-block cursor-help">
+                                <div class="flex items-center">
+                                    <i class="fas fa-user-circle text-gray-500 mr-2" title="External Donor"></i>
+                                    <span class="font-medium text-gray-800">{{ item.donor_full_name }}</span>
+                                    <span class="ml-1 text-xs text-gray-500">(<span class="font-semibold">{{ item.donor_type }}</span>)</span>
+                                    {% if item.amount_paid is not none and item.amount_paid > 0 %}
+                                        <span class="ml-2 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-medium" title="Paid Donation">
+                                            KES {{ '%.2f'|format(item.amount_paid) }} 💰
+                                        </span>
+                                    {% endif %}
+                                </div>
+                                <div class="absolute hidden group-hover:block bg-white shadow-2xl rounded-lg p-4 z-20 border border-gray-200 transform -translate-x-1/2 left-1/2 mt-3 min-w-[240px] animate-fade-in-down">
+                                    <p class="text-xs text-gray-700 mb-1"><span class="font-semibold">Contact:</span> {{ item.donor_contact if item.donor_contact else 'N/A' }}</p>
+                                    <p class="text-xs text-gray-700 mb-1"><span class="font-semibold">Age:</span> {{ item.donor_age if item.donor_age is not none else 'N/A' }} yrs</p>
+                                    <p class="text-xs text-gray-700 mb-1"><span class="font-semibold">Gender:</span> {{ item.donor_gender if item.donor_gender else 'N/A' }}</p>
+                                    <p class="text-xs text-gray-700 mb-1"><span class="font-semibold">Height:</span> {{ '%.1f'|format(item.donor_height) if item.donor_height is not none else 'N/A' }} cm</p>
+                                    <p class="text-xs text-gray-700 mb-1"><span class="font-semibold">Weight:</span> {{ '%.1f'|format(item.donor_weight) if item.donor_weight is not none else 'N/A' }} kg</p>
+                                    {% if item.scanned_form_path %}
+                                        <a href="{{ url_for('static', filename=item.scanned_form_path) }}" target="_blank" class="mt-2 text-blue-500 hover:underline flex items-center text-xs">
+                                            <i class="fas fa-file-alt mr-1"></i> View Scanned Form
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endif %}
+                    </td>
+                    
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        <div class="flex flex-col space-y-1">
+                            {% if item.staff_received %}
+                            <div class="flex items-center text-gray-700">
+                                <i class="fas fa-hand-holding-medical text-gray-400 mr-2" title="Received By"></i>
+                                <span class="font-medium">{{ item.staff_received.full_name }}</span>
+                            </div>
+                            {% endif %}
+                            {% if item.tested_by %}
+                            <div class="flex items-center text-gray-700">
+                                <i class="fas fa-vial text-gray-400 mr-2" title="Tested By"></i>
+                                <span class="text-xs">{{ item.staff_tested.full_name }}</span>
+                            </div>
+                            {% endif %}
+                             {% if item.stored_by %}
+                            <div class="flex items-center text-gray-700">
+                                <i class="fas fa-warehouse text-gray-400 mr-2" title="Stored By"></i>
+                                <span class="text-xs">{{ item.staff_stored.full_name }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </td>
+                    
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center space-x-2">
+                            <span class="px-3 py-1 text-xs font-bold rounded-full shadow-sm
+                                {% if item.status == 'Available' %}bg-green-100 text-green-800
+                                {% elif item.status == 'Reserved' %}bg-yellow-100 text-yellow-800
+                                {% elif item.status == 'Transfused' %}bg-blue-100 text-blue-800
+                                {% elif item.status == 'Discarded' or item.status == 'Expired' %}bg-red-100 text-red-800
+                                {% elif item.status == 'Waiting Screening' %}bg-purple-100 text-purple-800 animate-pulse{% endif %}">
+                                {{ item.status }}
+                            </span>
+                            {% if item.tested %}
+                                <span class="text-green-500" title="Screening Completed & Verified">
+                                    <i class="fas fa-check-circle text-lg"></i>
+                                </span>
+                            {% else %}
+                                <span class="text-amber-500" title="Screening Pending">
+                                    <i class="fas fa-hourglass-half text-lg"></i>
+                                </span>
+                            {% endif %}
+                        </div>
+                        {% if item.test_results %}
+                        <div class="mt-1 text-xs text-gray-600">
+                            <i class="fas fa-notes-medical mr-1"></i> {{ item.test_results[:30] }}...
+                        </div>
+                        {% endif %}
+                    </td>
+                    
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+<div class="flex justify-end items-center space-x-3">
+    {# View Details - Now a link to a dedicated view page #}
+    <a href="{{ url_for('lab_web.view_blood_details', donation_id=item.id) }}" class="text-blue-600 hover:text-blue-800 transition-transform transform hover:scale-110 focus:outline-none" title="View Details">
+        <i class="fas fa-eye text-lg"></i>
+    </a>
+
+    {# Perform Screening - Remains a link as it already was #}
+    {% if item.status == 'Waiting Screening' and not item.tested %}
+    <a href="{{ url_for('lab_web.perform_screening', donation_id=item.id) }}" class="text-purple-600 hover:text-purple-800 transition-transform transform hover:scale-110 focus:outline-none" title="Perform Screening">
+        <i class="fas fa-microscope text-lg"></i>
+    </a>
+    {% endif %}
+
+    {# Edit Record - Now a link to a dedicated edit page #}
+    <a href="{{ url_for('lab_web.edit_blood_record', donation_id=item.id) }}" class="text-amber-600 hover:text-amber-800 transition-transform transform hover:scale-110 focus:outline-none" title="Edit Record">
+        <i class="fas fa-edit text-lg"></i>
+    </a>
+
+    {# Delete Record - Remains a button with JS for confirmation modal #}
+    <button onclick="confirmDelete('{{ item.donation_id }}', {{ item.id }})" class="text-red-600 hover:text-red-800 transition-transform transform hover:scale-110 focus:outline-none" title="Delete Record">
+        <i class="fas fa-trash-alt text-lg"></i>
+    </button>
+</div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" class="px-6 py-10 text-center text-gray-500 text-xl">
+                        <i class="fas fa-inbox text-4xl mb-4 text-gray-300"></i><br>
+                        No blood donations found. Start by adding a new record! 🩸
+                        <p class="mt-4">
+                            <a href="{{ url_for('lab_web.add_donation') }}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                <i class="fas fa-plus-circle mr-2"></i> Add New Donation
+                            </a>
+                        </p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div id="detailModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-lg shadow-xl p-8 w-full max-w-2xl transform transition-all duration-300 scale-95 opacity-0 data-[state=open]:scale-100 data-[state=open]:opacity-100">
+        <h3 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-3">Blood Donation Details ✨</h3>
+        <div id="modalContent" class="space-y-3 text-gray-700 text-sm">
+            <p>Loading details...</p>
+        </div>
+        <div class="mt-8 flex justify-end">
+            <button onclick="closeModal('detailModal')" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="editModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-lg shadow-xl p-8 w-full max-w-3xl transform transition-all duration-300 scale-95 opacity-0 data-[state=open]:scale-100 data-[state=open]:opacity-100">
+        <h3 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-3">Edit Blood Donation Record 📝</h3>
+        <div id="editModalContent" class="space-y-4">
+            <p>Loading edit form...</p>
+        </div>
+        <div class="mt-8 flex justify-end space-x-3">
+            <button onclick="closeModal('editModal')" class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300">
+                Cancel
+            </button>
+            <button type="submit" form="editForm" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                Save Changes
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Utility for opening/closing modals with transition effects
+    function openModal(modalId) {
+        const modal = document.getElementById(modalId);
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        setTimeout(() => {
+            modal.querySelector('div').setAttribute('data-state', 'open');
+        }, 10); // Small delay to allow CSS transition
+    }
+
+    function closeModal(modalId) {
+        const modal = document.getElementById(modalId);
+        modal.querySelector('div').setAttribute('data-state', 'closed');
+        setTimeout(() => {
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+        }, 300); // Match CSS transition duration
+    }
+
+    // Function to handle opening the detail modal and fetching data
+    function openDetailModal(itemId) {
+        openModal('detailModal');
+        const modalContent = document.getElementById('modalContent');
+        modalContent.innerHTML = '<p class="text-center py-8"><i class="fas fa-spinner fa-spin text-4xl text-blue-500"></i><br>Fetching details...</p>';
+        
+        fetch(`/api/blood-bank/${itemId}`) // Adjust this API endpoint to your Flask route
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                let content = `
+                    <p><strong>Donation ID:</strong> <span class="font-medium text-gray-800">${data.donation_id}</span></p>
+                    <p><strong>Blood Group:</strong> <span class="font-medium text-gray-800">${data.blood_group}</span></p>
+                    <p><strong>Component:</strong> <span class="font-medium text-gray-800">${data.component}</span></p>
+                    <p><strong>Quantity:</strong> <span class="font-medium text-gray-800">${data.quantity} ml</span></p>
+                    <p><strong>Donation Date:</strong> <span class="font-medium text-gray-800">${data.donation_date}</span></p>
+                    <p><strong>Expiry Date:</strong> <span class="font-medium text-gray-800">${data.expiry_date}</span></p>
+                    <p><strong>Donor Type:</strong> <span class="font-medium text-gray-800">${data.donor_type}</span></p>
+                `;
+                if (data.donor_full_name) {
+                    content += `<p><strong>Donor Name:</strong> <span class="font-medium text-gray-800">${data.donor_full_name}</span></p>`;
+                    content += `<p><strong>Contact:</strong> <span class="font-medium text-gray-800">${data.donor_contact || 'N/A'}</span></p>`;
+                    content += `<p><strong>Age:</strong> <span class="font-medium text-gray-800">${data.donor_age !== null ? data.donor_age + ' yrs' : 'N/A'}</span></p>`;
+                    content += `<p><strong>Gender:</strong> <span class="font-medium text-gray-800">${data.donor_gender || 'N/A'}</span></p>`;
+                    content += `<p><strong>Height:</strong> <span class="font-medium text-gray-800">${data.donor_height !== null ? data.donor_height.toFixed(1) + ' cm' : 'N/A'}</span></p>`;
+                    content += `<p><strong>Weight:</strong> <span class="font-medium text-gray-800">${data.donor_weight !== null ? data.donor_weight.toFixed(1) + ' kg' : 'N/A'}</span></p>`;
+                    if (data.amount_paid > 0) {
+                        content += `<p><strong>Amount Paid:</strong> <span class="font-medium text-gray-800">KES ${data.amount_paid.toFixed(2)}</span></p>`;
+                    }
+                    if (data.scanned_form_path) {
+                        content += `<p><a href="{{ url_for('static', filename='') }}${data.scanned_form_path}" target="_blank" class="text-blue-500 hover:underline flex items-center mt-2"><i class="fas fa-file-alt mr-2"></i> View Scanned Form</a></p>`;
+                    }
+                } else if (data.patient_donor && data.patient_donor.patient_id) { // Assuming patient_donor relationship exposes patient_id
+                    content += `<p><strong>Patient Donor:</strong> <span class="font-medium text-gray-800">${data.patient_donor.first_name} ${data.patient_donor.last_name} (ID: ${data.patient_donor.patient_id})</span></p>`;
+                }
+
+                content += `<p><strong>Status:</strong> <span class="font-medium text-gray-800">${data.status}</span></p>`;
+                content += `<p><strong>Tested:</strong> <span class="font-medium text-gray-800">${data.tested ? 'Yes' : 'No'}</span></p>`;
+                if (data.test_results) {
+                    content += `<p><strong>Test Results:</strong> <span class="font-medium text-gray-800">${data.test_results}</span></p>`;
+                }
+                content += `<p><strong>Received By:</strong> <span class="font-medium text-gray-800">${data.staff_received_name || 'N/A'}</span></p>`;
+                content += `<p><strong>Tested By:</strong> <span class="font-medium text-gray-800">${data.staff_tested_name || 'N/A'}</span></p>`;
+                content += `<p><strong>Stored By:</strong> <span class="font-medium text-gray-800">${data.staff_stored_name || 'N/A'}</span></p>`;
+                content += `<p><strong>Storage Location:</strong> <span class="font-medium text-gray-800">${data.storage_location || 'N/A'}</span></p>`;
+                content += `<p><strong>Storage Temperature:</strong> <span class="font-medium text-gray-800">${data.storage_temperature || 'N/A'}</span></p>`;
+                content += `<p><strong>Created At:</strong> <span class="font-medium text-gray-800">${new Date(data.created_at).toLocaleString()}</span></p>`;
+                content += `<p><strong>Updated At:</strong> <span class="font-medium text-gray-800">${new Date(data.updated_at).toLocaleString()}</span></p>`;
+
+                modalContent.innerHTML = content;
+            })
+            .catch(error => {
+                console.error('Error fetching details:', error);
+                modalContent.innerHTML = `<p class="text-center py-8 text-red-600"><i class="fas fa-exclamation-circle text-4xl mb-4"></i><br>Failed to load details. Please try again.</p>`;
+            });
+    }
+
+    // Function to handle opening the edit modal and fetching the edit form
+    function openEditModal(itemId) {
+        openModal('editModal');
+        const editModalContent = document.getElementById('editModalContent');
+        editModalContent.innerHTML = '<p class="text-center py-8"><i class="fas fa-spinner fa-spin text-4xl text-amber-500"></i><br>Loading edit form...</p>';
+
+        fetch(`/api/blood-bank/edit-form/${itemId}`) // You'll need a Flask endpoint that returns the HTML for the edit form
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.text(); // Assuming your backend returns HTML
+            })
+            .then(html => {
+                editModalContent.innerHTML = html;
+            })
+            .catch(error => {
+                console.error('Error fetching edit form:', error);
+                editModalContent.innerHTML = `<p class="text-center py-8 text-red-600"><i class="fas fa-exclamation-circle text-4xl mb-4"></i><br>Failed to load edit form. Please try again.</p>`;
+            });
+    }
+
+    // Function for delete confirmation
+    function confirmDelete(donationId, itemId) {
+        if (confirm(`Are you sure you want to permanently delete blood donation ID: ${donationId}? This action cannot be undone.`)) {
+            fetch(`/lab/blood-bank/delete/${itemId}`, { // Adjust this Flask route for deletion
+                method: 'POST', // Or 'DELETE' if your Flask route is set up for it
+                headers: {
+                    'Content-Type': 'application/json',
+
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Donation deleted successfully! ✅');
+                    window.location.reload(); // Reload the page to update the table
+                } else {
+                    alert(`Error deleting donation: ${data.message || 'An unknown error occurred.'} ❌`);
+                }
+            })
+            .catch(error => {
+                console.error('Network or server error during deletion:', error);
+                alert('An error occurred while trying to delete the donation. Please check your connection and try again. 🚨');
+            });
+        }
+    }
+
+    // --- Horizontal Scroll Shadow Logic ---
+    const tableContainer = document.getElementById('inventory-table-container');
+    const shadowLeft = document.getElementById('scroll-shadow-left');
+    const shadowRight = document.getElementById('scroll-shadow-right');
+
+    function updateScrollShadows() {
+        if (!tableContainer) return; // Exit if container not found
+
+        const { scrollWidth, clientWidth, scrollLeft } = tableContainer;
+        const scrollable = scrollWidth > clientWidth;
+
+        // Show right shadow if not at the far right
+        if (scrollable && scrollLeft < (scrollWidth - clientWidth - 1)) { // -1 for slight tolerance
+            shadowRight.classList.remove('opacity-0');
+        } else {
+            shadowRight.classList.add('opacity-0');
+        }
+
+        // Show left shadow if not at the far left
+        if (scrollable && scrollLeft > 1) { // +1 for slight tolerance
+            shadowLeft.classList.remove('opacity-0');
+        } else {
+            shadowLeft.classList.add('opacity-0');
+        }
+    }
+
+    // Initial check and update on scroll
+    if (tableContainer) {
+        tableContainer.addEventListener('scroll', updateScrollShadows);
+        // Also update on window resize in case table size changes
+        window.addEventListener('resize', updateScrollShadows);
+        // Initial call to set shadow state on page load (important!)
+        setTimeout(updateScrollShadows, 100); // Small delay to ensure content is rendered
+    }
+
+
+</script>
+<style>    // Custom animation for quantity warning (optional, add to your main CSS file)
+    // @keyframes bounce-low {
+    //     0%, 100% { transform: translateY(0); }
+    //     50% { transform: translateY(-2px); }
+    // }
+    // .animate-bounce-low {
+    //     animation: bounce-low 1s infinite;
+    // }
+
+    // Custom animation for tooltip (optional, add to your main CSS file)
+    // @keyframes fade-in-down {
+    //     from { opacity: 0; transform: translateY(-10px); }
+    //     to { opacity: 1; transform: translateY(0); }
+    // }
+    // .animate-fade-in-down {
+    //     animation: fade-in-down 0.2s ease-out forwards;
+    // }
+
+    
+    .custom-scrollbar::-webkit-scrollbar {
+        height: 8px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 10px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+    </style>
+</div>
+
+<div id="add-modal" class="fixed inset-0 flex items-center justify-center z-50 p-4" style="display: none;">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-xl flex flex-col max-h-[90vh] animate-fade-in-up">
+        <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-xl">
+            <h3 class="text-xl font-bold text-gray-800">Add New Blood Donation Record</h3>
+            <button type="button" onclick="closeModal('add-modal')" class="text-gray-500 hover:text-gray-700 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+
+        <form method="POST" action="{{ url_for('lab_web.add_blood_donation') }}" enctype="multipart/form-data" class="flex-grow overflow-y-auto custom-scrollbar">
+            <div class="p-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div>
+                    <label for="donor_full_name" class="block text-sm font-semibold text-gray-700 mb-1">Donor Full Name <span class="text-red-500">*</span></label>
+                    <input type="text" name="donor_full_name" id="donor_full_name" required
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-900 placeholder-gray-400 focus:outline-none">
+                </div>
+                
+                <div>
+                    <label for="donor_contact" class="block text-sm font-semibold text-gray-700 mb-1">Contact Number <span class="text-red-500">*</span></label>
+                    <input type="text" name="donor_contact" id="donor_contact" required
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-900 placeholder-gray-400 focus:outline-none"
+                           placeholder="e.g., +254712345678">
+                </div>
+
+                <div>
+                    <label for="donor_age" class="block text-sm font-semibold text-gray-700 mb-1">Age <span class="text-red-500">*</span></label>
+                    <input type="number" name="donor_age" id="donor_age" min="16" max="99" required
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-900 placeholder-gray-400 focus:outline-none">
+                </div>
+
+                <div>
+                    <label for="donor_height" class="block text-sm font-semibold text-gray-700 mb-1">Height (cm)</label>
+                    <input type="number" name="donor_height" id="donor_height" min="100" max="250" step="0.1"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-900 placeholder-gray-400 focus:outline-none"
+                           placeholder="e.g., 175.5">
+                </div>
+
+                <div>
+                    <label for="donor_weight" class="block text-sm font-semibold text-gray-700 mb-1">Weight (kg) <span class="text-red-500">*</span></label>
+                    <input type="number" name="donor_weight" id="donor_weight" min="45" max="200" step="0.1" required
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-900 placeholder-gray-400 focus:outline-none"
+                           placeholder="e.g., 65.2">
+                </div>
+
+                <div>
+                    <label for="quantity" class="block text-sm font-semibold text-gray-700 mb-1">Quantity (ml) <span class="text-red-500">*</span></label>
+                    <input type="number" name="quantity" id="quantity" min="1" required
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-900 placeholder-gray-400 focus:outline-none">
+                </div>
+                
+                <div>
+                    <label for="donation_date" class="block text-sm font-semibold text-gray-700 mb-1">Donation Date <span class="text-red-500">*</span></label>
+                    <input type="date" name="donation_date" id="donation_date" required
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-900 focus:outline-none">
+                </div>
+
+                <div>
+                    <label for="expiry_date" class="block text-sm font-semibold text-gray-700 mb-1">Expiry Date <span class="text-red-500">*</span></label>
+                    <input type="date" name="expiry_date" id="expiry_date" required
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-900 focus:outline-none">
+                </div>
+                
+                <div class="sm:col-span-2">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Donor Type <span class="text-red-500">*</span></label>
+                    <div class="mt-2 flex flex-wrap gap-4">
+                        <label class="inline-flex items-center cursor-pointer">
+                            <input type="radio" name="donor_type" value="Voluntary" id="donor_type_voluntary" checked
+                                   class="form-radio h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 transition-colors">
+                            <span class="ml-2 text-gray-800">Voluntary Donor</span>
+                        </label>
+                        <label class="inline-flex items-center cursor-pointer">
+                            <input type="radio" name="donor_type" value="Paid" id="donor_type_paid"
+                                   class="form-radio h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 transition-colors">
+                            <span class="ml-2 text-gray-800">Paid Donor</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div id="paid-amount-field" class="hidden sm:col-span-2">
+                    <label for="amount_paid" class="block text-sm font-semibold text-gray-700 mb-1">Amount Paid (Ksh)</label>
+                    <input type="number" name="amount_paid" id="amount_paid" min="0" step="0.01"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-900 placeholder-gray-400 focus:outline-none">
+                </div>
+
+                <div class="sm:col-span-2">
+                    <label for="medical_conditions" class="block text-sm font-semibold text-gray-700 mb-1">Any Medical Conditions</label>
+                    <textarea name="medical_conditions" id="medical_conditions" rows="4"
+                              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-900 placeholder-gray-400 focus:outline-none"
+                              placeholder="List any relevant medical conditions, medications, or travel history..."></textarea>
+                </div>
+
+                <div class="sm:col-span-2">
+                    <label for="scanned_form" class="block text-sm font-semibold text-gray-700 mb-1">Upload Scanned Donor Form (PDF/Image)</label>
+                    <div class="relative border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-colors duration-200">
+                        <input type="file" name="scanned_form" id="scanned_form" accept=".pdf, .jpg, .jpeg, .png" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+                        <div class="text-center">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                            <p class="mt-2 text-sm text-gray-600"><span class="font-semibold">Click to upload</span> or drag and drop</p>
+                            <p class="text-xs text-gray-500">PDF, JPG, JPEG, PNG (Max 5MB)</p>
+                        </div>
+                        <div id="file-preview-container" class="mt-4 hidden w-full">
+                            <div class="flex items-center justify-between p-2 bg-gray-100 rounded-md">
+                                <span id="file-name" class="text-sm font-medium text-gray-700 truncate"></span>
+                                <button type="button" id="remove-file-button" class="text-red-500 hover:text-red-700 text-lg leading-none">&times;</button>
+                            </div>
+                            <div id="image-preview" class="mt-2 hidden w-full max-h-48 overflow-hidden rounded-md border border-gray-200">
+                                <img src="" alt="Image Preview" class="w-full h-auto object-cover">
+                            </div>
+                            <div id="pdf-preview" class="mt-2 hidden w-full">
+                                <p class="text-sm text-blue-600 flex items-center">
+                                    <svg class="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0113 3.414L16.586 7A2 2 0 0117 8.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1-3a1 1 0 000 2h.01a1 1 0 000-2H7zm4 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-4 4a1 1 0 000 2h.01a1 1 0 000-2H7zm4 0a1 1 0 000 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"></path></svg>
+                                    PDF file selected.
+                                </p>
+                                <a id="pdf-link" href="#" target="_blank" class="text-blue-500 hover:underline text-sm ml-6">View PDF</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="received_by" class="block text-sm font-semibold text-gray-700 mb-1">Received By <span class="text-red-500">*</span></label>
+                    <select name="received_by" id="received_by" required
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-900 focus:outline-none">
+                        {% for staff in staff_members %}
+                        <option value="{{ staff.id }}">{{ staff.full_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="storage_location" class="block text-sm font-semibold text-gray-700 mb-1">Storage Location <span class="text-red-500">*</span></label>
+                    <input type="text" name="storage_location" id="storage_location" required
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-gray-900 placeholder-gray-400 focus:outline-none">
+                </div>
+            </div>
+
+            <div class="border-t border-gray-100 px-6 py-4 bg-gray-50 flex justify-end gap-3 rounded-b-xl">
+                <button type="button" onclick="closeModal('add-modal')"
+                        class="px-5 py-2.5 border border-gray-300 rounded-lg text-gray-700 font-medium
+                               hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 transition-all duration-200">
+                    Cancel
+                </button>
+                <button type="submit"
+                        class="px-5 py-2.5 bg-blue-600 text-white rounded-lg font-medium
+                               hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 shadow-md hover:shadow-lg">
+                    Save Record
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    /* Custom Scrollbar for Webkit browsers (Chrome, Safari, Edge) */
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 8px; /* Width of the scrollbar */
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: #f0f0f0; /* Color of the tracking area */
+        border-radius: 10px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #a8a8a8; /* Color of the scroll thumb */
+        border-radius: 10px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #888; /* Color on hover */
+    }
+
+    /* Animation for modal entry */
+    @keyframes fade-in-up {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .animate-fade-in-up {
+        animation: fade-in-up 0.3s ease-out forwards;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const donorTypeRadios = document.querySelectorAll('input[name="donor_type"]');
+        const paidAmountField = document.getElementById('paid-amount-field');
+        const amountPaidInput = document.getElementById('amount_paid');
+
+        function togglePaidAmountField() {
+            if (document.getElementById('donor_type_paid').checked) {
+                paidAmountField.classList.remove('hidden');
+                amountPaidInput.setAttribute('required', 'required'); // Make required if 'Paid'
+            } else {
+                paidAmountField.classList.add('hidden');
+                amountPaidInput.removeAttribute('required'); // Remove required if not 'Paid'
+                amountPaidInput.value = ''; // Clear value when hidden
+            }
+        }
+
+        donorTypeRadios.forEach(radio => {
+            radio.addEventListener('change', togglePaidAmountField);
+        });
+
+        // Initial check on page load
+        togglePaidAmountField();
+
+        // --- File Upload Preview Logic ---
+        const scannedFormInput = document.getElementById('scanned_form');
+        const filePreviewContainer = document.getElementById('file-preview-container');
+        const fileNameSpan = document.getElementById('file-name');
+        const removeFileButton = document.getElementById('remove-file-button');
+        const imagePreviewDiv = document.getElementById('image-preview');
+        const imagePreviewImg = imagePreviewDiv.querySelector('img');
+        const pdfPreviewDiv = document.getElementById('pdf-preview');
+        const pdfLink = document.getElementById('pdf-link');
+
+        scannedFormInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                fileNameSpan.textContent = file.name;
+                filePreviewContainer.classList.remove('hidden');
+
+                // Reset previews
+                imagePreviewDiv.classList.add('hidden');
+                imagePreviewImg.src = '';
+                pdfPreviewDiv.classList.add('hidden');
+                pdfLink.href = '#';
+
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        imagePreviewImg.src = e.target.result;
+                        imagePreviewDiv.classList.remove('hidden');
+                    };
+                    reader.readAsDataURL(file);
+                } else if (file.type === 'application/pdf') {
+                    pdfLink.href = URL.createObjectURL(file);
+                    pdfPreviewDiv.classList.remove('hidden');
+                }
+            } else {
+                fileNameSpan.textContent = '';
+                filePreviewContainer.classList.add('hidden');
+                imagePreviewDiv.classList.add('hidden');
+                imagePreviewImg.src = '';
+                pdfPreviewDiv.classList.add('hidden');
+                pdfLink.href = '#';
+            }
+        });
+
+        removeFileButton.addEventListener('click', function() {
+            scannedFormInput.value = ''; // Clear the input
+            fileNameSpan.textContent = '';
+            filePreviewContainer.classList.add('hidden');
+            imagePreviewDiv.classList.add('hidden');
+            imagePreviewImg.src = '';
+            pdfPreviewDiv.classList.add('hidden');
+            pdfLink.href = '#';
+        });
+    });
+
+    function openModal(modalId) {
+        document.getElementById(modalId).style.display = 'flex'; // Use flex to center with Tailwind
+    }
+
+    function closeModal(modalId) {
+        document.getElementById(modalId).style.display = 'none';
+    }
+
+    // Add event listener to close modal when clicking outside of it
+    document.getElementById('add-modal').addEventListener('click', function(event) {
+        // Check if the click was directly on the modal backdrop, not its content
+        if (event.target === this) {
+            closeModal('add-modal');
+        }
+    });
+
+    // Auto-close modals on ESC key (apply to all modals with this pattern)
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            document.querySelectorAll('[id$="-modal"]').forEach(modal => {
+                closeModal(modal.id);
+            });
+        }
+    });
+</script>
+
+<div id="external-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg w-full max-w-md p-6">
+        <h3 class="text-lg font-semibold mb-4">External Donor Registration (Placeholder)</h3>
+        <p>This is where your external donor registration form would go.</p>
+        <div class="mt-6 flex justify-end">
+            <button onclick="closeModal('external-modal')" class="px-4 py-2 bg-gray-200 rounded-md">Close</button>
+        </div>
+    </div>
+</div>
+
+<div id="request-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg w-full max-w-md p-6">
+        <h3 class="text-lg font-semibold mb-4">Blood Request Form (Placeholder)</h3>
+        <p>This is where your blood request form would go.</p>
+        <div class="mt-6 flex justify-end">
+            <button onclick="closeModal('request-modal')" class="px-4 py-2 bg-gray-200 rounded-md">Close</button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

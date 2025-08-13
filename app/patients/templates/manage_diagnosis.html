@@ -1,0 +1,374 @@
+<!-- Updated manage_diagnosis.html with detailed view -->
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2 class="mb-4">Disease Diagnosis Manager</h2>
+  
+  <!-- Search Form -->
+  <div class="mb-4">
+    <div class="input-group">
+      <input type="text" 
+             id="disease-search"
+             class="form-control form-control-lg"
+             placeholder="Search diseases (e.g., diabetes, asthma)" 
+             autocomplete="off">
+    </div>
+    <div class="form-text">Powered by WHO ICD-10 API - Results update as you type</div>
+    <div id="search-status" class="small text-muted mt-1"></div>
+  </div>
+
+  <!-- Error Messages -->
+  <div id="error-container" class="alert alert-danger alert-dismissible fade show d-none">
+    <span id="error-message"></span>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+
+  <!-- Results Table -->
+  <div id="results-container" class="d-none">
+    <div class="card shadow-sm">
+      <div class="card-header bg-light d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">ICD-10 Search Results</h5>
+        <div class="text-muted small">
+          <span id="results-count">0</span> results
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead class="table-light">
+              <tr>
+                <th>Code</th>
+                <th>Disease Name</th>
+                <th>Description</th>
+                <th>Synonyms</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="results-body">
+              <!-- Results will be inserted here dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Disease Details Modal -->
+  <div class="modal fade" id="diseaseModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="diseaseModalLabel">Disease Details</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div id="disease-details">
+            <div class="text-center my-5">
+              <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+              <p class="mt-2">Loading disease details...</p>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const searchInput = document.getElementById('disease-search');
+  const resultsBody = document.getElementById('results-body');
+  const resultsContainer = document.getElementById('results-container');
+  const errorContainer = document.getElementById('error-container');
+  const errorMessage = document.getElementById('error-message');
+  const searchStatus = document.getElementById('search-status');
+  const resultsCount = document.getElementById('results-count');
+  const diseaseModal = new bootstrap.Modal(document.getElementById('diseaseModal'));
+  
+  let searchTimeout;
+  let currentSearchTerm = '';
+
+  // Search input handler
+  searchInput.addEventListener('input', function() {
+    const searchTerm = this.value.trim();
+    currentSearchTerm = searchTerm;
+    
+    searchStatus.textContent = 'Typing...';
+    clearTimeout(searchTimeout);
+    
+    if (searchTerm.length < 2) {
+      if (searchTerm.length === 0) {
+        resultsContainer.classList.add('d-none');
+        searchStatus.textContent = 'Enter at least 2 characters to search';
+      } else {
+        searchStatus.textContent = 'Keep typing...';
+      }
+      return;
+    }
+    
+    searchStatus.textContent = 'Searching...';
+    
+    // Debounce with 400ms delay
+    searchTimeout = setTimeout(() => {
+      if (currentSearchTerm !== searchTerm) return;
+      performSearch(searchTerm);
+    }, 400);
+  });
+
+  // Perform search
+  async function performSearch(term) {
+    try {
+      searchStatus.textContent = `Searching for "${term}"...`;
+      errorContainer.classList.add('d-none');
+      
+      const response = await fetch(`/patients/_search_diseases?q=${encodeURIComponent(term)}`);
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Unknown error');
+      }
+      
+      displayResults(data.results);
+      
+    } catch (error) {
+      showError(error.message);
+      searchStatus.textContent = `Search failed for "${term}"`;
+    }
+  }
+
+  // Display search results
+  function displayResults(results) {
+    resultsBody.innerHTML = '';
+    
+    if (results.length === 0) {
+      searchStatus.textContent = 'No results found';
+      resultsContainer.classList.add('d-none');
+      return;
+    }
+    
+    results.forEach(disease => {
+      const row = document.createElement('tr');
+      
+      row.innerHTML = `
+        <td><span class="badge bg-info">${disease.code || 'N/A'}</span></td>
+        <td><strong>${disease.name || 'N/A'}</strong></td>
+        <td>${disease.description || 'No description'}</td>
+        <td class="text-end">
+          <button class="btn btn-sm btn-outline-primary view-details" 
+                  data-code="${disease.code}"  <!-- Fixed: use data-code attribute -->
+                  title="View details">
+            <i class="bi bi-info-circle"></i> Details
+          </button>
+        </td>
+      `;
+      resultsBody.appendChild(row);
+    });
+    
+    // Update UI
+    resultsCount.textContent = results.length;
+    resultsContainer.classList.remove('d-none');
+    searchStatus.textContent = `Found ${results.length} results for "${currentSearchTerm}"`;
+    
+    // Add event listeners to detail buttons
+    document.querySelectorAll('.view-details').forEach(button => {
+      button.addEventListener('click', function() {
+        const icdCode = this.dataset.code;  // Fixed: get data-code attribute
+        showDiseaseDetails(icdCode);
+      });
+    });
+  }
+
+  // Show detailed disease information
+  async function showDiseaseDetails(icdCode) {
+    try {
+      // Show loading state
+      document.getElementById('disease-details').innerHTML = `
+        <div class="text-center my-5">
+          <div class="spinner-border" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <p class="mt-2">Loading details for ${icdCode}...</p>
+        </div>
+      `;
+      diseaseModal.show();
+      
+      // Fetch detailed information using ICD-10 code
+      const response = await fetch(`/patients/disease-details?code=${encodeURIComponent(icdCode)}`);
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to load details');
+      }
+      
+      // Render detailed information
+      renderDiseaseDetails(data);
+    } catch (error) {
+      document.getElementById('disease-details').innerHTML = `
+        <div class="alert alert-danger">
+          Error loading details: ${error.message}
+        </div>
+      `;
+    }
+  }
+
+
+  // Render detailed disease information
+  function renderDiseaseDetails(details) {
+    // Format synonyms
+    const synonymsList = details.synonyms && details.synonyms.length > 0 ? 
+      `<ul class="mb-0">${details.synonyms.map(syn => `<li>${syn}</li>`).join('')}</ul>` : 
+      '<p>No synonyms available</p>';
+    
+    // Format parent categories
+    const parentCategories = details.parent_categories && details.parent_categories.length > 0 ? 
+      `<ul class="mb-0">${details.parent_categories.map(cat => 
+        `<li><strong>${cat.code || 'N/A'}</strong> - ${cat.title || 'N/A'}</li>`
+      ).join('')}</ul>` : 
+      '<p>No classification information</p>';
+    
+    // Format exclusions
+    const exclusionsList = details.exclusions && details.exclusions.length > 0 ? 
+      `<ul>${details.exclusions.map(ex => `<li>${ex}</li>`).join('')}</ul>` : 
+      '<p>No exclusions specified</p>';
+    
+    // Format inclusions
+    const inclusionsList = details.inclusions && details.inclusions.length > 0 ? 
+      `<ul>${details.inclusions.map(inc => `<li>${inc}</li>`).join('')}</ul>` : 
+      '<p>No inclusions specified</p>';
+    
+    // Format related entities
+    const relatedEntities = details.related_entities && details.related_entities.length > 0 ? 
+      `<ul>${details.related_entities.map(ent => 
+        `<li><strong>${ent.code || 'N/A'}</strong> - ${ent.title || 'N/A'} (${ent.relation_type || 'Related'})</li>`
+      ).join('')}</ul>` : 
+      '<p>No related conditions</p>';
+    
+    let html = `
+      <div class="disease-header mb-4">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <h4 class="mb-1">${details.title || 'N/A'}</h4>
+            <div class="d-flex align-items-center gap-2">
+              <span class="badge bg-primary">${details.code || 'N/A'}</span>
+            </div>
+          </div>
+        </div>
+        <hr>
+      </div>
+      
+      <div class="row">
+        <div class="col-md-8">
+          <h5>Definition</h5>
+          <p class="mb-4">${details.definition || 'No definition available'}</p>
+          
+          ${details.long_definition ? `
+            <h5>Detailed Description</h5>
+            <p>${details.long_definition}</p>
+          ` : ''}
+          
+          ${details.fully_specified_name ? `
+            <h5>Fully Specified Name</h5>
+            <p><em>${details.fully_specified_name}</em></p>
+          ` : ''}
+        </div>
+        
+        <div class="col-md-4">
+          <div class="card mb-3">
+            <div class="card-header bg-light">
+              <h6 class="mb-0">Synonyms</h6>
+            </div>
+            <div class="card-body">
+              ${synonymsList}
+            </div>
+          </div>
+          
+          <div class="card mb-3">
+            <div class="card-header bg-light">
+              <h6 class="mb-0">Classification</h6>
+            </div>
+            <div class="card-body">
+              ${parentCategories}
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="row mt-3">
+        <div class="col-md-6">
+          <div class="card h-100">
+            <div class="card-header bg-light">
+              <h6 class="mb-0">Exclusions</h6>
+            </div>
+            <div class="card-body">
+              ${exclusionsList}
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-md-6">
+          <div class="card h-100">
+            <div class="card-header bg-light">
+              <h6 class="mb-0">Inclusions</h6>
+            </div>
+            <div class="card-body">
+              ${inclusionsList}
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      ${details.related_entities && details.related_entities.length > 0 ? `
+        <div class="card mt-3">
+          <div class="card-header bg-light">
+            <h6 class="mb-0">Related Conditions</h6>
+          </div>
+          <div class="card-body">
+            ${relatedEntities}
+          </div>
+        </div>
+      ` : ''}
+    `;
+    
+    document.getElementById('disease-details').innerHTML = html;
+  }
+  
+
+  // Show error message
+  function showError(message) {
+    errorMessage.textContent = message;
+    errorContainer.classList.remove('d-none');
+    resultsContainer.classList.add('d-none');
+  }
+});
+</script>
+{% endblock %}
+
+{% block styles %}
+<style>
+.disease-header {
+  border-bottom: 1px solid #dee2e6;
+  padding-bottom: 1rem;
+}
+.card {
+  border: 1px solid rgba(0,0,0,.125);
+  border-radius: 0.25rem;
+}
+.card-header {
+  padding: 0.5rem 1rem;
+}
+.card-body {
+  padding: 1rem;
+}
+.modal-content {
+  border-radius: 0.5rem;
+}
+</style>
+{% endblock %}

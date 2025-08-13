@@ -1,0 +1,227 @@
+{% extends "patient-base.html" %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto">
+        <div class="mb-8 md:mb-10 text-center md:text-left">
+            <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white leading-tight">
+                <i class="fas fa-headset text-purple-600 dark:text-purple-400 mr-3"></i> Your Telehealth Hub
+            </h1>
+            <p class="mt-3 text-lg text-gray-600 dark:text-gray-300">
+                Connect with your doctors from anywhere. Your virtual appointments, all in one place.
+            </p>
+        </div>
+
+        <div class="bg-gradient-to-r from-indigo-500 to-purple-600 dark:from-indigo-700 dark:to-purple-800 rounded-xl shadow-lg p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between mb-10 text-white">
+            <div class="text-center md:text-left mb-4 md:mb-0">
+                <h2 class="text-2xl font-bold mb-1">Need a Virtual Consultation?</h2>
+                <p class="text-indigo-100 dark:text-purple-200 text-lg">Book your next online session with a specialist.</p>
+            </div>
+            <a href="{{ url_for('main_bp.book_appointment_select_hospital') }}"
+               class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-full shadow-sm text-indigo-700 bg-white hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white transition-colors duration-200">
+                <i class="fas fa-calendar-plus mr-2"></i> Book New Telehealth
+            </a>
+        </div>
+
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
+            <i class="fas fa-hourglass-half text-yellow-500 mr-2"></i> Upcoming Sessions
+        </h2>
+
+        {% set current_time = datetime.now() %} {# Get current time in Jinja for comparison #}
+
+        {% if sessions %}
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {% for session in sessions %}
+            {% set session_starts_in_minutes = ((session.date - current_time).total_seconds() / 60) | int %}
+            {% set session_status_display = session.status %}
+            {% set show_join_button = false %}
+
+            {# Logic for Join Now / Upcoming / Completed #}
+            {% if session.status == 'Scheduled' %}
+                {% if session_starts_in_minutes >= -15 and session_starts_in_minutes < 60 %} {# Joinable 15 min before, for next hour #}
+                    {% set session_status_display = 'Joinable Now' %}
+                    {% set show_join_button = true %}
+                {% elif session_starts_in_minutes < -60 %} {# More than 1 hour past #}
+                    {% set session_status_display = 'Missed / Expired' %}
+                {% endif %}
+            {% elif session.status == 'Completed' %}
+                {% set session_status_display = 'Completed' %}
+            {% elif session.status == 'Cancelled' %}
+                {% set session_status_display = 'Cancelled' %}
+            {% endif %}
+
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border-l-4
+                {% if session_status_display == 'Joinable Now' %} border-green-500 dark:border-green-600
+                {% elif session.status == 'Scheduled' %} border-indigo-500 dark:border-indigo-600
+                {% elif session.status == 'Completed' %} border-gray-400 dark:border-gray-500
+                {% elif session.status == 'Cancelled' or session_status_display == 'Missed / Expired' %} border-red-500 dark:border-red-600
+                {% else %} border-blue-500 dark:border-blue-600 {# Default or other status #}
+                {% endif %}
+                hover:shadow-lg transition-shadow duration-200">
+
+                <div class="flex items-start justify-between mb-4">
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-900 dark:text-white">{{ session.doctor }}</h3>
+                        <p class="text-md text-gray-600 dark:text-gray-300">{{ session.specialty }}</p>
+                    </div>
+                    <span class="px-3 py-1 rounded-full text-xs font-semibold
+                        {% if session_status_display == 'Joinable Now' %} bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
+                        {% elif session.status == 'Scheduled' %} bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200
+                        {% elif session.status == 'Completed' %} bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300
+                        {% elif session.status == 'Cancelled' or session_status_display == 'Missed / Expired' %} bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200
+                        {% else %} bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200
+                        {% endif %}">
+                        {{ session_status_display }}
+                    </span>
+                </div>
+
+                <div class="space-y-2 text-gray-700 dark:text-gray-300 mb-6">
+                    <p class="flex items-center text-sm">
+                        <i class="fas fa-hospital-alt text-gray-500 dark:text-gray-400 mr-2"></i>
+                        <span class="font-medium text-indigo-600 dark:text-indigo-400">{{ session.hospital }}</span>
+                    </p>
+                    <p class="flex items-center text-sm">
+                        <i class="far fa-calendar-alt text-gray-500 dark:text-gray-400 mr-2"></i>
+                        {{ session.date.strftime('%A, %B %d, %Y') }} at {{ session.date.strftime('%I:%M %p') }}
+                    </p>
+                    {% if session_status_display == 'Joinable Now' %}
+                    <p class="flex items-center text-sm text-green-600 dark:text-green-400 font-bold animate-pulse">
+                        <i class="fas fa-broadcast-tower mr-2"></i> Session starts soon!
+                    </p>
+                    {% elif session_starts_in_minutes > 0 %}
+                    <p class="flex items-center text-sm">
+                        <i class="fas fa-hourglass-end text-yellow-500 mr-2"></i> Starts in {{ session_starts_in_minutes }} minutes
+                    </p>
+                    {% endif %}
+                </div>
+
+                <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 mt-6">
+                    {% if show_join_button %}
+                        <a href="{{ session.meeting_link }}" target="_blank" rel="noopener noreferrer"
+                           class="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200 animate-bounce-once">
+                            <i class="fas fa-video mr-2"></i> Join Session Now
+                        </a>
+                    {% elif session.status == 'Scheduled' %}
+                        <button onclick="rescheduleTelehealth({{ session.id }})"
+                                class="w-full sm:w-auto inline-flex items-center justify-center px-5 py-2 border border-transparent text-base font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-700 dark:text-indigo-100 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200">
+                            <i class="fas fa-sync-alt mr-2"></i> Reschedule
+                        </button>
+                        <button onclick="cancelTelehealth({{ session.id }})"
+                                class="w-full sm:w-auto inline-flex items-center justify-center px-5 py-2 border border-transparent text-base font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 dark:bg-red-700 dark:text-red-100 dark:hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200">
+                            <i class="fas fa-times-circle mr-2"></i> Cancel
+                        </button>
+                    {% else %}
+                        <button disabled class="w-full sm:w-auto inline-flex items-center justify-center px-5 py-2 border border-gray-300 dark:border-gray-600 text-base font-medium rounded-md text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 cursor-not-allowed">
+                            <i class="fas fa-info-circle mr-2"></i> Session {{ session_status_display }}
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-8 text-center border border-dashed border-gray-300 dark:border-gray-600">
+            <i class="fas fa-video-slash text-purple-400 text-6xl mb-4"></i>
+            <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">No Telehealth Sessions Scheduled</h3>
+            <p class="text-gray-600 dark:text-gray-400 mb-4">You currently don't have any virtual appointments in your schedule.</p>
+            <p class="text-gray-600 dark:text-gray-400 mb-6">Book an online consultation to connect with a doctor from the comfort of your home.</p>
+            <a href="{{ url_for('main_bp.book_appointment_select_hospital') }}"
+               class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-full shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200">
+                <i class="fas fa-calendar-check mr-2"></i> Schedule My First Telehealth
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+<style>
+    /* Custom keyframe for a subtle bounce effect on the join button */
+    @keyframes bounce-once {
+        0%, 100% {
+            transform: translateY(0);
+        }
+        25% {
+            transform: translateY(-5px);
+        }
+        50% {
+            transform: translateY(0);
+        }
+        75% {
+            transform: translateY(-2px);
+        }
+    }
+
+    .animate-bounce-once {
+        animation: bounce-once 1.5s ease-in-out; /* Adjust duration as needed */
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Placeholder for Reschedule/Cancel functions (would involve API calls)
+        window.rescheduleTelehealth = function(sessionId) {
+            alert('Functionality to reschedule telehealth session ' + sessionId + ' would be implemented here.');
+        };
+
+        window.cancelTelehealth = function(sessionId) {
+            if (confirm('Are you sure you want to cancel this telehealth session?')) {
+                alert('Functionality to cancel telehealth session ' + sessionId + ' would be implemented here.');
+            }
+        };
+
+        // --- Important Note for Real-time Updates ---
+        // For a truly "super modern" dashboard, you'd want real-time updates for session status
+        // and "Join Now" button visibility without a page refresh. This typically involves:
+        // 1. WebSocket (e.g., Flask-SocketIO) for push notifications from the server.
+        // 2. Client-side JavaScript to re-evaluate and update session cards periodically (e.g., every minute)
+        //    or when a WebSocket message is received.
+        //
+        // The current Jinja logic evaluates once on page load. To make the "Join Now" button
+        // appear exactly when it's time, you'd need client-side JS to:
+        // - Get current time.
+        // - Calculate `session_starts_in_minutes` for each session.
+        // - Add/remove classes or update button text/visibility dynamically.
+        //
+        // Example of a basic client-side update loop (conceptual):
+        /*
+        function updateSessionTimers() {
+            const now = new Date();
+            document.querySelectorAll('.telehealth-session-card').forEach(card => {
+                const sessionDateStr = card.dataset.sessionDate; // You'd need to add this data attribute
+                const sessionDate = new Date(sessionDateStr); // Convert to JS Date object
+                const diffMinutes = (sessionDate - now) / (1000 * 60);
+
+                const joinButton = card.querySelector('.join-button'); // Add a class to your join button
+                const statusBadge = card.querySelector('.status-badge'); // Add a class to your status badge
+                const timerText = card.querySelector('.timer-text'); // Add a class for timer text
+
+                if (diffMinutes >= -15 && diffMinutes < 60) {
+                    if (joinButton) {
+                        joinButton.classList.remove('hidden');
+                        joinButton.classList.add('bg-green-600', 'hover:bg-green-700'); // Add green style
+                    }
+                    if (statusBadge) statusBadge.textContent = 'Joinable Now';
+                    if (timerText) timerText.textContent = 'Session starts soon!';
+                    card.classList.add('border-green-500'); // Update card border
+                } else if (diffMinutes > 60) {
+                    if (joinButton) joinButton.classList.add('hidden');
+                    if (statusBadge) statusBadge.textContent = 'Scheduled';
+                    if (timerText) timerText.textContent = `Starts in ${Math.ceil(diffMinutes)} minutes`;
+                    card.classList.add('border-indigo-500');
+                } else { // Past session
+                    if (joinButton) joinButton.classList.add('hidden');
+                    if (statusBadge) statusBadge.textContent = 'Missed / Expired';
+                    if (timerText) timerText.textContent = '';
+                    card.classList.add('border-red-500');
+                }
+                // More complex logic for 'Completed' or 'Cancelled' would require data from the server.
+            });
+        }
+        setInterval(updateSessionTimers, 60000); // Update every minute
+        updateSessionTimers(); // Initial call
+        */
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,692 @@
+{% extends 'base.html' %} {% block title %}Hospital Profile Settings{% endblock %} {% block content %}
+<div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-4 sm:p-6">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header with Hospital Logo Placeholder -->
+        <div class="mb-8 text-center">
+            <div class="mx-auto w-24 h-24 rounded-full bg-white shadow-lg border-4 border-white flex items-center justify-center mb-4">
+                {% if profile.logo_url %}
+                <img src="{{ profile.logo_url }}" alt="Hospital Logo" class="w-20 h-20 rounded-full object-cover"> {% else %}
+                <i class="fas fa-hospital text-4xl text-blue-600"></i> {% endif %}
+            </div>
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-800">
+                {{ profile.name or "Hospital Profile" }}
+            </h1>
+            <p class="text-gray-600 mt-2 max-w-3xl mx-auto">
+                Manage your hospital's identity, operations, and compliance details
+            </p>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="mb-8 overflow-x-auto">
+            <div class="flex space-x-1 bg-white rounded-xl shadow-inner p-1 w-full max-w-4xl mx-auto">
+                <button data-tab="identity" class="tab-btn active flex-1 py-3 px-4 rounded-lg text-center transition-all">
+          <i class="fas fa-id-card mr-2"></i>Identity
+        </button>
+                <button data-tab="location" class="tab-btn flex-1 py-3 px-4 rounded-lg text-center transition-all">
+          <i class="fas fa-map-marker-alt mr-2"></i>Location
+        </button>
+                <button data-tab="operations" class="tab-btn flex-1 py-3 px-4 rounded-lg text-center transition-all">
+          <i class="fas fa-cogs mr-2"></i>Operations
+        </button>
+                <button data-tab="registration" class="tab-btn flex-1 py-3 px-4 rounded-lg text-center transition-all">
+          <i class="fas fa-file-alt mr-2"></i>Registration
+        </button>
+                <button data-tab="organizational" class="tab-btn flex-1 py-3 px-4 rounded-lg text-center transition-all">
+          <i class="fas fa-bullseye mr-2"></i>Organizational
+        </button>
+            </div>
+        </div>
+
+        <form method="POST" class="space-y-8" enctype="multipart/form-data">
+            <!-- Identity Tab -->
+            <div id="identity-tab" class="tab-content bg-white rounded-2xl shadow-xl overflow-hidden">
+                <div class="bg-gradient-to-r from-blue-500 to-indigo-600 p-6">
+                    <h2 class="text-xl font-bold text-white flex items-center">
+                        <i class="fas fa-id-card mr-3"></i> Core Identity
+                    </h2>
+                    <p class="text-blue-100 mt-1">Your hospital's name, branding, and mission</p>
+                </div>
+
+                <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Hospital Logo</label>
+                        <div class="flex flex-col sm:flex-row items-center gap-6">
+                            <!-- Logo Preview -->
+                            <div class="relative">
+                                <div id="logo-preview" class="w-32 h-32 rounded-full bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden">
+                                    {% if profile.logo_url %}
+                                    <img src="{{ profile.logo_url }}" alt="Hospital Logo" class="w-full h-full object-cover" id="logo-image"> {% else %}
+                                    <i class="fas fa-hospital text-4xl text-gray-400" id="logo-placeholder"></i> {% endif %}
+                                </div>
+                                <!-- Remove Button -->
+                                {% if profile.logo_url %}
+                                <button type="button" id="remove-logo" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition">
+                                    <i class="fas fa-times"></i>
+                                </button> {% endif %}
+                            </div>
+
+                            <!-- Upload Controls -->
+                            <div class="flex-1">
+                                <input type="file" id="logo-upload" name="logo" accept="image/*" class="hidden">
+                                <div class="space-y-3">
+                                    <button type="button" id="upload-trigger" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition flex items-center">
+                                        <i class="fas fa-cloud-upload-alt mr-2"></i> Choose Logo
+                                    </button>
+                                    <p class="text-sm text-gray-500">JPG, PNG, or GIF. Max 5MB. Recommended: 500×500 px</p>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Hidden field to store the logo URL -->
+                        <input type="hidden" name="logo_url" id="logo-url" value="{{ profile.logo_url or '' }}">
+                    </div>
+
+
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Hospital Name *</label>
+                        <input type="text" name="name" value="{{ profile.name or '' }}" required class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Display Name</label>
+                        <input type="text" name="display_name" value="{{ profile.display_name or '' }}" class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Tagline</label>
+                        <input type="text" name="tagline" value="{{ profile.tagline or '' }}" class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Motto</label>
+                        <input type="text" name="motto" value="{{ profile.motto or '' }}" class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Slogan</label>
+                        <input type="text" name="slogan" value="{{ profile.slogan or '' }}" class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+
+
+
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Vision Statement</label>
+                        <textarea name="vision" rows="2" class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500">{{ profile.vision or '' }}</textarea>
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Mission Statement</label>
+                        <textarea name="mission" rows="2" class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500">{{ profile.mission or '' }}</textarea>
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <textarea name="description" rows="4" class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500">{{ profile.description or '' }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Location Tab -->
+            <div id="location-tab" class="tab-content hidden bg-white rounded-2xl shadow-xl overflow-hidden">
+                <div class="bg-gradient-to-r from-green-500 to-teal-600 p-6">
+                    <h2 class="text-xl font-bold text-white flex items-center">
+                        <i class="fas fa-map-marker-alt mr-3"></i> Contact & Location
+                    </h2>
+                    <p class="text-green-100 mt-1">Where patients can find you and how to reach you</p>
+                </div>
+
+                <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Address Line 1</label>
+                        <input type="text" name="address_line1" value="{{ profile.address_line1 or '' }}" class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500">
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Address Line 2</label>
+                        <input type="text" name="address_line2" value="{{ profile.address_line2 or '' }}" class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                        <input type="text" name="location" value="{{ profile.location or '' }}" class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">City</label>
+                        <input type="text" name="city" value="{{ profile.city or '' }}" class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">County</label>
+                        <input type="text" name="county" value="{{ profile.county or '' }}" class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Constituency</label>
+                        <input type="text" name="constituency" value="{{ profile.constituency or '' }}" class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Ward</label>
+                        <input type="text" name="ward" value="{{ profile.ward or '' }}" class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">State</label>
+                        <input type="text" name="state" value="{{ profile.state or '' }}" class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Country</label>
+                        <input type="text" name="country" value="{{ profile.country or 'Kenya' }}" class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Postal Code</label>
+                        <input type="text" name="postal_code" value="{{ profile.postal_code or '' }}" class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Primary Contact</label>
+                        <input type="text" name="primary_contact" value="{{ profile.primary_contact or '' }}" class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Secondary Contact</label>
+                        <input type="text" name="secondary_contact" value="{{ profile.secondary_contact or '' }}" class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Emergency Contact</label>
+                        <input type="text" name="emergency_contact" value="{{ profile.emergency_contact or '' }}" class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input type="email" name="email" value="{{ profile.email or '' }}" class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Website</label>
+                        <input type="url" name="website" value="{{ profile.website or '' }}" class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Operations Tab -->
+            <div id="operations-tab" class="tab-content hidden bg-white rounded-2xl shadow-xl overflow-hidden">
+                <div class="bg-gradient-to-r from-purple-500 to-indigo-600 p-6">
+                    <h2 class="text-xl font-bold text-white flex items-center">
+                        <i class="fas fa-cogs mr-3"></i> Operational Details
+                    </h2>
+                    <p class="text-purple-100 mt-1">Hospital services, capacity, and operations</p>
+                </div>
+
+                <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Hospital Type</label>
+                        <select name="hospital_type" class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-purple-500 focus:border-purple-500">
+              <option value="">Select Type</option>
+              <option value="general" {% if profile.hospital_type == 'general' %}selected{% endif %}>General Hospital</option>
+              <option value="specialty" {% if profile.hospital_type == 'specialty' %}selected{% endif %}>Specialty Hospital</option>
+              <option value="clinic" {% if profile.hospital_type == 'clinic' %}selected{% endif %}>Clinic</option>
+              <option value="teaching" {% if profile.hospital_type == 'teaching' %}selected{% endif %}>Teaching Hospital</option>
+            </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Bed Capacity</label>
+                        <input type="number" name="bed_capacity" value="{{ profile.bed_capacity or '' }}" class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-purple-500 focus:border-purple-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Established Date</label>
+                        <input type="date" name="established_date" value="{{ profile.established_date or '' }}" class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-purple-500 focus:border-purple-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Accreditation</label>
+                        <input type="text" name="accreditation" value="{{ profile.accreditation or '' }}" class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-purple-500 focus:border-purple-500">
+                    </div>
+
+                    <!-- Operating Hours -->
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Operating Hours</label>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs text-gray-500 mb-1">Weekdays</label>
+                                <input type="text" name="weekdays_hours" value="{{ profile.operating_hours.weekdays if profile.operating_hours else '8am-10pm' }}" placeholder="8am-10pm" class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-purple-500 focus:border-purple-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-500 mb-1">Weekends</label>
+                                <input type="text" name="weekends_hours" value="{{ profile.operating_hours.weekends if profile.operating_hours else '9am-4pm' }}" placeholder="9am-4pm" class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-purple-500 focus:border-purple-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-500 mb-1">Holidays</label>
+                                <input type="text" name="holidays_hours" value="{{ profile.operating_hours.holidays if profile.operating_hours else 'Closed' }}" placeholder="Closed" class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-purple-500 focus:border-purple-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-500 mb-1">Emergency</label>
+                                <input type="text" name="emergency_hours" value="{{ profile.operating_hours.emergency if profile.operating_hours else '24 hours' }}" placeholder="24 hours" class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-purple-500 focus:border-purple-500">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Array Fields (Specialties, Amenities, etc.) -->
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Specialties</label>
+                        <div class="flex flex-wrap gap-2" id="specialties-container">
+                            {% if profile.specialties %} {% for item in profile.specialties %}
+                            <div class="tag-input flex items-center bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
+                                <span>{{ item }}</span>
+                                <button type="button" class="remove-tag ml-2 text-blue-600 hover:text-blue-800">
+                        <i class="fas fa-times"></i>
+                    </button>
+                            </div>
+                            {% endfor %} {% endif %}
+                            <div class="flex items-center">
+                                <input type="text" id="specialties-input" placeholder="Add specialty" class="rounded-lg border-gray-300 shadow-sm focus:ring-purple-500 focus:border-purple-500">
+                                <button type="button" id="add-specialty" class="ml-2 bg-purple-500 text-white px-3 py-1 rounded-lg hover:bg-purple-600">
+                <i class="fas fa-plus"></i>
+            </button>
+                            </div>
+                        </div>
+                        <input type="hidden" name="specialties" id="specialties-hidden" value="{{ profile.specialties | join(',') if profile.specialties else '' }}">
+                    </div>
+
+                    <!-- Repeat the same pattern for other array fields: -->
+                    <!-- Amenities -->
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Amenities</label>
+                        <div class="flex flex-wrap gap-2" id="amenities-container">
+                            {% if profile.amenities %} {% for item in profile.amenities %}
+                            <div class="tag-input flex items-center bg-green-100 text-green-800 px-3 py-1 rounded-full">
+                                <span>{{ item }}</span>
+                                <button type="button" class="remove-tag ml-2 text-green-600 hover:text-green-800">
+                        <i class="fas fa-times"></i>
+                    </button>
+                            </div>
+                            {% endfor %} {% endif %}
+                            <div class="flex items-center">
+                                <input type="text" id="amenities-input" placeholder="Add amenity" class="rounded-lg border-gray-300 shadow-sm focus:ring-purple-500 focus:border-purple-500">
+                                <button type="button" id="add-amenity" class="ml-2 bg-green-500 text-white px-3 py-1 rounded-lg hover:bg-green-600">
+                <i class="fas fa-plus"></i>
+            </button>
+                            </div>
+                        </div>
+                        <input type="hidden" name="amenities" id="amenities-hidden" value="{{ profile.amenities | join(',') if profile.amenities else '' }}">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Registration Tab -->
+            <div id="registration-tab" class="tab-content hidden bg-white rounded-2xl shadow-xl overflow-hidden">
+                <div class="bg-gradient-to-r from-yellow-500 to-amber-600 p-6">
+                    <h2 class="text-xl font-bold text-white flex items-center">
+                        <i class="fas fa-file-alt mr-3"></i> Kenya Registration
+                    </h2>
+                    <p class="text-yellow-100 mt-1">Official regulatory details for Kenya</p>
+                </div>
+
+                <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Hospital Reg No</label>
+                        <input type="text" name="hospital_reg_no" value="{{ profile.hospital_reg_no or '' }}" class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-yellow-500 focus:border-yellow-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">KRA PIN</label>
+                        <input type="text" name="kra_pin" value="{{ profile.kra_pin or '' }}" class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-yellow-500 focus:border-yellow-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">NHIF No</label>
+                        <input type="text" name="nhif_no" value="{{ profile.nhif_no or '' }}" class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-yellow-500 focus:border-yellow-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">NSSF No</label>
+                        <input type="text" name="nssf_no" value="{{ profile.nssf_no or '' }}" class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-yellow-500 focus:border-yellow-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Business Permit No</label>
+                        <input type="text" name="business_permit_no" value="{{ profile.business_permit_no or '' }}" class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-yellow-500 focus:border-yellow-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Practice License</label>
+                        <input type="text" name="practice_license_no" value="{{ profile.practice_license_no or '' }}" class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-yellow-500 focus:border-yellow-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Pharmacy License</label>
+                        <input type="text" name="pharmacy_license_no" value="{{ profile.pharmacy_license_no or '' }}" class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-yellow-500 focus:border-yellow-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Radiation Board No</label>
+                        <input type="text" name="radiation_board_no" value="{{ profile.radiation_board_no or '' }}" class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-yellow-500 focus:border-yellow-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Waste License No</label>
+                        <input type="text" name="waste_license_no" value="{{ profile.waste_license_no or '' }}" class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-yellow-500 focus:border-yellow-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Registration Issue</label>
+                        <input type="date" name="reg_certificate_issue" value="{{ profile.reg_certificate_issue or '' }}" class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-yellow-500 focus:border-yellow-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Registration Expiry</label>
+                        <input type="date" name="reg_certificate_expiry" value="{{ profile.reg_certificate_expiry or '' }}" class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-yellow-500 focus:border-yellow-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">License Renewal</label>
+                        <input type="date" name="license_renewal_date" value="{{ profile.license_renewal_date or '' }}" class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-yellow-500 focus:border-yellow-500">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Organizational Tab -->
+            <div id="organizational-tab" class="tab-content hidden bg-white rounded-2xl shadow-xl overflow-hidden">
+                <div class="bg-gradient-to-r from-pink-500 to-rose-600 p-6">
+                    <h2 class="text-xl font-bold text-white flex items-center">
+                        <i class="fas fa-bullseye mr-3"></i> Organizational Identity
+                    </h2>
+                    <p class="text-pink-100 mt-1">Core values, strategic goals, and organizational identity</p>
+                </div>
+
+                <div class="p-6 grid grid-cols-1 gap-6">
+                    <!-- Core Values -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Core Values</label>
+                        <div class="flex flex-wrap gap-2" id="core-values-container">
+                            {% if profile.core_values %} {% for item in profile.core_values %}
+                            <div class="tag-input flex items-center bg-pink-100 text-pink-800 px-3 py-1 rounded-full">
+                                <span>{{ item }}</span>
+                                <button type="button" class="remove-tag ml-2 text-pink-600 hover:text-pink-800">
+                        <i class="fas fa-times"></i>
+                    </button>
+                            </div>
+                            {% endfor %} {% endif %}
+                            <div class="flex items-center">
+                                <input type="text" id="core-values-input" placeholder="Add value" class="rounded-lg border-gray-300 shadow-sm focus:ring-pink-500 focus:border-pink-500">
+                                <button type="button" id="add-core-value" class="ml-2 bg-pink-500 text-white px-3 py-1 rounded-lg hover:bg-pink-600">
+                <i class="fas fa-plus"></i>
+            </button>
+                            </div>
+                        </div>
+                        <input type="hidden" name="core_values" id="core-values-hidden" value="{{ profile.core_values | join(',') if profile.core_values else '' }}">
+                    </div>
+
+                    <!-- Strategic Goals -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Strategic Goals</label>
+                        <div class="flex flex-wrap gap-2" id="goals-container">
+                            {% if profile.strategic_goals %} {% for item in profile.strategic_goals %}
+                            <div class="tag-input flex items-center bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full">
+                                <span>{{ item }}</span>
+                                <button type="button" class="remove-tag ml-2 text-yellow-600 hover:text-yellow-800">
+                        <i class="fas fa-times"></i>
+                    </button>
+                            </div>
+                            {% endfor %} {% endif %}
+                            <div class="flex items-center">
+                                <input type="text" id="goals-input" placeholder="Add goal" class="rounded-lg border-gray-300 shadow-sm focus:ring-pink-500 focus:border-pink-500">
+                                <button type="button" id="add-goal" class="ml-2 bg-yellow-500 text-white px-3 py-1 rounded-lg hover:bg-yellow-600">
+                <i class="fas fa-plus"></i>
+            </button>
+                            </div>
+                        </div>
+                        <input type="hidden" name="strategic_goals" id="goals-hidden" value="{{ profile.strategic_goals | join(',') if profile.strategic_goals else '' }}">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Subdomain</label>
+                        <input type="text" name="subdomain" value="{{ profile.subdomain or '' }}" class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-pink-500 focus:border-pink-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Database URL</label>
+                        <input type="text" name="db_url" value="{{ profile.db_url or '' }}" class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-pink-500 focus:border-pink-500">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="flex justify-end mt-10">
+                <button type="submit" class="px-8 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-bold rounded-xl shadow-lg hover:from-blue-600 hover:to-indigo-700 transition-all transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 flex items-center">
+          <i class="fas fa-save mr-2"></i>
+          Save Hospital Profile
+        </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- JavaScript for Tab Navigation -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Tab switching functionality
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const tabId = this.getAttribute('data-tab');
+
+                // Update active tab button
+                tabBtns.forEach(b => b.classList.remove('active', 'bg-blue-500', 'text-white'));
+                this.classList.add('active', 'bg-blue-500', 'text-white');
+
+                // Show active tab content
+                tabContents.forEach(content => content.classList.add('hidden'));
+                document.getElementById(`${tabId}-tab`).classList.remove('hidden');
+            });
+        });
+
+        // Initialize first tab as active
+        document.querySelector('.tab-btn.active').click();
+    });
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const logoUpload = document.getElementById('logo-upload');
+        const uploadTrigger = document.getElementById('upload-trigger');
+        const logoPreview = document.getElementById('logo-preview');
+        const logoPlaceholder = document.getElementById('logo-placeholder');
+        const logoImage = document.getElementById('logo-image');
+        const logoUrl = document.getElementById('logo-url');
+        const removeLogo = document.getElementById('remove-logo');
+
+        // Trigger file input when button is clicked
+        uploadTrigger.addEventListener('click', () => logoUpload.click());
+
+        // Handle file selection
+        logoUpload.addEventListener('change', function(e) {
+            if (this.files && this.files[0]) {
+                const file = this.files[0];
+
+                // Validate file type and size
+                const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
+                if (!validTypes.includes(file.type)) {
+                    alert('Please select a valid image file (JPG, PNG, GIF)');
+                    return;
+                }
+
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('File size exceeds 5MB limit');
+                    return;
+                }
+
+                const reader = new FileReader();
+
+                reader.onload = function(e) {
+                    // Create image if it doesn't exist
+                    if (!logoImage) {
+                        const img = document.createElement('img');
+                        img.id = 'logo-image';
+                        img.classList.add('w-full', 'h-full', 'object-cover');
+                        logoPreview.innerHTML = '';
+                        logoPreview.appendChild(img);
+                    }
+
+                    // Set new image source
+                    document.getElementById('logo-image').src = e.target.result;
+
+                    // Hide placeholder
+                    if (logoPlaceholder) logoPlaceholder.style.display = 'none';
+
+                    // Create remove button if it doesn't exist
+                    if (!removeLogo) {
+                        const removeBtn = document.createElement('button');
+                        removeBtn.id = 'remove-logo';
+                        removeBtn.type = 'button';
+                        removeBtn.classList.add('absolute', '-top-2', '-right-2', 'bg-red-500',
+                            'text-white', 'rounded-full', 'p-1', 'hover:bg-red-600', 'transition');
+                        removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+
+                        removeBtn.addEventListener('click', function() {
+                            logoPreview.innerHTML = '<i class="fas fa-hospital text-4xl text-gray-400" id="logo-placeholder"></i>';
+                            logoUrl.value = '';
+                            this.remove();
+                        });
+
+                        logoPreview.parentElement.appendChild(removeBtn);
+                    }
+                }
+
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Handle logo removal
+        if (removeLogo) {
+            removeLogo.addEventListener('click', function() {
+                logoPreview.innerHTML = '<i class="fas fa-hospital text-4xl text-gray-400" id="logo-placeholder"></i>';
+                logoUrl.value = '';
+                this.remove();
+            });
+        }
+    });
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Function to setup tag inputs
+        function setupTagInput(containerId, inputId, buttonId, hiddenId) {
+            const container = document.getElementById(containerId);
+            const input = document.getElementById(inputId);
+            const addButton = document.getElementById(buttonId);
+            const hiddenInput = document.getElementById(hiddenId);
+
+            // Add new tag
+            addButton.addEventListener('click', function() {
+                const value = input.value.trim();
+                if (value) {
+                    // Create tag element
+                    const tag = document.createElement('div');
+                    tag.className = 'tag-input flex items-center bg-blue-100 text-blue-800 px-3 py-1 rounded-full';
+                    tag.innerHTML = `
+                        <span>${value}</span>
+                        <button type="button" class="remove-tag ml-2 text-blue-600 hover:text-blue-800">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    `;
+
+                    // Add remove event
+                    tag.querySelector('.remove-tag').addEventListener('click', function() {
+                        tag.remove();
+                        updateHiddenInput();
+                    });
+
+                    // Add to container
+                    container.insertBefore(tag, container.lastElementChild);
+                    input.value = '';
+                    updateHiddenInput();
+                }
+            });
+
+            // Add on Enter key
+            input.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addButton.click();
+                }
+            });
+
+            // Remove existing tags
+            container.querySelectorAll('.remove-tag').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    this.closest('.tag-input').remove();
+                    updateHiddenInput();
+                });
+            });
+
+            // Update hidden input value
+            function updateHiddenInput() {
+                const tags = Array.from(container.querySelectorAll('.tag-input span'))
+                    .map(span => span.textContent);
+                hiddenInput.value = tags.join(',');
+            }
+        }
+
+        // Initialize all tag inputs
+        setupTagInput('specialties-container', 'specialties-input', 'add-specialty', 'specialties-hidden');
+        setupTagInput('amenities-container', 'amenities-input', 'add-amenity', 'amenities-hidden');
+        setupTagInput('core-values-container', 'core-values-input', 'add-core-value', 'core-values-hidden');
+        setupTagInput('goals-container', 'goals-input', 'add-goal', 'goals-hidden');
+    });
+</script>
+<!-- Custom Styling -->
+<style>
+    .tab-btn {
+        background: linear-gradient(to right, #f3f4f6, #e5e7eb);
+        transition: all 0.3s ease;
+    }
+    
+    .tab-btn:hover {
+        background: linear-gradient(to right, #e0e7ff, #dbeafe);
+        transform: translateY(-2px);
+    }
+    
+    .tab-btn.active {
+        background: linear-gradient(to right, #3b82f6, #6366f1);
+        color: white;
+        box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.2), 0 2px 4px -1px rgba(59, 130, 246, 0.1);
+    }
+    
+    input,
+    textarea,
+    select {
+        transition: all 0.3s ease;
+        padding: 0.75rem 1rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.75rem;
+    }
+    
+    input:focus,
+    textarea:focus,
+    select:focus {
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        outline: none;
+        border-color: #93c5fd;
+    }
+    
+    .bg-gradient-to-r {
+        background-size: 200% auto;
+    }
+    
+    button[type="submit"] {
+        transition: all 0.3s ease;
+        box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3);
+    }
+    
+    button[type="submit"]:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 20px 25px -5px rgba(59, 130, 246, 0.3);
+    }
+</style>
+{% endblock %}

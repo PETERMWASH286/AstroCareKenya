@@ -1,0 +1,1 @@
+from . import notifications_web_bp

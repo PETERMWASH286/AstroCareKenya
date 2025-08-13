@@ -1,0 +1,11 @@
+# Testing
+pytest>=7.0.0
+# pytest-flask>=1.2.0 # If you want Flask-specific test helpers
+
+# Debugging
+Flask-DebugToolbar>=0.11.0
+
+# Linting and formatting (optional but recommended)
+flake8>=5.0.0
+black>=23.0.0
+isort>=5.0.0

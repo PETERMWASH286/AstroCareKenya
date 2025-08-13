@@ -1,0 +1,271 @@
+{% extends "base.html" %} {% block title %}Insurance Booking – {{ patient.reg_no }}{% endblock %} {% block content %}
+<div class="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 py-8 px-4 md:px-8">
+    <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-8">
+
+        <!-- Sidebar: Patient & Insurance Summary -->
+        <aside class="bg-white dark:bg-gray-900 rounded-2xl shadow-md p-6 space-y-6 sticky top-8">
+            <div class="flex items-center space-x-4">
+                <div class="h-16 w-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
+                    <i class="fas fa-user-injured text-2xl text-blue-600 dark:text-blue-300"></i>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ patient.first_name }} {{ patient.last_name }}</h2>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Reg#: <span class="font-medium">{{ patient.reg_no }}</span></p>
+                </div>
+            </div>
+            <div class="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-2">
+                <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-200">Insurance Details</h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400">
+                    <i class="fas fa-building text-green-500 mr-1"></i>
+                    <span class="font-medium">{{ insurance.name }}</span>
+                </p>
+                <p class="text-sm text-gray-600 dark:text-gray-400">
+                    <i class="fas fa-id-card-alt text-indigo-500 mr-1"></i>Policy#: <span class="font-medium">{{ insurance.policy_number }}</span>
+                </p>
+                <p class="text-sm text-gray-600 dark:text-gray-400">
+                    <i class="fas fa-calendar-alt text-yellow-500 mr-1"></i>Coverage:
+                    <span class="font-medium">
+            {{ insurance.coverage_start_date.isoformat() }}
+            {% if insurance.coverage_end_date %} – {{ insurance.coverage_end_date.isoformat() }}{% endif %}
+          </span>
+                </p>
+                <p class="text-sm">
+                    <span class="inline-block px-2 py-1 rounded-full text-xs font-semibold 
+            {% if insurance.coverage_status == 'Expired' %}bg-red-200 text-red-800{% else %}bg-green-200 text-green-800{% endif %}">
+            {{ insurance.coverage_status }}
+          </span>
+                </p>
+            </div>
+            <div class="mt-6">
+                <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-2">Instructions</h3>
+                <ul class="list-disc pl-5 space-y-1 text-sm text-gray-500 dark:text-gray-400">
+                    <li>Select one or more covered services.</li>
+                    <li>Review copay and coverage percentage for each service.</li>
+                    <li>Services marked “Requires Pre-Authorization” need prior approval.</li>
+                    <li>Then select any cash‐only services if needed.</li>
+                    <li>Watch your cart update as you choose cash services.</li>
+                    <li>Click “Book All Selected Services” to confirm.</li>
+                </ul>
+            </div>
+        </aside>
+
+        <!-- Main Content: Service Selection and Cart -->
+        <div class="lg:col-span-3 grid grid-cols-1 xl:grid-cols-3 gap-8">
+
+            <!-- Service Selection Form (spans two columns) -->
+            <div class="xl:col-span-2">
+                <form method="POST" action="" class="relative bg-white/80 backdrop-blur-md dark:bg-gray-900 rounded-2xl shadow-lg p-8 space-y-12">
+
+                    <!-- Submit Button at Top Right -->
+                    <div class="absolute top-6 right-6">
+                        <button type="submit" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full font-semibold flex items-center space-x-2 shadow-lg transition-all">
+              <i class="fas fa-check-circle text-lg"></i>
+              <span>Book Selected Services</span>
+            </button>
+                    </div>
+
+                    <!-- Section: Covered Services -->
+                    <div>
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-100">
+                                <i class="fas fa-shield-alt text-blue-500 mr-2"></i>Covered Services
+                            </h2>
+                            <div>
+                                <label for="searchCovered" class="sr-only">Search Covered Services</label>
+                                <div class="relative">
+                                    <input type="text" id="searchCovered" placeholder="Search covered..." class="w-56 pl-10 pr-4 py-2 rounded-full border-2 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                                    <i class="fas fa-search absolute left-3 top-3 text-gray-400 dark:text-gray-500"></i>
+                                </div>
+                            </div>
+                        </div>
+                        {% if service_coverage_list %}
+                        <div id="coveredContainer" class="grid grid-cols-1 md:grid-cols-2 gap-6 max-h-[45vh] overflow-y-auto px-2">
+                            {% for service, coverage in service_coverage_list %}
+                            <div data-name="{{ service.name | lower }}" class="flex flex-col justify-between bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-4 hover:scale-[1.02] transition-transform duration-200 shadow-sm">
+                                <div>
+                                    <div class="flex items-center justify-between">
+                                        <label for="srv{{ service.id }}" class="text-lg font-medium text-gray-800 dark:text-gray-100 cursor-pointer">
+                      {{ service.name }}
+                    </label>
+                                        <input type="checkbox" name="service_ids" value="{{ service.id }}" id="srv{{ service.id }}" class="h-5 w-5 text-blue-600 dark:text-blue-400 border-gray-300 rounded focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-300" />
+                                    </div>
+                                    <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">{{ service.category }}</p>
+                                    <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">KES {{ service.price | round(2) }}</p>
+                                    {% if service.description %}
+                                    <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">{{ service.description }}</p>
+                                    {% endif %}
+                                </div>
+                                <div class="mt-4 space-y-1">
+                                    <p class="text-sm text-gray-700 dark:text-gray-300">
+                                        <i class="fas fa-percentage text-indigo-500 mr-1"></i>Coverage: <span class="font-semibold">{{ coverage.coverage_percentage | default(0) }}%</span>
+                                    </p>
+
+                                    {% if coverage.requires_prior_authorization %}
+                                    <p class="text-sm text-yellow-600">
+                                        <i class="fas fa-exclamation-triangle mr-1"></i>Requires Pre-Authorization
+                                    </p>
+                                    {% endif %} {% if coverage.annual_limit %}
+                                    <p class="text-sm text-gray-700 dark:text-gray-300">
+                                        <i class="fas fa-wallet text-gray-500 mr-1"></i>Annual Limit: <span class="font-semibold">KES {{ coverage.annual_limit | round(2) }}</span>
+                                    </p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p class="text-center text-red-500 dark:text-red-400">No services covered by this insurance.</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Section: Cash‐Only Services -->
+                    <div>
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-100">
+                                <i class="fas fa-money-bill-wave text-yellow-500 mr-2"></i>Cash‐Only Services
+                            </h2>
+                            <div>
+                                <label for="searchCash" class="sr-only">Search Cash Services</label>
+                                <div class="relative">
+                                    <input type="text" id="searchCash" placeholder="Search cash services..." class="w-56 pl-10 pr-4 py-2 rounded-full border-2 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                                    <i class="fas fa-search absolute left-3 top-3 text-gray-400 dark:text-gray-500"></i>
+                                </div>
+                            </div>
+                        </div>
+                        {% if cash_services %}
+                        <div id="cashContainer" class="grid grid-cols-1 md:grid-cols-2 gap-6 max-h-[45vh] overflow-y-auto px-2">
+                            {% for service in cash_services %}
+                            <div data-name="{{ service.name | lower }}" class="flex flex-col justify-between bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-4 hover:scale-[1.02] transition-transform duration-200 shadow-sm">
+                                <div>
+                                    <div class="flex items-center justify-between">
+                                        <label for="cashSrv{{ service.id }}" class="text-lg font-medium text-gray-800 dark:text-gray-100 cursor-pointer">
+                      {{ service.name }}
+                    </label>
+                                        <input type="checkbox" name="cash_service_ids" value="{{ service.id }}" id="cashSrv{{ service.id }}" class="h-5 w-5 text-yellow-600 dark:text-yellow-400 border-gray-300 rounded focus:ring-2 focus:ring-yellow-500 dark:focus:ring-yellow-300" />
+                                    </div>
+                                    <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">{{ service.category }}</p>
+                                    <p class="mt-1 text-sm text-gray-600 dark:text-gray-400 font-semibold">KES {{ service.price | round(2) }}</p>
+                                    {% if service.description %}
+                                    <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">{{ service.description }}</p>
+                                    {% endif %}
+                                </div>
+                                <div class="mt-4 flex items-center justify-between">
+                                    <p class="text-sm text-gray-700 dark:text-gray-300">
+                                        <i class="fas fa-wallet text-gray-500 mr-1"></i>Cash Price
+                                    </p>
+                                    <p class="text-sm font-bold text-gray-800 dark:text-gray-100">KES {{ service.price | round(2) }}</p>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p class="text-center text-red-500 dark:text-red-400">All services are covered by insurance.</p>
+                        {% endif %}
+                    </div>
+
+                </form>
+            </div>
+
+            <!-- Cart Sidebar (for Cash Services) -->
+            <aside class="hidden xl:block bg-white dark:bg-gray-900 rounded-2xl shadow-md p-6 space-y-6 sticky top-8">
+                <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-100 flex items-center space-x-2">
+                    <i class="fas fa-shopping-cart text-indigo-500"></i>
+                    <span>Cash Cart</span>
+                </h3>
+                <div id="cartItems" class="divide-y divide-gray-200 dark:divide-gray-700 max-h-[60vh] overflow-y-auto space-y-4">
+                    <!-- Dynamically populated -->
+                    <p class="text-gray-500 dark:text-gray-400">No cash items selected.</p>
+                </div>
+                <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-lg font-medium text-gray-800 dark:text-gray-100">Total:</span>
+                        <span id="cartTotal" class="text-lg font-bold text-indigo-600 dark:text-indigo-400">KES 0.00</span>
+                    </div>
+                </div>
+            </aside>
+
+        </div>
+    </div>
+</div>
+
+<!-- Live‐Search Filtering & Cart Logic -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        /* SEARCH FILTERS */
+        const coveredSearch = document.getElementById('searchCovered');
+        const coveredCards = document.querySelectorAll('#coveredContainer > div');
+        const cashSearch = document.getElementById('searchCash');
+        const cashCards = document.querySelectorAll('#cashContainer > div');
+
+        coveredSearch.addEventListener('input', () => {
+            const q = coveredSearch.value.trim().toLowerCase();
+            coveredCards.forEach(card => {
+                const name = card.getAttribute('data-name');
+                card.classList.toggle('hidden', !name.includes(q));
+            });
+        });
+
+        cashSearch.addEventListener('input', () => {
+            const q = cashSearch.value.trim().toLowerCase();
+            cashCards.forEach(card => {
+                const name = card.getAttribute('data-name');
+                card.classList.toggle('hidden', !name.includes(q));
+            });
+        });
+
+        /* CART LOGIC */
+        const cartItemsContainer = document.getElementById('cartItems');
+        const cartTotalEl = document.getElementById('cartTotal');
+        const cashCheckboxes = document.querySelectorAll('input[name="cash_service_ids"]');
+        let cart = {}; // { serviceId: { name, price } }
+
+        function updateCart() {
+            cartItemsContainer.innerHTML = '';
+            const ids = Object.keys(cart);
+            if (ids.length === 0) {
+                cartItemsContainer.innerHTML = '<p class="text-gray-500 dark:text-gray-400">No cash items selected.</p>';
+                cartTotalEl.textContent = 'KES 0.00';
+                return;
+            }
+            let total = 0;
+            ids.forEach(id => {
+                const {
+                    name,
+                    price
+                } = cart[id];
+                total += price;
+                const itemEl = document.createElement('div');
+                itemEl.className = 'flex justify-between items-center py-2';
+                itemEl.innerHTML = `
+          <span class="text-gray-700 dark:text-gray-200">${name}</span>
+          <span class="text-gray-900 dark:text-gray-100 font-semibold">KES ${price.toFixed(2)}</span>
+        `;
+                cartItemsContainer.append(itemEl);
+            });
+            cartTotalEl.textContent = 'KES ' + total.toFixed(2);
+        }
+
+        cashCheckboxes.forEach(cb => {
+            cb.addEventListener('change', () => {
+                const card = cb.closest('div[data-name]');
+                const serviceName = card.querySelector('label[for="' + cb.id + '"]').textContent.trim();
+                const priceText = card.querySelector('p.font-semibold').textContent.replace(/[^0-9.]/g, '');
+                const servicePrice = parseFloat(priceText);
+
+                if (cb.checked) {
+                    cart[cb.value] = {
+                        name: serviceName,
+                        price: servicePrice
+                    };
+                } else {
+                    delete cart[cb.value];
+                }
+                updateCart();
+            });
+        });
+
+        // Initialize cart empty
+        updateCart();
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,505 @@
+<!-- /home/pincho/Desktop/astrocare/app/finance/templates/financial_reports.html -->
+{% extends 'base.html' %} {% block title %}Financial Reports - Astrocare{% endblock %} {% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header Section -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Financial Reports Dashboard</h1>
+            <div class="mt-2 flex flex-wrap items-center gap-4">
+                <p class="text-gray-600 dark:text-gray-400">
+                    Track revenue, analyze trends, and monitor financial performance
+                </p>
+                <span class="px-3 py-1 bg-teal-100 text-teal-800 text-xs rounded-full flex items-center">
+                    <i class="fas fa-coins mr-2"></i>
+                    Real-time Financial Data
+                </span>
+            </div>
+        </div>
+        <div class="mt-4 md:mt-0">
+            <div class="flex space-x-2">
+                <button id="dateRangePicker" class="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <i class="far fa-calendar-alt mr-2"></i>
+                    <span id="dateRangeText">Last 7 Days</span>
+                </button>
+                <button class="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors">
+                    <i class="fas fa-file-export mr-2"></i>Export Report
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <div class="bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl shadow p-6">
+            <div class="flex items-center">
+                <div class="mr-4 bg-white bg-opacity-20 p-3 rounded-full">
+                    <i class="fas fa-sun text-2xl"></i>
+                </div>
+                <div>
+                    <div class="text-sm font-medium">Today's Revenue</div>
+                    <div class="text-2xl font-bold mt-1">Ksh {{ daily_total | default('0.00', true) | format_currency }}</div>
+                    <div class="text-xs mt-1 opacity-80">{{ daily_transactions }} transactions</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-xl shadow p-6">
+            <div class="flex items-center">
+                <div class="mr-4 bg-white bg-opacity-20 p-3 rounded-full">
+                    <i class="fas fa-calendar-week text-2xl"></i>
+                </div>
+                <div>
+                    <div class="text-sm font-medium">This Week</div>
+                    <div class="text-2xl font-bold mt-1">Ksh {{ weekly_total | default('0.00', true) | format_currency }}</div>
+                    <div class="text-xs mt-1 opacity-80">{{ weekly_transactions }} transactions</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-r from-teal-500 to-emerald-600 text-white rounded-xl shadow p-6">
+            <div class="flex items-center">
+                <div class="mr-4 bg-white bg-opacity-20 p-3 rounded-full">
+                    <i class="fas fa-calendar-alt text-2xl"></i>
+                </div>
+                <div>
+                    <div class="text-sm font-medium">This Month</div>
+                    <div class="text-2xl font-bold mt-1">Ksh {{ monthly_total | default('0.00', true) | format_currency }}</div>
+                    <div class="text-xs mt-1 opacity-80">{{ monthly_transactions }} transactions</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-xl shadow p-6">
+            <div class="flex items-center">
+                <div class="mr-4 bg-white bg-opacity-20 p-3 rounded-full">
+                    <i class="fas fa-calendar-star text-2xl"></i>
+                </div>
+                <div>
+                    <div class="text-sm font-medium">This Year</div>
+                    <div class="text-2xl font-bold mt-1">Ksh {{ yearly_total | default('0.00', true) | format_currency }}</div>
+                    <div class="text-xs mt-1 opacity-80">{{ yearly_transactions }} transactions</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <!-- Revenue Trend -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold text-gray-800 dark:text-white">Revenue Trend</h2>
+                <div class="flex space-x-2">
+                    <button data-period="7" class="date-period-btn text-xs px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded">7D</button>
+                    <button data-period="30" class="date-period-btn text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">30D</button>
+                    <button data-period="90" class="date-period-btn text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">90D</button>
+                </div>
+            </div>
+            <div class="h-80">
+                <canvas id="revenueTrendChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Revenue by Category -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+            <h2 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Revenue by Service Category</h2>
+            <div class="h-80">
+                <canvas id="categoryRevenueChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Service Breakdown -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow overflow-hidden mb-6">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+            <h2 class="text-lg font-semibold text-gray-800 dark:text-white">Service Revenue Breakdown</h2>
+            <div class="flex space-x-2">
+                <select id="periodSelect" class="text-sm border border-gray-300 rounded-lg px-2 py-1 bg-white dark:bg-gray-800 dark:text-white">
+                    <option value="daily">Today</option>
+                    <option value="weekly" selected>This Week</option>
+                    <option value="monthly">This Month</option>
+                    <option value="yearly">This Year</option>
+                </select>
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-750">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Service</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Category</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Transactions</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Revenue</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Avg. Value</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    {% for service in service_breakdown %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                            {{ service.name }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                            <span class="px-2 py-1 text-xs rounded-full 
+                                {% if service.category == 'Pharmacy' %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200
+                                {% elif service.category == 'Consultation' %}bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200
+                                {% elif service.category == 'Lab' %}bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200
+                                {% else %}bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300{% endif %}">
+                                {{ service.category }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500 dark:text-gray-400">
+                            {{ service.transaction_count }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-gray-900 dark:text-white">
+                            Ksh {{ service.total_revenue | format_currency }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-500 dark:text-gray-400">
+                            Ksh {{ service.avg_revenue | format_currency }}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                            <i class="fas fa-money-bill-wave text-4xl mb-3"></i>
+                            <p>No financial data available</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="bg-gray-50 dark:bg-gray-750 font-semibold">
+                    <tr>
+                        <td colspan="2" class="px-6 py-3 text-sm text-gray-900 dark:text-white">Totals</td>
+                        <td class="px-6 py-3 text-sm text-right text-gray-900 dark:text-white">{{ service_breakdown | sum(attribute='transaction_count') }}</td>
+                        <td class="px-6 py-3 text-sm text-right text-gray-900 dark:text-white">Ksh {{ service_breakdown | sum(attribute='total_revenue') | format_currency }}</td>
+                        <td class="px-6 py-3 text-sm text-right text-gray-900 dark:text-white">Ksh {{ (service_breakdown | sum(attribute='total_revenue') / service_breakdown | sum(attribute='transaction_count')) | default(0) | round(2) | format_currency }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+    <!-- Payment Methods -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mb-6">
+        <h2 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Payment Methods Distribution</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="text-center p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                <div class="flex justify-center mb-4">
+                    <div class="w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+                        <i class="fas fa-mobile-alt text-blue-600 dark:text-blue-300 text-2xl"></i>
+                    </div>
+                </div>
+                <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ payment_methods.mobile | default(0) }}%</div>
+                <div class="text-sm text-gray-600 dark:text-gray-300 mt-2">Mobile Payments</div>
+                <div class="mt-2 h-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full">
+                    <div class="h-2 bg-blue-600 rounded-full" style="width: {{ payment_methods.mobile | default(0) }}%"></div>
+                </div>
+            </div>
+            <div class="text-center p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                <div class="flex justify-center mb-4">
+                    <div class="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
+                        <i class="fas fa-credit-card text-green-600 dark:text-green-300 text-2xl"></i>
+                    </div>
+                </div>
+                <div class="text-2xl font-bold text-green-600 dark:text-green-400">{{ payment_methods.card | default(0) }}%</div>
+                <div class="text-sm text-gray-600 dark:text-gray-300 mt-2">Card Payments</div>
+                <div class="mt-2 h-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full">
+                    <div class="h-2 bg-green-600 rounded-full" style="width: {{ payment_methods.card | default(0) }}%"></div>
+                </div>
+            </div>
+            <div class="text-center p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                <div class="flex justify-center mb-4">
+                    <div class="w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-900 flex items-center justify-center">
+                        <i class="fas fa-money-bill-wave text-amber-600 dark:text-amber-300 text-2xl"></i>
+                    </div>
+                </div>
+                <div class="text-2xl font-bold text-amber-600 dark:text-amber-400">{{ payment_methods.cash | default(0) }}%</div>
+                <div class="text-sm text-gray-600 dark:text-gray-300 mt-2">Cash Payments</div>
+                <div class="mt-2 h-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full">
+                    <div class="h-2 bg-amber-600 rounded-full" style="width: {{ payment_methods.cash | default(0) }}%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Transactions -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+            <h2 class="text-lg font-semibold text-gray-800 dark:text-white">Recent Transactions</h2>
+            <a href="{{ url_for('finance_web_bp.transactions') }}" class="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
+                View All <i class="fas fa-arrow-right ml-1"></i>
+            </a>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-750">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Transaction ID</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Patient</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Date & Time</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Services</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Amount</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    {% for transaction in recent_transactions %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                            #{{ transaction.id }}
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-user text-blue-600"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <div class="text-sm font-medium text-gray-900 dark:text-white">{{ transaction.patient.full_name }}</div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">ID: {{ transaction.patient.reg_no }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                            {{ transaction.paid_at | datetime if transaction.paid_at else transaction.created_at | datetime }}
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm text-gray-900 dark:text-white max-w-xs truncate">
+                                {% for service in transaction.services %} {{ service.name }}{% if not loop.last %}, {% endif %} {% endfor %}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-gray-900 dark:text-white">
+                            Ksh {{ transaction.amount | format_currency }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                {% if transaction.status == 'completed' %}bg-green-100 text-green-800
+                                {% else %}bg-amber-100 text-amber-800{% endif %}">
+                                {{ transaction.status | title }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                            <i class="fas fa-receipt text-4xl mb-3"></i>
+                            <p>No transactions found</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Date Range Picker Modal -->
+<div id="dateRangeModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg w-full max-w-md">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Select Date Range</h3>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-1 gap-4 mb-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">From Date</label>
+                    <input type="date" id="fromDate" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">To Date</label>
+                    <input type="date" id="toDate" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:text-white">
+                </div>
+            </div>
+        </div>
+        <div class="px-6 py-4 bg-gray-50 dark:bg-gray-750 rounded-b-xl flex justify-end space-x-3">
+            <button id="cancelDateRange" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+                Cancel
+            </button>
+            <button id="applyDateRange" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                Apply
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %} {% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Initialize charts
+    document.addEventListener('DOMContentLoaded', function() {
+        // Revenue Trend Chart
+        const revenueCtx = document.getElementById('revenueTrendChart').getContext('2d');
+        const revenueChart = new Chart(revenueCtx, {
+            type: 'line',
+            data: {
+                labels: JSON.parse('{{ trend_dates | tojson | safe }}'),
+                datasets: [{
+                    label: 'Daily Revenue',
+                    data: JSON.parse('{{ trend_values | tojson | safe }}'),
+                    borderColor: '#3B82F6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return 'Ksh ' + value.toLocaleString();
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return 'Revenue: Ksh ' + context.parsed.y.toLocaleString();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Category Revenue Chart
+        const categoryCtx = document.getElementById('categoryRevenueChart').getContext('2d');
+        const categoryChart = new Chart(categoryCtx, {
+            type: 'doughnut',
+            data: {
+                labels: JSON.parse('{{ category_labels | tojson | safe }}'),
+                datasets: [{
+                    data: JSON.parse('{{ category_values | tojson | safe }}'),
+                    backgroundColor: [
+                        '#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6',
+                        '#EC4899', '#6B7280', '#84CC16', '#06B6D4', '#F97316'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.parsed || 0;
+                                return label + ': Ksh ' + value.toLocaleString();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Date Range Picker
+        const dateRangeModal = document.getElementById('dateRangeModal');
+        const dateRangePicker = document.getElementById('dateRangePicker');
+        const cancelDateRange = document.getElementById('cancelDateRange');
+        const applyDateRange = document.getElementById('applyDateRange');
+        const dateRangeText = document.getElementById('dateRangeText');
+
+        dateRangePicker.addEventListener('click', () => {
+            dateRangeModal.classList.remove('hidden');
+        });
+
+        cancelDateRange.addEventListener('click', () => {
+            dateRangeModal.classList.add('hidden');
+        });
+
+        applyDateRange.addEventListener('click', () => {
+            const fromDate = document.getElementById('fromDate').value;
+            const toDate = document.getElementById('toDate').value;
+
+            if (fromDate && toDate) {
+                dateRangeText.textContent = `${formatDate(fromDate)} - ${formatDate(toDate)}`;
+                // Here you would typically reload data with the new date range
+                // For now, just close the modal
+                dateRangeModal.classList.add('hidden');
+            }
+        });
+
+        // Period buttons
+        document.querySelectorAll('.date-period-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const period = this.dataset.period;
+                // Update chart with new period data
+                // This would typically make an AJAX request to reload chart data
+                document.querySelectorAll('.date-period-btn').forEach(btn => {
+                    btn.classList.remove('bg-blue-100', 'text-blue-800', 'dark:bg-blue-900', 'dark:text-blue-200');
+                    btn.classList.add('bg-gray-100', 'dark:bg-gray-700');
+                });
+                this.classList.remove('bg-gray-100', 'dark:bg-gray-700');
+                this.classList.add('bg-blue-100', 'text-blue-800', 'dark:bg-blue-900', 'dark:text-blue-200');
+            });
+        });
+
+        // Format date for display
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric'
+            });
+        }
+    });
+</script>
+{% endblock %} {% block styles %}
+<style>
+    .financial-card {
+        transition: all 0.3s ease;
+        border-left: 4px solid transparent;
+    }
+    
+    .financial-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+    
+    .revenue-badge {
+        transition: transform 0.2s ease;
+    }
+    
+    .revenue-badge:hover {
+        transform: scale(1.05);
+    }
+    /* Custom scrollbar for tables */
+    
+    .overflow-x-auto::-webkit-scrollbar {
+        height: 6px;
+    }
+    
+    .overflow-x-auto::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+    
+    .overflow-x-auto::-webkit-scrollbar-thumb {
+        background: #c5c5c5;
+        border-radius: 4px;
+    }
+    
+    .overflow-x-auto::-webkit-scrollbar-thumb:hover {
+        background: #a8a8a8;
+    }
+    
+    .dark .overflow-x-auto::-webkit-scrollbar-track {
+        background: #374151;
+    }
+    
+    .dark .overflow-x-auto::-webkit-scrollbar-thumb {
+        background: #4b5563;
+    }
+    
+    .dark .overflow-x-auto::-webkit-scrollbar-thumb:hover {
+        background: #6b7280;
+    }
+</style>
+{% endblock %}

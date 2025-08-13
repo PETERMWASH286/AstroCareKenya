@@ -1,0 +1,479 @@
+{# --- Fixed Premium Navbar Component --- #}
+<nav class="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 dark:bg-gradient-to-b dark:from-gray-950 dark:to-black dark:text-gray-300 shadow-sm transition-all duration-300">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-16">
+            <!-- Left Section - Logo -->
+            <div class="flex items-center">
+                {# At the top of your template: decide where to send the user #} {% set dashboard_url = url_for('dashboard_web.index') %} {% if current_user.has_privilege('doctor_dashboard') %} {% set dashboard_url = url_for('dashboard_web.doctor_dashboard') %} {% elif
+                current_user.has_privilege('nurse_dashboard') %} {% set dashboard_url = url_for('dashboard_web.nurse_dashboard') %} {% elif current_user.has_privilege('labtech_dashboard') %} {% set dashboard_url = url_for('dashboard_web.labtech_dashboard')
+                %} {% elif current_user.has_privilege('radiology_dashboard') %} {% set dashboard_url = url_for('dashboard_web.radiology_dashboard') %} {% elif current_user.has_privilege('pharmacy_dashboard') %} {% set dashboard_url = url_for('dashboard_web.pharmacy_dashboard')
+                %} {% elif current_user.has_privilege('registration_dashboard') %} {% set dashboard_url = url_for('dashboard_web.registration_dashboard') %} {% elif current_user.has_privilege('patient_dashboard') %} {% set dashboard_url = url_for('dashboard_web.patient_dashboard')
+                %} {% elif current_user.has_privilege('billing_dashboard') %} {% set dashboard_url = url_for('dashboard_web.billing_dashboard') %} {% elif current_user.is_administrator() %} {% set dashboard_url = url_for('dashboard_web.admin_overview')
+                %} {% endif %} {# Then render your animated logo #}
+                <a href="{{ dashboard_url }}" class="flex items-center space-x-2 group">
+                    <svg class="w-8 h-8 text-indigo-600 group-hover:rotate-12 transition-transform" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                      d="M16 28C22.6274 28 28 22.6274 28 16C28 9.37258 22.6274 4 16 4C9.37258
+                         4 4 9.37258 4 16C4 22.6274 9.37258 28 16 28Z"
+                      fill="currentColor"
+                    />
+                    <path d="M20 12L16 8L12 12L16 16L20 12Z" fill="white"/>
+                    <path d="M22 18L18 22L14 18L18 14L22 18Z" fill="white"/>
+                  </svg>
+                    <span class="text-2xl font-bold
+                           bg-gradient-to-r from-indigo-600 to-purple-600
+                           bg-clip-text text-transparent">
+                    AstroCare
+                  </span>
+                </a>
+
+            </div>
+            <!-- Center Section - Role-Based Quick Access -->
+            <div class="hidden lg:flex items-center mx-auto">
+                <div class="flex space-x-1 bg-gray-100 dark:bg-gray-800/50 rounded-lg p-1">
+                    <!-- Quick actions for all roles -->
+                    <a href="" class="px-3 py-1.5 rounded-md text-sm font-medium flex items-center hover:bg-white dark:hover:bg-gray-700 transition-colors group"
+                       title="Patient Management">
+                        <i class="fas fa-user-injured mr-2 text-indigo-600 group-hover:text-indigo-700"></i>
+                        <span>Patients</span>
+                    </a>
+                    
+                    <!-- Role-specific actions -->
+                    {% if current_user.has_privilege('doctor_dashboard') or current_user.has_privilege('nurse_dashboard') %}
+                    <a href="" class="px-3 py-1.5 rounded-md text-sm font-medium flex items-center hover:bg-white dark:hover:bg-gray-700 transition-colors group"
+                       title="Appointments">
+                        <i class="fas fa-calendar-check mr-2 text-green-600 group-hover:text-green-700"></i>
+                        <span>Appointments</span>
+                    </a>
+                    {% endif %}
+                    
+                    {% if current_user.has_privilege('labtech_dashboard') or current_user.has_privilege('radiology_dashboard') %}
+                    <a href="" class="px-3 py-1.5 rounded-md text-sm font-medium flex items-center hover:bg-white dark:hover:bg-gray-700 transition-colors group"
+                       title="Lab Tests">
+                        <i class="fas fa-flask mr-2 text-blue-600 group-hover:text-blue-700"></i>
+                        <span>Lab</span>
+                    </a>
+                    {% endif %}
+                    
+                    {% if current_user.has_privilege('pharmacy_dashboard') %}
+                    <a href="" class="px-3 py-1.5 rounded-md text-sm font-medium flex items-center hover:bg-white dark:hover:bg-gray-700 transition-colors group"
+                       title="Pharmacy">
+                        <i class="fas fa-pills mr-2 text-purple-600 group-hover:text-purple-700"></i>
+                        <span>Pharmacy</span>
+                    </a>
+                    {% endif %}
+                    
+                    {% if current_user.has_privilege('billing_dashboard') %}
+                    <a href="" class="px-3 py-1.5 rounded-md text-sm font-medium flex items-center hover:bg-white dark:hover:bg-gray-700 transition-colors group"
+                       title="Billing">
+                        <i class="fas fa-file-invoice-dollar mr-2 text-yellow-600 group-hover:text-yellow-700"></i>
+                        <span>Billing</span>
+                    </a>
+                    {% endif %}
+                    
+                    {% if current_user.is_administrator() %}
+                    <a href="" class="px-3 py-1.5 rounded-md text-sm font-medium flex items-center hover:bg-white dark:hover:bg-gray-700 transition-colors group"
+                       title="Administration">
+                        <i class="fas fa-cogs mr-2 text-red-600 group-hover:text-red-700"></i>
+                        <span>Admin</span>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            <!-- Right Section - User & Controls -->
+            <div class="flex items-center space-x-6">
+                <!-- Search Bar -->
+                <div class="hidden md:block relative">
+                    <input type="text" class="w-64 px-4 py-2 bg-gray-100 dark:bg-gray-800 rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="Search patients, reports...">
+                    <i class="fas fa-search absolute right-4 top-2.5 text-gray-400"></i>
+                </div>
+
+                <!-- Notification Dropdown -->
+                <div class="relative">
+                    <button id="notification-btn" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 relative">
+                        <i class="fas fa-bell text-gray-600 dark:text-gray-400"></i>
+                        {% if current_user.unread_notifications %}
+                        <span id="notification-count" class="absolute top-0 right-0 w-5 h-5 flex items-center justify-center text-xs bg-red-500 text-white rounded-full">
+                            {{ current_user.unread_notifications }}
+                        </span>
+                        {% endif %}
+                    </button>
+
+                    <div id="notification-dropdown" class="hidden absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-xl z-50">
+                        <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                            <div class="flex justify-between items-center">
+                                <h3 class="font-semibold text-gray-800 dark:text-gray-200">Notifications</h3>
+                                <button id="mark-all-read" class="text-xs text-blue-500 hover:text-blue-700">
+                                    Mark all read
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="notification-list" class="max-h-96 overflow-y-auto">
+                            {% for notification in current_user.recent_notifications %}
+                            <a href="{{ notification.action_url or '#' }}" class="notification-item flex items-start px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 {% if not notification.read %}bg-blue-50 dark:bg-gray-900{% endif %}" data-id="{{ notification.id }}">
+                                <div class="flex-shrink-0 mt-1 bg-{{ notification.type }}-100 dark:bg-{{ notification.type }}-900 p-2 rounded-full">
+                                    <i class="{{ notification.icon }} text-{{ notification.type }}-600 dark:text-{{ notification.type }}-400"></i>
+                                </div>
+                                <div class="ml-3 flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-gray-900 dark:text-gray-200 truncate">
+                                        {{ notification.title }}
+                                    </p>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                        {{ notification.message }}
+                                    </p>
+                                    <div class="flex justify-between mt-1">
+                                        <span class="text-xs text-gray-400">
+                                            {{ notification.time_ago }}
+                                        </span> {% if notification.sender %}
+                                        <span class="text-xs text-gray-500">
+                                            {{ notification.sender.full_name }}
+                                        </span> {% endif %}
+                                    </div>
+                                </div>
+                                <button class="notification-dismiss ml-2 text-gray-400 hover:text-gray-600">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </a>
+                            {% else %}
+                            <div class="p-4 text-center">
+                                <p class="text-gray-500 dark:text-gray-400">No notifications</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="p-3 border-t border-gray-200 dark:border-gray-700">
+                            <a href="" class="block text-center text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400">
+                                View All Notifications
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Theme Toggle -->
+                <button id="theme-toggle" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                    <i id="theme-toggle-icon" class="fas fa-sun text-yellow-500 dark:text-yellow-400"></i>
+                </button>
+
+                <!-- Profile Dropdown -->
+                <div class="relative ml-4">
+                    <button class="flex items-center space-x-2 focus:outline-none group" id="profile-btn">
+                        <div class="relative">
+                            <img class="h-10 w-10 rounded-full border-2 border-indigo-100 dark:border-gray-700 group-hover:border-indigo-300 transition-all" 
+                            src="{{ current_user.profile_image or url_for('static', filename='images/default-avatar.jpg') }}" 
+                                 alt="Profile">
+                            <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                        </div>
+                        <span class="hidden md:block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            {{ current_user.username or current_user.full_name }}
+                        </span>
+                        <i class="fas fa-chevron-down text-xs text-gray-400"></i>
+                    </button>
+
+                    <!-- Profile Dropdown Menu -->
+                    <div id="profile-dropdown" class="hidden absolute right-0 mt-2 w-48 dark:border-gray-800 bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800  dark:bg-gray-900 dark:bg-gray-800 rounded-lg shadow-xl py-1 border border-gray-100 dark:border-gray-700">
+                        <a href="{{ url_for('auth_web.profile') }}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+                            <i class="fas fa-user mr-2"></i> Profile
+                        </a>
+                        <a href="{{ url_for('auth_web.settings') }}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+                            <i class="fas fa-cog mr-2"></i> Settings
+                        </a>
+                        <a href="{{ url_for('auth_web.logout') }}" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20">
+                            <i class="fas fa-sign-out-alt mr-2"></i> Logout
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</nav>
+<!-- In your navbar component -->
+<div id="user-data" data-user-id="{{ current_user.id if current_user.is_authenticated else '' }}" style="display: none;"></div>
+{# Add this spacer div after the navbar #}
+<div class="h-16"></div>
+
+<style>
+    /* Existing styles remain the same */
+    
+    #theme-toggle-icon {
+        transition: transform 0.3s ease;
+    }
+    
+    .dark #theme-toggle-icon {
+        transform: rotate(180deg);
+    }
+    
+    #notification-dropdown::-webkit-scrollbar {
+        width: 6px;
+    }
+    
+    #notification-dropdown::-webkit-scrollbar-track {
+        background: rgba(243, 244, 246, 0.5);
+    }
+    
+    #notification-dropdown::-webkit-scrollbar-thumb {
+        background: rgba(165, 180, 252, 0.5);
+        border-radius: 4px;
+    }
+    
+    .dark #notification-dropdown::-webkit-scrollbar-track {
+        background: rgba(31, 41, 55, 0.5);
+    }
+    
+    .dark #notification-dropdown::-webkit-scrollbar-thumb {
+        background: rgba(129, 140, 248, 0.5);
+    }
+</style>
+
+<script>
+    // Existing JavaScript remains the same
+    function setupDropdown(buttonId, dropdownId) {
+        const btn = document.getElementById(buttonId);
+        const dropdown = document.getElementById(dropdownId);
+
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdown.classList.toggle('hidden');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest(`#${buttonId}`) && !e.target.closest(`#${dropdownId}`)) {
+                dropdown.classList.add('hidden');
+            }
+        });
+    }
+
+    setupDropdown('profile-btn', 'profile-dropdown');
+    setupDropdown('notification-btn', 'notification-dropdown');
+    // Dismiss individual notification
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.notification-dismiss')) {
+            e.preventDefault();
+            const item = e.target.closest('.notification-item');
+            const notificationId = item.dataset.id;
+
+            // Remove from UI
+            item.remove();
+
+            // Send dismissal to server
+            fetch(`/auth/notifications/${notificationId}/dismiss`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+        }
+    });
+
+    // Mark all as read
+    document.getElementById('mark-all-read').addEventListener('click', function(e) {
+        e.preventDefault();
+        markNotificationsAsRead();
+    });
+
+    // Function to mark notifications as read
+    function markNotificationsAsRead() {
+        // Remove background highlights
+        document.querySelectorAll('.notification-item').forEach(item => {
+            item.classList.remove('bg-blue-50', 'dark:bg-gray-900');
+        });
+
+        // Reset counter
+        updateNotificationCount(0);
+
+        // Send request to server
+        fetch('/auth/notifications/mark-all-read', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+    }
+    document.getElementById('theme-toggle').addEventListener('click', function() {
+        const icon = document.getElementById('theme-toggle-icon');
+        icon.classList.toggle('fa-sun');
+        icon.classList.toggle('fa-moon');
+        icon.style.transform = icon.classList.contains('fa-moon') ? 'rotate(180deg)' : 'rotate(0deg)';
+    });
+</script>
+<script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+
+<script>
+    // In your frontend JavaScript
+    // Use this instead of your current socket initialization
+    const socket = io('/', { // Explicitly connect to root namespace
+        transports: ['websocket', 'polling'],
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+        timeout: 20000,
+        autoConnect: true
+    });
+    // Debugging listeners
+    socket.on('room_joined', (data) => {
+        console.log('✅ Joined room:', data.room, 'User ID:', data.user_id);
+        if (data.department_id) {
+            console.log(`  Department ID: ${data.department_id}`);
+        }
+    });
+
+    socket.on('current_rooms', (data) => {
+        console.log('📋 Current rooms for SID:', data.sid);
+        console.log('  Rooms:', data.rooms.join(', '));
+    });
+    socket.on('connect_error', err => console.error('WS error', err));
+    socket.on('disconnect', (reason) => {
+        console.error('Socket.IO disconnected:', reason);
+    });
+
+    // Function to update notification count
+    function updateNotificationCount(count) {
+        let countEl = document.getElementById('notification-count');
+
+        if (count > 0) {
+            if (!countEl) {
+                countEl = document.createElement('span');
+                countEl.id = 'notification-count';
+                countEl.className = 'absolute top-0 right-0 w-5 h-5 flex items-center justify-center text-xs bg-red-500 text-white rounded-full';
+                document.getElementById('notification-btn').appendChild(countEl);
+            }
+            countEl.textContent = count;
+        } else if (countEl) {
+            countEl.remove();
+        }
+    }
+
+    // Function to create notification DOM element
+    function createNotificationElement(notification) {
+        const element = document.createElement('a');
+        element.className = 'notification-item flex items-start px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 bg-blue-50 dark:bg-gray-900';
+        element.href = notification.action_url || '#';
+        element.dataset.id = notification.id;
+
+        element.innerHTML = `
+            <div class="flex-shrink-0 mt-1 bg-${notification.type}-100 dark:bg-${notification.type}-900 p-2 rounded-full">
+                <i class="${notification.icon} text-${notification.type}-600 dark:text-${notification.type}-400"></i>
+            </div>
+            <div class="ml-3 flex-1 min-w-0">
+                <p class="text-sm font-medium text-gray-900 dark:text-gray-200 truncate">
+                    ${notification.title}
+                </p>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    ${notification.message}
+                </p>
+                <div class="flex justify-between mt-1">
+                    <span class="text-xs text-gray-400">
+                        Just now
+                    </span>
+                    <span class="text-xs text-gray-500">
+                        ${notification.sender_name || 'System'}
+                    </span>
+                </div>
+            </div>
+            <button class="notification-dismiss ml-2 text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+
+        return element;
+    }
+
+    // Request notification permission
+    function requestNotificationPermission() {
+        if ('Notification' in window) {
+            Notification.requestPermission().then(permission => {
+                if (permission === 'granted') {
+                    console.log('Notification permission granted');
+                }
+            });
+        }
+    }
+
+    // Show browser notification
+    function showPushNotification(notification) {
+        if (Notification.permission === 'granted') {
+            const notif = new Notification(notification.title, {
+                body: notification.message,
+                icon: '/static/icons/notification-bell.png',
+                badge: '/static/icons/badge.png'
+            });
+
+            notif.onclick = () => {
+                if (notification.action_url) {
+                    window.location.href = notification.action_url;
+                }
+            };
+        }
+    }
+
+    // Add this test event listener
+    socket.on('test_event', (data) => {
+        console.log("Test event received:", data);
+
+        // ADD THIS LINE FOR DEBUGGING:
+        if (data.room) {
+            console.log(`  Room: ${data.room}`);
+        }
+    });
+
+    // Add notification debug listener
+    socket.on('new_notification', (data) => {
+        console.log("Received new_notification event:", data);
+        // Update notification count
+        const countEl = document.getElementById('notification-count');
+        const count = countEl ? parseInt(countEl.textContent) || 0 : 0;
+        updateNotificationCount(count + 1);
+
+        // Prepend new notification
+        const notificationList = document.getElementById('notification-list');
+        const newNotification = createNotificationElement(data);
+        notificationList.prepend(newNotification);
+
+        // Show push notification if app not focused
+        if (document.visibilityState !== 'visible') {
+            showPushNotification(data);
+        }
+    });
+    // Request room status on connection
+    socket.on('connect', () => {
+        console.log('🔌 WebSocket connected. SID:', socket.id);
+
+        // Get user ID from DOM
+        const userData = document.getElementById('user-data');
+        const currentUserId = userData ? userData.dataset.userId : null;
+
+        if (!currentUserId) {
+            console.error('User ID not found in DOM element');
+            return;
+        }
+
+        // Get user departments
+        fetch('/auth/api/user/departments')
+            .then(response => {
+                if (!response.ok) throw new Error('Failed to fetch departments');
+                return response.json();
+            })
+            .then(departments => {
+                console.log('Fetched departments:', departments);
+
+                departments.forEach(dept => {
+                    socket.emit('join_department', dept.id);
+                    console.log(`Emitting join_department for dept ${dept.id}`);
+                });
+
+                // Join user room AFTER departments
+                socket.emit('join_user_room');
+                console.log(`Emitting join_user_room for user ${currentUserId}`);
+
+                // Request current rooms after 3s
+                setTimeout(() => {
+                    console.log('Requesting current rooms');
+                    socket.emit('get_rooms');
+                }, 3000);
+            })
+            .catch(error => {
+                console.error('Department fetch error:', error);
+            });
+    });
+</script>

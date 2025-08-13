@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en" class="light"> {# Default to light theme #}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}AstroCare - Revolutionizing Healthcare Management{% endblock %}</title>
+
+    {# Tailwind CSS CDN - Replace with your build process for production #}
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Tailwind CSS configuration (optional, for custom colors/fonts if needed)
+        tailwind.config = {
+            darkMode: 'class', // Enable dark mode based on 'dark' class on <html>
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6', // A vibrant blue
+                        secondary: '#6b7280', // Medium gray
+                        accent: '#f59e0b',    // Warm amber for highlights
+                        darkBg: '#000000',    // Pure black for dark mode background
+                        darkCard: '#1a1a1a',  // Very dark gray for cards
+                    },
+                    fontFamily: {
+                        sans: ['Onest', 'sans-serif'], // Modern font for general text and navigation
+                        display: ['"Cabinet Grotesk"', 'sans-serif'] // For headlines
+                    }
+                }
+            }
+        }
+    </script>
+
+    {# Google Fonts - Onest and Cabinet Grotesk #}
+    <link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap" rel="stylesheet">
+    {# Cabinet Grotesk is typically hosted on platforms like Fontshare. This link is a common way to include it. #}
+    <link href="https://cdn.fontshare.com/wf/c/87243c39-f9c1-4712-b06d-a1136b986e66/J5I05E51S006G00H003Q56C19.css" rel="stylesheet">
+
+
+    {# Font Awesome for Icons #}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    {# Custom CSS (if any, although Tailwind aims to minimize this) #}
+    <style>
+        /* Optional: Add a subtle scroll behavior for smooth transitions */
+        html {
+            scroll-behavior: smooth;
+        }
+        /* Custom class for mobile menu animation */
+        .mobile-menu-transition {
+            transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+            transform-origin: top;
+        }
+        /* Theme toggle icon animation */
+        .theme-toggle-icon-animated {
+            animation: rotateAndScale .4s ease-in-out;
+        }
+
+        @keyframes rotateAndScale {
+            0% {
+                transform: rotate(0deg) scale(1);
+            }
+            50% {
+                transform: rotate(180deg) scale(1.1);
+            }
+            100% {
+                transform: rotate(360deg) scale(1);
+            }
+        }
+    </style>
+    {% block head_extra %}{% endblock %}
+
+</head>
+<body class="flex flex-col min-h-screen bg-gray-100 text-gray-900 dark:bg-darkBg dark:text-gray-100 transition-colors duration-300 ease-in-out font-sans antialiased">
+
+    {# Modern Navbar - Fixed at top #}
+    <header class="sticky top-0 z-50 bg-white dark:bg-black shadow-md transition-colors duration-300">
+        <nav class="container mx-auto px-4 py-3 flex items-center justify-between">
+            {# Logo / Site Title #}
+            <a href="{{ url_for('main_bp.index') }}" class="flex items-center space-x-2 group">
+                <svg class="w-8 h-8 text-primary group-hover:rotate-12 transition-transform duration-300 ease-in-out" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M16 28C22.6274 28 28 22.6274 28 16C28 9.37258 22.6274 4 16 4C9.37258 4 4 9.37258 4 16C4 22.6274 9.37258 28 16 28Z" fill="currentColor"/>
+                    <path d="M20 12L16 8L12 12L16 16L20 12Z" fill="white"/>
+                    <path d="M22 18L18 22L14 18L18 14L22 18Z" fill="white"/>
+                </svg>
+                <span class="text-2xl font-bold font-display
+                             bg-gradient-to-r from-primary to-blue-700
+                             dark:from-blue-400 dark:to-blue-300
+                             bg-clip-text text-transparent">
+                    AstroCare
+                </span>
+            </a>
+
+            {# Nav Links - Hidden on small, shown on medium+ #}
+            <div class="hidden md:flex items-center space-x-6">
+
+                {# Solutions Dropdown #}
+<style>
+    /* ... (your existing CSS) ... */
+
+    /* Custom Scrollbar Styling for Webkit (Chrome, Safari, Edge) */
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 0px; /* For vertical scrollbar */
+        height: 0px; /* For horizontal scrollbar */
+    }
+
+    /* For Firefox */
+    .custom-scrollbar {
+        scrollbar-width: none; /* Hide scrollbar in Firefox */
+    }
+</style>
+
+<div class="relative group-dropdown">
+    <button class="flex items-center space-x-1 text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary transition-colors duration-200 text-base font-medium focus:outline-none">
+        <span>Solutions</span> <i class="fas fa-chevron-down text-xs transition-transform duration-200 group-dropdown-hover:rotate-180"></i>
+    </button>
+    <div class="absolute left-1/2 -translate-x-1/2 mt-2 w-72 bg-white dark:bg-darkCard rounded-lg shadow-lg py-2 z-20 hidden transition-all duration-200 ease-out scale-95 opacity-0 transform origin-top max-h-80 overflow-y-auto custom-scrollbar">
+        <a href="#" class="block px-4 py-3 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-start space-x-3 rounded-lg mx-2">
+            <i class="fas fa-stethoscope text-blue-500 mt-1"></i>
+            <div class="flex flex-col space-y-1">
+                <span class="font-medium">EHR & EMR Systems</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Manage patient records digitally and securely.</span>
+            </div>
+        </a>
+        <a href="#" class="block px-4 py-3 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-start space-x-3 rounded-lg mx-2">
+            <i class="fas fa-calendar-check text-green-500 mt-1"></i>
+            <div class="flex flex-col space-y-1">
+                <span class="font-medium">Appointment Management</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Streamline scheduling, reminders, and cancellations.</span>
+            </div>
+        </a>
+        <a href="#" class="block px-4 py-3 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-start space-x-3 rounded-lg mx-2">
+            <i class="fas fa-money-check-alt text-purple-500 mt-1"></i>
+            <div class="flex flex-col space-y-1">
+                <span class="font-medium">Billing & Claims</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Automate invoicing, payments, and insurance claims.</span>
+            </div>
+        </a>
+        <a href="#" class="block px-4 py-3 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-start space-x-3 rounded-lg mx-2">
+            <i class="fas fa-microscope text-red-500 mt-1"></i>
+            <div class="flex flex-col space-y-1">
+                <span class="font-medium">Lab Integration</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Seamlessly integrate lab results into patient records.</span>
+            </div>
+        </a>
+        <a href="#" class="block px-4 py-3 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-start space-x-3 rounded-lg mx-2">
+            <i class="fas fa-pills text-orange-500 mt-1"></i>
+            <div class="flex flex-col space-y-1">
+                <span class="font-medium">Pharmacy Management</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Efficiently manage prescriptions and medication dispensing.</span>
+            </div>
+        </a>
+        <a href="#" class="block px-4 py-3 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-start space-x-3 rounded-lg mx-2">
+            <i class="fas fa-chart-line text-cyan-500 mt-1"></i>
+            <div class="flex flex-col space-y-1">
+                <span class="font-medium">Analytics & Reporting</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Gain insights with comprehensive data analytics.</span>
+            </div>
+        </a>
+        <a href="#" class="block px-4 py-3 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-start space-x-3 rounded-lg mx-2">
+            <i class="fas fa-hospital-alt text-purple-500 mt-1"></i>
+            <div class="flex flex-col space-y-1">
+                <span class="font-medium">Telemedicine Platform</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Integrated virtual consultation tools.</span>
+            </div>
+        </a>
+        <a href="#" class="block px-4 py-3 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-start space-x-3 rounded-lg mx-2">
+            <i class="fas fa-shield-alt text-yellow-500 mt-1"></i>
+            <div class="flex flex-col space-y-1">
+                <span class="font-medium">Data Security & Compliance</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Ensure HIPAA and other regulatory adherence.</span>
+            </div>
+        </a>
+    </div>
+</div>
+
+
+{# For Patients Dropdown #}
+<div class="relative group-dropdown">
+    <button class="flex items-center space-x-1 text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary transition-colors duration-200 text-base font-medium focus:outline-none">
+        <span>For Patients</span> <i class="fas fa-chevron-down text-xs transition-transform duration-200 group-dropdown-hover:rotate-180"></i>
+    </button>
+    <div class="absolute left-1/2 -translate-x-1/2 mt-2 w-72 bg-white dark:bg-darkCard rounded-lg shadow-lg py-2 z-20 hidden transition-all duration-200 ease-out scale-95 opacity-0 transform origin-top max-h-80 overflow-y-auto custom-scrollbar">
+        <a href="#" class="block px-4 py-3 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-start space-x-3 rounded-lg mx-2">
+            <i class="fas fa-notes-medical text-yellow-500 mt-1"></i>
+            <div class="flex flex-col space-y-1">
+                <span class="font-medium">Access My Records</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Securely view your health data and history.</span>
+            </div>
+        </a>
+        <a href="#" class="block px-4 py-3 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-start space-x-3 rounded-lg mx-2">
+            <i class="fas fa-calendar-alt text-teal-500 mt-1"></i>
+            <div class="flex flex-col space-y-1">
+                <span class="font-medium">Book Appointment</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Schedule medical visits conveniently online.</span>
+            </div>
+        </a>
+        <a href="#" class="block px-4 py-3 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-start space-x-3 rounded-lg mx-2">
+            <i class="fas fa-comments text-indigo-500 mt-1"></i>
+            <div class="flex flex-col space-y-1">
+                <span class="font-medium">Contact Support</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Get assistance and answers to your queries quickly.</span>
+            </div>
+        </a>
+        <a href="#" class="block px-4 py-3 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-start space-x-3 rounded-lg mx-2">
+            <i class="fas fa-prescription-bottle-alt text-purple-500 mt-1"></i>
+            <div class="flex flex-col space-y-1">
+                <span class="font-medium">Prescription Refills</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Request and manage your medication refills.</span>
+            </div>
+        </a>
+        <a href="#" class="block px-4 py-3 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-start space-x-3 rounded-lg mx-2">
+            <i class="fas fa-hand-holding-medical text-green-500 mt-1"></i>
+            <div class="flex flex-col space-y-1">
+                <span class="font-medium">Telehealth Services</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Connect with doctors remotely for virtual consultations.</span>
+            </div>
+        </a>
+        <a href="#" class="block px-4 py-3 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-start space-x-3 rounded-lg mx-2">
+            <i class="fas fa-briefcase-medical text-orange-500 mt-1"></i>
+            <div class="flex flex-col space-y-1">
+                <span class="font-medium">Insurance Verification</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Verify your insurance coverage seamlessly.</span>
+            </div>
+        </a>
+        <a href="#" class="block px-4 py-3 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-start space-x-3 rounded-lg mx-2">
+            <i class="fas fa-bell text-red-500 mt-1"></i>
+            <div class="flex flex-col space-y-1">
+                <span class="font-medium">Appointment Reminders</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Receive timely notifications for your scheduled visits.</span>
+            </div>
+        </a>
+    </div>
+</div>
+
+
+{# For Hospitals Dropdown #}
+<div class="relative group-dropdown">
+    <button class="flex items-center space-x-1 text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary transition-colors duration-200 text-base font-medium focus:outline-none">
+        <span>For Hospitals</span> <i class="fas fa-chevron-down text-xs transition-transform duration-200 group-dropdown-hover:rotate-180"></i>
+    </button>
+    <div class="absolute left-1/2 -translate-x-1/2 mt-2 w-72 bg-white dark:bg-darkCard rounded-lg shadow-lg py-2 z-20 hidden transition-all duration-200 ease-out scale-95 opacity-0 transform origin-top max-h-80 overflow-y-auto custom-scrollbar">
+        <a href="#" class="block px-4 py-3 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-start space-x-3 rounded-lg mx-2">
+            <i class="fas fa-laptop-medical text-orange-500 mt-1"></i>
+            <div class="flex flex-col space-y-1">
+                <span class="font-medium">Request a Demo</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">See our comprehensive platform in action.</span>
+            </div>
+        </a>
+        <a href="#" class="block px-4 py-3 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-start space-x-3 rounded-lg mx-2">
+            <i class="fas fa-handshake text-pink-500 mt-1"></i>
+            <div class="flex flex-col space-y-1">
+                <span class="font-medium">Partnerships</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Explore collaboration opportunities and integrations.</span>
+            </div>
+        </a>
+        <a href="#" class="block px-4 py-3 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-start space-x-3 rounded-lg mx-2">
+            <i class="fas fa-user-tie text-cyan-500 mt-1"></i>
+            <div class="flex flex-col space-y-1">
+                <span class="font-medium">Admin Login</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Access hospital management and administration tools.</span>
+            </div>
+        </a>
+        <a href="#" class="block px-4 py-3 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-start space-x-3 rounded-lg mx-2">
+            <i class="fas fa-user-md text-red-500 mt-1"></i>
+            <div class="flex flex-col space-y-1">
+                <span class="font-medium">Staff Management</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Efficiently manage hospital staff and departments.</span>
+            </div>
+        </a>
+        <a href="#" class="block px-4 py-3 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-start space-x-3 rounded-lg mx-2">
+            <i class="fas fa-chalkboard-teacher text-blue-500 mt-1"></i>
+            <div class="flex flex-col space-y-1">
+                <span class="font-medium">Training & Support</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Comprehensive resources for platform adoption.</span>
+            </div>
+        </a>
+        <a href="#" class="block px-4 py-3 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-start space-x-3 rounded-lg mx-2">
+            <i class="fas fa-file-invoice-dollar text-green-500 mt-1"></i>
+            <div class="flex flex-col space-y-1">
+                <span class="font-medium">Inventory Management</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Track and manage medical supplies and equipment.</span>
+            </div>
+        </a>
+        <a href="#" class="block px-4 py-3 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-start space-x-3 rounded-lg mx-2">
+            <i class="fas fa-chart-pie text-purple-500 mt-1"></i>
+            <div class="flex flex-col space-y-1">
+                <span class="font-medium">Performance Dashboards</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Visualize key hospital metrics for informed decisions.</span>
+            </div>
+        </a>
+    </div>
+</div>
+
+                <a href="#" class="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:text-primary dark:hover:text-primary transition-colors duration-200 text-base font-medium group">
+                    <i class="fas fa-dollar-sign text-sm group-hover:text-primary transition-colors"></i> <span>Pricing</span>
+                </a>
+            </div>
+
+            {# Actions - Theme Toggle & Auth Buttons #}
+            <div class="flex items-center space-x-4">
+                {# Theme Toggle Button #}
+                <button id="theme-toggle" class="p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors duration-200 focus:outline-none">
+                    <i id="theme-toggle-icon" class="fas fa-sun text-xl hover:text-primary dark:hover:text-blue-400 transition-colors"></i> {# Default icon for light mode #}
+                </button>
+
+                {% if current_user.is_authenticated %}
+                    {# User Profile Dropdown #}
+                    <div class="relative group-dropdown">
+                        <button id="profile-btn" class="flex items-center space-x-2 p-2 rounded-full bg-primary text-white hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors duration-200">
+                            <img src="{{ current_user.profile_image or url_for('static', filename='images/default-avatar.jpg') }}" alt="User Avatar" class="w-8 h-8 rounded-full object-cover border-2 border-white"> {# Added border #}
+                            <span class="hidden md:inline-block font-medium">{{ current_user.username }}</span>
+                            <i class="fas fa-chevron-down text-sm transition-transform duration-200 group-dropdown-hover:rotate-180"></i>
+                        </button>
+                        <div id="profile-dropdown" class="absolute right-0 mt-2 w-48 bg-white dark:bg-darkCard rounded-lg shadow-lg py-1 z-20 hidden transition-all duration-200 ease-out scale-95 opacity-0 transform origin-top-right">
+                            <a href="" class="block px-4 py-2 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center space-x-2"><i class="fas fa-chart-line text-sm text-blue-500 mr-2"></i><span>Dashboard</span></a>
+                            <a href="{{ url_for('main_bp.profile') }}" class="block px-4 py-2 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center space-x-2"><i class="fas fa-user-circle text-sm text-green-500 mr-2"></i><span>Profile</span></a>
+                            <hr class="border-gray-200 dark:border-gray-600 my-1">
+                            <a href="{{ url_for('main_bp.logout') }}" class="block px-4 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900 flex items-center space-x-2"><i class="fas fa-sign-out-alt text-sm mr-2"></i><span>Sign Out</span></a>
+                        </div>
+                    </div>
+                {% else %}
+                    {# Auth Buttons - For Patient Portal Access #}
+                    {# On mobile (default), smaller and solid. On sm (desktop), outlined. #}
+                    <a href="{{ url_for('main_bp.login') }}" class="
+                        px-4 py-2 rounded-lg text-base font-semibold flex items-center justify-center space-x-2 transition-all duration-200
+                        bg-primary text-white hover:bg-blue-600
+                        sm:bg-transparent sm:text-primary sm:border-2 sm:border-primary sm:hover:bg-primary sm:hover:text-white
+                        dark:bg-transparent dark:text-blue-400 dark:border-blue-400 dark:hover:bg-blue-400 dark:hover:text-black">
+                        <i class="fas fa-sign-in-alt text-sm transition-colors"></i> <span class="ml-1 sm:ml-2"><span class="hidden sm:inline-block">Patient </span>Login</span>
+                    </a>
+                    {# Register button - solid on all screens #}
+                    <a href="{{ url_for('main_bp.register') }}" class="
+                        px-4 py-2 rounded-lg text-base font-semibold hidden sm:inline-flex items-center space-x-2 transition-all duration-200
+                        bg-primary text-white hover:bg-blue-600
+                        dark:bg-blue-600 dark:hover:bg-blue-700 dark:text-white">
+                        <i class="fas fa-user-plus text-sm"></i> <span>Register</span>
+                    </a>
+                {% endif %}
+
+                {# Mobile Menu Toggle #}
+                <button id="mobile-menu-button" class="md:hidden p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+            </div>
+        </nav>
+
+        {# Mobile Menu - hidden by default, toggled by JS #}
+        <div id="mobile-menu" class="hidden md:hidden px-4 pt-2 pb-4 space-y-2 bg-white dark:bg-black shadow-sm mobile-menu-transition opacity-0 scale-y-0">
+            {# Removed Home link as per request #}
+
+{# Mobile Solutions Dropdown #}
+<div class="group-mobile-dropdown">
+    <button class="flex items-center justify-between w-full px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md text-base font-medium focus:outline-none">
+        <span class="flex items-center space-x-2"> <span>Solutions</span></span> <i class="fas fa-chevron-down text-xs transition-transform duration-200 group-mobile-dropdown-hover:rotate-180"></i>
+    </button>
+    <div class="pl-6 pt-1 pb-2 space-y-1 hidden max-h-60 overflow-y-auto custom-scrollbar">
+        <a href="#" class="block px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md flex items-start space-x-3">
+            <i class="fas fa-stethoscope text-blue-500 text-sm mt-1"></i>
+            <div class="flex flex-col space-y-1">
+                <span class="font-medium">EHR & EMR Systems</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Manage patient records digitally and securely.</span>
+            </div>
+        </a>
+        <a href="#" class="block px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md flex items-start space-x-3">
+            <i class="fas fa-calendar-check text-green-500 text-sm mt-1"></i>
+            <div class="flex flex-col space-y-1">
+                <span class="font-medium">Appointment Management</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Streamline scheduling, reminders, and cancellations.</span>
+            </div>
+        </a>
+        <a href="#" class="block px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md flex items-start space-x-3">
+            <i class="fas fa-money-check-alt text-purple-500 text-sm mt-1"></i>
+            <div class="flex flex-col space-y-1">
+                <span class="font-medium">Billing & Claims</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Automate invoicing, payments, and insurance claims.</span>
+            </div>
+        </a>
+        <a href="#" class="block px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md flex items-start space-x-3">
+            <i class="fas fa-microscope text-red-500 text-sm mt-1"></i>
+            <div class="flex flex-col space-y-1">
+                <span class="font-medium">Lab Integration</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Seamlessly integrate lab results into patient records.</span>
+            </div>
+        </a>
+        <a href="#" class="block px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md flex items-start space-x-3">
+            <i class="fas fa-pills text-orange-500 text-sm mt-1"></i>
+            <div class="flex flex-col space-y-1">
+                <span class="font-medium">Pharmacy Management</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Efficiently manage prescriptions and medication dispensing.</span>
+            </div>
+        </a>
+        <a href="#" class="block px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md flex items-start space-x-3">
+            <i class="fas fa-chart-line text-cyan-500 text-sm mt-1"></i>
+            <div class="flex flex-col space-y-1">
+                <span class="font-medium">Analytics & Reporting</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Gain insights with comprehensive data analytics.</span>
+            </div>
+        </a>
+        <a href="#" class="block px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md flex items-start space-x-3">
+            <i class="fas fa-hospital-alt text-purple-500 text-sm mt-1"></i>
+            <div class="flex flex-col space-y-1">
+                <span class="font-medium">Telemedicine Platform</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Integrated virtual consultation tools.</span>
+            </div>
+        </a>
+        <a href="#" class="block px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md flex items-start space-x-3">
+            <i class="fas fa-shield-alt text-yellow-500 text-sm mt-1"></i>
+            <div class="flex flex-col space-y-1">
+                <span class="font-medium">Data Security & Compliance</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Ensure HIPAA and other regulatory adherence.</span>
+            </div>
+        </a>
+    </div>
+</div>
+
+
+{# Mobile For Patients Dropdown #}
+<div class="group-mobile-dropdown">
+    <button class="flex items-center justify-between w-full px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md text-base font-medium focus:outline-none">
+        <span class="flex items-center space-x-2"> <span>For Patients</span></span> <i class="fas fa-chevron-down text-xs transition-transform duration-200 group-mobile-dropdown-hover:rotate-180"></i>
+    </button>
+    <div class="pl-6 pt-1 pb-2 space-y-1 hidden max-h-60 overflow-y-auto custom-scrollbar">
+        <a href="#" class="block px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md flex items-start space-x-3">
+            <i class="fas fa-notes-medical text-yellow-500 text-sm mt-1"></i>
+            <div class="flex flex-col space-y-1">
+                <span class="font-medium">Access My Records</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Securely view your health data and history.</span>
+            </div>
+        </a>
+        <a href="#" class="block px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md flex items-start space-x-3">
+            <i class="fas fa-calendar-alt text-teal-500 text-sm mt-1"></i>
+            <div class="flex flex-col space-y-1">
+                <span class="font-medium">Book Appointment</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Schedule medical visits conveniently online.</span>
+            </div>
+        </a>
+        <a href="#" class="block px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md flex items-start space-x-3">
+            <i class="fas fa-comments text-indigo-500 text-sm mt-1"></i>
+            <div class="flex flex-col space-y-1">
+                <span class="font-medium">Contact Support</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Get assistance and answers to your queries quickly.</span>
+            </div>
+        </a>
+        <a href="#" class="block px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md flex items-start space-x-3">
+            <i class="fas fa-prescription-bottle-alt text-purple-500 text-sm mt-1"></i>
+            <div class="flex flex-col space-y-1">
+                <span class="font-medium">Prescription Refills</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Request and manage your medication refills.</span>
+            </div>
+        </a>
+        <a href="#" class="block px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md flex items-start space-x-3">
+            <i class="fas fa-hand-holding-medical text-green-500 text-sm mt-1"></i>
+            <div class="flex flex-col space-y-1">
+                <span class="font-medium">Telehealth Services</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Connect with doctors remotely for virtual consultations.</span>
+            </div>
+        </a>
+        <a href="#" class="block px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md flex items-start space-x-3">
+            <i class="fas fa-briefcase-medical text-orange-500 text-sm mt-1"></i>
+            <div class="flex flex-col space-y-1">
+                <span class="font-medium">Insurance Verification</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Verify your insurance coverage seamlessly.</span>
+            </div>
+        </a>
+        <a href="#" class="block px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md flex items-start space-x-3">
+            <i class="fas fa-bell text-red-500 text-sm mt-1"></i>
+            <div class="flex flex-col space-y-1">
+                <span class="font-medium">Appointment Reminders</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Receive timely notifications for your scheduled visits.</span>
+            </div>
+        </a>
+    </div>
+</div>
+
+
+
+{# Mobile For Hospitals Dropdown #}
+<div class="group-mobile-dropdown">
+    <button class="flex items-center justify-between w-full px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md text-base font-medium focus:outline-none">
+        <span class="flex items-center space-x-2"> <span>For Hospitals</span></span> <i class="fas fa-chevron-down text-xs transition-transform duration-200 group-mobile-dropdown-hover:rotate-180"></i>
+    </button>
+    <div class="pl-6 pt-1 pb-2 space-y-1 hidden max-h-60 overflow-y-auto custom-scrollbar">
+        <a href="#" class="block px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md flex items-start space-x-3">
+            <i class="fas fa-laptop-medical text-orange-500 text-sm mt-1"></i>
+            <div class="flex flex-col space-y-1">
+                <span class="font-medium">Request a Demo</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">See our comprehensive platform in action.</span>
+            </div>
+        </a>
+        <a href="#" class="block px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md flex items-start space-x-3">
+            <i class="fas fa-handshake text-pink-500 text-sm mt-1"></i>
+            <div class="flex flex-col space-y-1">
+                <span class="font-medium">Partnerships</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Explore collaboration opportunities and integrations.</span>
+            </div>
+        </a>
+        <a href="#" class="block px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md flex items-start space-x-3">
+            <i class="fas fa-user-tie text-cyan-500 text-sm mt-1"></i>
+            <div class="flex flex-col space-y-1">
+                <span class="font-medium">Admin Login</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Access hospital management and administration tools.</span>
+            </div>
+        </a>
+        <a href="#" class="block px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md flex items-start space-x-3">
+            <i class="fas fa-user-md text-red-500 text-sm mt-1"></i>
+            <div class="flex flex-col space-y-1">
+                <span class="font-medium">Staff Management</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Efficiently manage hospital staff and departments.</span>
+            </div>
+        </a>
+        <a href="#" class="block px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md flex items-start space-x-3">
+            <i class="fas fa-chalkboard-teacher text-blue-500 text-sm mt-1"></i>
+            <div class="flex flex-col space-y-1">
+                <span class="font-medium">Training & Support</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Comprehensive resources for platform adoption.</span>
+            </div>
+        </a>
+        <a href="#" class="block px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md flex items-start space-x-3">
+            <i class="fas fa-file-invoice-dollar text-green-500 text-sm mt-1"></i>
+            <div class="flex flex-col space-y-1">
+                <span class="font-medium">Inventory Management</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Track and manage medical supplies and equipment.</span>
+            </div>
+        </a>
+        <a href="#" class="block px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md flex items-start space-x-3">
+            <i class="fas fa-chart-pie text-purple-500 text-sm mt-1"></i>
+            <div class="flex flex-col space-y-1">
+                <span class="font-medium">Performance Dashboards</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">Visualize key hospital metrics for informed decisions.</span>
+            </div>
+        </a>
+    </div>
+</div>
+
+            <a href="#" class="block px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md text-base font-medium flex items-center space-x-2"><i class="fas fa-dollar-sign"></i> <span>Pricing</span></a>
+            <a href="{{ url_for('main_bp.about') }}" class="block px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md text-base font-medium flex items-center space-x-2"><i class="fas fa-info-circle"></i> <span>About Us</span></a>
+            <a href="{{ url_for('main_bp.contact') }}" class="block px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md text-base font-medium flex items-center space-x-2"><i class="fas fa-envelope"></i> <span>Contact</span></a>
+
+            {% if not current_user.is_authenticated %}
+                <hr class="border-gray-200 dark:border-gray-700 my-2">
+                <a href="{{ url_for('main_bp.login') }}" class="block px-3 py-2 rounded-lg bg-primary text-white text-center text-base font-medium flex items-center justify-center space-x-2 mt-2">
+                    <i class="fas fa-sign-in-alt"></i> <span>Login</span>
+                </a>
+                <a href="{{ url_for('main_bp.register') }}" class="block px-3 py-2 rounded-lg border border-primary text-primary text-center text-base font-medium flex items-center justify-center space-x-2 mt-2
+                     dark:border-blue-400 dark:text-blue-400">
+                    <i class="fas fa-user-plus"></i> <span>Register</span>
+                </a>
+            {% endif %}
+        </div>
+    </header>
+
+    {# Main Content Area #}
+    <main class="flex-grow container mx-auto px-4">
+        {# Flash Messages #}
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="mb-4 space-y-2">
+                    {% for category, message in messages %}
+                        <div class="p-3 rounded-md text-sm {% if category == 'success' %}bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200{% elif category == 'error' %}bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200{% elif category == 'warning' %}bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-200{% else %}bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200{% endif %}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{# Content from child templates will go here #}{% endblock %}
+    </main>
+
+    {# Modern Footer #}
+    <footer class="bg-white dark:bg-black text-gray-900 dark:text-gray-300 py-10 mt-auto transition-colors duration-300 shadow-inner">
+        <div class="container mx-auto px-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
+            {# About AstroCare #}
+            <div class="space-y-4">
+                <a href="{{ url_for('main_bp.index') }}" class="flex items-center space-x-2 group">
+                    <svg class="w-8 h-8 text-primary group-hover:rotate-12 transition-transform duration-300 ease-in-out" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M16 28C22.6274 28 28 22.6274 28 16C28 9.37258 22.6274 4 16 4C9.37258 4 4 9.37258 4 16C4 22.6274 9.37258 28 16 28Z" fill="currentColor"/>
+                        <path d="M20 12L16 8L12 12L16 16L20 12Z" fill="white"/>
+                        <path d="M22 18L18 22L14 18L18 14L22 18Z" fill="white"/>
+                    </svg>
+                    <span class="text-2xl font-bold font-display
+                                 bg-gradient-to-r from-primary to-blue-700
+                                 dark:from-blue-400 dark:to-blue-300
+                                 bg-clip-text text-transparent">
+                        AstroCare
+                    </span>
+                </a>
+                <p class="text-gray-700 dark:text-gray-400 text-sm leading-relaxed">
+                    AstroCare is dedicated to simplifying healthcare for everyone. Our platform connects patients and hospitals through intuitive, efficient, and secure digital solutions.
+                </p>
+            </div>
+
+            {# Solutions & Services #}
+            <div>
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-5 border-b-2 border-primary pb-2 inline-block font-display">Solutions & Services</h3>
+                <ul class="space-y-3">
+                    <li><a href="#" class="text-gray-700 dark:text-gray-400 hover:text-primary transition-colors duration-200 text-sm flex items-center space-x-2"><i class="fas fa-notes-medical text-xs"></i><span>EHR & EMR Systems</span></a></li>
+                    <li><a href="#" class="text-gray-700 dark:text-gray-400 hover:text-primary transition-colors duration-200 text-sm flex items-center space-x-2"><i class="fas fa-calendar-alt text-xs"></i><span>Online Appointment Booking</span></a></li>
+                    <li><a href="#" class="text-gray-700 dark:text-gray-400 hover:text-primary transition-colors duration-200 text-sm flex items-center space-x-2"><i class="fas fa-money-bill-wave text-xs"></i><span>Billing & Claims Management</span></a></li>
+                    <li><a href="#" class="text-gray-700 dark:text-gray-400 hover:text-primary transition-colors duration-200 text-sm flex items-center space-x-2"><i class="fas fa-hand-holding-medical text-xs"></i><span>Patient Engagement Portal</span></a></li>
+                    <li><a href="#" class="text-gray-700 dark:text-gray-400 hover:text-primary transition-colors duration-200 text-sm flex items-center space-x-2"><i class="fas fa-hospital text-xs"></i><span>Hospital Management</span></a></li>
+                </ul>
+            </div>
+
+            {# Quick Links & Resources #}
+            <div>
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-5 border-b-2 border-primary pb-2 inline-block font-display">Quick Links</h3>
+                <ul class="space-y-3">
+                    <li><a href="{{ url_for('main_bp.about') }}" class="text-gray-700 dark:text-gray-400 hover:text-primary transition-colors duration-200 text-sm flex items-center space-x-2"><i class="fas fa-info-circle text-xs"></i><span>About Us</span></a></li>
+                    <li><a href="#" class="text-gray-700 dark:text-gray-400 hover:text-primary transition-colors duration-200 text-sm flex items-center space-x-2"><i class="fas fa-dollar-sign text-xs"></i><span>Pricing</span></a></li>
+                    <li><a href="#" class="text-gray-700 dark:text-gray-400 hover:text-primary transition-colors duration-200 text-sm flex items-center space-x-2"><i class="fas fa-blog text-xs"></i><span>Blog</span></a></li>
+                    <li><a href="#" class="text-gray-700 dark:text-gray-400 hover:text-primary transition-colors duration-200 text-sm flex items-center space-x-2"><i class="fas fa-question-circle text-xs"></i><span>FAQs</span></a></li>
+                    <li><a href="{{ url_for('main_bp.contact') }}" class="text-gray-700 dark:text-gray-400 hover:text-primary transition-colors duration-200 text-sm flex items-center space-x-2"><i class="fas fa-envelope text-xs"></i><span>Contact Us</span></a></li>
+                </ul>
+            </div>
+
+            {# Contact Info & Social Media #}
+            <div>
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-5 border-b-2 border-primary pb-2 inline-block font-display">Connect With Us</h3>
+                <div class="space-y-3 mb-6">
+                    <p class="text-gray-700 dark:text-gray-400 text-sm flex items-start space-x-2"><i class="fas fa-map-marker-alt text-lg text-primary mt-1"></i><span>123 Astro Blvd, Digital City, Nairobi, Kenya</span></p>
+                    <p class="text-gray-700 dark:text-gray-400 text-sm flex items-center space-x-2"><i class="fas fa-phone-alt text-primary"></i><span>Phone: <a href="tel:+254712345678" class="hover:text-primary transition-colors duration-200">+254 712 345 678</a></span></p>
+                    <p class="text-gray-700 dark:text-gray-400 text-sm flex items-center space-x-2"><i class="fas fa-envelope text-primary"></i><span>Email: <a href="mailto:info@astrocare.com" class="hover:text-primary transition-colors duration-200">info@astrocare.com</a></span></p>
+                </div>
+
+                <div class="flex space-x-5">
+                    <a href="#" class="text-gray-700 dark:text-gray-400 hover:text-primary transition-colors duration-200 transform hover:scale-110"><i class="fab fa-facebook-f text-2xl"></i></a>
+                    <a href="#" class="text-gray-700 dark:text-gray-400 hover:text-primary transition-colors duration-200 transform hover:scale-110"><i class="fab fa-twitter text-2xl"></i></a>
+                    <a href="#" class="text-gray-700 dark:text-gray-400 hover:text-primary transition-colors duration-200 transform hover:scale-110"><i class="fab fa-linkedin-in text-2xl"></i></a>
+                    <a href="#" class="text-gray-700 dark:text-gray-400 hover:text-primary transition-colors duration-200 transform hover:scale-110"><i class="fab fa-instagram text-2xl"></i></a>
+                    <a href="#" class="text-gray-700 dark:text-gray-400 hover:text-primary transition-colors duration-200 transform hover:scale-110"><i class="fab fa-youtube text-2xl"></i></a>
+                </div>
+            </div>
+        </div>
+        <div class="border-t border-gray-200 dark:border-gray-800 mt-10 pt-6 text-center text-gray-500 text-sm">
+            &copy; {{ moment(datetime.utcnow()).format('YYYY') }} AstroCare. All rights reserved. <br>
+            <span class="text-xs">Crafted with care for a healthier tomorrow.</span>
+        </div>
+    </footer>
+
+    {# JavaScript for Navbar and Theme Toggle #}
+    <script>
+        // Helper function for desktop dropdowns (adapted for generic group-dropdowns)
+        document.querySelectorAll('.group-dropdown').forEach(dropdown => {
+            const button = dropdown.querySelector('button');
+            const dropdownContent = dropdown.querySelector('div'); // The actual dropdown div
+
+            if (button && dropdownContent) {
+                button.addEventListener('click', function(event) {
+                    event.stopPropagation(); // Prevent document click from closing immediately
+                    const isHidden = dropdownContent.classList.contains('hidden');
+                    if (isHidden) {
+                        // Close other open dropdowns
+                        document.querySelectorAll('.group-dropdown > div').forEach(otherDropdown => {
+                            if (otherDropdown !== dropdownContent && !otherDropdown.classList.contains('hidden')) {
+                                otherDropdown.classList.add('hidden', 'scale-95', 'opacity-0');
+                            }
+                        });
+
+                        dropdownContent.classList.remove('hidden', 'scale-95', 'opacity-0');
+                        dropdownContent.classList.add('scale-100', 'opacity-100');
+                    } else {
+                        dropdownContent.classList.remove('scale-100', 'opacity-100');
+                        dropdownContent.classList.add('scale-95', 'opacity-0');
+                        setTimeout(() => dropdownContent.classList.add('hidden'), 200);
+                    }
+                });
+            }
+        });
+
+        // Close desktop dropdowns if clicked outside
+        document.addEventListener('click', function(event) {
+            document.querySelectorAll('.group-dropdown').forEach(dropdown => {
+                const dropdownContent = dropdown.querySelector('div');
+                if (dropdownContent && !dropdown.contains(event.target)) { // Check if click is outside the entire dropdown area
+                    if (!dropdownContent.classList.contains('hidden')) {
+                        dropdownContent.classList.remove('scale-100', 'opacity-100');
+                        dropdownContent.classList.add('scale-95', 'opacity-0');
+                        setTimeout(() => dropdownContent.classList.add('hidden'), 200);
+                    }
+                }
+            });
+        });
+
+
+        // Theme Toggle Logic
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        const themeToggleIcon = document.getElementById('theme-toggle-icon');
+        const htmlElement = document.documentElement; // The <html> tag
+
+        function setTheme(theme) {
+            if (theme === 'dark') {
+                htmlElement.classList.add('dark');
+                localStorage.setItem('theme', 'dark');
+                themeToggleIcon.classList.remove('fa-sun');
+                themeToggleIcon.classList.add('fa-moon');
+            } else {
+                htmlElement.classList.remove('dark');
+                localStorage.setItem('theme', 'light');
+                themeToggleIcon.classList.remove('fa-moon');
+                themeToggleIcon.classList.add('fa-sun');
+            }
+        }
+
+        // Apply theme on load
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        setTheme(savedTheme);
+
+        // Add event listener for theme toggle
+        themeToggleBtn.addEventListener('click', () => {
+            // Add animation class
+            themeToggleIcon.classList.add('theme-toggle-icon-animated');
+
+            // Toggle theme
+            const currentTheme = localStorage.getItem('theme');
+            setTheme(currentTheme === 'dark' ? 'light' : 'dark');
+
+            // Remove animation class after animation completes
+            themeToggleIcon.addEventListener('animationend', () => {
+                themeToggleIcon.classList.remove('theme-toggle-icon-animated');
+            }, { once: true }); // Use { once: true } to ensure listener is removed after one execution
+        });
+
+
+        // Mobile Menu Toggle (updated for nested dropdowns and better animation)
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
+
+        if (mobileMenuButton && mobileMenu) {
+            mobileMenuButton.addEventListener('click', function() {
+                const isHidden = mobileMenu.classList.contains('hidden');
+                if (isHidden) {
+                    mobileMenu.classList.remove('hidden', 'scale-y-0', 'opacity-0');
+                    mobileMenu.classList.add('scale-y-100', 'opacity-100');
+                } else {
+                    mobileMenu.classList.remove('scale-y-100', 'opacity-100');
+                    mobileMenu.classList.add('scale-y-0', 'opacity-0');
+                    setTimeout(() => mobileMenu.classList.add('hidden'), 300); // Wait for transition
+                }
+            });
+
+            // Mobile Dropdown toggles
+            document.querySelectorAll('.group-mobile-dropdown').forEach(dropdown => {
+                const button = dropdown.querySelector('button');
+                const dropdownContent = dropdown.querySelector('div'); // The actual dropdown div in mobile
+
+                button.addEventListener('click', () => {
+                    dropdownContent.classList.toggle('hidden');
+                });
+            });
+        }
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

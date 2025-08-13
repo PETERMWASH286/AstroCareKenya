@@ -1,0 +1,308 @@
+{% extends "base.html" %} {% block title %}Doctor Dashboard - AstroCare{% endblock %} {% block content %}
+<!--
+  Doctor Dashboard
+  Features:
+  - Responsive layout with Tailwind CSS grid & flex
+  - Interactive charts (Chart.js)
+  - Cards with key metrics and status indicators
+  - Recent activity tables
+  - Doctors on Duty with online status
+  - Beautiful color palette & dark mode ready
+-->
+
+<div class="container mx-auto px-6 py-8 max-w-7xl">
+
+    <!-- Header -->
+    <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 space-y-4 md:space-y-0">
+        <div>
+            <h1 class="text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight">
+                Welcome back, <span class="text-indigo-600 dark:text-indigo-400">Dr. {{ current_user.full_name}}</span>
+            </h1>
+            <p class="mt-2 text-gray-600 dark:text-gray-300">Here’s your health care dashboard overview.</p>
+        </div>
+        <div class="flex items-center space-x-4">
+            <button class="flex items-center space-x-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition" aria-label="Date filter">
+        <i class="fas fa-calendar-alt text-indigo-600 dark:text-indigo-400"></i>
+<!-- Replace the static date with this dynamic version -->
+<span class="text-gray-700 dark:text-gray-300">{{ current_date }}</span>      </button>
+            <button class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition" aria-label="Add new appointment">
+        <i class="fas fa-plus mr-2"></i> New Appointment
+      </button>
+        </div>
+    </header>
+
+    <!-- Updated Stats Cards -->
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+        <!-- Patients Today Card -->
+        <article class="bg-gradient-to-br from-indigo-50 to-white dark:from-gray-800 dark:to-gray-900 rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 flex items-center space-x-4 border border-indigo-100 dark:border-gray-700">
+            <div class="p-4 bg-indigo-100/70 dark:bg-indigo-900/50 rounded-xl text-indigo-600 dark:text-indigo-300 text-3xl">
+                <i class="fas fa-user-injured"></i>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500 dark:text-gray-400 flex items-center">
+                    <span class="mr-1">Patients Today</span>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-200">
+                    Today
+                </span>
+                </p>
+                <h2 class="text-3xl font-bold text-gray-900 dark:text-white mt-1">{{ patients_today }}</h2>
+                <div class="w-full bg-gray-200 rounded-full h-2 mt-2 dark:bg-gray-700">
+                    <div class="bg-indigo-600 h-2 rounded-full" style="width: 75%"></div>
+                </div>
+            </div>
+        </article>
+
+        <!-- Consultations Card -->
+        <article class="bg-gradient-to-br from-green-50 to-white dark:from-gray-800 dark:to-gray-900 rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 flex items-center space-x-4 border border-green-100 dark:border-gray-700">
+            <div class="p-4 bg-green-100/70 dark:bg-green-900/50 rounded-xl text-green-600 dark:text-green-300 text-3xl">
+                <i class="fas fa-stethoscope"></i>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500 dark:text-gray-400 flex items-center">
+                    <span class="mr-1">Consultations</span>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200">
+                    Today
+                </span>
+                </p>
+                <h2 class="text-3xl font-bold text-gray-900 dark:text-white mt-1">{{ consultations_today }}</h2>
+                <div class="w-full bg-gray-200 rounded-full h-2 mt-2 dark:bg-gray-700">
+                    <div class="bg-green-600 h-2 rounded-full" style="width: 60%"></div>
+                </div>
+            </div>
+        </article>
+
+        <!-- Pending Radiology Tests Card -->
+        <article class="bg-gradient-to-br from-purple-50 to-white dark:from-gray-800 dark:to-gray-900 rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 flex items-center space-x-4 border border-purple-100 dark:border-gray-700">
+            <div class="p-4 bg-purple-100/70 dark:bg-purple-900/50 rounded-xl text-purple-600 dark:text-purple-300 text-3xl">
+                <i class="fas fa-x-ray"></i>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500 dark:text-gray-400 flex items-center">
+                    <span class="mr-1">Radiology Tests</span>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-200">
+                    Today
+                </span>
+                </p>
+                <div class="flex items-baseline mt-1">
+                    <h2 class="text-3xl font-bold text-gray-900 dark:text-white">{{ pending_radiology_tests }}</h2>
+                    <span class="ml-2 text-sm font-medium text-gray-500 dark:text-gray-400">
+                    pending
+                </span>
+                </div>
+                <div class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    <span class="text-green-500 font-medium">{{ completed_radiology_tests }}</span> completed
+                </div>
+            </div>
+        </article>
+
+        <!-- Lab Tests Card -->
+        <article class="bg-gradient-to-br from-amber-50 to-white dark:from-gray-800 dark:to-gray-900 rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 flex items-center space-x-4 border border-amber-100 dark:border-gray-700">
+            <div class="p-4 bg-amber-100/70 dark:bg-amber-900/50 rounded-xl text-amber-600 dark:text-amber-300 text-3xl">
+                <i class="fas fa-flask"></i>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500 dark:text-gray-400 flex items-center">
+                    <span class="mr-1">Lab Tests</span>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200">
+                    Today
+                </span>
+                </p>
+                <div class="flex items-baseline mt-1">
+                    <h2 class="text-3xl font-bold text-gray-900 dark:text-white">{{ pending_lab_tests }}</h2>
+                    <span class="ml-2 text-sm font-medium text-gray-500 dark:text-gray-400">
+                    pending
+                </span>
+                </div>
+                <div class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    <span class="text-green-500 font-medium">{{ completed_lab_tests }}</span> completed
+                </div>
+            </div>
+        </article>
+    </section>
+
+    <!-- Charts section -->
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+        <!-- Patient Admissions -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow">
+            <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">Patient Admissions (Last 30 Days)</h3>
+            <canvas id="patientAdmissionsChart" class="dark:text-gray-300" aria-label="Patient admissions chart" role="img"></canvas>
+        </div>
+
+        <!-- Consultation Types -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow">
+            <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">Consultation Types Breakdown</h3>
+            <canvas id="consultationTypesChart" class="dark:text-gray-300" aria-label="Consultation types pie chart" role="img"></canvas>
+        </div>
+    </section>
+
+    <!-- Recent Appointments & Doctors On Duty -->
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Recent Appointments -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow overflow-auto max-h-[450px]">
+            <header class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-semibold text-gray-900 dark:text-white">Recent Appointments</h3>
+                <a href="#" class="text-indigo-600 dark:text-indigo-400 hover:underline">View All</a>
+            </header>
+            <table class="w-full table-auto text-left border-collapse">
+                <thead>
+                    <tr class="border-b border-gray-200 dark:border-gray-700">
+                        <th class="py-3 px-2 text-gray-600 dark:text-gray-300">Patient</th>
+                        <th class="py-3 px-2 text-gray-600 dark:text-gray-300">Department</th>
+                        <th class="py-3 px-2 text-gray-600 dark:text-gray-300">Time</th>
+                        <th class="py-3 px-2 text-gray-600 dark:text-gray-300">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                        <td class="py-3 px-2">Michael Scott</td>
+                        <td class="py-3 px-2">Cardiology</td>
+                        <td class="py-3 px-2">08:30 AM</td>
+                        <td class="py-3 px-2">
+                            <span class="inline-block px-3 py-1 rounded-full text-sm bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 font-semibold">Completed</span>
+                        </td>
+                    </tr>
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                        <td class="py-3 px-2">Pam Beesly</td>
+                        <td class="py-3 px-2">Neurology</td>
+                        <td class="py-3 px-2">09:15 AM</td>
+                        <td class="py-3 px-2">
+                            <span class="inline-block px-3 py-1 rounded-full text-sm bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300 font-semibold">Pending</span>
+                        </td>
+                    </tr>
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                        <td class="py-3 px-2">Jim Halpert</td>
+                        <td class="py-3 px-2">Orthopedics</td>
+                        <td class="py-3 px-2">10:00 AM</td>
+                        <td class="py-3 px-2">
+                            <span class="inline-block px-3 py-1 rounded-full text-sm bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 font-semibold">Cancelled</span>
+                        </td>
+                    </tr>
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                        <td class="py-3 px-2">Dwight Schrute</td>
+                        <td class="py-3 px-2">General Surgery</td>
+                        <td class="py-3 px-2">10:45 AM</td>
+                        <td class="py-3 px-2">
+                            <span class="inline-block px-3 py-1 rounded-full text-sm bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 font-semibold">Completed</span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Doctors On Duty -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow overflow-auto max-h-[450px]">
+            <header class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-semibold text-gray-900 dark:text-white">Doctors On Duty</h3>
+                <a href="#" class="text-indigo-600 dark:text-indigo-400 hover:underline">Manage</a>
+            </header>
+            <ul class="space-y-4">
+                <li class="flex items-center space-x-4">
+                    <img src="https://randomuser.me/api/portraits/men/45.jpg" alt="Dr. John Smith" class="w-12 h-12 rounded-full object-cover border-2 border-indigo-500" />
+                    <div>
+                        <p class="font-semibold text-gray-900 dark:text-white">Dr. John Smith</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Cardiology</p>
+                    </div>
+                    <span class="ml-auto inline-block w-3 h-3 rounded-full bg-green-500 animate-pulse" aria-label="Online"></span>
+                </li>
+                <li class="flex items-center space-x-4">
+                    <img src="https://randomuser.me/api/portraits/women/65.jpg" alt="Dr. Angela Lee" class="w-12 h-12 rounded-full object-cover border-2 border-indigo-500" />
+                    <div>
+                        <p class="font-semibold text-gray-900 dark:text-white">Dr. Angela Lee</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Neurology</p>
+                    </div>
+                    <span class="ml-auto inline-block w-3 h-3 rounded-full bg-green-500 animate-pulse" aria-label="Online"></span>
+                </li>
+                <li class="flex items-center space-x-4">
+                    <img src="https://randomuser.me/api/portraits/men/72.jpg" alt="Dr. Sam Wilson" class="w-12 h-12 rounded-full object-cover border-2 border-indigo-500" />
+                    <div>
+                        <p class="font-semibold text-gray-900 dark:text-white">Dr. Sam Wilson</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">General Surgery</p>
+                    </div>
+                    <span class="ml-auto inline-block w-3 h-3 rounded-full bg-red-500" aria-label="Offline"></span>
+                </li>
+            </ul>
+        </div>
+    </section>
+</div>
+
+<!-- Chart.js scripts -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Patient Admissions Line Chart
+    const ctxAdmissions = document.getElementById('patientAdmissionsChart').getContext('2d');
+    const patientAdmissionsChart = new Chart(ctxAdmissions, {
+        type: 'line',
+        data: {
+            labels: [...Array(30).keys()].map(i => `Day ${i+1}`),
+            datasets: [{
+                label: 'Admissions',
+                data: [5, 7, 9, 6, 8, 12, 10, 15, 14, 11, 10, 9, 13, 12, 15, 14, 16, 20, 22, 21, 19, 17, 15, 18, 20, 23, 25, 24, 22, 20],
+                borderColor: '#6366f1', // indigo-500
+                backgroundColor: 'rgba(99,102,241,0.3)',
+                fill: true,
+                tension: 0.3,
+                pointRadius: 3,
+                pointHoverRadius: 6,
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: '#9ca3af'
+                    }
+                }, // text-gray-400
+                tooltip: {
+                    mode: 'index',
+                    intersect: false
+                },
+            },
+            scales: {
+                x: {
+                    ticks: {
+                        color: '#9ca3af'
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        color: '#9ca3af'
+                    }
+                },
+            }
+        }
+    });
+
+    // Consultation Types Pie Chart
+    const ctxConsultations = document.getElementById('consultationTypesChart').getContext('2d');
+    const consultationTypesChart = new Chart(ctxConsultations, {
+        type: 'doughnut',
+        data: {
+            labels: ['General', 'Specialist', 'Follow-up', 'Emergency'],
+            datasets: [{
+                data: [40, 25, 20, 15],
+                backgroundColor: [
+                    '#6366f1', // Indigo
+                    '#10b981', // Emerald
+                    '#fbbf24', // Amber
+                    '#ef4444' // Red
+                ],
+                hoverOffset: 30,
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        color: '#9ca3af'
+                    }
+                },
+            }
+        }
+    });
+</script>
+
+{% endblock %}

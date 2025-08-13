@@ -1,0 +1,197 @@
+{% extends 'base.html' %} {% block title %}Transaction #{{ transaction.id }} Details - Astrocare{% endblock %} {% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Transaction Details</h1>
+            <p class="mt-2 text-gray-600 dark:text-gray-400">
+                M-Pesa transaction #{{ transaction.id }}
+            </p>
+        </div>
+        <a href="{{ url_for('reports_web.mpesa_logs') }}" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300">
+            <i class="fas fa-arrow-left mr-2"></i> Back to Logs
+        </a>
+    </div>
+
+    <!-- Status Banner -->
+    <div class="mb-6 p-4 rounded-lg 
+        {% if transaction.status == 'completed' %}bg-green-100 text-green-800
+        {% elif transaction.status == 'failed' %}bg-red-100 text-red-800
+        {% elif transaction.status == 'pending' %}bg-amber-100 text-amber-800
+        {% else %}bg-blue-100 text-blue-800{% endif %}">
+        <div class="flex items-center">
+            <i class="fas 
+                {% if transaction.status == 'completed' %}fa-check-circle
+                {% elif transaction.status == 'failed' %}fa-times-circle
+                {% elif transaction.status == 'pending' %}fa-clock
+                {% else %}fa-sync-alt{% endif %} 
+                text-xl mr-3"></i>
+            <div>
+                <h2 class="font-bold text-lg">Status: {{ transaction.status|title }}</h2>
+                <p>
+                    {% if transaction.status == 'completed' %} Payment completed successfully {% elif transaction.status == 'failed' %} Payment failed: {{ transaction.error_message or 'Unknown error' }} {% elif transaction.status == 'pending' %} Payment is pending confirmation
+                    {% else %} Payment request sent {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Card -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow overflow-hidden">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
+            <!-- Left Column -->
+            <div>
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Transaction Information</h3>
+
+                <div class="space-y-4">
+                    <div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">Transaction ID</div>
+                        <div class="font-medium">{{ transaction.id }}</div>
+                    </div>
+
+                    <div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">Amount</div>
+                        <div class="text-xl font-bold">{{ transaction.amount|currency }}</div>
+                    </div>
+
+                    <div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">Payment Method</div>
+                        <div class="font-medium">{{ transaction.payment_method|upper }}</div>
+                    </div>
+
+                    <div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">Created At</div>
+                        <div class="font-medium">{{ transaction.created_at|datetime }}</div>
+                    </div>
+
+                    <div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">Last Updated</div>
+                        <div class="font-medium">{{ transaction.updated_at|datetime }}</div>
+                    </div>
+
+                    {% if transaction.receipt_number %}
+                    <div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">M-Pesa Receipt</div>
+                        <div class="font-medium">{{ transaction.receipt_number }}</div>
+                    </div>
+                    {% endif %} {% if transaction.merchant_request_id %}
+                    <div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">Merchant Request ID</div>
+                        <div class="font-medium break-all">{{ transaction.merchant_request_id }}</div>
+                    </div>
+                    {% endif %} {% if transaction.checkout_request_id %}
+                    <div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">Checkout Request ID</div>
+                        <div class="font-medium break-all">{{ transaction.checkout_request_id }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Right Column -->
+            <div>
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Patient Information</h3>
+
+                <div class="space-y-4">
+                    <div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">Patient</div>
+                        <div class="font-medium">
+                            <a href="" class="text-blue-600 hover:underline dark:text-blue-400">
+                                {{ transaction.patient.full_name }}
+                            </a>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">Phone Number</div>
+                        <div class="font-medium">{{ transaction.phone }}</div>
+                    </div>
+
+                    <div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">Account Reference</div>
+                        <div class="font-medium">{{ transaction.account_ref or 'N/A' }}</div>
+                    </div>
+
+                    {% if transaction.services %}
+                    <div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">Services Paid For</div>
+                        <ul class="list-disc pl-5 mt-1">
+                            {% for service in transaction.services %}
+                            <li>{{ service.name }} </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %} {% if transaction.paid_at %}
+                    <div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">Payment Completed At</div>
+                        <div class="font-medium">{{ transaction.paid_at|datetime }}</div>
+                    </div>
+                    {% endif %} {% if transaction.error_message %}
+                    <div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">Error Message</div>
+                        <div class="font-medium text-red-600 dark:text-red-400">{{ transaction.error_message }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Callback Data Section -->
+        <div class="border-t border-gray-200 dark:border-gray-700 p-6">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">M-Pesa Callback Data</h3>
+            <div class="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
+                <pre class="text-sm text-gray-800 dark:text-gray-300 overflow-x-auto">{{ callback_data }}</pre>
+            </div>
+        </div>
+
+        <!-- Audit Logs Section -->
+        <div class="border-t border-gray-200 dark:border-gray-700 p-6">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Audit Logs</h3>
+
+            {% if audit_logs %}
+            <div class="overflow-hidden">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gray-50 dark:bg-gray-750">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Timestamp</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Action</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">User</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Changes</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        {% for log in audit_logs %}
+                        <tr>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                {{ log.timestamp|datetime }}
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                    {% if log.action == 'create' %}bg-green-100 text-green-800
+                                    {% elif log.action == 'update' %}bg-blue-100 text-blue-800
+                                    {% elif log.action == 'delete' %}bg-red-100 text-red-800
+                                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                    {{ log.action|title }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                {{ log.user.username if log.user else 'System' }}
+                            </td>
+                            <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                                {% if log.changes %} {% for field, change in log.changes.items() %}
+                                <div><span class="font-medium">{{ field }}</span>: {{ change.old }} → {{ change.new }}
+                                </div>
+                                {% endfor %} {% else %} No changes recorded {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-gray-500 dark:text-gray-400">No audit logs found for this transaction.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

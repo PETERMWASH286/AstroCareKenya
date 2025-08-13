@@ -1,0 +1,104 @@
+{% extends 'base.html' %} {% block content %}
+<div class="max-w-7xl mx-auto p-6 space-y-12">
+
+    <!-- Hero Section: Sleek, Vibrant, and Clean -->
+    <section class="relative h-60 md:h-72 bg-cover bg-center rounded-3xl shadow-2xl overflow-hidden" style="background-image: url('/static/imgs/policies-bg.jpg');">
+        <!-- Overlay -->
+        <div class="absolute inset-0 bg-gradient-to-br from-blue-900/70 via-black/50 to-indigo-900/40 backdrop-blur-sm"></div>
+
+        <!-- Content -->
+        <div class="relative z-10 flex flex-col justify-center h-full px-6 md:px-16">
+            <h1 class="text-4xl md:text-5xl font-extrabold text-white leading-snug">
+                <span class="text-blue-400 drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">AstroCare</span>
+                <span class="text-white">System Policies</span>
+            </h1>
+            <p class="text-base md:text-lg text-gray-200 mt-2 md:mt-4 max-w-xl font-medium">
+                🌍 Committed to ethical, secure, and compliant health data practices across Kenya.
+            </p>
+        </div>
+
+        <!-- Optional bottom wave -->
+        <div class="absolute bottom-0 left-0 w-full overflow-hidden leading-none">
+            <svg class="relative block w-full h-6 md:h-10" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" viewBox="0 0 1200 120" fill="white">
+      <path d="M0,0V46.29c47.6,22.21,103.83,42.18,167,42.18s133.42-19.97,190-35.63C457.62,29.49,514.5,16,570,16s112.38,13.49,163,36.84c56.58,15.66,117.43,35.63,190,35.63s119.4-20,177-42.18V0Z"></path>
+    </svg>
+        </div>
+    </section>
+
+
+    <!-- Sticky Quick Navigation (Super Modern Style) -->
+    <nav class="sticky top-20 z-30 bg-white/80 backdrop-blur-lg py-4 px-4 md:px-8 shadow-xl rounded-2xl border border-gray-200">
+        <ul class="flex flex-wrap justify-center gap-4 md:gap-6">
+            {% for sec in details %}
+            <li>
+                <a href="#{{ sec.id }}-details" class="inline-block px-4 py-2 rounded-full border border-{{ sec.color }}-200 text-{{ sec.color }}-700 hover:bg-{{ sec.color }}-100 hover:shadow-md transition-all font-semibold text-sm md:text-base">
+        {{ sec.title }}
+      </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </nav>
+
+
+    <!-- Summary Cards -->
+    <div class="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+        {% for card in cards %}
+        <div class="bg-white shadow-2xl rounded-3xl p-8 flex flex-col justify-between transform hover:-translate-y-2 transition duration-300">
+            <div>
+                <div class="flex items-center mb-6">
+                    <i class="fas {{ card.icon }} text-4xl text-{{ card.color }}-600"></i>
+                    <h2 class="ml-4 text-3xl font-bold text-gray-900">{{ card.title }}</h2>
+                </div>
+                <p class="text-gray-700 mb-6">
+                    {{ card.summary }} {% if card.id == 'updates' %}
+                    <span id="last-updated" class="font-semibold"></span> {% endif %}
+                </p>
+            </div>
+            <a href="#{{ card.id }}-details" class="self-start inline-flex items-center text-{{ card.color }}-600 font-semibold hover:underline transition">
+        Read More <i class="fas fa-arrow-right ml-2"></i>
+      </a>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Detailed Sections -->
+    <div class="space-y-8">
+        {% for sec in details %}
+        <div x-data="{ open: false }" class="bg-white rounded-3xl shadow-lg overflow-hidden">
+            <button @click="open = !open" class="w-full flex justify-between items-center p-6 focus:outline-none bg-{{ sec.color }}-50 hover:bg-{{ sec.color }}-100 transition duration-200">
+        <div class="flex items-center space-x-3">
+          <i class="fas fa-file-alt text-{{ sec.color }}-600 text-2xl"></i>
+          <h3 class="text-2xl font-semibold text-gray-800">{{ sec.title }}</h3>
+        </div>
+        <i :class="open ? 'fas fa-minus' : 'fas fa-plus'" class="text-{{ sec.color }}-600 text-xl"></i>
+      </button>
+            <div x-show="open" x-collapse class="p-6 border-t">
+                <ul class="list-disc ml-6 text-gray-700 space-y-2">
+                    {% for item in sec.content %}
+                    <li>{{ item }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+    // Populate last updated date
+    document.addEventListener('DOMContentLoaded', () => {
+        const el = document.getElementById('last-updated');
+        if (el) el.textContent = new Date().toISOString().split('T')[0];
+    });
+</script>
+
+<style>
+    html {
+        scroll-behavior: smooth;
+    }
+    
+    .hover\:-translate-y-2:hover {
+        transform: translateY(-8px);
+    }
+</style>
+{% endblock %}

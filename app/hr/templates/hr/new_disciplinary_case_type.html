@@ -1,0 +1,127 @@
+{# File: app/hr/templates/hr/new_disciplinary_case_type.html #}
+{% extends "base.html" %}
+{% block title %}Create New Case Type{% endblock %}
+{% block head %}
+    {{ super() }}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Page Header -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+        <div>
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-purple-100 text-purple-600 mr-4">
+                    <i class="fas fa-folder-plus text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">Create New Case Type</h1>
+                    <p class="mt-2 text-gray-600">Define a new category for disciplinary cases</p>
+                </div>
+            </div>
+        </div>
+        <div class="mt-4 md:mt-0">
+            <a href="{{ url_for('hr_web.disciplinary_case_types') }}" 
+               class="inline-flex items-center px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-md shadow-sm transition-colors duration-200">
+                <i class="fas fa-arrow-left mr-2"></i> Back to Case Types
+            </a>
+        </div>
+    </div>
+
+    <!-- Form Card -->
+    <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+        <form action="{{ url_for('hr_web.create_disciplinary_case_type') }}" method="POST">
+            <div class="px-6 py-6">
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-lg font-medium text-gray-900 mb-2">
+                            <i class="fas fa-tag text-purple-500 mr-2"></i> Basic Information
+                        </label>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+                                <input type="text" name="name" required 
+                                       class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:ring-opacity-50"
+                                       placeholder="e.g., Harassment, Theft, Tardiness">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Code *</label>
+                                <input type="text" name="code" required 
+                                       class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:ring-opacity-50"
+                                       placeholder="e.g., HRMNT, THFT, TRDN">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <textarea name="description" rows="3" 
+                                  class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:ring-opacity-50"
+                                  placeholder="Brief description of this case type..."></textarea>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-lg font-medium text-gray-900 mb-2">
+                            <i class="fas fa-cog text-blue-500 mr-2"></i> Configuration
+                        </label>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Default Severity *</label>
+                                <select name="default_severity" required class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:ring-opacity-50">
+                                    <option value="">Select severity</option>
+                                    {% for severity in severities %}
+                                    <option value="{{ severity }}">{{ severity }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    Resolution Days *
+                                    <span class="text-xs text-gray-500">(Default timeframe to resolve)</span>
+                                </label>
+                                <input type="number" name="resolution_days" min="1" value="30" required 
+                                       class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:ring-opacity-50">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Form Actions -->
+                <div class="flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t border-gray-200 mt-8">
+                    <a href="{{ url_for('hr_web.new_disciplinary_case') }}" 
+                       class="inline-flex items-center justify-center px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-lg transition-colors duration-200">
+                        <i class="fas fa-times mr-2"></i> Cancel
+                    </a>
+                    <button type="submit" class="inline-flex items-center justify-center px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg shadow-sm transition-colors duration-200">
+                        <i class="fas fa-save mr-2"></i> Create Case Type
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Form Tips -->
+    <div class="mt-8 bg-purple-50 rounded-xl p-6 border border-purple-100">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <i class="fas fa-lightbulb text-purple-500 text-2xl mt-1"></i>
+            </div>
+            <div class="ml-4">
+                <h3 class="text-lg font-medium text-purple-800">Creating Effective Case Types</h3>
+                <div class="mt-2 text-purple-700">
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li>Use clear, descriptive names that are easily understood</li>
+                        <li>Create unique codes for quick reference and reporting</li>
+                        <li>Set appropriate default severity based on policy guidelines</li>
+                        <li>Define realistic resolution timelines for each case type</li>
+                        <li>Keep descriptions concise but informative</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

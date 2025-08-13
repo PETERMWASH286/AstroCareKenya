@@ -1,0 +1,396 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-indigo-50 py-8 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-7xl mx-auto">
+    <!-- Header Section -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">Disciplinary Appeals</h1>
+        <p class="text-lg text-gray-600">Manage employee appeals against disciplinary decisions</p>
+      </div>
+      <div class="mt-4 md:mt-0">
+        <a href="#" class="flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg transition duration-200">
+          <i class="fas fa-plus mr-2"></i> New Appeal
+        </a>
+      </div>
+    </div>
+
+    <!-- Stats Summary -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-5 mb-8">
+      <div class="bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-xl shadow-md p-5 text-white">
+        <div class="flex justify-between items-start">
+          <div>
+            <p class="text-xs font-medium opacity-80">TOTAL APPEALS</p>
+            <h3 class="text-2xl font-bold mt-1">{{ appeals.total }}</h3>
+          </div>
+          <div class="bg-indigo-400 p-3 rounded-lg">
+            <i class="fas fa-balance-scale text-xl"></i>
+          </div>
+        </div>
+      </div>
+      
+      <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-md p-5 text-white">
+        <div class="flex justify-between items-start">
+          <div>
+            <p class="text-xs font-medium opacity-80">PENDING</p>
+            <h3 class="text-2xl font-bold mt-1">
+              {{ appeals.items|selectattr('status', 'equalto', 'Pending')|list|length }}
+            </h3>
+          </div>
+          <div class="bg-blue-400 p-3 rounded-lg">
+            <i class="fas fa-hourglass-half text-xl"></i>
+          </div>
+        </div>
+      </div>
+      
+      <div class="bg-gradient-to-r from-amber-500 to-amber-600 rounded-xl shadow-md p-5 text-white">
+        <div class="flex justify-between items-start">
+          <div>
+            <p class="text-xs font-medium opacity-80">UNDER REVIEW</p>
+            <h3 class="text-2xl font-bold mt-1">
+              {{ appeals.items|selectattr('status', 'equalto', 'Under Review')|list|length }}
+            </h3>
+          </div>
+          <div class="bg-amber-400 p-3 rounded-lg">
+            <i class="fas fa-search text-xl"></i>
+          </div>
+        </div>
+      </div>
+      
+      <div class="bg-gradient-to-r from-green-500 to-green-600 rounded-xl shadow-md p-5 text-white">
+        <div class="flex justify-between items-start">
+          <div>
+            <p class="text-xs font-medium opacity-80">UPHELD</p>
+            <h3 class="text-2xl font-bold mt-1">
+              {{ appeals.items|selectattr('status', 'equalto', 'Upheld')|list|length }}
+            </h3>
+          </div>
+          <div class="bg-green-400 p-3 rounded-lg">
+            <i class="fas fa-check-circle text-xl"></i>
+          </div>
+        </div>
+      </div>
+      
+      <div class="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl shadow-md p-5 text-white">
+        <div class="flex justify-between items-start">
+          <div>
+            <p class="text-xs font-medium opacity-80">OVERTURNED</p>
+            <h3 class="text-2xl font-bold mt-1">
+              {{ appeals.items|selectattr('status', 'equalto', 'Overturned')|list|length }}
+            </h3>
+          </div>
+          <div class="bg-purple-400 p-3 rounded-lg">
+            <i class="fas fa-exchange-alt text-xl"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="bg-white rounded-xl shadow-sm p-5 mb-8">
+      <form method="get" action="{{ url_for('hr_web.disciplinary_appeals') }}">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-1">Status</label>
+            <select name="status" class="w-full text-sm rounded-lg border-gray-300 py-2 px-3 focus:ring-indigo-500 focus:border-indigo-500">
+              <option value="">All Statuses</option>
+              {% for status in statuses %}
+              <option value="{{ status }}" {% if status == request.args.get('status') %}selected{% endif %}>{{ status }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-1">Date Range</label>
+            <select class="w-full text-sm rounded-lg border-gray-300 py-2 px-3 focus:ring-indigo-500 focus:border-indigo-500">
+              <option>Last 7 days</option>
+              <option>Last 30 days</option>
+              <option>Last 90 days</option>
+              <option>Custom</option>
+            </select>
+          </div>
+          
+          <div>
+            <label class="block text-xs font-medium text-gray-700 mb-1">Employee</label>
+            <select class="w-full text-sm rounded-lg border-gray-300 py-2 px-3 focus:ring-indigo-500 focus:border-indigo-500">
+              <option>All Employees</option>
+              <option>John Doe</option>
+              <option>Jane Smith</option>
+            </select>
+          </div>
+          
+          <div class="md:col-span-1 flex items-end space-x-2">
+            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition duration-200">
+              Apply Filters
+            </button>
+            <a href="{{ url_for('hr_web.disciplinary_appeals') }}" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-lg text-sm font-medium text-center transition duration-200">
+              Clear
+            </a>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Appeals Table -->
+    <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+      <!-- Table Header -->
+      <div class="border-b border-gray-200 bg-gray-50 px-6 py-3 flex justify-between items-center">
+        <h3 class="text-sm font-medium text-gray-700">All Appeals</h3>
+        <p class="text-xs text-gray-500">
+          Showing {{ appeals.first }} - {{ appeals.last }} of {{ appeals.total }} appeals
+        </p>
+      </div>
+      
+      <!-- Table Content -->
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Appeal ID</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Case</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action Appealed</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date Filed</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+              <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            {% for appeal in appeals.items %}
+            <tr class="hover:bg-gray-50 transition-colors">
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm font-medium text-gray-900">#{{ appeal.id }}</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                  <div class="flex-shrink-0 h-10 w-10">
+                    <img class="h-10 w-10 rounded-full" src="https://ui-avatars.com/api/?name={{ appeal.employee.full_name }}&background=random" alt="">
+                  </div>
+                  <div class="ml-4">
+                    <div class="text-sm font-medium text-gray-900">{{ appeal.employee.full_name }}</div>
+                    <div class="text-xs text-gray-500">{{ appeal.employee.department.name if appeal.employee.department else 'N/A' }}</div>
+                  </div>
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">{{ appeal.case.case_number }}</div>
+                <div class="text-xs text-gray-500">{{ appeal.case.case_type.name }}</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">{{ appeal.action.action_type.name }}</div>
+                <div class="text-xs text-gray-500">{{ appeal.action.effective_date.strftime('%d %b, %Y') }}</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {{ appeal.appeal_date.strftime('%d %b, %Y') }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-medium
+                  {% if appeal.status == 'Pending' %}bg-blue-100 text-blue-800
+                  {% elif appeal.status == 'Under Review' %}bg-amber-100 text-amber-800
+                  {% elif appeal.status == 'Upheld' %}bg-green-100 text-green-800
+                  {% elif appeal.status == 'Overturned' %}bg-purple-100 text-purple-800
+                  {% else %}bg-gray-100 text-gray-800{% endif %}">
+                  {{ appeal.status }}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <div class="flex justify-end space-x-2">
+                  <a href="{{ url_for('hr_web.view_disciplinary_appeal', appeal_id=appeal.id) }}" class="text-indigo-600 hover:text-indigo-900" title="View Details">
+                    <i class="fas fa-eye"></i>
+                  </a>
+                  <a href="#" class="text-blue-600 hover:text-blue-900" title="Schedule Hearing">
+                    <i class="fas fa-calendar"></i>
+                  </a>
+                  <a href="#" class="text-amber-600 hover:text-amber-900" title="Add Note">
+                    <i class="fas fa-sticky-note"></i>
+                  </a>
+                  <a href="#" class="text-purple-600 hover:text-purple-900" title="Manage Documents">
+                    <i class="fas fa-file"></i>
+                  </a>
+                </div>
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="7" class="px-6 py-12 text-center">
+                <i class="fas fa-inbox text-4xl text-gray-300 mb-4"></i>
+                <h3 class="text-lg font-medium text-gray-500">No appeals found</h3>
+                <p class="text-sm text-gray-400 mt-2">Try adjusting your filters or create a new appeal</p>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- Pagination -->
+      {% if appeals.pages > 1 %}
+      <div class="border-t border-gray-200 px-6 py-4 flex items-center justify-between">
+        <div class="text-sm text-gray-500">
+          Page {{ appeals.page }} of {{ appeals.pages }}
+        </div>
+        <div class="flex space-x-2">
+          {% if appeals.has_prev %}
+          <a href="{{ url_for('hr_web.disciplinary_appeals', page=appeals.prev_num, status=request.args.get('status')) }}" 
+             class="px-3 py-1 rounded border border-gray-300 text-sm text-gray-700 hover:bg-gray-50">
+            Previous
+          </a>
+          {% endif %}
+          
+          {% for page_num in appeals.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=3) %}
+            {% if page_num %}
+              {% if appeals.page == page_num %}
+              <span class="px-3 py-1 rounded bg-indigo-600 text-white text-sm font-medium">{{ page_num }}</span>
+              {% else %}
+              <a href="{{ url_for('hr_web.disciplinary_appeals', page=page_num, status=request.args.get('status')) }}" 
+                 class="px-3 py-1 rounded border border-gray-300 text-sm text-gray-700 hover:bg-gray-50">
+                {{ page_num }}
+              </a>
+              {% endif %}
+            {% else %}
+              <span class="px-3 py-1 text-gray-300">...</span>
+            {% endif %}
+          {% endfor %}
+          
+          {% if appeals.has_next %}
+          <a href="{{ url_for('hr_web.disciplinary_appeals', page=appeals.next_num, status=request.args.get('status')) }}" 
+             class="px-3 py-1 rounded border border-gray-300 text-sm text-gray-700 hover:bg-gray-50">
+            Next
+          </a>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+    
+    <!-- Recent Activity -->
+    <div class="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Recent Decisions -->
+      <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div class="border-b border-gray-200 bg-gray-50 px-6 py-3">
+          <h3 class="text-sm font-medium text-gray-700">Recent Appeal Decisions</h3>
+        </div>
+        <div class="p-6">
+          <ul class="divide-y divide-gray-200">
+            <li class="py-4">
+              <div class="flex items-center">
+                <div class="bg-green-100 p-2 rounded-full mr-4">
+                  <i class="fas fa-check-circle text-green-600"></i>
+                </div>
+                <div>
+                  <p class="text-sm font-medium text-gray-900">Appeal #102 - Upheld</p>
+                  <p class="text-xs text-gray-500">John Doe • Today at 09:42 AM</p>
+                </div>
+              </div>
+            </li>
+            <li class="py-4">
+              <div class="flex items-center">
+                <div class="bg-purple-100 p-2 rounded-full mr-4">
+                  <i class="fas fa-exchange-alt text-purple-600"></i>
+                </div>
+                <div>
+                  <p class="text-sm font-medium text-gray-900">Appeal #98 - Overturned</p>
+                  <p class="text-xs text-gray-500">Jane Smith • Yesterday at 02:15 PM</p>
+                </div>
+              </div>
+            </li>
+            <li class="py-4">
+              <div class="flex items-center">
+                <div class="bg-gray-100 p-2 rounded-full mr-4">
+                  <i class="fas fa-times-circle text-gray-600"></i>
+                </div>
+                <div>
+                  <p class="text-sm font-medium text-gray-900">Appeal #94 - Dismissed</p>
+                  <p class="text-xs text-gray-500">Mike Johnson • 3 days ago</p>
+                </div>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+      
+      <!-- Upcoming Hearings -->
+      <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div class="border-b border-gray-200 bg-gray-50 px-6 py-3">
+          <h3 class="text-sm font-medium text-gray-700">Upcoming Hearings</h3>
+        </div>
+        <div class="p-6">
+          <ul class="divide-y divide-gray-200">
+            <li class="py-4">
+              <div class="flex items-center">
+                <div class="bg-blue-100 p-2 rounded-full mr-4">
+                  <i class="fas fa-gavel text-blue-600"></i>
+                </div>
+                <div>
+                  <p class="text-sm font-medium text-gray-900">Appeal #107 - Tomorrow</p>
+                  <p class="text-xs text-gray-500">10:00 AM • Conference Room B</p>
+                </div>
+              </div>
+            </li>
+            <li class="py-4">
+              <div class="flex items-center">
+                <div class="bg-blue-100 p-2 rounded-full mr-4">
+                  <i class="fas fa-gavel text-blue-600"></i>
+                </div>
+                <div>
+                  <p class="text-sm font-medium text-gray-900">Appeal #105 - Friday</p>
+                  <p class="text-xs text-gray-500">02:30 PM • Virtual Meeting</p>
+                </div>
+              </div>
+            </li>
+            <li class="py-4">
+              <div class="flex items-center">
+                <div class="bg-blue-100 p-2 rounded-full mr-4">
+                  <i class="fas fa-gavel text-blue-600"></i>
+                </div>
+                <div>
+                  <p class="text-sm font-medium text-gray-900">Appeal #109 - Next Monday</p>
+                  <p class="text-xs text-gray-500">09:00 AM • Board Room</p>
+                </div>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Floating action button -->
+<div class="fixed bottom-6 right-6 z-50">
+  <button class="w-14 h-14 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-lg hover:bg-indigo-700 transition-all transform hover:scale-110">
+    <i class="fas fa-question text-xl"></i>
+  </button>
+</div>
+
+<style>
+  .table-row-hover:hover {
+    background-color: #f9fafb;
+    transition: background-color 0.2s ease;
+  }
+  
+  .status-badge {
+    transition: all 0.3s ease;
+  }
+  
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: #f1f1f1;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: #c7d2fe;
+    border-radius: 3px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: #a5b4fc;
+  }
+</style>
+{% endblock %}

@@ -1,0 +1,338 @@
+{% extends 'base.html' %} {% block title %}Cash Payments Management - Astrocare{% endblock %} {% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header Section -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Cash Payments Management</h1>
+            <div class="mt-2 flex flex-wrap items-center gap-4">
+                <p class="text-gray-600 dark:text-gray-400">
+                    Track and manage cash payments and receipts
+                </p>
+                <span class="px-3 py-1 bg-amber-100 text-amber-800 text-xs rounded-full flex items-center">
+                    <i class="fas fa-money-bill-wave mr-2"></i>
+                    Cash transactions
+                </span>
+            </div>
+        </div>
+        <div class="mt-4 md:mt-0">
+            <div class="flex space-x-2">
+                <button id="filterToggle" class="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <i class="fas fa-filter mr-2"></i>Filter
+                </button>
+                <a href="" class="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors">
+                    <i class="fas fa-plus mr-2"></i>New Cash Payment
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %} {% if messages %}
+    <div class="mb-6">
+        {% for category, message in messages %}
+        <div class="px-4 py-3 rounded-lg text-sm {{ 'bg-green-100 text-green-800' if category == 'success' else 'bg-red-100 text-red-800' }}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %} {% endwith %}
+
+    <!-- Filters Section -->
+    <div id="filtersSection" class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mb-6 hidden">
+        <h2 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Filter Cash Payments</h2>
+        <form method="get" class="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <!-- Status Filter -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Status</label>
+                <select name="status" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    <option value="">All Statuses</option>
+                    <option value="pending" {% if request.args.get('status') == 'pending' %}selected{% endif %}>Pending</option>
+                    <option value="paid" {% if request.args.get('status') == 'paid' %}selected{% endif %}>Paid</option>
+                    <option value="partially_paid" {% if request.args.get('status') == 'partially_paid' %}selected{% endif %}>Partially Paid</option>
+                    <option value="overdue" {% if request.args.get('status') == 'overdue' %}selected{% endif %}>Overdue</option>
+                </select>
+            </div>
+
+            <!-- Patient Filter -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Patient</label>
+                <input type="text" name="patient" value="{{ request.args.get('patient', '') }}" placeholder="Search patient name" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+            </div>
+
+            <!-- Date Range -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Date Range</label>
+                <div class="grid grid-cols-1 gap-2">
+                    <input type="date" name="date_from" value="{{ request.args.get('date_from', '') }}" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="From">
+                    <input type="date" name="date_to" value="{{ request.args.get('date_to', '') }}" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="To">
+                </div>
+            </div>
+
+            <!-- Amount Range -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Amount Range</label>
+                <div class="grid grid-cols-1 gap-2">
+                    <input type="number" name="min_amount" value="{{ request.args.get('min_amount', '') }}" placeholder="Min amount" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    <input type="number" name="max_amount" value="{{ request.args.get('max_amount', '') }}" placeholder="Max amount" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                </div>
+            </div>
+
+            <div class="md:col-span-4 flex justify-end space-x-3 mt-4">
+                <a href="{{ url_for('finance_web_bp.cash_payments') }}" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+                    Clear Filters
+                </a>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    Apply Filters
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <div class="bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-xl shadow p-6">
+            <div class="flex items-center">
+                <div class="mr-4 bg-white bg-opacity-20 p-3 rounded-full">
+                    <i class="fas fa-file-invoice text-2xl"></i>
+                </div>
+                <div>
+                    <div class="text-sm font-medium">Total Invoices</div>
+                    <div class="text-2xl font-bold mt-1">{{ summary.total_count }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-r from-green-500 to-teal-600 text-white rounded-xl shadow p-6">
+            <div class="flex items-center">
+                <div class="mr-4 bg-white bg-opacity-20 p-3 rounded-full">
+                    <i class="fas fa-check-circle text-2xl"></i>
+                </div>
+                <div>
+                    <div class="text-sm font-medium">Paid Amount</div>
+                    <div class="text-2xl font-bold mt-1">{{ summary.paid_amount|currency }}</div>
+                    <div class="text-xs mt-1 opacity-80">{{ summary.paid_percentage }}% collected</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl shadow p-6">
+            <div class="flex items-center">
+                <div class="mr-4 bg-white bg-opacity-20 p-3 rounded-full">
+                    <i class="fas fa-clock text-2xl"></i>
+                </div>
+                <div>
+                    <div class="text-sm font-medium">Pending Amount</div>
+                    <div class="text-2xl font-bold mt-1">{{ summary.pending_amount|currency }}</div>
+                    <div class="text-xs mt-1 opacity-80">{{ summary.pending_count }} invoices</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-xl shadow p-6">
+            <div class="flex items-center">
+                <div class="mr-4 bg-white bg-opacity-20 p-3 rounded-full">
+                    <i class="fas fa-money-bill-wave text-2xl"></i>
+                </div>
+                <div>
+                    <div class="text-sm font-medium">Today's Cash</div>
+                    <div class="text-2xl font-bold mt-1">{{ summary.today_amount|currency }}</div>
+                    <div class="text-xs mt-1 opacity-80">{{ summary.today_count }} payments</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Invoices Table -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-750">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Invoice</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Patient</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Amount</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Payment Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Date</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    {% for invoice in invoices %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors">
+                        <!-- Invoice Details -->
+                        <td class="px-6 py-4">
+                            <div class="flex items-start">
+                                <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg mr-4">
+                                    <i class="fas fa-file-invoice text-amber-600 dark:text-amber-400 text-xl"></i>
+                                </div>
+                                <div>
+                                    <div class="text-sm font-medium text-gray-900 dark:text-white">
+                                        #{{ invoice.id }}
+                                    </div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                        <span class="font-medium">Visit:</span> {{ invoice.visit.id if invoice.visit else 'N/A' }}
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- Patient Information -->
+                        <td class="px-6 py-4">
+                            <div class="text-sm font-medium text-gray-900 dark:text-white">
+                                {{ invoice.patient.full_name }}
+                            </div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                <i class="fas fa-id-card mr-1"></i> {{ invoice.patient.reg_no }}
+                            </div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                <i class="fas fa-phone mr-1"></i> {{ invoice.patient.phone }}
+                            </div>
+                        </td>
+
+                        <!-- Amount -->
+                        <td class="px-6 py-4">
+                            <div class="text-lg font-bold text-gray-900 dark:text-white">
+                                {{ invoice.total_amount|currency }}
+                            </div>
+                            {% if invoice.payments %}
+                            <div class="text-xs text-green-600 dark:text-green-400 mt-1">
+                                Paid: {{ (invoice.total_amount - invoice.balance)|currency }}
+                            </div>
+                            {% endif %} {% if invoice.balance > 0 %}
+                            <div class="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                                Balance: {{ invoice.balance|currency }}
+                            </div>
+                            {% endif %}
+                        </td>
+
+                        <!-- Status -->
+                        <td class="px-6 py-4">
+                            <div class="mb-2">
+                                <span class="px-3 py-1 rounded-full text-xs font-semibold flex items-center w-fit
+                                    {% if invoice.status == 'paid' %}bg-green-100 text-green-800
+                                    {% elif invoice.status == 'pending' %}bg-amber-100 text-amber-800
+                                    {% elif invoice.status == 'overdue' %}bg-red-100 text-red-800
+                                    {% else %}bg-blue-100 text-blue-800{% endif %}">
+                                    {% if invoice.status == 'paid' %}
+                                    <i class="fas fa-check-circle mr-1"></i>
+                                    {% elif invoice.status == 'pending' %}
+                                    <i class="fas fa-clock mr-1"></i>
+                                    {% elif invoice.status == 'overdue' %}
+                                    <i class="fas fa-exclamation-triangle mr-1"></i>
+                                    {% endif %}
+                                    {{ invoice.status|title }}
+                                </span>
+                            </div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400">
+                                <i class="far fa-clock mr-1"></i> Issued {{ invoice.issue_date|datetime }}
+                            </div>
+                            {% if invoice.due_date %}
+                            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                <i class="fas fa-calendar-day mr-1"></i> Due {{ invoice.due_date|datetime }}
+                            </div>
+                            {% endif %}
+                        </td>
+
+                        <!-- Date -->
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                            {{ invoice.issue_date|date }}
+                        </td>
+
+                        <!-- Actions -->
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <div class="flex justify-end space-x-2">
+                                <a href="{{ url_for('finance_web_bp.invoice_details', invoice_id=invoice.id) }}" class="p-2 bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-lg transition-colors" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{{ url_for('finance_web_bp.record_cash_payment', invoice_id=invoice.id) }}" class="p-2 bg-green-100 hover:bg-green-200 text-green-600 rounded-lg transition-colors" title="Record Payment">
+                                    <i class="fas fa-money-check"></i>
+                                </a>
+                                <a href="{{ url_for('finance_web_bp.print_receipt', invoice_id=invoice.id) }}" class="p-2 bg-purple-100 hover:bg-purple-200 text-purple-600 rounded-lg transition-colors" title="Print Receipt">
+                                    <i class="fas fa-print"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center">
+                            <div class="text-gray-400 dark:text-gray-500">
+                                <i class="fas fa-file-invoice text-4xl mb-3"></i>
+                                <p class="text-lg font-medium">No cash invoices found</p>
+                                <p class="mt-1">Try adjusting your filters or create a new cash payment</p>
+                                <a href="" class="mt-4 inline-flex px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700">
+                                    <i class="fas fa-plus mr-2"></i>Create Cash Payment
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="mt-6 flex justify-between items-center">
+        <div class="text-sm text-gray-500 dark:text-gray-400">
+            Showing {{ pagination.first }} to {{ pagination.last }} of {{ pagination.total }} invoices
+        </div>
+        <div class="flex space-x-2">
+            {% if pagination.has_prev %}
+            <a href="{{ url_for('finance_web_bp.cash_payments', page=pagination.prev_num, **request.args) }}" class="px-3 py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+                <i class="fas fa-chevron-left"></i>
+            </a>
+            {% endif %} {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=3) %} {% if page_num %} {% if page_num == pagination.page %}
+            <span class="px-3 py-1 bg-amber-600 text-white rounded-lg">{{ page_num }}</span> {% else %}
+            <a href="{{ url_for('finance_web_bp.cash_payments', page=page_num, **request.args) }}" class="px-3 py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+                            {{ page_num }}
+                        </a> {% endif %} {% else %}
+            <span class="px-3 py-1">...</span> {% endif %} {% endfor %} {% if pagination.has_next %}
+            <a href="{{ url_for('finance_web_bp.cash_payments', page=pagination.next_num, **request.args) }}" class="px-3 py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+                <i class="fas fa-chevron-right"></i>
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Stats Section -->
+    <div class="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+            <h2 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Payment Status Distribution</h2>
+            <div class="h-64 flex items-center justify-center">
+                <canvas id="statusChart"></canvas>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+            <h2 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Daily Cash Collection</h2>
+            <div class="h-64">
+                <canvas id="dailyTrendChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Toggle filters visibility
+    document.getElementById('filterToggle').addEventListener('click', function() {
+        const filtersSection = document.getElementById('filtersSection');
+        filtersSection.classList.toggle('hidden');
+    });
+</script>
+
+<style>
+    .invoice-row:hover {
+        transform: translateY(-2px);
+        transition: transform 0.2s ease;
+    }
+    
+    .status-badge {
+        transition: all 0.2s ease;
+    }
+    
+    .status-badge:hover {
+        transform: scale(1.05);
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,1254 @@
+{% extends "base.html" %} {% block title %}Medical Services Payment - {{ patient.reg_no }}{% endblock %} {# Assume 'patient' object and 'all_services' list are passed from the backend context #} {# all_services should be a list of dictionaries, e.g.:
+#} {# [ {'id': 1, 'name': 'General Consultation', 'category': 'Consultation', 'price': 1500, 'desc': 'Doctor consultation'}, {'id': 2, 'name': 'Specialist Consultation', 'category': 'Consultation', 'price': 3000, 'desc': 'Consultation with specialist'},
+{'id': 3, 'name': 'X-Ray (Chest)', 'category': 'Imaging Services', 'price': 4500, 'desc': 'Standard chest X-ray'}, ... ] #} {% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 p-2 md:p-2">
+    <div class="max-w-6xl mx-auto">
+<div class="mb-2 p-2 bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-700 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700">
+    <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-1">
+        <div class="mb-4 md:mb-0">
+            <h1 class="text-3xl font-extrabold text-gray-900 dark:text-white flex items-center">
+                <i class="fas fa-money-check-alt mr-3 text-green-500 text-3xl animate-pulse"></i> Cash Payment
+            </h1>
+            <p class="text-gray-500 dark:text-gray-400 mt-1 text-base">Confirm patient details and proceed with payment.</p>
+        </div>
+        {# Top-right action items / status #}
+        <div class="flex items-center space-x-4">
+            <a href="{{ url_for('patients_web.view_patient', reg_no=patient.reg_no) }}" class="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 flex items-center font-semibold transition-colors duration-200 group">
+                <i class="fas fa-external-link-alt mr-2 text-sm group-hover:translate-x-0.5 transition-transform"></i> Full Profile
+            </a>
+            {# Payment Progress indicator - simplified and more visual #}
+            <div class="hidden md:block h-10 w-px bg-gray-300 dark:bg-gray-600"></div>
+            <div class="flex items-center space-x-2">
+                <span class="text-xs text-gray-500 dark:text-gray-400">Step 2 of 3:</span>
+                <div class="w-20 bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
+                    <div class="bg-blue-500 h-full rounded-full" style="width: 66%;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <hr class="border-gray-200 dark:border-gray-700 mb-6">
+
+    {# Patient Core Details - Highly Condensed #}
+    <div class="bg-gray-100 dark:bg-gray-750 p-3 rounded-lg border border-gray-200 dark:border-gray-600">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-y-3 gap-x-6 text-gray-700 dark:text-gray-300">
+            {# Patient Name & Reg. No. - Combined for prominence #}
+            <div class="flex items-center col-span-1 md:col-span-2">
+                <i class="fas fa-user-tag text-blue-500 mr-3 text-xl"></i> <div class="flex flex-col">
+                    <span class="text-lg font-bold text-gray-900 dark:text-white">{{ patient.full_name }}</span>
+                    <span class="text-sm text-gray-600 dark:text-gray-400">Reg. No: <span class="font-mono bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-100 px-2 py-0.5 rounded-md text-xs">{{ patient.reg_no }}</span></span>
+                </div>
+            </div>
+
+            {# Phone Number #}
+            <div class="flex items-center">
+                <i class="fas fa-phone-alt text-blue-400 mr-2 text-sm"></i>
+                <span class="font-semibold">Phone:</span>
+                <span class="ml-2">{{ patient.formatted_phone }}</span>
+            </div>
+            {# Age & Gender - Combined #}
+            <div class="flex items-center">
+                <i class="fas fa-info-circle text-blue-400 mr-2 text-sm"></i>
+                <span class="font-semibold">Age/Gender:</span>
+                <span class="ml-2">{{ patient.age }} / {{ patient.gender | capitalize }}</span>
+            </div>
+            {# Insurance Info (if available) #}
+            {% if patient.insurance_provider %}
+            <div class="flex items-center col-span-1 md:col-span-2"> <i class="fas fa-shield-alt text-blue-400 mr-2 text-sm"></i>
+                <span class="font-semibold">Insurance:</span>
+                <span class="ml-2">{{ patient.insurance_provider }} (#{{ patient.insurance_number }})</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800  dark:bg-gray-900 dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300 flex items-center">
+                        <i class="fas fa-list-check mr-2 text-green-500"></i>Select Services
+                    </h2>
+                    <button id="clearServicesBtn" class="text-sm text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-500">
+                        <i class="fas fa-times-circle mr-1"></i> Clear Selected
+                     </button>
+                </div>
+
+                <div class="mb-6">
+                    <label for="serviceSearch" class="sr-only">Search Services</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-search text-gray-400 dark:text-gray-500"></i>
+                        </div>
+                        <input type="text" id="serviceSearch" placeholder="Search services..." class="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                </div>
+
+
+                <!-- Services List -->
+                <div id="servicesList" class="space-y-6">
+                    {% if all_services %} {% set sorted_services = all_services|sort(attribute='category') %} {% set categories = sorted_services | groupby('category') %} {% for category, services in categories %}
+                    <section>
+                        <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-4 flex items-center">
+                            {% if category == 'Consultation' %}
+                            <i class="fas fa-stethoscope mr-2 text-green-500"></i> {% elif category == 'Laboratory' %}
+                            <i class="fas fa-flask mr-2 text-orange-500"></i> {% elif category == 'Radiology' %}
+                            <i class="fas fa-x-ray mr-2 text-purple-500"></i> {% elif category == 'Pharmacy' %}
+                            <i class="fas fa-pills mr-2 text-red-500"></i> {% else %}
+                            <i class="fas fa-briefcase-medical mr-2 text-blue-500"></i> {% endif %} {{ category }}
+                        </h3>
+                        <div class="space-y-3">
+                            {% for service in services %}
+                            <label class="service-item flex items-center p-3 rounded-lg border dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors">
+                            <input type="checkbox" 
+                                   class="service-checkbox h-5 w-5 text-blue-600 rounded border-gray-300 dark:bg-gray-600 focus:ring-blue-500"
+                                   data-price="{{ service.price }}" 
+                                   data-service-id="{{ service.id }}" 
+                                   data-service-name="{{ service.name }}">
+                            <div class="ml-3 flex-1">
+                                <div class="font-medium text-gray-900 dark:text-gray-200">{{ service.name }}</div>
+                                <div class="text-sm text-gray-500 dark:text-gray-400">{{ service.desc }}</div>
+                            </div>
+                            <div class="text-lg font-semibold text-blue-600 dark:text-blue-400">
+                                Ksh {{ "{:,.0f}".format(service.price) }}
+                            </div>
+                        </label> {% endfor %}
+                        </div>
+                    </section>
+                    {% endfor %} {% else %}
+                    <div class="text-center text-gray-500 dark:text-gray-400 mt-8">
+                        No services available at this time.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800  dark:bg-gray-900 dark:bg-gray-800 rounded-xl shadow-lg p-6 h-fit sticky top-4">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300 flex items-center">
+                        <i class="fas fa-wallet mr-2 text-blue-500"></i>Payment Details
+                    </h2>
+                    <div class="flex space-x-2">
+                        <button type="button" class="payment-method-tab active px-4 py-2 rounded-lg bg-blue-50 dark:bg-gray-700 text-blue-600 dark:text-blue-400" data-method="stk">
+                            STK Push
+                        </button>
+                        <button type="button" class="payment-method-tab px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400" data-method="paybill">
+                            Paybill
+                        </button>
+                    </div>
+                </div>
+
+                
+                <div id="selectedServicesSummary" class="mb-4">
+                    <h3 class="text-md font-semibold text-gray-700 dark:text-gray-300 mb-2">Selected:</h3>
+                    <ul id="summaryList" class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                    </ul>
+                </div>
+
+                <div class="mb-6 p-4 bg-blue-50 dark:bg-gray-700 rounded-lg">
+                    <div class="flex justify-between items-center">
+                        <span class="text-lg font-semibold text-gray-700 dark:text-gray-300">Total Due:</span>
+                        <span id="totalAmountDisplay" class="text-2xl font-bold text-blue-600 dark:text-blue-400">Ksh 0</span>
+                        <!-- Fix the hidden total amount input -->
+                    </div>
+                </div>
+
+                <form id="paymentForm" action="{{ url_for('patients_web.process_payment') }}" method="POST" class="space-y-4"> {# Add your form action #}
+
+                    <div id="stkForm" class="space-y-4">
+                        <div>
+                            <label for="stkPhone" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone Number (for STK Push)</label>
+                            <div class="relative">
+                                <input type="tel" id="stkPhone" name="stkPhone" required class="w-full pl-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500" placeholder="e.g. 0712345678 or 0112345678"
+                                    pattern="^(?:01|07)[0-9]{8}$" maxlength="10" title="Must be 10 digits, starting with 01 or 07" />
+                                <p id="stkPhoneError" class="mt-2 text-sm text-red-600 dark:text-red-400 hidden">
+                                    Phone number must be exactly 10 digits and start with 01 or 07.
+                                </p>
+                            </div>
+                            <p id="stkPhoneError" class="mt-1 text-sm text-red-600 dark:text-red-400 hidden">Please enter a valid Safaricom 07XXXXXXXX number.</p>
+                        </div>
+                    </div>
+
+                    <div id="paybillForm" class="space-y-4 hidden">
+                        <div>
+                            <label for="paybillIdentifier" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone or Account used for Payment</label>
+                            <input type="text" id="paybillIdentifier" name="paybillIdentifier" class="w-full py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500" placeholder="e.g., 07XXXXXXXX or Account Number">
+                        </div>
+                        <div>
+                            <button type="button" id="fetchTransactionsBtn" class="w-full bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-white py-3 px-6 rounded-lg font-semibold transition-colors flex items-center justify-center">
+                                <i class="fas fa-sync-alt mr-2"></i> Fetch Transactions
+                                <i id="fetchLoading" class="fas fa-spinner fa-spin ml-2 hidden"></i>
+                            </button>
+                        </div>
+
+                        <div id="transactionsListContainer" class="space-y-3 mt-4 hidden">
+                            <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Select Transaction:</p>
+                            {# Transactions will be loaded here by JavaScript #}
+                            <div id="transactionsList" class="space-y-2">
+                                {#
+                                <label class="flex items-center p-3 rounded-lg border dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors">
+                                     <input type="radio" name="selectedTransaction" class="h-4 w-4 text-blue-600 rounded focus:ring-blue-500 dark:bg-gray-600" value="TXN_ID_123" data-amount="5000">
+                                     <div class="ml-3 flex-1">
+                                         <div class="font-medium text-gray-900 dark:text-gray-200">MPESA Payment (TXN_ID_123)</div>
+                                         <div class="text-sm text-gray-500 dark:text-gray-400">Received on: 2023-10-27 10:30 AM</div>
+                                     </div>
+                                     <div class="text-md font-semibold text-green-600 dark:text-green-400">Ksh 5,000</div>
+                                 </label> #}
+                            </div>
+                            <p id="noTransactionsFound" class="text-center text-gray-500 dark:text-gray-400 hidden">No matching transactions found.</p>
+                        </div>
+                        <input type="hidden" id="selectedTransactionId" name="selectedTransactionId">
+                        <!-- Inside the payment form, after selectedTransactionId input -->
+                        <input type="hidden" id="selectedTransactionAmount" name="selectedTransactionAmount">
+                        <input type="hidden" id="totalAmountValue" name="totalAmountValue" value="0">
+                        <p id="paybillError" class="mt-1 text-sm text-red-600 dark:text-red-400 hidden">Please fetch and select a transaction, and ensure the amount matches the total.</p>
+                    </div>
+<div class="mb-4">
+    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Patient Visit Type:</label>
+    <div class="flex flex-wrap gap-2">
+        <label class="inline-flex items-center px-3 py-1.5 rounded-full border border-gray-300 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-gray-700 cursor-pointer transition-colors has-[:checked]:bg-blue-600 has-[:checked]:border-blue-600 has-[:checked]:text-white text-xs font-medium whitespace-nowrap">
+            <input type="radio" name="visitType" value="general_consultation" class="hidden" checked>
+            <span>General Consultation</span>
+        </label>
+        <label class="inline-flex items-center px-3 py-1.5 rounded-full border border-gray-300 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-gray-700 cursor-pointer transition-colors has-[:checked]:bg-blue-600 has-[:checked]:border-blue-600 has-[:checked]:text-white text-xs font-medium whitespace-nowrap">
+            <input type="radio" name="visitType" value="dental_clinic" class="hidden">
+            <span>Dental Clinic</span>
+        </label>
+        <label class="inline-flex items-center px-3 py-1.5 rounded-full border border-gray-300 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-gray-700 cursor-pointer transition-colors has-[:checked]:bg-blue-600 has-[:checked]:border-blue-600 has-[:checked]:text-white text-xs font-medium whitespace-nowrap">
+            <input type="radio" name="visitType" value="optician_clinic" class="hidden">
+            <span>Optician Clinic</span>
+        </label>
+        <label class="inline-flex items-center px-3 py-1.5 rounded-full border border-gray-300 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-gray-700 cursor-pointer transition-colors has-[:checked]:bg-blue-600 has-[:checked]:border-blue-600 has-[:checked]:text-white text-xs font-medium whitespace-nowrap">
+            <input type="radio" name="visitType" value="special_clinics" class="hidden">
+            <span>Special Clinics</span>
+        </label>
+        
+        {# --- NEW WALK-IN OPTIONS --- #}
+        <label class="inline-flex items-center px-3 py-1.5 rounded-full border border-gray-300 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-gray-700 cursor-pointer transition-colors has-[:checked]:bg-blue-600 has-[:checked]:border-blue-600 has-[:checked]:text-white text-xs font-medium whitespace-nowrap">
+            <input type="radio" name="visitType" value="walk_in_lab" class="hidden">
+            <span>Walk-in (Lab)</span>
+        </label>
+        <label class="inline-flex items-center px-3 py-1.5 rounded-full border border-gray-300 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-gray-700 cursor-pointer transition-colors has-[:checked]:bg-blue-600 has-[:checked]:border-blue-600 has-[:checked]:text-white text-xs font-medium whitespace-nowrap">
+            <input type="radio" name="visitType" value="walk_in_rad" class="hidden">
+            <span>Walk-in (Radiology)</span>
+        </label>
+        <label class="inline-flex items-center px-3 py-1.5 rounded-full border border-gray-300 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-gray-700 cursor-pointer transition-colors has-[:checked]:bg-blue-600 has-[:checked]:border-blue-600 has-[:checked]:text-white text-xs font-medium whitespace-nowrap">
+            <input type="radio" name="visitType" value="walk_in_pharm" class="hidden">
+            <span>Walk-in (Pharmacy)</span>
+        </label>
+        {# --- END NEW WALK-IN OPTIONS --- #}
+
+        <label class="inline-flex items-center px-3 py-1.5 rounded-full border border-gray-300 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-gray-700 cursor-pointer transition-colors has-[:checked]:bg-blue-600 has-[:checked]:border-blue-600 has-[:checked]:text-white text-xs font-medium whitespace-nowrap">
+            <input type="radio" name="visitType" value="other" id="otherVisitTypeRadio" class="hidden">
+            <span>Other (Specify)</span>
+        </label>
+    </div>
+
+    <div id="otherVisitTypeInputContainer" class="mt-4 hidden">
+        <label for="otherVisitType" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Specify Visit Type:</label>
+        <input type="text" id="otherVisitType" name="otherVisitType" class="w-full py-2 px-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500" placeholder="e.g., Physiotherapy, Follow-up">
+    </div>
+</div>
+
+<input type="hidden" id="finalVisitType" name="finalVisitType">
+                    <input type="hidden" name="paymentMethod" id="paymentMethod" value="stk"> {# Hidden field to submit selected method #}
+                    <input type="hidden" name="patientRegNo" value="{{ patient.reg_no }}"> {# Pass patient info #}
+                    <input type="hidden" name="selectedServiceIds" id="selectedServiceIds"> {# To store selected service IDs #}
+
+
+                    <div class="mt-6">
+                        <button type="submit" id="completePaymentBtn" class="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white py-3 px-6 rounded-lg font-semibold transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed">
+                            <i class="fas fa-check-circle mr-2"></i>Complete Payment
+                            <i id="paymentLoading" class="fas fa-spinner fa-spin ml-2 hidden"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Processing Overlay (hidden by default) -->
+<div id="paymentOverlay" class="fixed inset-0 bg-black/30 flex items-center justify-center z-[999] hidden">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 flex flex-col items-center space-y-5 max-w-xs w-full mx-4">
+        <div class="relative">
+            <i class="fas fa-spinner fa-spin text-4xl text-blue-500"></i>
+            <div class="absolute inset-0 rounded-full bg-blue-500/10 animate-ping"></div>
+        </div>
+        
+        <p class="text-xl font-semibold text-gray-800 dark:text-gray-100 tracking-tight">
+            Processing payment...
+        </p>
+        
+        <div class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+            <div id="overlayProgress" class="h-full bg-gradient-to-r from-blue-400 to-indigo-600 
+                animate-[progress_1.5s_ease-in-out_infinite] origin-left"></div>
+        </div>
+        
+        <div id="dynamicMessages" class="min-h-[60px] w-full pt-2 transition-all duration-500 ease-in-out">
+            <!-- Messages will be dynamically inserted here -->
+        </div>
+    </div>
+</div>
+
+<style>
+@keyframes progress {
+  0% { transform: scaleX(0); opacity: 0.1; }
+  50% { transform: scaleX(0.5); opacity: 1; }
+  100% { transform: scaleX(1); opacity: 0.1; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in { animation: fadeIn 0.5s ease forwards; }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const messageContainer = document.getElementById('dynamicMessages');
+    const messages = [
+        "Please wait while we process your payment...",
+        "Ask the patient to enter their M-Pesa PIN on their phone now",
+        "Important: Complete payment within 2 minutes or it will time out",
+        "Billing Tip: Always verify patient details before submitting",
+        "Billing Tip: Keep payment descriptions clear and specific",
+        "Billing Tip: Double-check amounts before confirming payments",
+        "Billing Tip: Reconcile transactions daily for accurate records"
+    ];
+    
+    let currentIndex = 0;
+    
+    function showNextMessage() {
+        // Create message element
+        const messageEl = document.createElement('p');
+        messageEl.className = 'text-sm text-gray-500 dark:text-gray-400 text-center fade-in';
+        messageEl.textContent = messages[currentIndex];
+        
+        // Clear container and add new message
+        messageContainer.innerHTML = '';
+        messageContainer.appendChild(messageEl);
+        
+        // Update index for next message
+        currentIndex = (currentIndex + 1) % messages.length;
+    }
+    
+    // Initial message and rotation
+    showNextMessage();
+    const messageInterval = setInterval(showNextMessage, 5000);
+    
+    // Cleanup when overlay is hidden
+    window.managePaymentOverlay = {
+        stopMessages: () => clearInterval(messageInterval),
+        startMessages: () => {
+            showNextMessage();
+            messageInterval = setInterval(showNextMessage, 5000);
+        }
+    };
+});
+</script>
+<div id="receiptModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] hidden">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-[95%] max-w-sm p-5 relative my-8">
+        <button id="closeReceipt" class="absolute top-3 right-3 text-gray-500 hover:text-gray-700 dark:text-gray-300">
+            <i class="fas fa-times text-xl"></i>
+        </button>
+
+        <div id="receiptContent" class="overflow-y-auto max-h-[75vh] scroll-smooth" style="scrollbar-width: none; -ms-overflow-style: none;">
+            <div class="space-y-4 font-receipt text-sm">
+                <div class="text-center mb-5">
+                    <div class="mb-3">
+                        {# Dynamically load logo if available, otherwise fallback or handle gracefully #}
+                        {% if hospital_info and hospital_info.logo_url %}
+                            <img src="{{ hospital_info.logo_url }}" alt="{{ hospital_info.display_name or hospital_info.name }}" class="h-14 mx-auto">
+                        {% else %}
+                            {# Fallback for when no logo_url is provided, e.g., a default logo or text #}
+                            <i class="fas fa-hospital text-5xl text-blue-500 mx-auto"></i>
+                        {% endif %}
+                        <h2 class="text-2xl font-bold mt-2 tracking-tight">{{ hospital_info.display_name or hospital_info.name or 'Hospital Name' }}</h2>
+                        {% if hospital_info.tagline %}<p class="text-sm text-gray-600 dark:text-gray-400">{{ hospital_info.tagline }}</p>{% endif %}
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="text-left">
+                            <p>{{ hospital_info.address_line1 or '' }}</p>
+                            <p>{{ hospital_info.city or '' }}, {{ hospital_info.country or '' }}</p>
+                            {% if hospital_info.postal_code %}<p>P.O Box {{ hospital_info.postal_code }}</p>{% endif %}
+                        </div>
+                        <div class="text-right">
+                            <p>{{ hospital_info.primary_contact or '' }}</p>
+                            {% if hospital_info.email %}<p>{{ hospital_info.email }}</p>{% endif %}
+                            {% if hospital_info.website %}<p>{{ hospital_info.website }}</p>{% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border-y border-dashed border-gray-300 py-3 text-center">
+                    <h3 class="text-base font-bold uppercase">CASH RECEIPT</h3>
+                    <p class="text-xs text-gray-500">System Generated</p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 mt-3">
+                    <div>
+                        <p><span class="font-semibold">Patient:</span> <span id="r_patientName"></span></p>
+                        <p><span class="font-semibold">Reg No:</span> <span id="r_regNo"></span></p>
+                    </div>
+                    <div class="text-right">
+                        <p><span class="font-semibold">Receipt:</span> <span id="r_receiptNo"></span></p>
+                        <p><span class="font-semibold">Date:</span> <span id="r_date"></span></p>
+                    </div>
+                </div>
+
+                <table class="w-full mt-3">
+                    <thead>
+                        <tr class="border-b border-gray-200">
+                            <th class="text-left pb-2 text-xs">DESCRIPTION</th>
+                            <th class="text-right pb-2 text-xs">AMOUNT</th>
+                        </tr>
+                    </thead>
+                    <tbody id="r_servicesList" class="divide-y divide-gray-200">
+                        </tbody>
+                    <tfoot class="bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                            <td class="pt-3 font-semibold">Subtotal</td>
+                            <td class="pt-3 text-right" id="r_subtotal"></td>
+                        </tr>
+                        <tr>
+                            <td>Tax (0%)</td>
+                            <td class="text-right">0.00</td>
+                        </tr>
+                        <tr class="border-t border-gray-300">
+                            <td class="pt-2 font-bold">TOTAL</td>
+                            <td class="pt-2 text-right font-bold" id="r_total"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+
+                <div class="grid grid-cols-2 gap-3 mt-4">
+                    <div>
+                        <p class="font-semibold">Payment Method:</p>
+                        <p>CASH</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-semibold">Received:</p>
+                        <p id="r_amountReceived"></p>
+                    </div>
+                </div>
+
+                <div class="text-center text-xs mt-4 text-gray-500 border-t pt-3">
+                    <p>** Official Computer Generated Receipt **</p>
+                    <p>Valid with original stamp & signature</p>
+                    {# Dynamically add the hospital's display name or a fallback #}
+                    <p>Thank you for choosing {{ hospital_info.display_name or hospital_info.name or 'Our Hospital' }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-5 flex justify-end gap-3">
+            <button id="printReceipt" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm">
+                <i class="fas fa-print mr-2"></i>Print
+            </button>
+            <button id="downloadPdf" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm">
+                <i class="fas fa-file-pdf mr-2"></i>PDF
+            </button>
+        </div>
+    </div>
+</div>
+<style>
+    /* PDF Generation Fixes */
+    
+    @media print {
+        #receiptContent {
+            width: 80mm !important;
+            min-width: 80mm !important;
+            max-width: 80mm !important;
+            padding: 5mm !important;
+            margin: 0 auto !important;
+        }
+        #receiptModal button,
+        #receiptModal .fa-times {
+            display: none !important;
+        }
+    }
+    /* Force single column layout for PDF */
+    
+    .pdf-export #receiptContent {
+        width: 80mm !important;
+        min-height: 400mm !important;
+        /* Reset all margins */
+        * {
+            margin: 0 !important;
+            padding: 1px !important;
+        }
+        /* Scale down headers */
+        h2 {
+            font-size: 1.2rem !important;
+        }
+        h3 {
+            font-size: 1rem !important;
+        }
+        /* Compact layout */
+        .space-y-4>*+* {
+            margin-top: 0.5rem !important;
+        }
+        table {
+            font-size: 0.7rem !important;
+        }
+    }
+    
+    @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300;400;500&display=swap');
+    .font-receipt {
+        font-family: 'Roboto Mono', monospace;
+    }
+    /* Slightly Larger Table Styling */
+    
+    table {
+        font-size: 0.8rem;
+        line-height: 1.2;
+    }
+    
+    th,
+    td {
+        padding: 0.25rem 0;
+    }
+    /* Increased Header Sizes */
+    
+    #receiptContent h2 {
+        font-size: 1.5rem;
+    }
+    
+    #receiptContent h3 {
+        font-size: 1.1rem;
+    }
+    
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const serviceSearchInput = document.getElementById('serviceSearch');
+        const servicesListContainer = document.getElementById('servicesList');
+        const serviceItems = servicesListContainer.querySelectorAll('.service-item'); // Get all service items
+        const serviceCheckboxes = servicesListContainer.querySelectorAll('.service-checkbox');
+        const totalAmountDisplay = document.getElementById('totalAmountDisplay');
+        const totalAmountValueInput = document.getElementById('totalAmountValue');
+        const paymentTabs = document.querySelectorAll('.payment-method-tab');
+        const stkForm = document.getElementById('stkForm');
+        const paybillForm = document.getElementById('paybillForm');
+        const stkPhoneInput = document.getElementById('stkPhone');
+        const stkPhoneError = document.getElementById('stkPhoneError');
+        const paybillIdentifierInput = document.getElementById('paybillIdentifier');
+        const fetchTransactionsBtn = document.getElementById('fetchTransactionsBtn');
+        const fetchLoading = document.getElementById('fetchLoading');
+        const transactionsListContainer = document.getElementById('transactionsListContainer');
+        const transactionsList = document.getElementById('transactionsList');
+        const noTransactionsFound = document.getElementById('noTransactionsFound');
+        const paybillError = document.getElementById('paybillError');
+        const completePaymentBtn = document.getElementById('completePaymentBtn');
+        const paymentLoading = document.getElementById('paymentLoading');
+        const paymentMethodInput = document.getElementById('paymentMethod');
+        const selectedServiceIdsInput = document.getElementById('selectedServiceIds');
+        const selectedTransactionIdInput = document.getElementById('selectedTransactionId');
+        const selectedTransactionAmountInput = document.getElementById('selectedTransactionAmount');
+        const clearServicesBtn = document.getElementById('clearServicesBtn');
+
+
+    const summaryList = document.getElementById('summaryList'); // Get the summary list UL
+    const selectedServicesSummaryDiv = document.getElementById('selectedServicesSummary'); // Get the parent div for visibility
+
+    let total = 0;
+    let selectedTransaction = null;
+
+    // --- Service Selection and Total Calculation ---
+
+    function updateTotal() {
+        total = 0;
+        const selectedServiceIds = [];
+        const selectedServiceNames = []; // Array to store names for the summary
+
+        serviceCheckboxes.forEach(checkbox => {
+            if (checkbox.checked) {
+                total += Number(checkbox.dataset.price);
+                selectedServiceIds.push(checkbox.dataset.serviceId);
+                // Get service name from data attribute and add to array
+                selectedServiceNames.push({
+                    name: checkbox.dataset.serviceName,
+                    price: Number(checkbox.dataset.price)
+                });
+            }
+        });
+
+        totalAmountDisplay.textContent = `Ksh ${total.toLocaleString()}`;
+        totalAmountValueInput.value = total;
+        selectedServiceIdsInput.value = selectedServiceIds.join(',');
+
+        // --- Update Selected Services Summary ---
+        summaryList.innerHTML = ''; // Clear previous summary items
+
+        if (selectedServiceNames.length > 0) {
+            selectedServicesSummaryDiv.classList.remove('hidden'); // Show the summary section
+            selectedServiceNames.forEach(service => {
+                const li = document.createElement('li');
+                li.className = 'flex justify-between items-center py-1'; // Tailwind for styling list item
+                li.innerHTML = `
+                    <span>${service.name}</span>
+                    <span class="font-medium text-gray-800 dark:text-gray-200">Ksh ${service.price.toLocaleString()}</span>
+                `;
+                summaryList.appendChild(li);
+            });
+        } else {
+            selectedServicesSummaryDiv.classList.add('hidden'); // Hide if no services are selected
+        }
+        // --- End Update Selected Services Summary ---
+
+
+        // Update button state based on total
+        if (total === 0) {
+            completePaymentBtn.disabled = true;
+        } else {
+            completePaymentBtn.disabled = false;
+            if (paymentMethodInput.value === 'paybill') {
+                validatePaybillSelection();
+            }
+        }
+    }
+
+    serviceCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateTotal);
+    });
+
+    clearServicesBtn.addEventListener('click', () => {
+        serviceCheckboxes.forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        updateTotal(); // This will now also clear the summary
+    });
+
+        // --- Service Search ---
+
+        serviceSearchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            let servicesFound = 0;
+
+            serviceItems.forEach(item => {
+                const serviceName = item.querySelector('.font-medium').textContent.toLowerCase();
+                const serviceDesc = item.querySelector('.text-sm').textContent.toLowerCase();
+                // Check if the item or its parent section should be shown
+                // We need to show the whole section if any item in it matches
+                const section = item.closest('section');
+
+
+                if (serviceName.includes(searchTerm) || serviceDesc.includes(searchTerm)) {
+                    item.classList.remove('hidden'); // Show the item
+                    // Mark the section to ensure it's shown
+                    if (section) section.dataset.show = 'true';
+                    servicesFound++;
+                } else {
+                    item.classList.add('hidden'); // Hide the item
+                }
+            });
+
+            // After filtering items, check which sections still have visible items
+            servicesListContainer.querySelectorAll('section').forEach(section => {
+                const visibleItemsInSection = section.querySelectorAll('.service-item:not(.hidden)');
+                if (visibleItemsInSection.length > 0) {
+                    section.classList.remove('hidden'); // Show the section
+                } else {
+                    section.classList.add('hidden'); // Hide the section
+                }
+            });
+
+
+            // Show "No services found" message if needed
+            if (servicesFound === 0 && searchTerm.length > 0) {
+                noServicesFound.classList.remove('hidden');
+            } else {
+                noServicesFound.classList.add('hidden');
+            }
+        });
+
+
+        // --- Payment Method Tabs ---
+
+        paymentTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                paymentTabs.forEach(t => t.classList.remove('active', 'bg-blue-50', 'text-blue-600', 'dark:bg-gray-700', 'dark:text-blue-400'));
+                tab.classList.add('active', 'bg-blue-50', 'text-blue-600', 'dark:bg-gray-700', 'dark:text-blue-400');
+
+                const method = tab.dataset.method;
+                paymentMethodInput.value = method; // Update hidden input
+
+                if (method === 'stk') {
+                    stkForm.classList.remove('hidden');
+                    paybillForm.classList.add('hidden');
+                    paybillError.classList.add('hidden'); // Hide Paybill error if switching
+                    completePaymentBtn.disabled = (total === 0); // Re-enable if total > 0
+                } else { // paybill
+                    stkForm.classList.add('hidden');
+                    paybillForm.classList.remove('hidden');
+                    validatePaybillSelection(); // Validate Paybill state on switch
+                }
+            });
+        });
+
+        // --- STK Phone Input Formatting and Validation ---
+        const validKenyanPhone = (value) => {
+            const pattern = /^(?:01|07)[0-9]{8}$/;
+            return pattern.test(value);
+        };
+
+        stkPhoneInput.addEventListener('input', (e) => {
+            let digitsOnly = e.target.value.replace(/\D/g, '');
+            if (digitsOnly.length > 10) {
+                digitsOnly = digitsOnly.slice(0, 10);
+            }
+            e.target.value = digitsOnly;
+
+            if (digitsOnly.length === 10 && validKenyanPhone(digitsOnly)) {
+                stkPhoneError.classList.add('hidden');
+            } else {
+                stkPhoneError.classList.remove('hidden');
+            }
+        });
+
+        stkPhoneInput.addEventListener('blur', (e) => {
+            const value = e.target.value;
+            if (!validKenyanPhone(value)) {
+                stkPhoneError.classList.remove('hidden');
+            } else {
+                stkPhoneError.classList.add('hidden');
+            }
+        });
+
+        // --- Paybill Transaction Fetch & Selection (Client-side Simulation) ---
+
+        function renderTransactions(transactions) {
+            transactionsList.innerHTML = ''; // Clear previous list
+            if (transactions.length === 0) {
+                noTransactionsFound.classList.remove('hidden');
+                transactionsListContainer.classList.remove('hidden');
+            } else {
+                noTransactionsFound.classList.add('hidden');
+                transactionsListContainer.classList.remove('hidden');
+                transactions.forEach(txn => {
+                    const label = document.createElement('label');
+                    label.className = 'flex items-center p-3 rounded-lg border dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors';
+                    label.innerHTML = `
+                        <input type="radio" name="selectedTransaction" class="h-4 w-4 text-blue-600 rounded focus:ring-blue-500 dark:bg-gray-600"
+                               value="${txn.id}" data-amount="${txn.amount}">
+                        <div class="ml-3 flex-1">
+                            <div class="font-medium text-gray-900 dark:text-gray-200">MPESA Payment (${txn.id})</div>
+                            <div class="text-sm text-gray-500 dark:text-gray-400">Amount: Ksh ${txn.amount.toLocaleString()} - On: ${txn.date}</div>
+                        </div>
+                        <div class="text-md font-semibold text-green-600 dark:text-green-400">
+                             Ksh ${txn.amount.toLocaleString()}
+                        </div>
+                    `;
+                    transactionsList.appendChild(label);
+                });
+
+                // Add event listeners to the newly rendered radio buttons
+                transactionsList.querySelectorAll('input[name="selectedTransaction"]').forEach(radio => {
+                    radio.addEventListener('change', (e) => {
+                        selectedTransaction = {
+                            id: e.target.value,
+                            amount: Number(e.target.dataset.amount)
+                        };
+                        selectedTransactionIdInput.value = selectedTransaction.id;
+                        selectedTransactionAmountInput.value = selectedTransaction.amount;
+                        validatePaybillSelection();
+                    });
+                });
+            }
+        }
+
+        function validatePaybillSelection() {
+            if (selectedTransaction && selectedTransaction.amount === total) {
+                paybillError.classList.add('hidden');
+                completePaymentBtn.disabled = false;
+            } else {
+                let errorMessage = 'Please select a transaction.';
+                if (selectedTransaction && selectedTransaction.amount !== total) {
+                    errorMessage = `Selected transaction amount (Ksh ${selectedTransaction.amount.toLocaleString()}) does not match Total Due (Ksh ${total.toLocaleString()}).`;
+                } else if (total === 0) {
+                    errorMessage = 'Please select services first.';
+                }
+                paybillError.textContent = errorMessage;
+                paybillError.classList.remove('hidden');
+                completePaymentBtn.disabled = true;
+            }
+        }
+
+
+        fetchTransactionsBtn.addEventListener('click', async() => {
+            const identifier = paybillIdentifierInput.value.trim();
+            if (!identifier) {
+                showAlert('warning', 'Please enter phone or account number to fetch transactions.');
+                return;
+            }
+
+            fetchTransactionsBtn.disabled = true;
+            fetchLoading.classList.remove('hidden');
+            transactionsList.innerHTML = ''; // Clear previous list
+            transactionsListContainer.classList.add('hidden');
+            noTransactionsFound.classList.add('hidden');
+            selectedTransaction = null; // Reset selected transaction
+            selectedTransactionIdInput.value = '';
+            selectedTransactionAmountInput.value = '';
+            paybillError.classList.add('hidden');
+
+
+            // --- START: SIMULATED BACKEND CALL ---
+            console.log(`Simulating fetching transactions for identifier: ${identifier}`);
+            await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate network delay
+
+            // Example simulated data (replace with actual API call)
+            const simulatedTransactions = [{
+                    id: 'ABCD1234EF',
+                    amount: 1500,
+                    date: '2023-10-27 10:30'
+                }, {
+                    id: 'GHIJ5678KL',
+                    amount: 4500,
+                    date: '2023-10-26 14:00'
+                }, {
+                    id: 'MNOP9012QR',
+                    amount: total,
+                    date: '2023-10-25 09:15'
+                }, // Include one matching the total for testing
+                {
+                    id: 'STUV3456WX',
+                    amount: 2000,
+                    date: '2023-10-24 11:00'
+                },
+            ].filter(txn => txn.amount > 0); // Filter out zero amount if any
+
+            renderTransactions(simulatedTransactions);
+            // --- END: SIMULATED BACKEND CALL ---
+
+            fetchTransactionsBtn.disabled = false;
+            fetchLoading.classList.add('hidden');
+
+            // Validate state after fetching (especially if total is 0)
+            validatePaybillSelection();
+        });
+
+
+        // Listen for changes on transaction radio buttons (delegated)
+        transactionsList.addEventListener('change', (e) => {
+            if (e.target.name === 'selectedTransaction') {
+                selectedTransaction = {
+                    id: e.target.value,
+                    amount: Number(e.target.dataset.amount)
+                };
+                selectedTransactionIdInput.value = selectedTransaction.id;
+                selectedTransactionAmountInput.value = selectedTransaction.amount;
+                validatePaybillSelection();
+            }
+        });
+
+
+        // Grab overlay element once
+        const overlay = document.getElementById('paymentOverlay');
+        let currentCheckoutId = '';
+
+        async function pollTransactionStatus(checkoutId, maxDuration = 120000, interval = 2000) {
+            const startTime = Date.now();
+            overlay.classList.remove('hidden');
+            document.getElementById('overlayProgress').style.animationPlayState = 'running';
+
+            const poll = async() => {
+                try {
+                    const res = await fetch(`/patients/check-status?checkout_id=${checkoutId}`);
+                    const data = await res.json();
+
+                    if (data.status === 'success') {
+                        overlay.classList.add('hidden');
+                        showAlert('success', `Payment confirmed! Rendering receipt…`, 4000);
+                        currentCheckoutId = checkoutId;
+
+                        // Populate receipt modal
+                        const tx = data.transaction;
+                        const pt = data.patient;
+                        const services = data.services;
+
+                        document.getElementById('r_patientName').textContent = `${pt.first_name} ${pt.last_name}`;
+                        document.getElementById('r_regNo').textContent = pt.reg_no;
+                        document.getElementById('r_receiptNo').textContent = tx.receipt_number;
+                        document.getElementById('r_date').textContent = new Date(tx.paid_at).toLocaleString();
+
+                        // Build services rows
+                        const tbody = document.getElementById('r_servicesList');
+                        tbody.innerHTML = ''; // clear
+                        let total = 0;
+                        services.forEach(s => {
+                            const tr = document.createElement('tr');
+                            tr.innerHTML = `
+            <td class="py-2">${s.name}</td>
+            <td class="py-2 text-right">${s.price.toLocaleString()}</td>
+          `;
+                            tbody.appendChild(tr);
+                            total += s.price;
+                        });
+                        document.getElementById('r_total').textContent = total.toLocaleString();
+
+                        // Show modal
+                        document.getElementById('receiptModal').classList.remove('hidden');
+
+                        return;
+                    }
+
+                    if (Date.now() - startTime < maxDuration) {
+                        setTimeout(poll, interval);
+                    } else {
+                        overlay.classList.add('hidden');
+                        showAlert('warning', 'Payment not confirmed within 2 minutes. Please check later.');
+                    }
+
+                } catch (err) {
+                    overlay.classList.add('hidden');
+                    console.error('Polling error:', err);
+                    showAlert('error', 'Failed to verify payment status. Please try again later.');
+                }
+            };
+            poll();
+        }
+
+// Close receipt
+document.getElementById('closeReceipt').onclick = () => {
+    document.getElementById('receiptModal').classList.add('hidden');
+    window.location.href = '/patients/register'; // Add this line to redirect
+};
+
+        // Print
+        document.getElementById('printReceipt').onclick = () => {
+            window.print();
+        };
+
+        // Updated PDF Download Handler
+        document.getElementById('downloadPdf').onclick = async() => {
+            const modal = document.getElementById('receiptContent');
+            const originalStyles = {
+                width: modal.style.width,
+                padding: modal.style.padding,
+                margin: modal.style.margin
+            };
+
+            // Force receipt width for PDF generation
+            modal.style.width = '80mm';
+            modal.style.padding = '0';
+            modal.style.margin = '0';
+
+            const {
+                jsPDF
+            } = window.jspdf;
+            const doc = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: [80, 500], // Extra height for long receipts
+                hotfixes: ["px_scaling"]
+            });
+
+            try {
+                const canvas = await html2canvas(modal, {
+                    scale: 3,
+                    useCORS: true,
+                    scrollY: -window.scrollY,
+                    windowWidth: 340, // 80mm in pixels (80mm * 4.166px/mm)
+                    width: 340,
+                    height: modal.scrollHeight * 3
+                });
+
+                const imgWidth = 80; // mm
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+                // Set dynamic page height
+                doc.deletePage(1);
+                doc.addPage([80, imgHeight + 20]); // 20mm margin
+                doc.addImage(canvas, 'PNG', 5, 10, 70, imgHeight, undefined, 'FAST');
+
+            } catch (error) {
+                console.error('PDF generation failed:', error);
+            } finally {
+                // Restore original styles
+                modal.style.width = originalStyles.width;
+                modal.style.padding = originalStyles.padding;
+                modal.style.margin = originalStyles.margin;
+            }
+
+            doc.save(`AstroCare_Receipt_${currentCheckoutId}.pdf`);
+        };
+
+        document.getElementById('paymentForm').addEventListener('submit', async(e) => {
+            e.preventDefault();
+            const form = e.target; // Add this line
+            const formData = new FormData(form); // Add this line
+            const currentMethod = paymentMethodInput.value;
+            const btn = completePaymentBtn;
+
+            if (total === 0) {
+                showAlert('error', 'Please select at least one service.');
+                return;
+            }
+
+            if (currentMethod === 'stk') {
+                const phoneValue = stkPhoneInput.value.trim();
+
+                // Check for exactly 10 digits and prefix “07” or “01”
+                if (
+                    phoneValue.length !== 10 ||
+                    !(phoneValue.startsWith('07') || phoneValue.startsWith('01'))
+                ) {
+                    stkPhoneError.classList.remove('hidden');
+                    showAlert(
+                        'error',
+                        'Invalid phone number format. Use 07XXXXXXXX or 01XXXXXXXX.'
+                    );
+                    return;
+                }
+
+                stkPhoneError.classList.add('hidden');
+
+                // Prepare data: Convert 07... to 2547... for the backend
+                // The backend will receive 'stkPhone' as 7XXXXXXXX, you might need to prefix 254 in your backend logic
+                // Or you can send 2547XXXXXXXX directly if your backend expects it. Let's prepare for 2547XXXXXXXX
+                // const fullPhoneNumber = `254${phoneSuffix}`;
+                // You'll need to handle this conversion on the server or add a hidden field here.
+                // For this template, let's assume the input 'stkPhone' sends the 7XXXXXXXX and the backend adds 254.
+
+            } else { // paybill
+                validatePaybillSelection(); // Re-validate just before submission
+                if (paybillError.classList.contains('hidden')) {
+                    // Validation passed client-side
+                    // The selectedTransactionId and selectedTransactionAmount hidden inputs are already set by the change listener
+                } else {
+                    showAlert('error', paybillError.textContent);
+                    return;
+                }
+            }
+
+            // Disable button and show loading
+            btn.disabled = true;
+            paymentLoading.classList.remove('hidden');
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i>Processing...`;
+
+
+            // --- START: SIMULATED PAYMENT PROCESSING ---
+            console.log('Submitting Payment...');
+            console.log('Method:', currentMethod);
+            console.log('Total:', total);
+            console.log('Selected Service IDs:', selectedServiceIdsInput.value);
+
+            if (currentMethod === 'stk') {
+                console.log('STK Phone (suffix):', stkPhoneInput.value);
+                // In a real scenario, send this to your STK push backend endpoint
+            } else { // paybill
+                console.log('Selected Transaction ID:', selectedTransactionIdInput.value);
+                console.log('Selected Transaction Amount:', selectedTransactionAmountInput.value);
+                console.log('Identifier used for fetch:', paybillIdentifierInput.value);
+                // In a real scenario, send the transaction ID (and perhaps total/patient info)
+                // to your backend endpoint to finalize/confirm the Paybill payment and apply it.
+                // Your backend MUST re-verify the transaction amount matches the total.
+            }
+
+
+            try {
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.message || 'Payment failed');
+                }
+
+                // Show success + checkout/transaction reference
+                let refText = '';
+                if (result.checkout_id) {
+                    refText = `Checkout ID: ${result.checkout_id}`;
+                    pollTransactionStatus(result.checkout_id); // 🔁 Start polling here
+                } else if (result.transaction_id) {
+                    refText = `Transaction ID: ${result.transaction_id}`;
+                }
+                showAlert('success', `${result.message}${refText ? ' (' + refText + ')' : ''}`, 5000);
+
+                // Reset UI
+                serviceCheckboxes.forEach(cb => cb.checked = false);
+                stkPhoneInput.value = '';
+                paybillIdentifierInput.value = '';
+                selectedTransactionIdInput.value = '';
+                selectedTransactionAmountInput.value = '';
+                transactionsList.innerHTML = '';
+                transactionsListContainer.classList.add('hidden');
+                noTransactionsFound.classList.add('hidden');
+                paybillError.classList.add('hidden');
+                stkPhoneError.classList.add('hidden');
+                updateTotal(); // recalculates total & toggles payment button
+
+                // Optionally: scroll top or focus first input
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+
+            } catch (err) {
+                console.error('Payment failed:', err);
+                showAlert('error', err.message || 'Payment processing failed. Please try again.', 6000);
+            } finally {
+                // Re-enable button and restore text
+                btn.disabled = false;
+                paymentLoading.classList.add('hidden');
+                btn.innerHTML = `<i class="fas fa-check-circle mr-2"></i>Complete Payment`;
+                // Re-validate button state based on form state after attempt
+                if (paymentMethodInput.value === 'paybill') {
+                    validatePaybillSelection();
+                } else if (total === 0 || stkPhoneInput.value.trim().length !== 8 || !stkPhoneInput.value.trim().startsWith('7')) {
+                    completePaymentBtn.disabled = true;
+                }
+            }
+            // --- END: SIMULATED PAYMENT PROCESSING ---
+        });
+
+        // --- Helper Functions ---
+
+        function showAlert(type, message, duration = 4000) {
+            const alert = document.createElement('div');
+            alert.className = `fixed z-50 top-4 right-4 p-4 rounded-lg shadow-lg text-white transform transition-transform ease-out duration-300 slide-in-right ${
+                type === 'success' ? 'bg-green-500' : 'bg-red-500'
+            }`;
+            alert.textContent = message;
+
+            // Add slide-in animation
+            alert.style.transform = 'translateX(100%)';
+            setTimeout(() => {
+                alert.style.transform = 'translateX(0)';
+            }, 10); // Small delay to ensure transition runs
+
+            document.body.appendChild(alert);
+            setTimeout(() => {
+                alert.style.transform = 'translateX(100%)'; // Slide out
+                alert.addEventListener('transitionend', () => alert.remove()); // Remove after transition
+            }, duration);
+        }
+
+        // --- Initial Load ---
+        updateTotal(); // Calculate initial total on page load
+        // Initially disable submit if no services are selected
+        if (total === 0) {
+            completePaymentBtn.disabled = true;
+        }
+            const visitTypeRadios = document.querySelectorAll('input[name="visitType"]');
+    const otherVisitTypeInputContainer = document.getElementById('otherVisitTypeInputContainer');
+    const otherVisitTypeInput = document.getElementById('otherVisitType');
+    const finalVisitTypeInput = document.getElementById('finalVisitType');
+
+    /**
+     * Updates the hidden finalVisitType input and manages the visibility
+     * and required state of the 'Other (Specify)' text input.
+     */
+    function updateVisitType() {
+        let selectedValue = '';
+
+        // Find the currently selected radio button
+        visitTypeRadios.forEach(radio => {
+            if (radio.checked) {
+                selectedValue = radio.value;
+            }
+        });
+
+        if (selectedValue === 'other') {
+            // Show the 'Other' input field
+            otherVisitTypeInputContainer.classList.remove('hidden');
+            // Make the 'Other' input required when 'Other' is selected
+            otherVisitTypeInput.setAttribute('required', 'true');
+            // Set the hidden input's value to the 'Other' text input's value
+            finalVisitTypeInput.value = otherVisitTypeInput.value.trim();
+        } else {
+            // Hide the 'Other' input field
+            otherVisitTypeInputContainer.classList.add('hidden');
+            // Clear the value and remove required attribute from 'Other' input
+            otherVisitTypeInput.value = '';
+            otherVisitTypeInput.removeAttribute('required');
+            // Set the hidden input's value to the selected radio button's value
+            finalVisitTypeInput.value = selectedValue;
+        }
+    }
+
+    // Add event listeners to all visit type radio buttons
+    // When a radio button's selection changes, call updateVisitType
+    visitTypeRadios.forEach(radio => {
+        radio.addEventListener('change', updateVisitType);
+    });
+
+    // Add an event listener to the 'Other' text input
+    // This updates the final hidden input as the user types
+    otherVisitTypeInput.addEventListener('input', updateVisitType);
+
+    // Initial call to set the correct state when the page loads
+    // This is important if you have a 'checked' attribute in your HTML
+    updateVisitType();
+
+    });
+</script>
+
+<style>
+    /* Custom styles for service selection and payment tabs */
+    
+    .service-item {
+        transition: all 0.2s ease;
+    }
+    
+    .service-checkbox:checked~div .font-medium {
+        /* Apply line-through and highlight only to the title */
+        /* text-decoration: line-through; */
+        /* Decided against line-through for clarity with price */
+        color: #3b82f6;
+        /* Blue */
+    }
+    
+    .service-checkbox:checked~div .text-sm {
+        color: #60a5fa;
+        /* Lighter Blue */
+    }
+    
+    .dark .service-checkbox:checked~div .font-medium {
+        color: #60a5fa;
+        /* Lighter Blue */
+    }
+    
+    .dark .service-checkbox:checked~div .text-sm {
+        color: #93c5fd;
+        /* Even Lighter Blue */
+    }
+    
+    .payment-method-tab {
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+    
+    .payment-method-tab.active {
+        background-color: #eff6ff;
+        /* Blue 50 */
+        color: #2563eb;
+        /* Blue 600 */
+        font-weight: 600;
+    }
+    
+    .dark .payment-method-tab.active {
+        background-color: #1e3a8a;
+        /* Blue 800 */
+        color: #93c5fd;
+        /* Blue 300 */
+    }
+    /* Alert Animation */
+    
+    .slide-in-right {
+        /* Initial state set in JS */
+    }
+    
+    .slide-in-right.transition-transform {
+        transition: transform 0.3s ease-out;
+    }
+</style>
+{% endblock %}

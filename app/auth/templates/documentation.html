@@ -1,0 +1,111 @@
+{% extends 'base.html' %} {% block content %}
+<!-- Hero (Compact Centered) -->
+<section class="max-w-4xl mx-auto bg-gradient-to-r from-indigo-600 to-blue-500 py-8 md:py-10 my-8 rounded-2xl relative overflow-hidden">
+    <div class="absolute inset-0 bg-grid-white opacity-10"></div>
+    <div class="relative z-10 text-center px-6">
+        <h1 class="text-2xl md:text-3xl lg:text-4xl font-extrabold text-white leading-snug">
+            AstroCare<br><span class="text-blue-200">Documentation</span>
+        </h1>
+        <p class="mt-2 text-sm md:text-base text-indigo-100 max-w-2xl mx-auto">
+            Guides, API references, and best practices for your hospital management.
+        </p>
+        <div class="mt-4 max-w-lg mx-auto">
+            <input type="text" x-data x-model="search" placeholder="Search documentation..." class="w-full py-2 px-4 rounded-full border-0 shadow-md focus:ring-2 focus:ring-blue-300 transition" />
+        </div>
+    </div>
+</section>
+
+<!-- Content Grid -->
+<div class="max-w-7xl mx-auto p-6 grid lg:grid-cols-4 gap-8">
+    <!-- Sidebar TOC -->
+    <aside class="hidden lg:block lg:col-span-1 sticky top-32 self-start">
+        <nav class="space-y-6">
+            <h2 class="text-lg md:text-xl font-bold text-gray-800 mb-2">Modules</h2>
+            <ul class="space-y-1 text-gray-600">
+                {% for module in modules %}
+                <li>
+                    <a href="#{{ module.id }}" class="block px-3 py-2 text-sm md:text-base rounded hover:bg-blue-50 transition">
+            {{ module.name }}
+          </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="lg:col-span-3 space-y-12">
+        {% for module in modules %}
+        <section id="{{ module.id }}" class="space-y-4">
+            <h2 class="text-2xl md:text-3xl font-semibold text-gray-800">{{ module.name }}</h2>
+            <p class="text-gray-600 text-sm md:text-base">{{ module.description }}</p>
+            <div class="bg-white rounded-2xl shadow-md p-6 space-y-4">
+                {% for topic in module.topics %}
+                <div x-data="{ open:false }" class="border border-gray-200 rounded-lg overflow-hidden">
+                    <button @click="open=!open" class="w-full flex justify-between items-center p-4 bg-gray-50 hover:bg-gray-100 transition">
+            <span class="font-medium text-gray-800 text-sm md:text-base">{{ topic.title }}</span>
+            <i :class="open?'fas fa-minus':'fas fa-plus'" class="text-gray-600 text-lg"></i>
+          </button>
+                    <div x-show="open" x-collapse class="p-4 bg-white text-gray-700 space-y-3 text-sm md:text-base">
+                        {% for line in topic.content %}
+                        <p>{{ line }}</p>
+                        {% endfor %} {% if topic.code %}
+                        <pre class="bg-gray-100 p-4 rounded text-xs md:text-sm overflow-auto"><code>{{ topic.code }}</code></pre> {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endfor %}
+    </main>
+</div>
+
+<style>
+    /* grid background pattern for hero */
+    
+    .bg-grid-white {
+        background-image: url("data:image/svg+xml,%3Csvg width='30' height='30' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0L0 0 0 30' fill='none' stroke='%23fff' stroke-width='1'/%3E%3C/svg%3E");
+    }
+    /* Scroll-to-top button styling */
+    
+    #scrollTopBtn {
+        display: none;
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        background-color: #2563EB;
+        /* blue-600 */
+        color: white;
+        padding: 0.75rem;
+        border-radius: 9999px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: opacity 0.3s;
+        z-index: 50;
+    }
+    
+    #scrollTopBtn:hover {
+        background-color: #1E40AF;
+        /* blue-800 */
+        opacity: 1;
+    }
+</style>
+
+<!-- Scroll-to-Top Button -->
+<button id="scrollTopBtn" aria-label="Scroll to top">
+  <i class="fas fa-chevron-up"></i>
+</button>
+
+<script>
+    // Scroll-to-top functionality
+    const scrollBtn = document.getElementById('scrollTopBtn');
+    window.addEventListener('scroll', () => {
+        scrollBtn.style.display = window.scrollY > 300 ? 'block' : 'none';
+    });
+    scrollBtn.addEventListener('click', () => {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    });
+</script>
+{% endblock %}

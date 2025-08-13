@@ -1,0 +1,464 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4">
+    <div class="max-w-7xl mx-auto">
+        <!-- Page Header with Actions -->
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">Form Template Library</h1>
+                <p class="text-gray-600 mt-2">Download, create, or manage hospital form templates</p>
+            </div>
+            <div class="mt-4 md:mt-0 flex flex-col sm:flex-row gap-3">
+<a href="{{ url_for('auth_web.create_template') }}" class="px-5 py-3 rounded-lg bg-gradient-to-r from-green-600 to-emerald-700 text-white font-medium hover:from-green-700 hover:to-emerald-800 transition duration-200 shadow-md hover:shadow-lg flex items-center justify-center">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+    </svg>
+    Create New Template
+</a>
+                <button onclick="openUploadModal()" class="px-5 py-3 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-medium hover:from-blue-700 hover:to-indigo-800 transition duration-200 shadow-md hover:shadow-lg flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+                    </svg>
+                    Upload Template
+                </button>
+            </div>
+        </div>
+
+        <!-- Search and Filter Section -->
+        <div class="bg-white rounded-xl shadow-md p-6 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Search Input -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Search Templates</label>
+                    <div class="relative">
+                        <input 
+                            id="search-input"
+                            type="text" 
+                            placeholder="Search by name or description..." 
+                            value="{{ search_query }}"
+                            class="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg class="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Category Filter -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Filter by Category</label>
+                    <select id="category-filter" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">All Categories</option>
+                        {% for category in categories %}
+                        <option value="{{ category }}" {% if category_filter == category %}selected{% endif %}>
+                            {{ category }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Quick Stats -->
+                <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                    <div class="flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        <div>
+                            <p class="text-sm text-gray-600">Showing <span class="font-semibold">{{ stats.total_templates }}</span> templates</p>
+                            <p class="text-sm text-gray-600">Most popular: <span class="font-semibold">{{ stats.most_downloaded }}</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-blue-500">
+                <div class="flex items-center">
+                    <div class="bg-blue-100 p-3 rounded-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-sm font-medium text-gray-500">Total Templates</h3>
+                        <p class="text-2xl font-bold text-gray-900">{{ stats.total_templates }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-purple-500">
+                <div class="flex items-center">
+                    <div class="bg-purple-100 p-3 rounded-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-sm font-medium text-gray-500">Most Downloaded</h3>
+                        <p class="text-lg font-bold text-gray-900 truncate">{{ stats.most_downloaded }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-green-500">
+                <div class="flex items-center">
+                    <div class="bg-green-100 p-3 rounded-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-sm font-medium text-gray-500">Last Added</h3>
+                        <p class="text-lg font-bold text-gray-900 truncate">{{ stats.last_added }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Template Categories -->
+        {% if grouped_templates %}
+        <div class="space-y-8">
+            {% for category, templates in grouped_templates.items() %}
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                <!-- Category Header -->
+                <div class="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-4 flex justify-between items-center">
+                    <h2 class="text-xl font-semibold text-white">{{ category }}</h2>
+                    <span class="bg-white/20 px-3 py-1 rounded-full text-sm text-white">
+                        {{ templates|length }} templates
+                    </span>
+                </div>
+                
+                <!-- Templates Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
+                    {% for template in templates %}
+                    <div class="border border-gray-200 rounded-xl p-5 hover:shadow-md transition-shadow flex flex-col h-full">
+                        <div class="flex-grow">
+                            <div class="flex items-start">
+                                <div class="bg-gray-100 p-3 rounded-lg mr-4">
+                                    <i class="fas fa-file-{{ template.file_icon }} text-2xl text-blue-500"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold text-gray-900 text-lg">{{ template.template_name }}</h3>
+                                    <p class="text-gray-600 text-sm mt-1">Version: {{ template.version }}</p>
+                                </div>
+                            </div>
+                            
+                            {% if template.description %}
+                            <p class="text-gray-600 mt-4 text-sm line-clamp-2">
+                                {{ template.description }}
+                            </p>
+                            {% endif %}
+                            
+                            <div class="mt-4 flex items-center text-sm text-gray-500">
+                                <div class="flex items-center">
+                                    <i class="fas fa-download mr-1"></i>
+                                    <span>{{ template.download_count }}</span>
+                                </div>
+                                <span class="mx-2">•</span>
+                                <div class="flex items-center">
+                                    <i class="fas fa-user mr-1"></i>
+                                    <span>{{ template.uploader.full_name }}</span>
+                                </div>
+                                <span class="mx-2">•</span>
+                                <div class="flex items-center">
+                                    <i class="fas fa-calendar mr-1"></i>
+                                    <span>{{ template.uploaded_at.strftime('%b %d, %Y') }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-6 flex justify-between items-center">
+                            <a href="{{ template.download_url }}" 
+                               class="px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors flex items-center"
+                               download>
+                                <i class="fas fa-download mr-2"></i>
+                                Download
+                            </a>
+                            
+                            {% if current_user.has_privilege('resource:manage') %}
+                            <div class="relative">
+                                <button class="text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-100">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                                <div class="absolute right-0 z-10 w-48 py-1 bg-white rounded-md shadow-lg hidden">
+                                    <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Edit</a>
+                                    <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Rename</a>
+                                    <a href="#" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50">Delete</a>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <!-- Empty State -->
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div class="text-center py-16">
+                <div class="mx-auto h-24 w-24 rounded-full bg-blue-50 flex items-center justify-center mb-6">
+                    <i class="fas fa-file-alt text-blue-500 text-3xl"></i>
+                </div>
+                <h3 class="text-xl font-medium text-gray-900 mb-2">No templates found</h3>
+                <p class="text-gray-500 max-w-md mx-auto">
+                    {% if search_query or category_filter %}
+                    Try adjusting your search or filter to find what you're looking for.
+                    {% else %}
+                    Get started by uploading your first template.
+                    {% endif %}
+                </p>
+                <div class="mt-6">
+                    <button onclick="openUploadModal()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-upload mr-2"></i> Upload Template
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    // Search and filter functionality
+    document.getElementById('search-input').addEventListener('keyup', function(e) {
+        if (e.key === 'Enter') {
+            applyFilters();
+        }
+    });
+    
+    document.getElementById('category-filter').addEventListener('change', applyFilters);
+    
+    function applyFilters() {
+        const search = document.getElementById('search-input').value;
+        const category = document.getElementById('category-filter').value;
+        
+        let url = "{{ url_for('auth_web.form_templates') }}";
+        const params = new URLSearchParams();
+        
+        if (search) params.append('q', search);
+        if (category) params.append('category', category);
+        
+        if (params.toString()) {
+            url += '?' + params.toString();
+        }
+        
+        window.location.href = url;
+    }
+
+
+</script>
+<div id="upload-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black bg-opacity-50">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+        <!-- Modal Header -->
+        <div class="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-4">
+            <div class="flex justify-between items-center">
+                <h3 class="text-xl font-semibold text-white">Upload New Template</h3>
+                <button type="button" class="text-white hover:text-blue-200 transition-colors" onclick="closeUploadModal()">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Scrollable Modal Body -->
+        <div class="flex-1 overflow-y-auto p-6">
+            <form id="upload-form" method="POST" action="{{ url_for('auth_web.upload_template') }}" enctype="multipart/form-data" class="space-y-6">
+                
+                <div>
+                    <label class="block text-base font-medium text-gray-800 mb-2">
+                        Template Name
+                        <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" name="template_name" required
+                        class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm"
+                        placeholder="e.g., Patient Registration Form">
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-base font-medium text-gray-800 mb-2">
+                            Category
+                            <span class="text-red-500">*</span>
+                        </label>
+                        <select name="category" required class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
+                            <option value="">Select a category</option>
+                            <option value="patient">Patient Forms</option>
+                            <option value="clinical">Clinical Forms</option>
+                            <option value="hr">HR & Staff</option>
+                            <option value="billing">Billing & Financial</option>
+                            <option value="legal">Legal & Compliance</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-base font-medium text-gray-800 mb-2">
+                            Template Version
+                        </label>
+                        <input type="text" name="version"
+                            class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm"
+                            placeholder="e.g., v1.2">
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-base font-medium text-gray-800 mb-2">
+                        Upload File
+                        <span class="text-red-500">*</span>
+                    </label>
+                    <div class="mt-2 flex flex-col items-center justify-center px-6 pt-8 pb-10 border-2 border-dashed border-gray-300 rounded-2xl bg-gray-50 hover:bg-blue-50 transition-colors duration-300">
+                        <div class="text-center">
+                            <svg class="mx-auto h-14 w-14 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                            <div class="mt-4 flex flex-col sm:flex-row items-center justify-center text-sm text-gray-600">
+                                <label class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                                    <span class="px-4 py-2.5 bg-blue-50 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors">
+                                        <i class="fas fa-cloud-upload-alt mr-2"></i>
+                                        Select a file
+                                    </span>
+                                    <input id="file-upload" name="file" type="file" class="sr-only" required>
+                                </label>
+                                <p class="mt-2 sm:mt-0 sm:ml-4">or drag and drop</p>
+                            </div>
+                            <p class="mt-2 text-xs text-gray-500">
+                                PDF, DOCX, XLSX (Max 10MB)
+                            </p>
+                        </div>
+                    </div>
+                    <div id="file-name-display" class="mt-3 text-sm font-medium text-gray-700 hidden">
+                        <i class="fas fa-file mr-2 text-blue-500"></i>
+                        <span class="file-name"></span>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-base font-medium text-gray-800 mb-2">Description</label>
+                    <textarea name="description" rows="4"
+                        class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm"
+                        placeholder="Brief description of the template..."></textarea>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Modal Footer -->
+        <div class="flex justify-between px-6 py-4 bg-gray-50 border-t border-gray-200">
+            <div class="text-sm text-gray-500">
+                <span class="text-red-500">*</span> Required fields
+            </div>
+            <div class="flex gap-3">
+                <button type="button" onclick="closeUploadModal()" class="px-5 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-100 transition duration-200">
+                    Cancel
+                </button>
+                <button type="submit" form="upload-form" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-medium hover:from-blue-700 hover:to-indigo-800 transition duration-200 shadow-md">
+                    <i class="fas fa-upload mr-2"></i> Upload Template
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Upload Modal Handling
+        const uploadModal = document.getElementById('upload-modal');
+        const uploadBtn = document.getElementById('upload-template-btn');
+        const cancelUploadBtn = document.getElementById('cancel-upload-btn');
+        const confirmUploadBtn = document.getElementById('confirm-upload-btn');
+        
+        // Create Template Button
+        const createTemplateBtn = document.getElementById('create-template-btn');
+        
+        // Open upload modal
+        uploadBtn.addEventListener('click', () => {
+            uploadModal.classList.remove('hidden');
+        });
+        
+        // Close upload modal
+        cancelUploadBtn.addEventListener('click', () => {
+            uploadModal.classList.add('hidden');
+        });
+        
+        // Create Template button action
+        createTemplateBtn.addEventListener('click', () => {
+            // Redirect to form builder engine
+            window.location.href = "{{ url_for('auth_web.create_template') }}";
+        });
+        
+        // Handle file upload
+        confirmUploadBtn.addEventListener('click', () => {
+            // In a real app, this would submit the form
+            alert('Template uploaded successfully!');
+            uploadModal.classList.add('hidden');
+        });
+        
+        // More Actions dropdown
+        document.querySelectorAll('.relative button').forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const dropdown = this.nextElementSibling;
+                dropdown.classList.toggle('hidden');
+                
+                // Close dropdown when clicking elsewhere
+                document.addEventListener('click', function closeDropdown(e) {
+                    if (!dropdown.contains(e.target) && e.target !== button) {
+                        dropdown.classList.add('hidden');
+                        document.removeEventListener('click', closeDropdown);
+                    }
+                });
+            });
+        });
+    });
+        // File name display
+    document.getElementById('file-upload').addEventListener('change', function(e) {
+        const fileNameDisplay = document.getElementById('file-name-display');
+        if (this.files.length > 0) {
+            fileNameDisplay.querySelector('.file-name').textContent = this.files[0].name;
+            fileNameDisplay.classList.remove('hidden');
+        } else {
+            fileNameDisplay.classList.add('hidden');
+        }
+    });
+
+    // Modal control functions
+    function openUploadModal() {
+        document.getElementById('upload-modal').classList.remove('hidden');
+        document.body.classList.add('overflow-hidden');
+    }
+
+    function closeUploadModal() {
+        document.getElementById('upload-modal').classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+        // Reset form on close
+        document.getElementById('upload-form').reset();
+        document.getElementById('file-name-display').classList.add('hidden');
+    }
+
+    // Close modal when clicking on backdrop
+    document.getElementById('upload-modal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeUploadModal();
+        }
+    });
+</script>
+
+<style>
+    .template-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .template-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+    
+    #upload-modal {
+        transition: opacity 0.3s ease;
+    }
+</style>
+{% endblock %}

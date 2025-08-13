@@ -1,0 +1,146 @@
+{% extends "base.html" %} {% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Page Header -->
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-3xl font-semibold text-gray-900 dark:text-white">
+                Manage Services for:
+            </h1>
+            <p class="mt-1 text-lg text-gray-600 dark:text-gray-400">
+                {{ insurance.name }} (Policy #: {{ insurance.policy_number }})
+            </p>
+        </div>
+        <a href="{{ url_for('finance_web_bp.insurance') }}" class="inline-flex items-center px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-all" data-tippy-content="Back to Insurance List">
+            <i class="fas fa-arrow-left mr-2"></i> Back
+        </a>
+    </div>
+
+    <!-- Alerts / Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %} {% if messages %}
+    <div class="space-y-4 mb-6">
+        {% for category, msg in messages %}
+        <div class="px-4 py-3 rounded-lg
+              {% if category == 'success' %}bg-green-100 text-green-800
+              {% elif category == 'error' %}bg-red-100 text-red-800
+              {% else %}bg-gray-100 text-gray-800{% endif %}">
+            {{ msg }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %} {% endwith %}
+
+    <!-- Form: Manage Covered Services -->
+    <form method="POST" class="space-y-8">
+        {# Group services by category into collapsible
+        <details> #} {% set current_category = None %} {% for service in all_services %} {% if service.category != current_category %} {# Close previous category if exists #} {% if not loop.first %}
+            </tbody>
+            </table>
+</div>
+</details>
+{% endif %} {# New Category Start #} {% set current_category = service.category %}
+<details open class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden shadow-sm">
+    <summary class="flex items-center justify-between px-4 py-3 bg-indigo-100 dark:bg-indigo-900 cursor-pointer hover:bg-indigo-200 dark:hover:bg-indigo-800 transition-colors">
+        <div class="flex items-center">
+            <i class="fas fa-layer-group mr-2 text-indigo-600 dark:text-indigo-300"></i>
+            <span class="text-xl font-medium text-gray-800 dark:text-gray-100">{{ current_category }}</span>
+        </div>
+        <i class="fas fa-chevron-down text-gray-600 dark:text-gray-300"></i>
+    </summary>
+    <div class="overflow-x-auto bg-white dark:bg-gray-800">
+        <table class="w-full">
+            <thead class="bg-gray-50 dark:bg-gray-700">
+                <tr>
+                    <th class="px-4 py-3 text-left text-gray-600 dark:text-gray-300 text-sm font-medium">Cover?</th>
+                    <th class="px-4 py-3 text-left text-gray-600 dark:text-gray-300 text-sm font-medium">Service Name</th>
+                    <th class="px-4 py-3 text-right text-gray-600 dark:text-gray-300 text-sm font-medium">Price (KES)</th>
+                    <th class="px-4 py-3 text-left text-gray-600 dark:text-gray-300 text-sm font-medium">Copay (KES)</th>
+                    <th class="px-4 py-3 text-left text-gray-600 dark:text-gray-300 text-sm font-medium">Coverage (%)</th>
+                    <th class="px-4 py-3 text-left text-gray-600 dark:text-gray-300 text-sm font-medium">Annual Limit (KES)</th>
+                    <th class="px-4 py-3 text-left text-gray-600 dark:text-gray-300 text-sm font-medium">Notes</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y dark:divide-gray-700">
+                {% endif %} {# Service Row #}
+                <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                    {# Hidden service_id #}
+                    <input type="hidden" name="service_id[]" value="{{ service.id }}" />
+
+                    <td class="px-4 py-3">
+                        <input type="checkbox" id="covered_{{ service.id }}" name="is_covered_{{ service.id }}" class="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" {% if service.id in existing_coverage and existing_coverage[service.id].is_covered %}checked{%
+                            endif %} data-tippy-content="Check to cover {{ service.name }}" />
+                    </td>
+
+                    <td class="px-4 py-3">
+                        <label for="covered_{{ service.id }}" class="flex items-center cursor-pointer">
+            <i class="fas fa-stethoscope mr-2 text-indigo-600 dark:text-indigo-300"></i>
+            <span class="text-gray-700 dark:text-gray-200">{{ service.name }}</span>
+          </label>
+                    </td>
+
+                    <td class="px-4 py-3 text-right">
+                        <span class="text-gray-800 dark:text-gray-100 font-medium">
+            {{ "{:,.2f}".format(service.price or 0) }} KES
+          </span>
+                    </td>
+
+                    <td class="px-4 py-3">
+                        <input type="number" step="0.01" name="copay_{{ service.id }}" value="{% if service.id in existing_coverage %}{{ existing_coverage[service.id].copay or '' }}{% endif %}" class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            placeholder="e.g. 500.00" data-tippy-content="Patient copay for {{ service.name }}" />
+                    </td>
+
+                    <td class="px-4 py-3">
+                        <input type="number" step="0.01" name="coverage_pct_{{ service.id }}" value="{% if service.id in existing_coverage %}{{ existing_coverage[service.id].coverage_percentage or '' }}{% endif %}" class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            placeholder="e.g. 80" data-tippy-content="Coverage percentage" />
+                    </td>
+
+                    <td class="px-4 py-3">
+                        <input type="number" step="0.01" name="annual_limit_{{ service.id }}" value="{% if service.id in existing_coverage %}{{ existing_coverage[service.id].annual_limit or '' }}{% endif %}" class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            placeholder="e.g. 10000" data-tippy-content="Annual coverage limit" />
+                    </td>
+
+                    <td class="px-4 py-3">
+                        <textarea name="notes_{{ service.id }}" rows="1" class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                            placeholder="Optional notes..." data-tippy-content="Coverage notes">{% if service.id in existing_coverage %}{{ existing_coverage[service.id].coverage_notes or '' }}{% endif %}</textarea>
+                    </td>
+                </tr>
+
+                {# If last service, close open tags #} {% if loop.last %}
+            </tbody>
+        </table>
+    </div>
+</details>
+{% endif %} {% endfor %}
+
+<!-- Form Actions -->
+<div class="mt-8 flex justify-end">
+    <button type="submit" class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-xl shadow-md transition-all transform hover:scale-105" data-tippy-content="Save all service coverage updates">
+        <i class="fas fa-save mr-2"></i> Save Changes
+      </button>
+</div>
+</form>
+</div>
+
+<!-- Tippy.js for tooltips (if not already loaded in base.html) -->
+<link rel="stylesheet" href="https://unpkg.com/tippy.js@6/dist/tippy.css" />
+<script src="https://unpkg.com/@popperjs/core@2"></script>
+<script src="https://unpkg.com/tippy.js@6"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        tippy('[data-tippy-content]', {
+            theme: 'light-border',
+            delay: [100, 50],
+            animation: 'shift-away',
+            arrow: true
+        });
+    });
+
+    // Toggle icon rotation on <details> open/close
+    document.querySelectorAll('details').forEach((d) => {
+        d.addEventListener('toggle', (e) => {
+            const icon = d.querySelector('summary i.fa-chevron-down');
+            if (d.open) icon.classList.add('rotate-180');
+            else icon.classList.remove('rotate-180');
+        });
+    });
+</script>
+{% endblock %}

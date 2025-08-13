@@ -1,0 +1,297 @@
+{% extends "patient-base.html" %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto">
+        <div class="mb-8 md:mb-10 text-center md:text-left">
+            <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white leading-tight">
+                <i class="fas fa-calendar-alt text-indigo-600 dark:text-indigo-400 mr-3"></i> Your Appointments
+            </h1>
+            <p class="mt-3 text-lg text-gray-600 dark:text-gray-300">
+                All your appointments, across every AstroCare network hospital, organized for you.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-l-4 border-indigo-500 dark:border-indigo-600">
+                <p class="text-gray-500 dark:text-gray-400 text-sm mb-1">Upcoming</p>
+                <p class="text-3xl font-extrabold text-gray-900 dark:text-white" id="upcoming-count">
+                    {# FIX HERE: Use current_time instead of now() #}
+                    {{ appointments | selectattr('date', '>', current_time) | list | length }}
+                </p>
+            </div>
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-l-4 border-green-500 dark:border-green-600">
+                <p class="text-gray-500 dark:text-gray-400 text-sm mb-1">Completed</p>
+                <p class="text-3xl font-extrabold text-gray-900 dark:text-white" id="completed-count">
+                     {{ appointments | selectattr('status', '==', 'Completed') | list | length }}
+                </p>
+            </div>
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-l-4 border-red-500 dark:border-red-600">
+                <p class="text-gray-500 dark:text-gray-400 text-sm mb-1">Cancelled/Rescheduled</p>
+                <p class="text-3xl font-extrabold text-gray-900 dark:text-white" id="cancelled-count">
+                    {{ appointments | selectattr('status', 'in', ['Cancelled', 'Rescheduled']) | list | length }}
+                </p>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
+                <div>
+                    <label for="filter-status" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Filter by Status</label>
+                    <select id="filter-status" name="filter-status" class="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 sm:text-sm p-2">
+                        <option value="all">All Statuses</option>
+                        <option value="Confirmed">Confirmed</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Completed">Completed</option>
+                        <option value="Cancelled">Cancelled</option>
+                        <option value="Rescheduled">Rescheduled</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="filter-hospital" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Filter by Hospital</label>
+                    <select id="filter-hospital" name="filter-hospital" class="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 sm:text-sm p-2">
+                        <option value="all">All Hospitals</option>
+                        {% for hospital_name in appointments | map(attribute='hospital') | unique | sort %}
+                            <option value="{{ hospital_name }}">{{ hospital_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="filter-type" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Filter by Type</label>
+                    <select id="filter-type" name="filter-type" class="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 sm:text-sm p-2">
+                        <option value="all">All Types</option>
+                        <option value="In-person">In-person</option>
+                        <option value="Telehealth">Telehealth</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="sort-by" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Sort by</label>
+                    <select id="sort-by" name="sort-by" class="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 sm:text-sm p-2">
+                        <option value="date_asc">Date (Ascending)</option>
+                        <option value="date_desc">Date (Descending)</option>
+                        <option value="status">Status</option>
+                        <option value="doctor">Doctor Name</option>
+                    </select>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end">
+                <button id="clear-filters" class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out">
+                    <i class="fas fa-redo mr-2"></i> Clear Filters
+                </button>
+            </div>
+        </div>
+
+        {% if appointments %}
+        <div id="appointments-list" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {% for appointment in appointments %}
+            <div class="appointment-item bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border-l-4
+                {% if appointment.status == 'Confirmed' %} border-indigo-500 dark:border-indigo-600
+                {% elif appointment.status == 'Pending' %} border-yellow-500 dark:border-yellow-600
+                {% elif appointment.status == 'Completed' %} border-green-500 dark:border-green-600
+                {% elif appointment.status == 'Cancelled' or appointment.status == 'Rescheduled' %} border-red-500 dark:border-red-600
+                {% endif %}
+                hover:shadow-lg transition-shadow duration-200"
+                data-status="{{ appointment.status | lower }}"
+                data-hospital="{{ appointment.hospital | lower }}"
+                data-type="{{ appointment.type | lower }}"
+                data-date="{{ appointment.date.timestamp() }}" {# for JS sorting #}
+                data-doctor="{{ appointment.doctor | lower }}">
+
+                <div class="flex items-start justify-between mb-4">
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-900 dark:text-white">{{ appointment.doctor }}</h3>
+                        <p class="text-md text-gray-600 dark:text-gray-300">{{ appointment.specialty }}</p>
+                    </div>
+                    <span class="px-3 py-1 rounded-full text-xs font-semibold
+                        {% if appointment.status == 'Confirmed' %} bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200
+                        {% elif appointment.status == 'Pending' %} bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200
+                        {% elif appointment.status == 'Completed' %} bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
+                        {% elif appointment.status == 'Cancelled' or appointment.status == 'Rescheduled' %} bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200
+                        {% endif %}">
+                        {{ appointment.status }}
+                    </span>
+                </div>
+
+                <div class="space-y-2 text-gray-700 dark:text-gray-300 mb-6">
+                    <p class="flex items-center text-sm">
+                        <i class="fas fa-hospital-alt text-gray-500 dark:text-gray-400 mr-2"></i>
+                        <span class="font-medium text-indigo-600 dark:text-indigo-400">{{ appointment.hospital }}</span>
+                    </p>
+                    <p class="flex items-center text-sm">
+                        <i class="far fa-calendar-alt text-gray-500 dark:text-gray-400 mr-2"></i>
+                        {{ appointment.date.strftime('%A, %B %d, %Y') }} at {{ appointment.date.strftime('%I:%M %p') }}
+                    </p>
+                    <p class="flex items-center text-sm">
+                        {% if appointment.type == 'Telehealth' %}
+                        <i class="fas fa-video text-purple-600 dark:text-purple-400 mr-2"></i>
+                        Telehealth Session
+                        {% else %}
+                        <i class="fas fa-clinic-medical text-blue-600 dark:text-blue-400 mr-2"></i>
+                        In-person Visit
+                        {% endif %}
+                    </p>
+                    <p class="text-sm">
+                        <i class="fas fa-info-circle text-gray-500 dark:text-gray-400 mr-2"></i>
+                        Appointment ID: <span class="font-mono text-gray-600 dark:text-gray-400">{{ appointment.id }}</span>
+                    </p>
+                </div>
+
+                <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 mt-6">
+                    {% if appointment.status == 'Confirmed' or appointment.status == 'Pending' %}
+                        {# FIX HERE: Use current_time and timedelta variable #}
+                        {% if appointment.type == 'Telehealth' and appointment.date > current_time - timedelta(minutes=15) %}
+                            <a href="#" class="w-full sm:w-auto inline-flex items-center justify-center px-5 py-2 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200">
+                                <i class="fas fa-video mr-2"></i> Join Telehealth
+                            </a>
+                        {% endif %}
+                        <a href=""
+                           class="w-full sm:w-auto inline-flex items-center justify-center px-5 py-2 border border-gray-300 dark:border-gray-600 text-base font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200">
+                            <i class="fas fa-info-circle mr-2"></i> View Details
+                        </a>
+                        {# FIX HERE: Use current_time #}
+                        {% if appointment.date > current_time %}
+                            <button onclick="rescheduleAppointment({{ appointment.id }})"
+                                    class="w-full sm:w-auto inline-flex items-center justify-center px-5 py-2 border border-transparent text-base font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-700 dark:text-indigo-100 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200">
+                                <i class="fas fa-sync-alt mr-2"></i> Reschedule
+                            </button>
+                            <button onclick="cancelAppointment({{ appointment.id }})"
+                                    class="w-full sm:w-auto inline-flex items-center justify-center px-5 py-2 border border-transparent text-base font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 dark:bg-red-700 dark:text-red-100 dark:hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200">
+                                <i class="fas fa-times-circle mr-2"></i> Cancel
+                            </button>
+                        {% endif %}
+                    {% elif appointment.status == 'Completed' %}
+                        <a href=""
+                           class="w-full sm:w-auto inline-flex items-center justify-center px-5 py-2 border border-gray-300 dark:border-gray-600 text-base font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200">
+                            <i class="fas fa-history mr-2"></i> View Summary
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-8 text-center border border-dashed border-gray-300 dark:border-gray-600">
+            <i class="fas fa-calendar-times text-indigo-400 text-6xl mb-4"></i>
+            <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">No Appointments Scheduled Yet!</h3>
+            <p class="text-gray-600 dark:text-gray-400 mb-4">It looks like you haven't booked any appointments with us yet.</p>
+            <p class="text-gray-600 dark:text-gray-400 mb-6">Start managing your health today by scheduling your first visit.</p>
+            <a href="{{ url_for('main_bp.book_appointment_select_hospital') }}"
+               class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-full shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200">
+                <i class="fas fa-calendar-plus mr-2"></i> Schedule New Appointment
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+<script>
+    // Make sure 'now()' and 'timedelta' are available in the Jinja environment if needed for client-side evaluation
+    // For this specific example, it's used server-side, so no issue.
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const filterStatus = document.getElementById('filter-status');
+        const filterHospital = document.getElementById('filter-hospital');
+        const filterType = document.getElementById('filter-type');
+        const sortBy = document.getElementById('sort-by');
+        const clearFiltersBtn = document.getElementById('clear-filters');
+        const appointmentsList = document.getElementById('appointments-list');
+        const appointmentItems = Array.from(document.querySelectorAll('.appointment-item')); // Convert NodeList to Array for sorting
+
+        function applyFiltersAndSort() {
+            const selectedStatus = filterStatus.value;
+            const selectedHospital = filterHospital.value;
+            const selectedType = filterType.value;
+            const sortOption = sortBy.value;
+
+            let filteredItems = appointmentItems.filter(item => {
+                const status = item.dataset.status;
+                const hospital = item.dataset.hospital;
+                const type = item.dataset.type;
+
+                const matchesStatus = selectedStatus === 'all' || status === selectedStatus.toLowerCase();
+                const matchesHospital = selectedHospital === 'all' || hospital === selectedHospital.toLowerCase();
+                const matchesType = selectedType === 'all' || type === selectedType.toLowerCase();
+
+                return matchesStatus && matchesHospital && matchesType;
+            });
+
+            // Sorting logic
+            filteredItems.sort((a, b) => {
+                if (sortOption === 'date_asc') {
+                    return parseFloat(a.dataset.date) - parseFloat(b.dataset.date);
+                } else if (sortOption === 'date_desc') {
+                    return parseFloat(b.dataset.date) - parseFloat(a.dataset.date);
+                } else if (sortOption === 'status') {
+                    return a.dataset.status.localeCompare(b.dataset.status);
+                } else if (sortOption === 'doctor') {
+                    return a.dataset.doctor.localeCompare(b.dataset.doctor);
+                }
+                return 0;
+            });
+
+            // Update the DOM
+            appointmentsList.innerHTML = ''; // Clear current list
+            if (filteredItems.length === 0) {
+                // Display empty state or a message
+                appointmentsList.innerHTML = `<div class="col-span-1 lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl shadow-md p-8 text-center border border-dashed border-gray-300 dark:border-gray-600">
+                    <i class="fas fa-filter text-gray-400 text-6xl mb-4"></i>
+                    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">No Appointments Match Your Filters</h3>
+                    <p class="text-gray-600 dark:text-gray-400">Try adjusting your filter selections or clear them to see all appointments.</p>
+                </div>`;
+            } else {
+                 filteredItems.forEach(item => appointmentsList.appendChild(item));
+            }
+            updateSummaryCounts(filteredItems);
+        }
+
+        function updateSummaryCounts(displayedItems) {
+            const currentTime = new Date(); // Get current time in JavaScript
+
+            const upcomingCount = displayedItems.filter(item => {
+                const appointmentDate = new Date(parseFloat(item.dataset.date) * 1000); // Convert timestamp to Date
+                return appointmentDate > currentTime; // Compare with JS current time
+            }).length;
+
+            const completedCount = displayedItems.filter(item => item.dataset.status === 'completed').length;
+            const cancelledCount = displayedItems.filter(item => item.dataset.status === 'cancelled' || item.dataset.status === 'rescheduled').length;
+
+            document.getElementById('upcoming-count').textContent = upcomingCount;
+            document.getElementById('completed-count').textContent = completedCount;
+            document.getElementById('cancelled-count').textContent = cancelledCount;
+        }
+
+
+        // Event Listeners
+        filterStatus.addEventListener('change', applyFiltersAndSort);
+        filterHospital.addEventListener('change', applyFiltersAndSort);
+        filterType.addEventListener('change', applyFiltersAndSort);
+        sortBy.addEventListener('change', applyFiltersAndSort);
+
+        clearFiltersBtn.addEventListener('click', function() {
+            filterStatus.value = 'all';
+            filterHospital.value = 'all';
+            filterType.value = 'all';
+            sortBy.value = 'date_asc'; // Default sort
+            applyFiltersAndSort();
+        });
+
+        // Initialize display
+        applyFiltersAndSort();
+
+
+        // Placeholder for Reschedule/Cancel/Join Telehealth functions (would involve API calls)
+        window.rescheduleAppointment = function(appointmentId) {
+            alert('Functionality to reschedule appointment ' + appointmentId + ' would be implemented here (e.g., open a modal, redirect to reschedule form).');
+        };
+
+        window.cancelAppointment = function(appointmentId) {
+            if (confirm('Are you sure you want to cancel this appointment? This action cannot be undone.')) {
+                alert('Functionality to cancel appointment ' + appointmentId + ' would be implemented here (e.g., API call to backend).');
+            }
+        };
+
+    });
+</script>
+{% endblock %}

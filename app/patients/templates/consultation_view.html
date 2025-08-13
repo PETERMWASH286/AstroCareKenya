@@ -1,0 +1,36 @@
+{% extends "base.html" %} {% block title %}Consultation #{{ consult.id }}{% endblock %} {% block content %}
+<div class="p-6 max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow">
+    <h1 class="text-2xl font-bold mb-4">Consultation Details</h1>
+    <dl class="space-y-4">
+        <div>
+            <dt class="font-medium">Date</dt>
+            <dd>{{ consult.created_at.strftime('%Y-%m-%d %H:%M') }}</dd>
+        </div>
+        <div>
+            <dt class="font-medium">History</dt>
+            <dd class="whitespace-pre-wrap">{{ consult.history }}</dd>
+        </div>
+        <div>
+            <dt class="font-medium">Examination</dt>
+            <dd class="whitespace-pre-wrap">{{ consult.examination }}</dd>
+        </div>
+        <div>
+            <dt class="font-medium">Diagnosis</dt>
+            <dd>{{ consult.diagnosis }}</dd>
+        </div>
+        <div>
+            <dt class="font-medium">Treatment Plan</dt>
+            <dd>{{ consult.treatment_plan }}</dd>
+        </div>
+        {% if consult.notes %}
+        <div>
+            <dt class="font-medium">Notes</dt>
+            <dd>{{ consult.notes }}</dd>
+        </div>
+        {% endif %}
+    </dl>
+    <div class="mt-6 text-right">
+        <a href="{{ url_for('consultations_web.view_consultations', reg_no=patient.reg_no) }}" class="px-4 py-2 bg-gray-200 rounded-lg">Back</a>
+    </div>
+</div>
+{% endblock %}

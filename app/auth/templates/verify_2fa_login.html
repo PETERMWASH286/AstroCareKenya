@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AstroCare - 2FA Verification</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#60a5fa',
+                        success: '#10b981',
+                        danger: '#ef4444',
+                        warning: '#f59e0b',
+                        info: '#3b82f6',
+                    },
+                    boxShadow: {
+                        '3xl': '0 35px 60px -15px rgba(0, 0, 0, 0.3)',
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        @keyframes mesh {
+            0% {
+                background-position: 0% 0%;
+            }
+            100% {
+                background-position: 400px 400px;
+            }
+        }
+        
+        .animate-mesh {
+            animation: mesh 40s linear infinite;
+        }
+        
+        .flash-message {
+            animation: flashIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+        
+        @keyframes flashIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .digit-input {
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        .digit-input:focus {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3);
+        }
+        
+        .resend-link {
+            transition: all 0.3s ease;
+        }
+        
+        .resend-link:hover {
+            text-shadow: 0 0 8px rgba(96, 165, 250, 0.7);
+        }
+        
+        .submit-btn {
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            background-size: 200% 200%;
+        }
+        
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            background-position: 100% 100%;
+            box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.5);
+        }
+        
+        .method-badge {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.5);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+            }
+        }
+        /* Make container scrollable */
+        
+        .scroll-container {
+            max-height: 100vh;
+            overflow-y: auto;
+        }
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        
+        .scroll-container::-webkit-scrollbar {
+            display: none;
+        }
+        /* Hide scrollbar for IE, Edge and Firefox */
+        
+        .scroll-container {
+            -ms-overflow-style: none;
+            /* IE and Edge */
+            scrollbar-width: none;
+            /* Firefox */
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 text-gray-900 dark:bg-gray-900 dark:text-gray-100 font-sans leading-normal tracking-normal transition-colors duration-300 relative overflow-hidden">
+    <div class="min-h-screen flex items-center justify-center relative scroll-container ">
+        <!-- Animated background -->
+        <div class="absolute inset-0 z-0 opacity-20 dark:opacity-30">
+            <div class="absolute inset-0 bg-[linear-gradient(to_right,#80808022_1px,transparent_1px),linear-gradient(to_bottom,#80808022_1px,transparent_1px)] bg-[size:40px_40px] animate-mesh"></div>
+            <div class="absolute inset-0 bg-gradient-to-b from-indigo-500/20 to-purple-500/20 dark:from-indigo-900/20 dark:to-purple-900/20"></div>
+        </div>
+
+        <!-- Flash messages container -->
+        <div id="flash-container" class="absolute top-4 left-1/2 -translate-x-1/2 space-y-2 z-50 w-96 max-w-[95vw]">
+            {% with messages = get_flashed_messages(with_categories=true) %} {% if messages %} {% for category, message in messages %}
+            <div class="flash-message transform transition-all duration-300 ease-out opacity-0 translate-y-4
+                            {% if category == 'success' %} bg-emerald-100 border-emerald-400 text-emerald-800 dark:bg-emerald-900 dark:border-emerald-700 dark:text-emerald-200
+                            {% elif category == 'danger' %} bg-red-100 border-red-400 text-red-800 dark:bg-red-900 dark:border-red-700 dark:text-red-200
+                            {% else %} bg-blue-100 border-blue-400 text-blue-800 dark:bg-blue-900 dark:border-blue-700 dark:text-blue-200 {% endif %}
+                            border-l-4 p-4 rounded-lg shadow-xl flex items-start">
+                <div class="flex-shrink-0 pt-0.5">
+                    {% if category == 'success' %}
+                    <i class="fas fa-check-circle text-emerald-600 dark:text-emerald-400"></i> {% elif category == 'danger' %}
+                    <i class="fas fa-times-circle text-red-600 dark:text-red-400"></i> {% else %}
+                    <i class="fas fa-info-circle text-blue-600 dark:text-blue-400"></i> {% endif %}
+                </div>
+                <div class="ml-3 flex-1">
+                    <p class="text-sm font-medium">{{ message }}</p>
+                </div>
+                <button type="button" class="ml-auto -mx-1.5 -my-1.5 bg-transparent text-gray-500 rounded-lg focus:ring-2 focus:ring-gray-400 p-1.5 hover:bg-gray-200 inline-flex items-center justify-center h-8 w-8 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700"
+                    onclick="this.closest('.flash-message').remove()">
+                                <span class="sr-only">Close</span>
+                                <i class="fas fa-times text-sm"></i>
+                            </button>
+            </div>
+            {% endfor %} {% endif %} {% endwith %}
+        </div>
+
+        <!-- Main card -->
+        <div class="relative z-10 w-full max-w-md px-4 py-20 mt-20">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-3xl transition-all duration-300 transform hover:shadow-3xl border border-gray-200 dark:border-gray-700">
+                <div class="mb-8 text-center">
+                    <a href="#" class="inline-block">
+                        <svg class="w-20 h-20 text-indigo-600 dark:text-indigo-400 hover:rotate-[15deg] transition-transform duration-300" viewBox="0 0 32 32" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M16 28C22.6274 28 28 22.6274 28 16C28 9.37258 22.6274 4 16 4C9.37258 4 4 9.37258 4 16C4 22.6274 9.37258 28 16 28Z"/>
+                            <path d="M20 12L16 8L12 12L16 16L20 12Z" fill="white"/>
+                            <path d="M22 18L18 22L14 18L18 14L22 18Z" fill="white"/>
+                        </svg>
+                    </a>
+                    <h1 class="mt-4 text-3xl font-extrabold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent dark:from-indigo-400 dark:to-purple-400">
+                        Two-Factor Verification
+                    </h1>
+                    <p class="mt-2 text-gray-600 dark:text-gray-400">
+                        Enter the code sent to your device
+                    </p>
+                </div>
+
+                <!-- Verification method badge -->
+                <div class="mb-8 flex justify-center">
+                    <div class="method-badge bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 px-4 py-2 rounded-full flex items-center">
+                        {% if method == 'email' %}
+                        <i class="fas fa-envelope mr-2"></i> {% elif method == 'sms' %}
+                        <i class="fas fa-mobile-alt mr-2"></i> {% else %}
+                        <i class="fas fa-shield-alt mr-2"></i> {% endif %}
+                        <span class="font-medium">{{ method|capitalize }} Verification</span>
+                    </div>
+                </div>
+
+                <!-- Destination info -->
+                <div class="mb-8 text-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <p class="text-gray-700 dark:text-gray-300 mb-2">
+                        We've sent a verification code to:
+                    </p>
+                    <p class="font-semibold text-lg dark:text-white">{{ masked_destination }}</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                        The code expires in <span class="font-bold text-indigo-600 dark:text-indigo-400" id="countdown">9:59</span>
+                    </p>
+                </div>
+
+                <!-- Verification form -->
+                <form method="POST" action="{{ url_for('auth_web.verify_2fa') }}" class="space-y-6">
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 text-center">
+                            Enter 6-digit verification code
+                        </label>
+
+                        <div class="flex justify-center space-x-3 mb-6">
+                            <input type="text" name="digit1" maxlength="1" class="digit-input w-14 h-14 text-center text-2xl font-bold bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" autocomplete="off"
+                                required>
+                            <input type="text" name="digit2" maxlength="1" class="digit-input w-14 h-14 text-center text-2xl font-bold bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" autocomplete="off"
+                                required>
+                            <input type="text" name="digit3" maxlength="1" class="digit-input w-14 h-14 text-center text-2xl font-bold bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" autocomplete="off"
+                                required>
+                            <span class="self-center text-gray-400 text-2xl">-</span>
+                            <input type="text" name="digit4" maxlength="1" class="digit-input w-14 h-14 text-center text-2xl font-bold bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" autocomplete="off"
+                                required>
+                            <input type="text" name="digit5" maxlength="1" class="digit-input w-14 h-14 text-center text-2xl font-bold bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" autocomplete="off"
+                                required>
+                            <input type="text" name="digit6" maxlength="1" class="digit-input w-14 h-14 text-center text-2xl font-bold bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" autocomplete="off"
+                                required>
+                        </div>
+
+                        <!-- Hidden field for combined code -->
+                        <input type="hidden" name="code" id="fullCode">
+                    </div>
+
+                    <button type="submit" class="submit-btn w-full py-3 px-4 text-white rounded-lg font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
+                        Verify & Log In
+                        <i class="fas fa-lock-open ml-2"></i>
+                    </button>
+
+                    <div class="text-center mt-4">
+                        <a href="#" id="resendCode" class="resend-link text-sm text-indigo-600 dark:text-indigo-400 font-medium">
+                            <i class="fas fa-redo-alt mr-2"></i> Resend Code
+                        </a>
+                    </div>
+                </form>
+
+                <div class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700 text-center">
+                    <p class="text-gray-600 dark:text-gray-400 text-sm">
+                        Having trouble? <a href="#" class="text-indigo-600 dark:text-indigo-400 hover:underline">Contact Support</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Countdown timer
+            let timeLeft = 10 * 60; // 10 minutes in seconds
+            const countdownEl = document.getElementById('countdown');
+
+            const countdownInterval = setInterval(() => {
+                timeLeft--;
+                if (timeLeft <= 0) {
+                    clearInterval(countdownInterval);
+                    countdownEl.textContent = '00:00';
+                    showFlash('The verification code has expired', 'danger');
+                    return;
+                }
+
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                countdownEl.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }, 1000);
+
+            // Handle digit inputs
+            const digitInputs = document.querySelectorAll('.digit-input');
+
+            digitInputs.forEach((input, index) => {
+                input.addEventListener('input', () => {
+                    if (input.value.length === 1 && index < digitInputs.length - 1) {
+                        digitInputs[index + 1].focus();
+                    }
+                });
+
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Backspace' && input.value === '' && index > 0) {
+                        digitInputs[index - 1].focus();
+                    }
+                });
+            });
+
+            // Focus first input
+            digitInputs[0].focus();
+
+            // Show flash message
+            function showFlash(message, category) {
+                const flashContainer = document.getElementById('flash-container');
+
+                const flash = document.createElement('div');
+                flash.className = `flash-message transform transition-all duration-300 ease-out opacity-0 translate-y-4
+                    ${category === 'success' ? 'bg-emerald-100 border-emerald-400 text-emerald-800 dark:bg-emerald-900 dark:border-emerald-700 dark:text-emerald-200' : 
+                      category === 'danger' ? 'bg-red-100 border-red-400 text-red-800 dark:bg-red-900 dark:border-red-700 dark:text-red-200' : 
+                      'bg-blue-100 border-blue-400 text-blue-800 dark:bg-blue-900 dark:border-blue-700 dark:text-blue-200'}
+                    border-l-4 p-4 rounded-lg shadow-xl flex items-start`;
+
+                flash.innerHTML = `
+                    <div class="flex-shrink-0 pt-0.5">
+                        ${category === 'success' ? '<i class="fas fa-check-circle text-emerald-600 dark:text-emerald-400"></i>' : 
+                          category === 'danger' ? '<i class="fas fa-times-circle text-red-600 dark:text-red-400"></i>' : 
+                          '<i class="fas fa-info-circle text-blue-600 dark:text-blue-400"></i>'}
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <p class="text-sm font-medium">${message}</p>
+                    </div>
+                    <button type="button" class="ml-auto -mx-1.5 -my-1.5 bg-transparent text-gray-500 rounded-lg focus:ring-2 focus:ring-gray-400 p-1.5 hover:bg-gray-200 inline-flex items-center justify-center h-8 w-8 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700"
+                        onclick="this.closest('.flash-message').remove()">
+                        <span class="sr-only">Close</span>
+                        <i class="fas fa-times text-sm"></i>
+                    </button>
+                `;
+
+                flashContainer.appendChild(flash);
+
+                // Auto-remove after 5 seconds
+                setTimeout(() => {
+                    flash.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
+                    flash.style.opacity = '0';
+                    flash.style.transform = 'translateY(1rem)';
+                    setTimeout(() => flash.remove(), 300);
+                }, 5000);
+            }
+
+            // Form submission - combine digits into single code
+            document.querySelector('form').addEventListener('submit', (e) => {
+                let code = '';
+                digitInputs.forEach(input => {
+                    code += input.value;
+                });
+                document.getElementById('fullCode').value = code;
+            });
+
+            // Resend code
+            document.getElementById('resendCode').addEventListener('click', (e) => {
+                e.preventDefault();
+
+                // Disable button temporarily
+                const btn = e.target;
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Sending...';
+                btn.classList.add('opacity-50', 'pointer-events-none');
+
+                // Send AJAX request to resend endpoint
+                fetch("{{ url_for('auth_web.resend_2fa_login') }}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        credentials: 'same-origin'
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showFlash('New verification code sent!', 'success');
+                            // Reset the countdown
+                            timeLeft = 10 * 60;
+                        } else {
+                            showFlash(data.message || 'Failed to resend code', 'danger');
+                        }
+                    })
+                    .catch(error => {
+                        showFlash('An error occurred. Please try again.', 'danger');
+                    })
+                    .finally(() => {
+                        // Re-enable button
+                        btn.innerHTML = originalText;
+                        btn.classList.remove('opacity-50', 'pointer-events-none');
+                    });
+            });
+        });
+    </script>
+</body>
+
+</html>

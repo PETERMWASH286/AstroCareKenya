@@ -1,0 +1,750 @@
+{% extends "base.html" %} 
+
+{% block title %}Process Test - AstroCare HMS{% endblock %} 
+
+{% block content %}
+<div class="min-h-screen">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 dark:bg-gray-900 p-8 rounded-2xl shadow-xl space-y-8 transition-all duration-300">
+            <div class="space-y-4">
+                <div class="flex items-center justify-between">
+                    <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+                        Process {{ test.service.name }}
+                        <span class="text-blue-600 dark:text-blue-400">Test</span>
+                    </h1>
+
+                    <div class="flex items-center space-x-4">
+                        <a href="{{ url_for('lab_web.list_lab_tests') }}" class="flex items-center space-x-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors">
+                            <i class="fas fa-arrow-left"></i>
+                            <span>Back to Tests</span>
+                        </a>
+                        <div class="flex items-center space-x-3 text-sm bg-blue-50 dark:bg-blue-900/30 px-4 py-2 rounded-lg">
+                            <i class="fas fa-vial text-blue-600 dark:text-blue-400"></i>
+                            <span class="text-gray-600 dark:text-gray-300">Test ID: {{ test.id }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-clock fa-sm"></i>
+                        <span>Requested: {{ test.requested_at|datetime('%d %b %Y %H:%M') }}</span>
+                    </div>
+                    {% if test.status == 'completed' %}
+                    <div class="flex items-center space-x-2 text-green-600">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Completed: {{ test.completed_at|datetime('%d %b %Y %H:%M') }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+<div class="bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 dark:bg-gray-900 p-6 rounded-xl border border-gray-200 dark:border-gray-600">
+    <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-6">
+            <div class="bg-blue-100 dark:bg-blue-900/30 p-4 rounded-2xl">
+                <i class="fas fa-user-injured text-3xl text-blue-600 dark:text-blue-400"></i>
+            </div>
+            <div class="space-y-2">
+                {# Determine which patient object to use and the patient type #}
+                {% set patient = None %}
+                {% set patient_type = '' %} {# Initialize patient_type variable #}
+
+                {% if test.consultation %}
+                    {% set patient = test.consultation.patient %}
+                    {% set patient_type = 'Consultation Patient' %}
+                {% elif test.visit %}
+                    {% set patient = test.visit.patient %}
+                    {% set patient_type = 'Walk-in Patient' %}
+                {% endif %}
+
+                {% if patient %}
+                    <h2 class="text-2xl font-semibold text-gray-900 dark:text-white flex items-center">
+                        {{ patient.full_name }}
+                        {% if patient_type %}
+                            <span class="ml-3 text-sm font-medium text-blue-600 dark:text-blue-400 px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30">
+                                {{ patient_type }}
+                            </span>
+                        {% endif %}
+                    </h2>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                            <p class="text-gray-500 dark:text-gray-400">Patient ID</p>
+                            <p class="text-gray-700 dark:text-gray-300">{{ patient.reg_no }}</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-500 dark:text-gray-400">Age</p>
+                            <p class="text-gray-700 dark:text-gray-300">{{ patient.age }} years</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-500 dark:text-gray-400">Gender</p>
+                            <p class="text-gray-700 dark:text-gray-300">{{ patient.gender or 'N/A' }}</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-500 dark:text-gray-400">Blood Group</p>
+                            <p class="text-gray-700 dark:text-gray-300">{{ patient.blood_group or 'N/A' }}</p>
+                        </div>
+                    </div>
+                {% else %}
+                    <h2 class="text-2xl font-semibold text-gray-900 dark:text-white">
+                        Patient Details Not Available
+                    </h2>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                        This test is not linked to a valid patient consultation or visit record.
+                    </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if test.consultation %}
+<div class="bg-white/90 backdrop-blur-md border border-gray-200 dark:border-gray-700 dark:bg-gray-900 p-6 rounded-2xl my-8 shadow-lg">
+    <div class="flex items-center mb-4">
+        <div class="bg-purple-100 dark:bg-purple-900/30 p-3 rounded-full">
+            <i class="fas fa-notes-medical text-2xl text-purple-600 dark:text-purple-400"></i>
+        </div>
+        <h3 class="ml-4 text-2xl font-semibold text-gray-900 dark:text-white">
+            Consultation Report
+        </h3>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-gray-700 dark:text-gray-300">
+        <div>
+            <h4 class="font-medium text-gray-800 dark:text-gray-100 mb-1">🩺 History</h4>
+            <p class="whitespace-pre-line">{{ test.consultation.history }}</p>
+        </div>
+        <div>
+            <h4 class="font-medium text-gray-800 dark:text-gray-100 mb-1">🔍 Examination</h4>
+            <p class="whitespace-pre-line">{{ test.consultation.examination }}</p>
+        </div>
+        <div>
+            <h4 class="font-medium text-gray-800 dark:text-gray-100 mb-1">💡 Diagnosis</h4>
+            <p class="whitespace-pre-line">{{ test.consultation.diagnosis }}</p>
+        </div>
+        <div>
+            <h4 class="font-medium text-gray-800 dark:text-gray-100 mb-1">📝 Treatment Plan</h4>
+            <p class="whitespace-pre-line">{{ test.consultation.treatment_plan }}</p>
+        </div>
+        {% if test.consultation.notes %}
+        <div class="md:col-span-2">
+            <h4 class="font-medium text-gray-800 dark:text-gray-100 mb-1">🗒️ Notes</h4>
+            <p class="whitespace-pre-line">{{ test.consultation.notes }}</p>
+        </div>
+        {% endif %}
+    </div>
+    <div class="mt-6 text-sm text-gray-500 dark:text-gray-400">
+        <span>Reported by:</span>
+        <span class="font-medium text-gray-800 dark:text-gray-200">
+            {{ test.consultation.treated_by.full_name or '—' }}
+        </span>
+        <span class="mx-2">|</span>
+        <span>
+            {{ test.consultation.created_at.strftime('%b %d, %Y %I:%M %p') }}
+        </span>
+    </div>
+</div>
+{% endif %}
+            <form method="POST" class="space-y-8"> {# Removed Alpine.js x-data from form, will manage JS separately #}
+                {% if templates %}
+                <div class="space-y-5">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                            <i class="fas fa-magic mr-2 text-purple-600"></i> Quick Result Templates
+                        </h3>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">
+                            Shift+Click to append template
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {% for template in templates %}
+                        <button type="button" class="template-btn group p-4 text-left rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 
+                                     hover:border-solid hover:border-blue-500 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 
+                                     transition-all duration-200 ease-out" data-template-value="{{ template.value }}">
+                            <div class="flex items-center space-x-3">
+                                <div class="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-lg">
+                                    <i class="fas fa-sticky-note text-blue-600 dark:text-blue-400"></i>
+                                </div>
+                                <div>
+                                    <div class="font-medium text-gray-900 dark:text-white group-hover:text-blue-600">
+                                        {{ template.text }}
+                                    </div>
+                                    {% if template.value %}
+                                    <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                        {{ template.value|truncate(50, True) }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </button> {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+<div class="space-y-6">
+    <h3 class="text-2xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center">
+        <i class="fas fa-microscope mr-3 text-indigo-600 dark:text-indigo-400"></i> Enter Specific Test Parameters
+    </h3>
+
+    {% if parameters %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for param in parameters %}
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md hover:shadow-lg transition-shadow duration-300">
+            <label for="param_{{ param.parameter_id }}" class="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2 flex items-center">
+                <span class="text-base mr-1">{{ param.parameter_name }}</span>
+                {% if param.unit %}<span class="text-xs text-gray-500 dark:text-gray-400 ml-1">({{ param.unit }})</span>{% endif %}
+                <span class="ml-auto text-xs font-normal text-gray-500 dark:text-gray-400 px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-full">
+                    {{ param.result_type|capitalize }}
+                </span>
+            </label>
+
+            {# Use .get() method to safely retrieve the result, returning None if not found #}
+            {% set current_result = existing_results.get(param.parameter_id) %} 
+
+            {% if param.result_type == 'numeric' %}
+            <div class="relative">
+                <input type="number" 
+                       step="any" 
+                       name="param_{{ param.parameter_id }}" 
+                       id="param_{{ param.parameter_id }}" 
+                       value="{{ current_result.numeric_value if current_result else '' }}"
+                       class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white p-3 text-base result-input"
+                       placeholder="Enter numeric value"
+                       data-param-type="numeric"
+                       data-param-id="{{ param.parameter_id }}"
+                       data-gender="{{ test.consultation.patient.gender }}"
+                       data-age="{{ test.consultation.patient.age }}">
+                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                    <span id="numeric-status-{{ param.parameter_id }}" class="text-sm font-medium"></span>
+                </div>
+            </div>
+            
+            {# Enhanced Normal Range Display for Numeric #}
+{# Enhanced Normal Range Display for Numeric #}
+            {# Get the already filtered ranges from the Flask context #}
+            {% set relevant_ranges = filtered_parameter_ranges.get(param.parameter_id, []) %}
+
+            {% if relevant_ranges %}
+            <div class="mt-3 space-y-1 text-sm text-gray-600 dark:text-gray-400">
+                {% for r in relevant_ranges %}
+                <p>
+                    <span class="font-medium text-gray-700 dark:text-gray-300">Normal Range:</span> 
+                    {{ r.normal_min }} - {{ r.normal_max }} 
+                    {% if r.critical_min is not none and r.critical_max is not none %}
+                    <span class="ml-2 text-red-500 dark:text-red-400">(Critical: {{ r.critical_min }} - {{ r.critical_max }})</span>
+                    {% endif %}
+                </p>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="mt-3 text-xs text-gray-500 dark:text-gray-400 italic">No specific normal ranges defined for this patient's demographics.</p>
+            {% endif %}
+
+            {% elif param.result_type == 'categorical' %}
+            <select name="param_{{ param.parameter_id }}" 
+                    id="param_{{ param.parameter_id }}" 
+                    class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white p-3 text-base">
+                <option value="">Select an option</option>
+                {% for option_value in parameter_options.get(param.parameter_id, []) %} {# CORRECTED: param.parameter_id and .get() #}
+                <option value="{{ option_value }}" {% if current_result and current_result.categorical_value == option_value %}selected{% endif %}>
+                    {{ option_value }}
+                </option>
+                {% endfor %}
+            </select>
+            {% elif param.result_type == 'text' %}
+            <textarea name="param_{{ param.parameter_id }}" 
+                      id="param_{{ param.parameter_id }}" 
+                      rows="4" {# Slightly increased rows #}
+                      class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white p-3 text-base resize-y"
+                      placeholder="Enter text result">{{ current_result.text_value if current_result else '' }}</textarea>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-gray-500 dark:text-gray-400 italic p-4 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+        <i class="fas fa-info-circle mr-2"></i> No parameters defined for this test type. Please configure parameters in the lab settings.
+    </p>
+    {% endif %}
+</div>
+
+                <div class="space-y-6">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                            <i class="fas fa-file-alt mr-2 text-orange-600"></i> General Interpretation / Summary
+                        </h3>
+                        <div class="flex items-center space-x-4">
+                            <button type="button" id="togglePreview" class="text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600">
+                                <i class="far fa-eye mr-1"></i>
+                                <span id="previewText">Show Preview</span>
+                            </button>
+                            <button type="button" id="clearGeneralResults" class="text-sm text-red-600 hover:text-red-700">
+                                <i class="fas fa-eraser mr-1"></i>
+                                Clear General Results
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="generalResultsInputContainer" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="relative h-[400px]">
+                            <textarea name="interpretation" id="interpretation-input" class="w-full h-full rounded-xl border-2 border-gray-200 dark:border-gray-700 dark:bg-gray-800 
+                                             px-5 py-4 font-mono text-sm resize-none shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200" placeholder="Enter overall test interpretation or summary.&#10;You can use markdown formatting for better structure..."
+                                spellcheck="false">{{ test.interpretation or '' }}</textarea>
+                        </div>
+                        <div class="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 border-2 border-gray-200 dark:border-gray-700">
+                            <div class="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                                <i class="fas fa-lightbulb mr-2 text-yellow-500"></i> Markdown Formatting Tips
+                            </div>
+                            <ul class="space-y-3 text-sm">
+                                <li class="flex items-center space-x-2">
+                                    <i class="fas fa-arrow-right text-blue-500"></i>
+                                    <span>Use **bold** for important points</span>
+                                </li>
+                                <li class="flex items-center space-x-2">
+                                    <i class="fas fa-arrow-right text-blue-500"></i>
+                                    <span>Prefix abnormal findings with ❗️</span>
+                                </li>
+                                <li class="flex items-center space-x-2">
+                                    <i class="fas fa-arrow-right text-blue-500"></i>
+                                    <span>Use bullet points for structured findings</span>
+                                </li>
+                                <li class="flex items-center space-x-2">
+                                    <i class="fas fa-arrow-right text-blue-500"></i>
+                                    <span>Separate sections with `---` (three hyphens)</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div id="generalResultsPreview" class="bg-white dark:bg-gray-800 rounded-xl p-6 border-2 border-gray-200 dark:border-gray-700 hidden">
+                        <div class="prose dark:prose-invert max-w-none">
+                            {% if test.interpretation %} {{ test.interpretation|markdown }} {% else %}
+                            <div class="text-gray-400 italic">No general interpretation entered yet</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-3">
+                            <label class="block text-sm font-semibold text-gray-900 dark:text-white">
+                                <i class="fas fa-comment-dots mr-2 text-green-600"></i>
+                                Technician Notes
+                            </label>
+                            <textarea name="notes" class="w-full rounded-xl border-2 border-gray-200 dark:border-gray-700 dark:bg-gray-800 
+                                             px-4 py-3 h-32 resize-none focus:border-green-500 focus:ring-2 focus:ring-green-200" placeholder="Enter additional comments or observations...">{{ test.notes or '' }}</textarea>
+                        </div>
+
+<div class="space-y-5" id="verificationSection">
+    <div class="space-y-3">
+        <label class="block text-sm font-semibold text-gray-900 dark:text-white">
+            <i class="fas fa-user-check mr-2 text-blue-600"></i>
+            Test Verification
+        </label>
+        <div class="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border-2 border-gray-200 dark:border-gray-700">
+            <div class="mb-4">
+                <label for="verifier_id_input" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Verifier ID:
+                </label>
+                <div class="mt-1 flex rounded-md shadow-sm">
+                    <input type="text" id="verifier_id_input" 
+                           class="flex-1 block w-full rounded-none rounded-l-lg border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white p-2.5 text-base"
+                           placeholder="Enter Lab Technician ID">
+                    <button type="button" id="fetchVerifierNameBtn" 
+                            class="inline-flex items-center px-4 py-2 border border-l-0 border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-200 text-sm rounded-r-md hover:bg-gray-200 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                        Fetch Name
+                    </button>
+                </div>
+                <input type="hidden" name="verifier_id" id="verifier_id_hidden"> {# Hidden field to send ID to backend #}
+                <p id="verifier_name_display" class="mt-2 text-sm text-gray-600 dark:text-gray-400 font-medium"></p>
+                <p id="verifier_error_display" class="mt-1 text-sm text-red-600 hidden"></p>
+            </div>
+
+            {# This checkbox will only enable if a verifier is set #}
+            <label class="relative inline-flex items-center cursor-pointer opacity-50 pointer-events-none" id="markVerifiedToggleWrapper">
+                <input type="checkbox" name="mark_verified" id="mark_verified_checkbox" class="sr-only peer" {% if test.status=='verified' %}checked{% endif %}>
+                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 
+                            dark:peer-focus:ring-blue-800 rounded-full peer-checked:after:translate-x-full 
+                            peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] 
+                            after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 
+                            after:transition-all dark:border-gray-600 peer-checked:bg-blue-600">
+                </div>
+                <span class="ml-3 text-sm font-medium text-gray-900 dark:text-gray-300">
+                    Mark as Verified
+                </span>
+            </label>
+             {% if test.status == 'verified' %}
+                <div class="text-sm text-green-600 mt-2">
+                    <i class="fas fa-check-double"></i> Test Verified by: {{ test.verified_by }} at {{ test.verified_at.strftime('%Y-%m-%d %H:%M') }}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{# Adjust the main save button to be a 'Save Draft' or similar, and add a 'Complete/Verify' button #}
+<div class="flex justify-end space-x-4 pt-6">
+    <a href="{{ url_for('lab_web.list_lab_tests') }}" class="px-6 py-2.5 border-2 border-gray-200 text-gray-700 dark:text-gray-300 rounded-xl 
+                                    hover:bg-gray-50 dark:hover:bg-gray-700 transition-all">
+        Cancel
+    </a>
+    <button type="submit" name="action" value="save_draft" class="px-8 py-2.5 bg-gray-600 text-white rounded-xl 
+                                    hover:bg-gray-700 transition-all
+                                    flex items-center shadow-lg hover:shadow-xl">
+        <i class="fas fa-save mr-2"></i>
+        Save Draft
+    </button>
+    <button type="submit" name="action" value="verify_and_complete" id="verifyAndCompleteBtn" 
+            class="px-8 py-2.5 bg-gradient-to-r from-green-500 to-teal-600 text-white rounded-xl 
+                    hover:from-green-600 hover:to-teal-700 transition-all
+                    flex items-center shadow-lg hover:shadow-xl opacity-50 cursor-not-allowed" disabled>
+        <i class="fas fa-check-circle mr-2"></i>
+        Verify & Complete
+    </button>
+</div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %} 
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const verifierIdInput = document.getElementById('verifier_id_input');
+        const fetchVerifierNameBtn = document.getElementById('fetchVerifierNameBtn');
+        const verifierNameDisplay = document.getElementById('verifier_name_display');
+        const verifierErrorDisplay = document.getElementById('verifier_error_display');
+        const verifierIdHidden = document.getElementById('verifier_id_hidden');
+        const markVerifiedCheckbox = document.getElementById('mark_verified_checkbox');
+        const markVerifiedToggleWrapper = document.getElementById('markVerifiedToggleWrapper');
+        const verifyAndCompleteBtn = document.getElementById('verifyAndCompleteBtn');
+        const completeCheckbox = document.querySelector('input[name="complete"]'); // The existing 'Mark as Completed' checkbox
+
+        // Function to update the state of the 'Verify & Complete' button and 'Mark as Verified' checkbox
+        function updateVerificationState() {
+            const verifierId = verifierIdHidden.value;
+            const isTestAlreadyVerified = "{{ test.status }}" === 'verified'; // Check test status from Flask context
+
+            if (verifierId && !isTestAlreadyVerified) {
+                // If a verifier is set and test not yet verified, enable checkbox and button
+                markVerifiedToggleWrapper.classList.remove('opacity-50', 'pointer-events-none');
+                markVerifiedCheckbox.disabled = false;
+                verifyAndCompleteBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                verifyAndCompleteBtn.disabled = false;
+            } else if (isTestAlreadyVerified) {
+                // If test is already verified, disable everything in verification section
+                verifierIdInput.disabled = true;
+                fetchVerifierNameBtn.disabled = true;
+                markVerifiedCheckbox.checked = true; // Ensure checkbox is checked
+                markVerifiedCheckbox.disabled = true;
+                markVerifiedToggleWrapper.classList.add('opacity-50', 'pointer-events-none');
+                verifyAndCompleteBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                verifyAndCompleteBtn.disabled = true;
+            }
+             else {
+                // If no verifier ID, disable checkbox and button
+                markVerifiedToggleWrapper.classList.add('opacity-50', 'pointer-events-none');
+                markVerifiedCheckbox.disabled = true;
+                markVerifiedCheckbox.checked = false; // Uncheck if no verifier
+                verifyAndCompleteBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                verifyAndCompleteBtn.disabled = true;
+            }
+        }
+
+        // Initial state update on page load
+        updateVerificationState();
+
+        // Event listener for fetching verifier name
+        fetchVerifierNameBtn.addEventListener('click', async function() {
+            const verifierId = verifierIdInput.value.trim();
+            verifierNameDisplay.textContent = '';
+            verifierErrorDisplay.textContent = '';
+            verifierErrorDisplay.classList.add('hidden');
+            verifierIdHidden.value = ''; // Clear hidden ID until confirmed
+
+            if (!verifierId) {
+                verifierErrorDisplay.textContent = 'Please enter a Verifier ID.';
+                verifierErrorDisplay.classList.remove('hidden');
+                updateVerificationState();
+                return;
+            }
+
+            try {
+                // Assuming you'll create an API endpoint like /api/users/<id>
+                const response = await fetch(`/lab/api/users/${verifierId}`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    verifierNameDisplay.textContent = `Name: ${data.full_name}`;
+                    verifierIdHidden.value = verifierId; // Set hidden ID
+                    verifierErrorDisplay.classList.add('hidden');
+                    // Automatically check 'Mark as Completed' if 'Mark as Verified' is checked upon successful fetch
+                    if (markVerifiedCheckbox.checked) {
+                        completeCheckbox.checked = true;
+                    }
+                } else {
+                    verifierErrorDisplay.textContent = data.message || 'Error fetching user name.';
+                    verifierErrorDisplay.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Fetch error:', error);
+                verifierErrorDisplay.textContent = 'Network error. Could not fetch user name.';
+                verifierErrorDisplay.classList.remove('hidden');
+            }
+            updateVerificationState();
+        });
+
+        // Sync 'Mark as Verified' with 'Mark as Completed'
+        markVerifiedCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                completeCheckbox.checked = true;
+            } else {
+                completeCheckbox.checked = false; // If unverified, it's not completed
+            }
+            updateVerificationState();
+        });
+
+        // If a test is already marked as verified, set the verifier details initially
+        {% if test.verified_by and test.verified_at %}
+            verifierNameDisplay.textContent = `Name: {{ test.verified_by }}`;
+            verifierIdInput.value = "{{ test.verified_by_id or '' }}"; // Assuming you also store verifier_by_id on LabTest
+            verifierIdHidden.value = "{{ test.verified_by_id or '' }}";
+            markVerifiedCheckbox.checked = true;
+            updateVerificationState(); // Update state based on existing verification
+        {% endif %}
+
+        // Ensure that if "Mark as Completed" is unchecked, "Mark as Verified" is also unchecked
+        completeCheckbox.addEventListener('change', function() {
+            if (!this.checked) {
+                markVerifiedCheckbox.checked = false;
+                verifierIdInput.value = ''; // Clear verifier info if uncompleted
+                verifierIdHidden.value = '';
+                verifierNameDisplay.textContent = '';
+            }
+            updateVerificationState();
+        });
+
+         // Initial check for 'complete' checkbox to enable/disable verification
+        if (completeCheckbox.checked) {
+            markVerifiedToggleWrapper.classList.remove('opacity-50', 'pointer-events-none');
+            markVerifiedCheckbox.disabled = false;
+        }
+    });
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+                // --- New Numeric Parameter Validation & Styling ---
+// --- New Numeric Parameter Validation & Styling ---
+const numericInputs = document.querySelectorAll('input[type="number"][data-param-type="numeric"]');
+
+// Pass this specifically for JS from the Flask route
+const rangesData = {{ all_parameters_data | tojson }};
+
+// Debugging: Print the entire rangesData object received from Flask
+console.log('🌈 rangesData (from Flask):', rangesData);
+
+function getNumericInterpretation(value, paramId, gender, age) {
+    let interpretation = '';
+    let statusClass = '';
+    let icon = '';
+
+    // Debugging: Log the input parameters for interpretation
+    console.log(`🔍 getNumericInterpretation called for paramId: ${paramId}, value: ${value}, gender: ${gender}, age: ${age}`);
+
+    // Find the parameter data from the JS variable
+    const param = rangesData.find(p => p.parameter_id == paramId);
+
+    // Debugging: Log the found parameter object
+    console.log(`  Found param object for ${paramId}:`, param);
+
+    if (!param || !param.ranges || isNaN(value)) {
+        // Debugging: Indicate why interpretation couldn't be done
+        console.warn(`  Interpretation skipped: param missing (${!param}), ranges missing (${!param.ranges}), or value is NaN (${isNaN(value)})`);
+        return { interpretation: '', statusClass: '', icon: '' };
+    }
+
+    let relevantRange = null;
+    // Debugging: Log the ranges associated with this parameter
+    console.log(`  Ranges for ${paramId}:`, param.ranges);
+
+    for (const r of param.ranges) {
+        // Ensure age and sex match
+        const ageMatch = (age !== null && age >= r.age_min && age <= r.age_max);
+        const genderMatch = (r.sex === 'Any' || r.sex === gender);
+
+        // Debugging: Log each range being checked and its match status
+        console.log(`    Checking range:`, r, `Age Match: ${ageMatch}`, `Gender Match: ${genderMatch}`);
+
+        if (ageMatch && genderMatch) {
+            relevantRange = r;
+            // Debugging: Log the relevant range found
+            console.log(`    🥳 Relevant range found:`, relevantRange);
+            break;
+        }
+    }
+
+    if (relevantRange) {
+        const normalMin = parseFloat(relevantRange.normal_min);
+        const normalMax = parseFloat(relevantRange.normal_max);
+        const criticalMin = relevantRange.critical_min !== null ? parseFloat(relevantRange.critical_min) : null;
+        const criticalMax = relevantRange.critical_max !== null ? parseFloat(relevantRange.critical_max) : null;
+
+        // Debugging: Log parsed range values
+        console.log(`  Parsed Ranges: Normal ${normalMin}-${normalMax}, Critical ${criticalMin}-${criticalMax}`);
+
+        if (value >= normalMin && value <= normalMax) {
+            interpretation = 'Normal';
+            statusClass = 'text-green-600 dark:text-green-400';
+            icon = '<i class="fas fa-check-circle"></i>';
+        } else if ((criticalMin !== null && value <= criticalMin) || (criticalMax !== null && value >= criticalMax)) {
+             interpretation = 'Critical';
+             statusClass = 'text-red-600 dark:text-red-400';
+             icon = '<i class="fas fa-exclamation-triangle"></i>';
+        } else if (value < normalMin) {
+            interpretation = 'Low';
+            statusClass = 'text-orange-600 dark:text-orange-400';
+            icon = '<i class="fas fa-arrow-down"></i>';
+        } else if (value > normalMax) {
+            interpretation = 'High';
+            statusClass = 'text-orange-600 dark:text-orange-400';
+            icon = '<i class="fas fa-arrow-up"></i>';
+        }
+    } else {
+        // Debugging: No relevant range found
+        console.warn(`  🚫 No relevant range found for paramId: ${paramId}, gender: ${gender}, age: ${age}`);
+        interpretation = 'N/A'; // Or some other default
+        statusClass = 'text-gray-500';
+    }
+
+    // Debugging: Log the final interpretation
+    console.log(`  Result for ${paramId}: Interpretation - ${interpretation}, StatusClass - ${statusClass}`);
+    return { interpretation, statusClass, icon };
+}
+
+numericInputs.forEach(input => {
+    const paramId = input.dataset.paramId;
+    const gender = input.dataset.gender;
+    const age = parseFloat(input.dataset.age);
+    const statusSpan = document.getElementById(`numeric-status-${paramId}`);
+
+    // Debugging: Log input attributes on initialization
+    console.log(`📝 Initializing input for paramId: ${paramId}, gender: ${gender}, age: ${age}`);
+
+
+    const updateNumericDisplay = () => {
+        const value = parseFloat(input.value);
+        // Debugging: Log the current input value
+        console.log(`💡 Input changed for paramId: ${paramId}, New value: ${input.value} (parsed: ${value})`);
+
+        const { interpretation, statusClass, icon } = getNumericInterpretation(value, paramId, gender, age);
+
+        statusSpan.className = `text-sm font-medium ${statusClass}`;
+        statusSpan.innerHTML = `${icon} ${interpretation}`;
+
+        // Apply border styling based on interpretation
+        input.classList.remove('border-green-500', 'border-red-500', 'border-orange-500', 'border-gray-300', 'dark:border-gray-600'); // Remove all before adding
+        if (interpretation === 'Normal') {
+            input.classList.add('border-green-500');
+        } else if (interpretation === 'Critical') {
+            input.classList.add('border-red-500');
+        } else if (interpretation === 'Low' || interpretation === 'High') {
+            input.classList.add('border-orange-500');
+        } else {
+            input.classList.add('border-gray-300', 'dark:border-gray-600'); // Default
+        }
+
+        // Debugging: Log the applied classes
+        console.log(`  Applied class to input for ${paramId}: ${input.className}`);
+    };
+
+    input.addEventListener('input', updateNumericDisplay);
+    // Initial update on load if a value is present
+    if (input.value) {
+        // Debugging: Triggering initial update
+        console.log(`🚀 Initial update for paramId: ${paramId} with value: ${input.value}`);
+        updateNumericDisplay();
+    }
+});
+// --- End New Numeric Parameter Validation & Styling ---
+        // Template selection logic (modified to get data from data-attribute)
+        document.querySelectorAll('.template-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                const interpretationInput = document.getElementById('interpretation-input'); // Target interpretation
+                const templateContent = this.dataset.templateValue; // Get value from data attribute
+
+                if (e.shiftKey) {
+                    interpretationInput.value = [interpretationInput.value, templateContent].filter(Boolean).join('\n\n');
+                } else {
+                    interpretationInput.value = templateContent;
+                }
+                updateInterpretationPreview(); // Update preview after applying template
+
+                // Animate button click
+                this.animate([{
+                    transform: 'scale(1)',
+                    boxShadow: '0 0 0 rgba(59, 130, 246, 0)'
+                }, {
+                    transform: 'scale(0.98)',
+                    boxShadow: '0 0 10px rgba(59, 130, 246, 0.3)'
+                }, {
+                    transform: 'scale(1)',
+                    boxShadow: '0 0 0 rgba(59, 130, 246, 0)'
+                }], {
+                    duration: 300,
+                    easing: 'ease-out'
+                });
+            });
+        });
+
+        // Clear General Results Button
+        document.getElementById('clearGeneralResults').addEventListener('click', function() {
+            document.getElementById('interpretation-input').value = '';
+            updateInterpretationPreview();
+        });
+
+        // General Interpretation Markdown Preview
+        const interpretationInput = document.getElementById('interpretation-input');
+        const generalResultsPreview = document.getElementById('generalResultsPreview');
+        const previewTextSpan = document.getElementById('previewText');
+        const generalResultsInputContainer = document.getElementById('generalResultsInputContainer');
+
+        const updateInterpretationPreview = () => {
+            const previewDiv = generalResultsPreview.querySelector('.prose');
+            if (previewDiv) {
+                const markdownContent = interpretationInput.value.trim();
+                if (markdownContent) {
+                    previewDiv.innerHTML = marked.parse(markdownContent);
+                } else {
+                    previewDiv.innerHTML = '<div class="text-gray-400 italic">No general interpretation entered yet</div>';
+                }
+            }
+        };
+
+        // Initial preview update
+        updateInterpretationPreview();
+
+        interpretationInput.addEventListener('input', updateInterpretationPreview);
+
+        // Toggle Preview for General Interpretation
+        document.getElementById('togglePreview').addEventListener('click', function() {
+            if (generalResultsPreview.classList.contains('hidden')) {
+                generalResultsPreview.classList.remove('hidden');
+                generalResultsInputContainer.classList.add('hidden');
+                previewTextSpan.textContent = 'Hide Preview';
+            } else {
+                generalResultsPreview.classList.add('hidden');
+                generalResultsInputContainer.classList.remove('hidden');
+                previewTextSpan.textContent = 'Show Preview';
+            }
+        });
+
+        // Initialize marked.js if you want it exposed globally, though `updateInterpretationPreview` is self-contained
+        window.marked = marked; 
+    });
+</script>
+{% endblock %}

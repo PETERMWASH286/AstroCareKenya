@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+{% block title %}Create New Disciplinary Case{% endblock %}
+{% block head %}
+    {{ super() }}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize date picker
+            flatpickr("#incident_date", {
+                dateFormat: "Y-m-d",
+                maxDate: "today"
+            });
+            
+            // Initialize severity selector
+            const severityRadios = document.querySelectorAll('input[name="severity"]');
+            const severityCards = document.querySelectorAll('.severity-card');
+            
+            severityRadios.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    severityCards.forEach(card => {
+                        card.classList.remove('border-blue-500', 'ring-2', 'ring-blue-500');
+                        card.classList.add('border-gray-200');
+                    });
+                    
+                    if (this.checked) {
+                        const card = this.closest('.severity-card');
+                        card.classList.remove('border-gray-200');
+                        card.classList.add('border-blue-500', 'ring-2', 'ring-blue-500');
+                    }
+                });
+            });
+        });
+    </script>
+    <style>
+        .severity-card {
+            transition: all 0.2s ease;
+        }
+        .severity-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .severity-minor { background-color: #f0fdf4; border-color: #bbf7d0; }
+        .severity-moderate { background-color: #fffbeb; border-color: #fde68a; }
+        .severity-major { background-color: #ffedd5; border-color: #fed7aa; }
+        .severity-severe { background-color: #fee2e2; border-color: #fecaca; }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Page Header -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+        <div>
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-red-100 text-red-600 mr-4">
+                    <i class="fas fa-gavel text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">Create New Disciplinary Case</h1>
+                    <p class="mt-2 text-gray-600">Document and manage employee disciplinary incidents</p>
+                </div>
+            </div>
+        </div>
+        <div class="mt-4 md:mt-0">
+            <a href="{{ url_for('hr_web.disciplinary_cases') }}" 
+               class="inline-flex items-center px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-md shadow-sm transition-colors duration-200">
+                <i class="fas fa-arrow-left mr-2"></i> Back to Cases
+            </a>
+        </div>
+    </div>
+
+    <!-- Form Card -->
+    <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+        <form action="{{ url_for('hr_web.new_disciplinary_case') }}" method="POST">
+            <div class="px-6 py-6">
+                <!-- Employee Selection -->
+                <div class="mb-8">
+                    <label class="block text-lg font-medium text-gray-900 mb-3">
+                        <i class="fas fa-user-circle text-blue-500 mr-2"></i> Select Employee
+                    </label>
+                    <div class="relative">
+                        <select name="employee_id" required class="w-full pl-10 pr-3 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:ring-opacity-50 appearance-none bg-white">
+                            <option value="" disabled selected>Select an employee</option>
+                            {% for employee in employees %}
+                            <option value="{{ employee.id }}">{{ employee.full_name }} - {{ employee.department.name if employee.department else 'No Department' }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                            <i class="fas fa-user text-gray-400"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Case Type -->
+                <div class="mb-8">
+                    <div class="flex justify-between items-center mb-3">
+                        <label class="block text-lg font-medium text-gray-900">
+                            <i class="fas fa-folder-open text-purple-500 mr-2"></i> Case Type
+                        </label>
+                        <a href="{{ url_for('hr_web.new_disciplinary_case_type') }}" 
+                           class="inline-flex items-center px-3 py-1.5 text-sm bg-purple-100 hover:bg-purple-200 text-purple-800 rounded-md transition-colors duration-200">
+                            <i class="fas fa-plus mr-1"></i> New Type
+                        </a>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {% for case_type in case_types %}
+                        <div>
+                            <input type="radio" id="case_type_{{ case_type.id }}" name="case_type_id" value="{{ case_type.id }}" class="hidden peer" required>
+                            <label for="case_type_{{ case_type.id }}" class="flex flex-col p-4 border border-gray-200 rounded-lg cursor-pointer peer-checked:border-blue-500 peer-checked:ring-2 peer-checked:ring-blue-500 hover:bg-gray-50 transition-all">
+                                <div class="flex items-center">
+                                    <div class="p-2 rounded-full bg-purple-100 text-purple-600 mr-3">
+                                        <i class="fas fa-folder"></i>
+                                    </div>
+                                    <h3 class="font-medium text-gray-900">{{ case_type.name }}</h3>
+                                </div>
+                                <p class="text-sm text-gray-500 mt-2">{{ case_type.description|default('No description', true) }}</p>
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- Incident Details -->
+                <div class="mb-8">
+                    <label class="block text-lg font-medium text-gray-900 mb-3">
+                        <i class="fas fa-calendar-day text-orange-500 mr-2"></i> Incident Details
+                    </label>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Incident Date</label>
+                            <div class="relative">
+                                <input type="date" id="incident_date" name="incident_date" required
+                                       class="w-full pl-10 pr-3 py-2.5 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:ring-opacity-50"
+                                       placeholder="Select date">
+                                <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                    <i class="fas fa-calendar text-gray-400"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Severity Level</label>
+                            <div class="grid grid-cols-4 gap-2">
+                                {% for severity in severities %}
+                                <div>
+                                    <input type="radio" id="severity_{{ severity }}" name="severity" value="{{ severity }}" 
+                                           class="hidden peer" required>
+                                    <label for="severity_{{ severity }}" class="severity-card severity-{{ severity|lower }} block p-2 border border-gray-200 rounded-lg text-center cursor-pointer peer-checked:border-blue-500 peer-checked:ring-2 peer-checked:ring-blue-500">
+                                        <span class="text-sm font-medium">{{ severity }}</span>
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Incident Description -->
+                <div class="mb-8">
+                    <label class="block text-lg font-medium text-gray-900 mb-3">
+                        <i class="fas fa-align-left text-green-500 mr-2"></i> Incident Description
+                    </label>
+                    <div class="rounded-lg border border-gray-300 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-200">
+                        <textarea name="incident_description" rows="5" required
+                                  class="block w-full px-4 py-3 border-0 focus:ring-0 text-gray-700 rounded-lg focus:outline-none resize-none"
+                                  placeholder="Provide detailed description of the incident..."></textarea>
+                    </div>
+                    <p class="mt-1 text-sm text-gray-500">Be specific about what happened, when, where, and who was involved.</p>
+                </div>
+                
+                <!-- Additional Notes -->
+                <div class="mb-8">
+                    <label class="block text-lg font-medium text-gray-900 mb-3">
+                        <i class="fas fa-sticky-note text-yellow-500 mr-2"></i> Additional Notes
+                    </label>
+                    <div class="rounded-lg border border-gray-300 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-200">
+                        <textarea name="notes" rows="3"
+                                  class="block w-full px-4 py-3 border-0 focus:ring-0 text-gray-700 rounded-lg focus:outline-none resize-none"
+                                  placeholder="Any additional information or context..."></textarea>
+                    </div>
+                    <p class="mt-1 text-sm text-gray-500">Optional: Supporting documents can be added after case creation.</p>
+                </div>
+                
+                <!-- Form Actions -->
+                <div class="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-gray-200 mt-8">
+                    <button type="reset" class="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium rounded-lg transition-colors duration-200">
+                        <i class="fas fa-redo mr-2"></i> Reset Form
+                    </button>
+                    <button type="submit" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm transition-colors duration-200">
+                        <i class="fas fa-save mr-2"></i> Create Case
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Form Tips -->
+    <div class="mt-8 bg-blue-50 rounded-xl p-6 border border-blue-100">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <i class="fas fa-info-circle text-blue-500 text-2xl mt-1"></i>
+            </div>
+            <div class="ml-4">
+                <h3 class="text-lg font-medium text-blue-800">Creating Effective Disciplinary Cases</h3>
+                <div class="mt-2 text-blue-700">
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li>Be objective and factual when describing incidents</li>
+                        <li>Include specific dates, times, and locations</li>
+                        <li>Select the appropriate severity level based on policy guidelines</li>
+                        <li>Attach supporting evidence after case creation</li>
+                        <li>Notify the employee and their manager after submission</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

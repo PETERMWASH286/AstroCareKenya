@@ -1,0 +1,438 @@
+{% extends "base.html" %} {% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header Section -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 space-y-4 md:space-y-0">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Supplier Management</h1>
+            <p class="text-gray-600 dark:text-gray-400">Manage medical suppliers and vendor relationships</p>
+        </div>
+        <div class="flex items-center space-x-3">
+            <button id="newSupplierBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-all flex items-center space-x-2 shadow-lg hover:shadow-xl">
+                <i class="fas fa-plus-circle"></i>
+                <span>New Supplier</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Supplier Filters -->
+    <div class="bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800  dark:bg-gray-900 dark:bg-gray-800 rounded-xl p-4 mb-6 shadow-lg">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="relative">
+                <input id="supplier-search" type="text" placeholder="Search suppliers..." class="w-full pl-10 pr-4 py-2 rounded-lg bg-gray-50 dark:bg-gray-700 border-0 focus:ring-2 focus:ring-indigo-500 transition-all">
+                <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+            </div>
+            <select id="supplier-category" class="bg-gray-50 dark:bg-gray-700 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500">
+                <option value="">All Categories</option>
+                <option>Pharmaceuticals</option>
+                <option>Medical Equipment</option>
+                <option>Lab Supplies</option>
+            </select>
+            <div class="flex items-center space-x-2">
+                <span class="text-gray-600 dark:text-gray-400 text-sm">Status:</span>
+                <div class="flex space-x-2">
+                    <button data-status="active" class="px-3 py-1 rounded-full bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 text-sm transition-all supplier-status">Active</button>
+                    <button data-status="inactive" class="px-3 py-1 rounded-full bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 text-sm transition-all supplier-status">Inactive</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Suppliers Table -->
+    <div class="bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800  dark:bg-gray-900 dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-900">
+                    <tr>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Supplier</th>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Contact</th>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Last Order</th>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Rating</th>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                    {% for supplier in suppliers %}
+                    <tr data-supplier-id="{{ supplier.id }}" class="hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 h-10 w-10 bg-indigo-100 dark:bg-indigo-900 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-truck text-indigo-600 dark:text-indigo-400"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <div class="text-sm font-medium text-gray-900 dark:text-white">{{ supplier.name }}</div>
+                                    <div class="text-sm text-gray-500 dark:text-gray-400">{{ supplier.category }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900 dark:text-white">{{ supplier.contact_name }}</div>
+                            <div class="text-sm text-gray-500 dark:text-gray-400">{{ supplier.phone }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900 dark:text-white">
+                                {{ supplier.last_order_date|date if supplier.last_order_date else 'N/A' }}
+                            </div>
+                            <div class="text-sm text-gray-500 dark:text-gray-400">{{ supplier.payment_terms }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                {% for i in range(5) %}
+                                <i class="fas fa-star text-{{ 'yellow-400' if i < supplier.rating else 'gray-300 dark:text-gray-600' }}"></i> {% endfor %}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 py-1 rounded-full text-xs font-medium 
+                                {{ 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' if supplier.is_active else 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300' }}">
+                                {{ 'Active' if supplier.is_active else 'Inactive' }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center space-x-4">
+                                <button class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 edit-btn">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300 delete-btn">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                                <button class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="mt-6 flex justify-between items-center bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800  dark:bg-gray-900 dark:bg-gray-800 p-4 rounded-lg shadow">
+        <div class="text-sm text-gray-700 dark:text-gray-400">
+            Showing 1-10 of 250 suppliers
+        </div>
+        <div class="flex space-x-2">
+            <button class="px-3 py-1 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <button class="px-3 py-1 rounded-lg bg-indigo-600 text-white">1</button>
+            <button class="px-3 py-1 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">2</button>
+            <button class="px-3 py-1 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">3</button>
+            <button class="px-3 py-1 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Supplier Modal -->
+<div id="supplierModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 overflow-y-auto scrollbar-hide">
+    <div class="bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800  dark:bg-gray-900 dark:bg-gray-800 rounded-xl p-8 w-full max-w-2xl mx-4 my-10 max-h-full overflow-y-auto scrollbar-hide">
+        <h3 class="text-xl font-bold mb-6">New Supplier</h3>
+        <form id="supplierForm" class="space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Required Fields -->
+                <div>
+                    <label class="block text-sm font-medium mb-2">Supplier Name *</label>
+                    <input name="name" type="text" required class="w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">Contact Name *</label>
+                    <input name="contact" type="text" required class="w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700">
+                </div>
+
+                <!-- Contact Information -->
+                <div>
+                    <label class="block text-sm font-medium mb-2">Phone Number *</label>
+                    <input name="phone" type="tel" required class="w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">Email</label>
+                    <input name="email" type="email" class="w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700">
+                </div>
+
+                <!-- Address Field -->
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium mb-2">Address</label>
+                    <textarea name="address" rows="3" class="w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700"></textarea>
+                </div>
+
+                <!-- Category -->
+                <div>
+                    <label class="block text-sm font-medium mb-2">Category *</label>
+                    <select name="category" required class="w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700">
+                        <option value="">Select Category</option>
+                        <option>Pharmaceuticals</option>
+                        <option>Medical Equipment</option>
+                        <option>Lab Supplies</option>
+                        <option>Other</option>
+                    </select>
+                </div>
+
+                <!-- Payment Terms -->
+                <div>
+                    <label class="block text-sm font-medium mb-2">Payment Terms</label>
+                    <select name="payment_terms" class="w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700">
+                        <option value="">Select Payment Terms</option>
+                        <option>Net 30 Days</option>
+                        <option>Net 60 Days</option>
+                        <option>Due on Receipt</option>
+                    </select>
+                </div>
+
+                <!-- Lead Time -->
+                <div>
+                    <label class="block text-sm font-medium mb-2">Lead Time (days)</label>
+                    <input name="lead_time" type="number" min="0" class="w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700">
+                </div>
+            </div>
+
+            <div class="flex justify-end space-x-4">
+                <button type="button" id="cancelBtn" class="px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+                    Save Supplier
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+<style>
+    /* Hide scrollbar for all browsers */
+    
+    .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+    }
+    
+    .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+</style>
+</div>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const searchInput = document.getElementById("supplier-search");
+        const categorySelect = document.getElementById("supplier-category");
+        const statusButtons = document.querySelectorAll(".supplier-status");
+        let selectedStatus = ""; // Track selected status
+
+        function filterSuppliers() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const selectedCategory = categorySelect.value.toLowerCase();
+
+            const rows = document.querySelectorAll("tbody tr");
+
+            rows.forEach(row => {
+                const name = row.querySelector("td:nth-child(1) .text-sm.font-medium").textContent.toLowerCase();
+                const category = row.querySelector("td:nth-child(1) .text-sm.text-gray-500").textContent.toLowerCase();
+                const statusSpan = row.querySelector("td:nth-child(5) span");
+                const isActive = statusSpan.textContent.trim().toLowerCase() === "active";
+
+                const matchesSearch = name.includes(searchTerm);
+                const matchesCategory = !selectedCategory || category === selectedCategory;
+                const matchesStatus = !selectedStatus ||
+                    (selectedStatus === "active" && isActive) ||
+                    (selectedStatus === "inactive" && !isActive);
+
+                if (matchesSearch && matchesCategory && matchesStatus) {
+                    row.style.display = "";
+                } else {
+                    row.style.display = "none";
+                }
+            });
+        }
+
+        searchInput.addEventListener("input", filterSuppliers);
+        categorySelect.addEventListener("change", filterSuppliers);
+
+        statusButtons.forEach(btn => {
+            btn.addEventListener("click", function() {
+                // Toggle status selection
+                if (selectedStatus === this.dataset.status) {
+                    selectedStatus = "";
+                    btn.classList.remove("ring-2", "ring-indigo-500");
+                } else {
+                    selectedStatus = this.dataset.status;
+                    statusButtons.forEach(b => b.classList.remove("ring-2", "ring-indigo-500"));
+                    btn.classList.add("ring-2", "ring-indigo-500");
+                }
+                filterSuppliers();
+            });
+        });
+    });
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const modal = document.getElementById('supplierModal');
+        const newBtn = document.getElementById('newSupplierBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
+
+        // Show modal
+        newBtn.addEventListener('click', () => {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        });
+
+        // Hide modal
+        cancelBtn.addEventListener('click', () => closeModal());
+
+        // Close modal when clicking outside
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+
+        // Handle form submission
+        document.getElementById('supplierForm').addEventListener('submit', async(e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+
+            try {
+                const response = await fetch('/inventory/suppliers/create', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                if (response.ok) {
+                    closeModal();
+                    showAlert('success', 'Supplier saved successfully');
+
+                    window.location.reload(); // Refresh to show new supplier
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        });
+
+        function closeModal() {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+    });
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const modal = document.getElementById('supplierModal');
+        const newBtn = document.getElementById('newSupplierBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const supplierForm = document.getElementById('supplierForm');
+        let currentSupplierId = null;
+
+        // Modal handling
+        newBtn.addEventListener('click', () => showModal());
+        cancelBtn.addEventListener('click', () => closeModal());
+        modal.addEventListener('click', (e) => e.target === modal && closeModal());
+
+        // Edit button handlers
+        document.querySelectorAll('.edit-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const supplierId = e.target.closest('tr').dataset.supplierId;
+                loadSupplierForEdit(supplierId);
+            });
+        });
+
+        // Delete button handlers
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const supplierId = e.target.closest('tr').dataset.supplierId;
+                confirmDelete(supplierId);
+            });
+        });
+
+        // Form submission handler
+        supplierForm.addEventListener('submit', async(e) => {
+            e.preventDefault();
+            const formData = new FormData(supplierForm);
+            const url = currentSupplierId ?
+                `/inventory/suppliers/${currentSupplierId}` :
+                '/inventory/suppliers/create';
+            const method = currentSupplierId ? 'PUT' : 'POST';
+
+            try {
+                const response = await fetch(url, {
+                    method,
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    showAlert('success', 'Supplier saved successfully');
+                } else {
+                    const error = await response.json();
+                    showAlert('error', error.message || 'Error saving supplier');
+                }
+            } catch (error) {
+                showAlert('error', 'Network error - please try again');
+            }
+        });
+
+        async function loadSupplierForEdit(supplierId) {
+            try {
+                const response = await fetch(`/inventory/suppliers/${supplierId}`);
+                const supplier = await response.json();
+
+                // Populate form fields
+                Object.keys(supplier).forEach(key => {
+                    const input = supplierForm.querySelector(`[name="${key}"]`);
+                    if (input) {
+                        input.value = supplier[key] || '';
+                        if (input.tagName === 'SELECT') {
+                            const option = input.querySelector(`option[value="${supplier[key]}"]`);
+                            if (option) option.selected = true;
+                        }
+                    }
+                });
+
+                currentSupplierId = supplierId;
+                modal.querySelector('h3').textContent = 'Edit Supplier';
+                showModal();
+            } catch (error) {
+                showAlert('error', 'Error loading supplier data');
+            }
+        }
+
+        async function confirmDelete(supplierId) {
+            if (confirm('Are you sure you want to delete this supplier?')) {
+                try {
+                    const response = await fetch(`/inventory/suppliers/${supplierId}`, {
+                        method: 'DELETE'
+                    });
+
+                    if (response.ok) {
+                        showAlert('success', 'Supplier deleted successfully');
+                        window.location.reload();
+                    } else {
+                        const error = await response.json();
+                        showAlert('error', error.message || 'Error deleting supplier');
+                    }
+                } catch (error) {
+                    showAlert('error', 'Network error - please try again');
+                }
+            }
+        }
+
+        function showModal() {
+            if (!currentSupplierId) supplierForm.reset();
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeModal() {
+            currentSupplierId = null;
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            modal.querySelector('h3').textContent = 'New Supplier';
+        }
+    });
+</script>
+
+{% endblock %}

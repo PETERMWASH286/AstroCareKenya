@@ -1,0 +1,303 @@
+{% extends "base.html" %} {% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+    <!-- 1) Page Header + Search + New Policy Button -->
+    <div class="flex flex-col space-y-6">
+        <div class="flex justify-between items-end">
+            <div>
+                <h1 class="text-3xl font-light text-gray-900 dark:text-white">
+                    Insurance Portfolio
+                </h1>
+                <p class="text-gray-500 dark:text-gray-400 mt-1">
+                    Managed healthcare partnerships & coverage plans
+                </p>
+            </div>
+            <div class="flex items-center gap-3">
+                <!-- Smart Search -->
+                <div class="relative flex-1 max-w-md">
+                    <input type="text" placeholder="Search policies, providers, or numbers…" class="w-full pl-12 pr-4 py-3 bg-transparent border-b-2 border-gray-200 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:text-white transition-all duration-300"
+                    />
+                    <i class="fas fa-search absolute left-3 top-3.5 text-gray-400 dark:text-gray-500"></i>
+                </div>
+                <!-- New Policy -->
+                <a href="{{ url_for('finance_web_bp.create_insurance') }}" class="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-5 py-3 rounded-xl flex items-center gap-2 transition-all shadow-md hover:shadow-lg" data-tippy-content="Create a brand-new insurance policy">
+                    <i class="fas fa-plus"></i>
+                    <span class="hidden md:inline">New Policy</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- 2) Summary Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <!-- Total Policies -->
+            <div class="flex items-center p-5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow-lg transition-shadow">
+                <div class="w-12 h-12 flex-shrink-0 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
+                    <i class="fas fa-folder-open text-indigo-500 dark:text-indigo-300 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-gray-600 dark:text-gray-400 text-sm">Total Policies</p>
+                    <p class="text-2xl font-semibold text-gray-900 dark:text-white">
+                        {{ insurances | length }}
+                    </p>
+                </div>
+            </div>
+
+            <!-- Active Policies -->
+            <div class="flex items-center p-5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow-lg transition-shadow">
+                <div class="w-12 h-12 flex-shrink-0 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
+                    <i class="fas fa-check-circle text-green-500 dark:text-green-300 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-gray-600 dark:text-gray-400 text-sm">Active</p>
+                    <p class="text-2xl font-semibold text-gray-900 dark:text-white">
+                        {{ active_insurances }}
+                    </p>
+                </div>
+            </div>
+
+            <!-- Expiring Soon -->
+            <div class="flex items-center p-5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow-lg transition-shadow">
+                <div class="w-12 h-12 flex-shrink-0 rounded-full bg-yellow-100 dark:bg-yellow-900 flex items-center justify-center">
+                    <i class="fas fa-hourglass-half text-yellow-500 dark:text-yellow-300 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-gray-600 dark:text-gray-400 text-sm">Expiring Soon</p>
+                    <p class="text-2xl font-semibold text-gray-900 dark:text-white">
+                        {{ expiring_soon }}
+                    </p>
+                </div>
+            </div>
+
+            <!-- Expired -->
+            {% set expired_count = 0 %} {% for i in insurances %} {% if i.coverage_status == 'Expired' %} {% set expired_count = expired_count + 1 %} {% endif %} {% endfor %}
+            <div class="flex items-center p-5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow-lg transition-shadow">
+                <div class="w-12 h-12 flex-shrink-0 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center">
+                    <i class="fas fa-exclamation-circle text-red-500 dark:text-red-300 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-gray-600 dark:text-gray-400 text-sm">Expired</p>
+                    <p class="text-2xl font-semibold text-gray-900 dark:text-white">
+                        {{ expired_count }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3) Filter Pills (All / Active / Expiring / Archived) -->
+    <div class="flex items-center gap-4 overflow-x-auto pb-2">
+        <div class="status-pill active" data-tippy-content="Show all policies">
+            All Policies ({{ insurances|length }})
+        </div>
+        <div class="status-pill" data-tippy-content="Only show Active policies">
+            Active ({{ active_insurances }})
+        </div>
+        <div class="status-pill" data-tippy-content="Only show policies expiring within 30 days">
+            Expiring Soon ({{ expiring_soon }})
+        </div>
+        <div class="status-pill" data-tippy-content="Show Archived/Expired policies">
+            Archived ({{ expired_count }})
+        </div>
+    </div>
+
+    <!-- 4) Data Grid: Policies Table -->
+    <div class="border rounded-2xl shadow-md overflow-x-auto dark:border-gray-800">
+        <table class="w-full min-w-[800px]">
+            <thead class="bg-gradient-to-r from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-800 border-b dark:border-gray-700">
+                <tr>
+                    <th class="px-6 py-4 text-left text-gray-500 dark:text-gray-400 font-medium">Provider</th>
+                    <th class="px-6 py-4 text-left text-gray-500 dark:text-gray-400 font-medium">Type &amp; Dates</th>
+                    <th class="px-6 py-4 text-left text-gray-500 dark:text-gray-400 font-medium">Coverage</th>
+                    <th class="px-6 py-4 text-left text-gray-500 dark:text-gray-400 font-medium">Limits &amp; Deductible</th>
+                    <th class="px-6 py-4 text-left text-gray-500 dark:text-gray-400 font-medium">Contact</th>
+                    <th class="px-6 py-4 text-left text-gray-500 dark:text-gray-400 font-medium">Status</th>
+                    <th class="px-6 py-4"></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y dark:divide-gray-700">
+                {% for insurance in insurances %}
+                <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                    <!-- Provider Column -->
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center" data-tippy-content="{{ insurance.name }} ({{ insurance.policy_number }})">
+                                <i class="fas fa-shield-alt text-indigo-500 dark:text-indigo-300 text-lg"></i>
+                            </div>
+                            <div>
+                                <p class="font-medium dark:text-white">{{ insurance.name }}</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">{{ insurance.policy_number }}</p>
+                            </div>
+                        </div>
+                    </td>
+
+                    <!-- Type & Dates Column -->
+                    <td class="px-6 py-4">
+                        <div class="space-y-1">
+                            <p class="text-sm font-semibold text-gray-700 dark:text-gray-200">
+                                {{ insurance.insurance_type }}
+                            </p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">
+                                {{ insurance.coverage_start_date.strftime('%b %d, %Y') }} – {% if insurance.coverage_end_date %} {{ insurance.coverage_end_date.strftime('%b %d, %Y') }} {% else %} Present {% endif %}
+                            </p>
+                        </div>
+                    </td>
+
+                    <!-- Coverage Progress Bar & Max Coverage Column -->
+                    <td class="px-6 py-4">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-32 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                                {# Percent of coverage elapsed: floor((today – start)/(end – start)*100) #} {% set percentage = 0 %} {% if insurance.coverage_end_date %} {% set total_days = (insurance.coverage_end_date - insurance.coverage_start_date).days %} {% set elapsed = (current_date
+                                - insurance.coverage_start_date).days %} {% if total_days > 0 %} {% set percentage = (elapsed / total_days * 100) | round(0, 'floor') %} {% if percentage
+                                < 0 %}{% set percentage=0 %}{% elif percentage> 100 %}{% set percentage = 100 %}{% endif %} {% endif %} {% endif %}
+                                    <div class="h-full bg-green-500 dark:bg-green-400 rounded-full transition-all" style="width: {{ percentage }}%;" data-tippy-content="{{ percentage }}% elapsed"></div>
+                            </div>
+                            <span class="text-sm text-gray-600 dark:text-gray-300">
+                                ${{ "{:,.2f}".format(insurance.max_coverage_amount or 0) }}
+                            </span>
+                        </div>
+                    </td>
+
+                    <!-- Limits & Deductible Column -->
+                    <td class="px-6 py-4">
+                        <div class="space-y-1">
+                            <p class="text-sm text-gray-700 dark:text-gray-200">
+                                Deductible:
+                                <span class="font-medium">${{ "{:,.2f}".format(insurance.deductible or 0) }}</span>
+                            </p>
+
+                            <p class="text-xs text-gray-500 dark:text-gray-400">
+                                <i class="fas fa-wallet mr-1"></i> Maximum
+                            </p>
+                        </div>
+                    </td>
+
+                    <!-- Contact Column -->
+                    <td class="px-6 py-4">
+                        <div class="space-y-1 text-sm">
+                            {% if insurance.contact_number %}
+                            <p>
+                                <i class="fas fa-phone mr-1 text-gray-400 dark:text-gray-500"></i>
+                                <a href="tel:{{ insurance.contact_number }}" class="hover:text-blue-500 dark:hover:text-blue-400 transition-colors" data-tippy-content="Call Provider">
+                    {{ insurance.contact_number }}
+                  </a>
+                            </p>
+                            {% endif %} {% if insurance.email %}
+                            <p>
+                                <i class="fas fa-envelope mr-1 text-gray-400 dark:text-gray-500"></i>
+                                <a href="mailto:{{ insurance.email }}" class="hover:text-blue-500 dark:hover:text-blue-400 transition-colors" data-tippy-content="Email Provider">
+                    {{ insurance.email }}
+                  </a>
+                            </p>
+                            {% endif %}
+                        </div>
+                    </td>
+
+                    <!-- Status Column -->
+                    <td class="px-6 py-4">
+                        {% if insurance.coverage_status == 'Active' %}
+                        <span class="status-badge active" data-tippy-content="Currently active">
+                {{ insurance.coverage_status }}
+              </span> {% elif insurance.coverage_status == 'Expired' %}
+                        <span class="status-badge expired" data-tippy-content="Coverage expired">
+                {{ insurance.coverage_status }}
+              </span> {% else %}
+                        <span class="status-badge inactive" data-tippy-content="Not active">
+                {{ insurance.coverage_status }}
+              </span> {% endif %}
+                    </td>
+
+                    <!-- Actions Column -->
+                    <td class="px-6 py-4 text-right">
+                        <div class="flex justify-end items-center gap-2">
+                            <!-- Manage Services -->
+                            <a href="{{ url_for('finance_web_bp.manage_services', insurance_id=insurance.id) }}" class="p-2 bg-indigo-100 dark:bg-indigo-800 rounded-lg hover:bg-indigo-200 dark:hover:bg-indigo-700 transition-colors" data-tippy-content="Manage Covered Services">
+                                <i class="fas fa-clipboard-list text-indigo-600 dark:text-indigo-300"></i>
+                            </a>
+
+                            <!-- Edit -->
+                            <a href="{{ url_for('finance_web_bp.edit_insurance', insurance_id=insurance.id) }}" class="p-2 bg-yellow-100 dark:bg-yellow-800 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-700 transition-colors" data-tippy-content="Edit Policy">
+                                <i class="fas fa-edit text-yellow-600 dark:text-yellow-300"></i>
+                            </a>
+
+                            <!-- Delete -->
+                            <button onclick="confirmDelete({{ insurance.id }})" class="p-2 bg-red-100 dark:bg-red-800 rounded-lg hover:bg-red-200 dark:hover:bg-red-700 transition-colors" data-tippy-content="Delete Policy">
+                <i class="fas fa-trash-alt text-red-600 dark:text-red-300"></i>
+              </button>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="px-6 py-12 text-center">
+                        <div class="text-gray-400 dark:text-gray-500">
+                            <i class="fas fa-clipboard-list fa-2x mb-4"></i>
+                            <p>No insurance policies found</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- 5) Styles for status pills, badges, etc. -->
+<style>
+    .status-pill {
+        @apply px-4 py-1.5 rounded-full text-sm border cursor-pointer transition-colors border-gray-200 text-gray-600 hover: border-blue-200 hover: text-blue-600 dark: border-gray-700 dark: text-gray-300 dark: hover: border-blue-600;
+    }
+    
+    .status-pill.active {
+        @apply border-blue-500 bg-blue-50 text-blue-600 dark: border-blue-600 dark: bg-blue-900/30 dark: text-blue-300;
+    }
+    
+    .status-badge {
+        @apply px-2.5 py-1 rounded-full text-xs font-medium;
+    }
+    
+    .status-badge.active {
+        @apply bg-green-100 text-green-800 dark: bg-green-900/30 dark: text-green-300;
+    }
+    
+    .status-badge.expired {
+        @apply bg-red-100 text-red-800 dark: bg-red-900/30 dark: text-red-300;
+    }
+    
+    .status-badge.inactive {
+        @apply bg-gray-100 text-gray-800 dark: bg-gray-700 dark: text-gray-300;
+    }
+</style>
+
+<!-- 6) Tippy.js Tooltips (CDN) -->
+<link rel="stylesheet" href="https://unpkg.com/tippy.js@6/dist/tippy.css" />
+<script src="https://unpkg.com/@popperjs/core@2"></script>
+<script src="https://unpkg.com/tippy.js@6"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        tippy('[data-tippy-content]', {
+            theme: 'light-border',
+            delay: [100, 50],
+            animation: 'scale',
+            arrow: true,
+        });
+    });
+
+    // Delete Confirmation
+    function confirmDelete(id) {
+        if (confirm('Are you sure you want to delete this policy?')) {
+            fetch(`/insurance/${id}`, {
+                    method: 'DELETE',
+                    headers: {}
+                })
+                .then((response) => {
+                    if (response.ok) {
+                        window.location.reload();
+                    } else {
+                        alert('Failed to delete policy.');
+                    }
+                })
+                .catch((err) => console.error('Delete error:', err));
+        }
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,401 @@
+{% extends "base.html" %} {% block title %}Verify Insurance Claims{% endblock %} {% block content %}
+
+<!-- Container -->
+<div class="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
+
+    <!-- Page header (gradient card + icon) -->
+    <div class="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl shadow-xl py-6 px-6 mb-8 flex items-center space-x-4">
+        <!-- Heroicon: Shield Check -->
+        <svg class="h-8 w-8 text-white flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round"
+            d="M9 12l2 2 4-4m5 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+        <div class="flex-1">
+            <h1 class="text-2xl font-extrabold text-white">Verify Selected Insurance Claims</h1>
+            <p class="text-sm text-indigo-200">Review and confirm before sending to the insurer.</p>
+        </div>
+        <a href="{{ url_for('finance_web_bp.invoices') }}" class="inline-flex items-center text-indigo-100 hover:text-white transition-colors duration-200">
+            <!-- Heroicon: Arrow Left -->
+            <svg class="h-5 w-5 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round"
+              d="M15 19l-7-7 7-7"/>
+      </svg> Back to All Invoices
+        </a>
+    </div>
+
+    {# -------------------------------------------- #} {# Insurance Details Card (accent border + icon) #} {# -------------------------------------------- #} {% if invoices and invoices[0].insurance %} {% set ins = invoices[0].insurance %}
+    <div class="mb-8 bg-white dark:bg-gray-800 rounded-2xl shadow-lg border-l-4 border-blue-500 overflow-hidden">
+        <div class="px-6 py-4 flex items-center space-x-3 bg-gray-50 dark:bg-gray-900">
+            <!-- Heroicon: Information Circle -->
+            <svg class="h-6 w-6 text-blue-500 dark:text-blue-300 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round"
+              d="M13 16h-1v-4h-1m1-4h.01M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 
+                 10-10S17.523 2 12 2z"/>
+      </svg>
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Insurance Details</h2>
+        </div>
+        <div class="px-6 py-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 text-sm">
+            <div class="flex items-center space-x-2">
+                <!-- Heroicon: Office Building -->
+                <svg class="h-5 w-5 text-gray-500 dark:text-gray-400 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round"
+                d="M3 21V7a2 2 0 
+                   012-2h14a2 2 0 012 2v14M3 21h18M9 9h.01M15 9h.01M9 
+                   12h.01M15 12h.01M9 15h.01M15 15h.01"/>
+        </svg>
+                <div>
+                    <p class="font-medium text-gray-700 dark:text-gray-300">Provider</p>
+                    <p class="text-gray-900 dark:text-gray-100">{{ ins.name }}</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-2">
+                <!-- Heroicon: Identification -->
+                <svg class="h-5 w-5 text-gray-500 dark:text-gray-400 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round"
+                d="M4 7h16M4 11h16M4 15h16M4 19h16"/>
+        </svg>
+                <div>
+                    <p class="font-medium text-gray-700 dark:text-gray-300">Policy No.</p>
+                    <p class="text-gray-900 dark:text-gray-100">{{ ins.policy_number }}</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-2">
+                <!-- Heroicon: Calendar -->
+                <svg class="h-5 w-5 text-gray-500 dark:text-gray-400 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round"
+                d="M8 7V3m8 4V3m-9 8h10m-9 4h.01M15 11h.01M9 
+                   11h.01M3 21h18a2 2 0 002-2V7a2 2 0 
+                   00-2-2H3a2 2 0 00-2 2v12a2 2 0 002 
+                   2z"/>
+        </svg>
+                <div>
+                    <p class="font-medium text-gray-700 dark:text-gray-300">Coverage</p>
+                    <p class="text-gray-900 dark:text-gray-100">
+                        {{ ins.coverage_start_date.strftime('%Y-%m-%d') }} – {% if ins.coverage_end_date %} {{ ins.coverage_end_date.strftime('%Y-%m-%d') }} {% else %} Present {% endif %}
+                    </p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-2">
+                <!-- Heroicon: Badge Check -->
+                <svg class="h-5 w-5 text-gray-500 dark:text-gray-400 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round"
+                d="M9 12l2 2 4-4m5 2a9 9 0 
+                   11-18 0 9 9 0 0118 0z"/>
+        </svg>
+                <div>
+                    <p class="font-medium text-gray-700 dark:text-gray-300">Status</p>
+                    <span class="inline-block px-2 py-0.5 rounded-full text-xs font-semibold
+                   {% if ins.coverage_status == 'Expired' %}
+                     bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-200
+                   {% else %}
+                     bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-200
+                   {% endif %}">
+            {{ ins.coverage_status }}
+          </span>
+                </div>
+            </div>
+
+            <div class="sm:col-span-2 lg:col-span-4 flex items-center space-x-2 mt-2">
+                <!-- Heroicon: Phone -->
+                <svg class="h-5 w-5 text-gray-500 dark:text-gray-400 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round"
+                d="M3 5a2 2 0 012-2h2c1.1 0 
+                   2 .9 2 2v2c0 1.1-.9 2-2 
+                   2H5a2 2 0 01-2-2V5zm0 8a2 
+                   2 0 012-2h2c1.1 0 2 .9 
+                   2 2v2c0 1.1-.9 2-2 2H5a2 
+                   2 0 01-2-2v-2zM15 5a2 2 0 
+                   012-2h2c1.1 0 2 .9 2 2v2c0 
+                   1.1-.9 2-2 2h-2a2 2 0 
+                   01-2-2V5zm0 8a2 2 0 
+                   012-2h2c1.1 0 2 .9 2 
+                   2v2c0 1.1-.9 2-2 
+                   2h-2a2 2 0 01-2-2v-2z"/>
+        </svg>
+                <div>
+                    <p class="font-medium text-gray-700 dark:text-gray-300">Contact</p>
+                    <p class="text-gray-900 dark:text-gray-100">
+                        {{ ins.contact_number or '–' }} {% if ins.email %} | {{ ins.email }}{% endif %}
+                    </p>
+                </div>
+            </div>
+
+            <div class="sm:col-span-2 lg:col-span-4 flex items-center space-x-2">
+                <!-- Heroicon: Location Marker -->
+                <svg class="h-5 w-5 text-gray-500 dark:text-gray-400 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round"
+                d="M12 11c1.657 0 3-1.343 3-3S13.657 
+                   5 12 5 9 6.343 9 8s1.343 3 3 
+                   3zm0 0v8m0-8c4.418 0 8-3.582 
+                   8-8S16.418 3 12 3 4 6.582 4 
+                   11s3.582 8 8 8z"/>
+        </svg>
+                <div>
+                    <p class="font-medium text-gray-700 dark:text-gray-300">Address</p>
+                    <p class="text-gray-900 dark:text-gray-100">
+                        {{ ins.address }}, {{ ins.city }}, {{ ins.state }}, {{ ins.country }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %} {# ------------------------------------------- #} {# Form for Subject, Message, Hidden IDs, etc. #} {# ------------------------------------------- #}
+    <form action="{{ url_for('finance_web_bp.confirm_insurance_submission') }}" method="POST" class="space-y-8">
+        <!-- Subject & Message Inputs (card style) -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 space-y-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Compose Claim Email</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <!-- Subject with leading icon -->
+                <div>
+                    <label for="subject" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Subject
+          </label>
+                    <div class="relative rounded-md shadow-sm">
+                        <div class="pointer-events-none absolute inset-y-0 left-0 pl-3 flex items-center">
+                            <!-- Heroicon: Mail -->
+                            <svg class="h-5 w-5 text-gray-400 dark:text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M3 8l7.89 5.26a2 2 0 
+                         002.22 0L21 8m-18 8h18a2 2 0 
+                         002-2V8a2 2 0 00-2-2H3a2 2 0 
+                         00-2 2v6a2 2 0 002 2z"/>
+              </svg>
+                        </div>
+                        <input type="text" name="subject" id="subject" placeholder="Enter email subject or reference…" class="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 
+                     bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md 
+                     focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" required />
+                    </div>
+                </div>
+
+                <!-- Message with leading icon -->
+                <div class="sm:col-span-2">
+                    <label for="message" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Message
+          </label>
+                    <div class="relative rounded-md shadow-sm">
+                        <div class="pointer-events-none absolute top-2 left-0 pl-3 flex items-center">
+                            <!-- Heroicon: Pencil Alt -->
+                            <svg class="h-5 w-5 text-gray-400 dark:text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M11 5h2m0 0c3.866 0 
+                         7 3.134 7 7v4a2 2 0 
+                         01-2 2H7a2 2 0 01-2-2v-4c0-3.866 
+                         3.134-7 7-7zm0 0V3m0 2l-2 2m2 
+                         -2l2 2"/>
+              </svg>
+                        </div>
+                        <textarea name="message" id="message" rows="4" placeholder="Optional message to include with the claim submission…" class="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 
+                     bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md 
+                     focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# ----------------------------------------------- #} {# Table of Selected Invoices (super-modern styling) #} {# ----------------------------------------------- #}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800 shadow-lg rounded-2xl">
+                <thead class="bg-gradient-to-r from-indigo-500 to-blue-500">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">
+                            <!-- Heroicon: Hashtag -->
+                            <div class="flex items-center space-x-1">
+                                <svg class="h-4 w-4 text-indigo-200" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M7 5v14m10-14v14M3 9h18M3 
+                           15h18"/>
+                </svg>
+                                <span>Invoice ID</span>
+                            </div>
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">
+                            <!-- Heroicon: User Group -->
+                            <div class="flex items-center space-x-1">
+                                <svg class="h-4 w-4 text-indigo-200" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M17 20h5V8H2v12h5m10-13a4 
+                           4 0 11-8 0 4 4 0 018 0zM3 
+                           8h18"/>
+                </svg>
+                                <span>Patient</span>
+                            </div>
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-white uppercase tracking-wider">
+                            <!-- Heroicon: Clipboard List -->
+                            <div class="flex items-center space-x-1">
+                                <svg class="h-4 w-4 text-indigo-200" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M9 5H7a2 2 0 00-2 
+                           2v12a2 2 0 002 2h10a2 2 0 
+                           002-2V7a2 2 0 00-2-2h-2M9 
+                           3h6a2 2 0 012 2v2H7V5a2 2 
+                           0 012-2zM9 12h6M9 16h6"/>
+                </svg>
+                                <span>Insurance</span>
+                            </div>
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-right text-xs font-semibold text-white uppercase tracking-wider">
+                            <!-- Heroicon: Currency Dollar -->
+                            <div class="flex items-center justify-end space-x-1">
+                                <svg class="h-4 w-4 text-indigo-200" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M12 8c-1.657 0-3 
+                           1.343-3 3s1.343 3 3 3 3-1.343 
+                           3-3-1.343-3-3-3zm0-6v2m0 
+                           16v2m-4-4h2m4 0h2"/>
+                </svg>
+                                <span>Amount (KES)</span>
+                            </div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                    {% for inv in invoices %}
+                    <tr class="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
+                            {{ inv.id }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-200">
+                            {{ inv.patient.full_name }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-200">
+                            {% if inv.insurance %}
+                            <span class="inline-flex items-center px-2 py-1 bg-indigo-100 dark:bg-indigo-700 text-indigo-800 dark:text-indigo-100 text-xs font-semibold rounded-full">
+                {{ inv.insurance.name }}
+              </span> {% else %}
+                            <span class="italic text-gray-400 dark:text-gray-500">–</span> {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 text-right">
+                            {{ "{:,.2f}".format(inv.total_amount) }}
+                        </td>
+                    </tr>
+                    <!-- Hidden inputs to pass invoice_ids[] -->
+                    <input type="hidden" name="invoice_ids[]" value="{{ inv.id }}"> {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- “No invoices” empty state -->
+        {% if invoices|length == 0 %}
+        <div class="mt-8 p-6 bg-yellow-50 dark:bg-yellow-900 border border-yellow-200 dark:border-yellow-700 rounded-2xl text-center">
+            <p class="text-sm text-yellow-800 dark:text-yellow-100">
+                No invoices found.
+                <a href="{{ url_for('finance_web_bp.all_invoices') }}" class="underline font-medium">
+          Go back to all invoices
+        </a>.
+            </p>
+        </div>
+        {% endif %} {# -------------------------------------------- #} {# Bottom action bar: Download PDF & Confirm Now #} {# -------------------------------------------- #} {% if invoices|length > 0 %}
+        <div class="mt-10 flex flex-col sm:flex-row sm:justify-end sm:space-x-4 space-y-4 sm:space-y-0">
+            <!-- Download PDF Button -->
+            <a href="{{ url_for('finance_web_bp.download_insurance_pdf') }}?{% for inv in invoices %}invoice_ids={{ inv.id }}&{% endfor %}" target="_blank" class="inline-flex items-center justify-center space-x-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-sm font-semibold rounded-full shadow-md transform hover:-translate-y-0.5 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">
+                <!-- Heroicon: Document Download -->
+                <svg class="h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round"
+                d="M12 3v12m0 0l-4-4m4 
+                   4l4-4M21 12v7a2 2 0 
+                   01-2 2H5a2 2 0 01-2-2v-7"/>
+        </svg>
+                <span>Download PDF</span>
+            </a>
+
+            <!-- Confirm & Send to Insurance (opens modal) -->
+            <button type="button" id="confirm-submit-btn" class="inline-flex items-center justify-center space-x-2 px-6 py-3 bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white text-sm font-semibold rounded-full shadow-md transform hover:-translate-y-0.5 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-400">
+        <!-- Heroicon: Mail Open -->
+        <svg class="h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none"
+             viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round"
+                d="M3 8l7.89 5.26a2 2 0 
+                   002.22 0L21 8M3 8v10a2 2 0 
+                   002 2h14a2 2 0 002-2V8M3 
+                   8l9 6 9-6"/>
+        </svg>
+        <span>Confirm & Send</span>
+      </button>
+        </div>
+        {% endif %} {# ------------------------- #} {# Confirmation Modal Markup #} {# ------------------------- #}
+        <div id="confirmation-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black bg-opacity-50 px-4">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center space-x-2">
+                    <!-- Heroicon: Exclamation -->
+                    <svg class="h-6 w-6 text-yellow-500 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M11.29 3.86l-9.2 16c-.43.75.12 
+                     1.64.98 1.64h18.85c.86 0 1.41-.89.98-1.64l-9.2-16a1 
+                     1 0 00-1.72 0zM12 9v4m0 4h.01"/>
+          </svg>
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">
+                        Confirm Submission
+                    </h3>
+                </div>
+                <div class="px-6 py-5">
+                    <p class="text-gray-700 dark:text-gray-200">
+                        You are about to send
+                        <strong>{{ invoices|length }}</strong> insurance claim {% if invoices|length > 1 %}s{% endif %}. Are you sure you want to proceed?
+                    </p>
+                </div>
+                <div class="px-6 py-4 bg-gray-50 dark:bg-gray-700 flex justify-end space-x-3">
+                    <button type="button" id="cancel-modal-btn" class="inline-flex items-center px-5 py-2 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-full hover:bg-gray-400 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400">
+            Cancel
+          </button>
+                    <button type="submit" class="inline-flex items-center px-5 py-2 bg-green-600 hover:bg-green-700 text-white rounded-full shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-400">
+            Yes, Send Now
+          </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Alpine.js (small runtime) for modal toggle + simple search logic -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Modal controls
+        const modal = document.getElementById('confirmation-modal');
+        const openBtn = document.getElementById('confirm-submit-btn');
+        const cancelBtn = document.getElementById('cancel-modal-btn');
+
+        if (openBtn) {
+            openBtn.addEventListener('click', () => {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            });
+        }
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', () => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            });
+        }
+
+        // Simple client-side search/filter logic
+        const searchInput = document.getElementById('invoice-search');
+        const clearSearch = document.getElementById('clear-search');
+        const tableRows = document.querySelectorAll('tbody tr');
+
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                const query = this.value.trim().toLowerCase();
+                tableRows.forEach(row => {
+                    const idCell = row.cells[0].innerText.toLowerCase();
+                    const patientCell = row.cells[1].innerText.toLowerCase();
+                    if (idCell.includes(query) || patientCell.includes(query)) {
+                        row.classList.remove('hidden');
+                    } else {
+                        row.classList.add('hidden');
+                    }
+                });
+            });
+        }
+        if (clearSearch) {
+            clearSearch.addEventListener('click', function() {
+                searchInput.value = '';
+                tableRows.forEach(row => row.classList.remove('hidden'));
+            });
+        }
+    });
+</script>
+{% endblock %}

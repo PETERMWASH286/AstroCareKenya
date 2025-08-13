@@ -1,0 +1,168 @@
+{% extends "base.html" %} {% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header with Gradient Background -->
+    <div class="bg-gradient-to-r from-blue-600 to-purple-700 rounded-xl p-6 shadow-lg mb-8">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-white">New Stock Request</h1>
+                <p class="text-blue-100 mt-1">Request medical supplies from central stock</p>
+            </div>
+            <a href="{{ url_for('pharmacy_web.stock_requests') }}" class="flex items-center text-white hover:text-blue-200 transition-colors">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 15l-3-3m0 0l3-3m-3 3h8M3 12a9 9 0 1118 0 9 9 0 01-18 0z"/>
+                </svg> Back to Requests
+            </a>
+        </div>
+    </div>
+
+    <!-- Stock Request Form -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <form method="POST" class="space-y-6" id="stockRequestForm">
+            <!-- Stock Item Selection -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="relative">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Medical Item</label>
+                    <select name="stock_id" required class="stock-select w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500">
+                        <option value="">Select Medical Item</option>
+                        {% for item in stock_items %}
+                        <option value="{{ item.id }}" 
+                                data-batch="{{ item.batch_number }}"
+                                data-expiration="{{ item.expiration_date.strftime('%Y-%m-%d') }}"
+                                data-location="{{ item.location }}"
+                                data-quantity="{{ item.current_stock }}">
+                            {{ item.name }} ({{ item.sku }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <div class="absolute inset-y-0 right-3 top-5 flex items-center pointer-events-none">
+                        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Auto-populated Batch Info -->
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <span class="text-gray-600">Batch Number:</span>
+                            <span id="batchNumber" class="font-medium">-</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-600">Expiration Date:</span>
+                            <span id="expirationDate" class="font-medium">-</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-600">Storage Location:</span>
+                            <span id="storageLocation" class="font-medium">-</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-600">Available Quantity:</span>
+                            <span id="availableQuantity" class="font-medium">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Request Details -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Quantity Needed</label>
+                    <input type="number" name="quantity_requested" min="1" required class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500" placeholder="Enter quantity">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Priority Level</label>
+                    <div class="relative">
+                        <select name="priority" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500">
+                            <option value="routine">Routine</option>
+                            <option value="urgent">Urgent</option>
+                            <option value="emergency">Emergency</option>
+                        </select>
+                        <div class="absolute inset-y-0 right-3 top-3 flex items-center pointer-events-none">
+                            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Date Pickers -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Required By Date</label>
+                    <input type="date" name="required_by_date" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Expiration Date</label>
+                    <input type="date" name="expiration_date" required class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500" id="expirationDateInput">
+                </div>
+            </div>
+            <!-- Add these hidden fields inside the form -->
+            <input type="hidden" name="batch_number" id="batchNumberInput">
+            <input type="hidden" name="location" id="locationInput">
+            <!-- Submit Section -->
+            <div class="border-t pt-6">
+                <div class="flex justify-end gap-4">
+                    <button type="reset" class="px-6 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50">
+                        Reset Form
+                    </button>
+                    <button type="submit" class="bg-gradient-to-r from-blue-600 to-blue-800 text-white px-6 py-2.5 rounded-lg font-medium hover:from-blue-700 hover:to-blue-900 transition-all">
+                        Submit Request
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Script for Dynamic Form Interactions -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const stockSelect = document.querySelector('.stock-select');
+        const batchNumber = document.getElementById('batchNumber');
+        const expirationDate = document.getElementById('expirationDate');
+        const storageLocation = document.getElementById('storageLocation');
+        const availableQuantity = document.getElementById('availableQuantity');
+        const expirationDateInput = document.getElementById('expirationDateInput');
+
+        stockSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+
+            batchNumber.textContent = selectedOption.dataset.batch || '-';
+            expirationDate.textContent = selectedOption.dataset.expiration || '-';
+            storageLocation.textContent = selectedOption.dataset.location || '-';
+            availableQuantity.textContent = selectedOption.dataset.quantity || '-';
+            // Update hidden form fields
+            document.getElementById('batchNumberInput').value = selectedOption.dataset.batch;
+            document.getElementById('locationInput').value = selectedOption.dataset.location;
+            // Set expiration date picker
+            if (selectedOption.dataset.expiration) {
+                expirationDateInput.value = selectedOption.dataset.expiration;
+            }
+        });
+
+        // Initialize Select2
+        $('.stock-select').select2({
+            placeholder: "Search medical items...",
+            minimumResultsForSearch: 3,
+            width: '100%',
+            dropdownParent: $('#stockRequestForm')
+        });
+    });
+</script>
+
+<style>
+    .select2-container--default .select2-selection--single {
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+        height: 48px;
+        padding: 0.5rem 1rem;
+    }
+    
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 46px;
+    }
+</style>
+{% endblock %}

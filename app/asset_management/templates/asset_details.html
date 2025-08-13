@@ -1,0 +1,505 @@
+{% extends "base.html" %} {% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8">
+    <div class="container mx-auto px-4">
+        <!-- Asset Header -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+            <div>
+                <div class="flex items-center mb-3">
+                    <h1 class="text-3xl font-bold text-gray-800 mr-4">{{ asset.name }}</h1>
+                    {% if asset.status == 'Operational' %}
+                    <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+                        <i class="fas fa-check-circle mr-1"></i> Operational
+                    </span> {% elif asset.status == 'Under Maintenance' %}
+                    <span class="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">
+                        <i class="fas fa-tools mr-1"></i> Under Maintenance
+                    </span> {% elif asset.status in ['Out of Service', 'Lost', 'Stolen'] %}
+                    <span class="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-medium">
+                        <i class="fas fa-exclamation-triangle mr-1"></i> {{ asset.status }}
+                    </span> {% endif %}
+                </div>
+                <p class="text-gray-600">{{ asset.description }}</p>
+            </div>
+            <div class="mt-4 md:mt-0 flex space-x-3">
+                <a href="{{ url_for('asset_management.edit_asset', asset_id=asset.id) }}" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors">
+                    <i class="fas fa-edit mr-2"></i> Edit Asset
+                </a>
+                <a href="{{ url_for('asset_management.add_maintenance') }}?asset_id={{ asset.id }}" class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:shadow-lg transition-all">
+                    <i class="fas fa-tools mr-2"></i> Record Maintenance
+                </a>
+            </div>
+        </div>
+
+        <!-- Asset Overview Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-blue-500">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="text-gray-500 text-sm">Current Value</p>
+                        <h3 class="text-2xl font-bold text-gray-800">${{ asset.current_value|default(asset.purchase_price, true)|round(2) }}</h3>
+                    </div>
+                    <div class="p-3 bg-blue-100 rounded-full">
+                        <i class="fas fa-coins text-blue-500 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-green-500">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="text-gray-500 text-sm">Purchase Price</p>
+                        <h3 class="text-2xl font-bold text-gray-800">${{ asset.purchase_price }}</h3>
+                    </div>
+                    <div class="p-3 bg-green-100 rounded-full">
+                        <i class="fas fa-shopping-cart text-green-500 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-purple-500">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="text-gray-500 text-sm">Depreciation Rate</p>
+                        <h3 class="text-2xl font-bold text-gray-800">{{ asset.depreciation_rate }}%</h3>
+                    </div>
+                    <div class="p-3 bg-purple-100 rounded-full">
+                        <i class="fas fa-chart-line text-purple-500 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-yellow-500">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="text-gray-500 text-sm">Maintenance Records</p>
+                        <h3 class="text-2xl font-bold text-gray-800">{{ maintenance_history|length }}</h3>
+                    </div>
+                    <div class="p-3 bg-yellow-100 rounded-full">
+                        <i class="fas fa-wrench text-yellow-500 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Asset Details Tabs -->
+        <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+            <!-- Tab Headers -->
+            <div class="border-b border-gray-200">
+                <nav class="flex overflow-x-auto">
+                    <button class="tab-button active px-6 py-4 font-medium text-sm border-b-2 border-blue-500 text-blue-600" data-tab="overview">
+                        <i class="fas fa-info-circle mr-2"></i> Overview
+                    </button>
+                    <button class="tab-button px-6 py-4 font-medium text-sm text-gray-500 hover:text-gray-700" data-tab="maintenance">
+                        <i class="fas fa-tools mr-2"></i> Maintenance History
+                    </button>
+                    <button class="tab-button px-6 py-4 font-medium text-sm text-gray-500 hover:text-gray-700" data-tab="assignment">
+                        <i class="fas fa-history mr-2"></i> Assignment History
+                    </button>
+                    <button class="tab-button px-6 py-4 font-medium text-sm text-gray-500 hover:text-gray-700" data-tab="depreciation">
+                        <i class="fas fa-chart-line mr-2"></i> Depreciation
+                    </button>
+                    <button class="tab-button px-6 py-4 font-medium text-sm text-gray-500 hover:text-gray-700" data-tab="documents">
+                        <i class="fas fa-file-alt mr-2"></i> Documents
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Tab Contents -->
+            <div class="p-6">
+                <!-- Overview Tab -->
+                <div id="overview-tab" class="tab-content">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <!-- Left Column: Asset Details -->
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                                <i class="fas fa-info-circle text-blue-500 mr-2"></i> Asset Details
+                            </h3>
+
+                            <div class="space-y-4">
+                                <div class="flex">
+                                    <div class="w-1/3 font-medium text-gray-500">Serial Number</div>
+                                    <div class="w-2/3 font-medium">{{ asset.serial_number }}</div>
+                                </div>
+                                <div class="flex">
+                                    <div class="w-1/3 text-gray-500">Barcode</div>
+                                    <div class="w-2/3">
+                                        {% if asset.barcode %}
+                                        <span class="bg-gray-100 px-3 py-1 rounded-lg font-mono">{{ asset.barcode }}</span> {% else %}
+                                        <span class="text-gray-400">Not assigned</span> {% endif %}
+                                    </div>
+                                </div>
+                                <div class="flex">
+                                    <div class="w-1/3 text-gray-500">Category</div>
+                                    <div class="w-2/3">
+                                        <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+                                            {{ asset.category.name }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="flex">
+                                    <div class="w-1/3 text-gray-500">Department</div>
+                                    <div class="w-2/3">{{ asset.department.name }}</div>
+                                </div>
+                                <div class="flex">
+                                    <div class="w-1/3 text-gray-500">Location</div>
+                                    <div class="w-2/3">{{ asset.location|default('Not specified', true) }}</div>
+                                </div>
+                                <div class="flex">
+                                    <div class="w-1/3 text-gray-500">Assigned To</div>
+                                    <div class="w-2/3">
+                                        {% if asset.assigned_to %}
+                                        <div class="flex items-center">
+                                            <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center mr-3">
+                                                <i class="fas fa-user text-gray-600"></i>
+                                            </div>
+                                            <span>{{ asset.assigned_to.full_name }}</span>
+                                        </div>
+                                        {% else %}
+                                        <span class="text-gray-400">Not assigned</span> {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h3 class="text-xl font-bold text-gray-800 mt-10 mb-6 flex items-center">
+                                <i class="fas fa-file-alt text-blue-500 mr-2"></i> Notes
+                            </h3>
+                            <div class="bg-gray-50 rounded-xl p-4">
+                                {% if asset.notes %}
+                                <p class="text-gray-700">{{ asset.notes }}</p>
+                                {% else %}
+                                <p class="text-gray-400 italic">No notes available for this asset</p>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Right Column: Timeline and Warranty -->
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                                <i class="fas fa-history text-blue-500 mr-2"></i> Key Dates
+                            </h3>
+
+                            <div class="space-y-4 mb-10">
+                                <div class="flex items-center">
+                                    <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-500 mr-4">
+                                        <i class="fas fa-calendar-plus"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-gray-500">Purchase Date</p>
+                                        <p class="font-medium">
+                                            {{ asset.purchase_date.strftime('%B %d, %Y') if asset.purchase_date else 'Not recorded' }}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center">
+                                    <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-500 mr-4">
+                                        <i class="fas fa-shield-alt"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-gray-500">Warranty Expiry</p>
+                                        <p class="font-medium">
+                                            {% if asset.warranty_expiry %} {% set warranty_status = 'text-green-600' if asset.warranty_expiry > datetime.utcnow() else 'text-red-600' %}
+                                            <span class="{{ warranty_status }}">
+                                                    {{ asset.warranty_expiry.strftime('%B %d, %Y') }}
+                                                    {% if asset.warranty_expiry > datetime.utcnow() %}
+                                                    ({{ (asset.warranty_expiry - datetime.utcnow()).days }} days remaining)
+                                                    {% else %}
+                                                    (Expired)
+                                                    {% endif %}
+                                                </span> {% else %}
+                                            <span class="text-gray-400">No warranty</span> {% endif %}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center">
+                                    <div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-500 mr-4">
+                                        <i class="fas fa-sync-alt"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-gray-500">Last Maintenance</p>
+                                        <p class="font-medium">
+                                            {% if maintenance_history %} {{ maintenance_history[0].maintenance_date.strftime('%B %d, %Y') }} {% else %}
+                                            <span class="text-gray-400">Never maintained</span> {% endif %}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                                <i class="fas fa-qrcode text-blue-500 mr-2"></i> Asset QR Code
+                            </h3>
+                            <div class="bg-white border border-gray-200 rounded-xl p-4 flex justify-center">
+                                <div class="bg-gray-200 border-2 border-dashed rounded-xl w-48 h-48 flex items-center justify-center text-gray-500">
+                                    <i class="fas fa-qrcode text-4xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Maintenance Tab -->
+                <div id="maintenance-tab" class="tab-content hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xl font-bold text-gray-800 flex items-center">
+                            <i class="fas fa-tools text-blue-500 mr-2"></i> Maintenance History
+                        </h3>
+                        <a href="{{ url_for('asset_management.add_maintenance') }}?asset_id={{ asset.id }}" class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:shadow-lg transition-all">
+                            <i class="fas fa-plus mr-2"></i> Add Record
+                        </a>
+                    </div>
+
+                    {% if maintenance_history %}
+                    <div class="space-y-4">
+                        {% for record in maintenance_history %}
+                        <div class="bg-gray-50 rounded-xl overflow-hidden border border-gray-200">
+                            <div class="p-4 bg-white border-b border-gray-200 flex justify-between items-center">
+                                <div>
+                                    <div class="font-bold text-lg">{{ record.maintenance_date.strftime('%B %d, %Y') }}</div>
+                                    <div class="text-gray-500">by {{ record.technician.name }}</div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="font-bold text-lg">${{ record.cost }}</div>
+                                    <div class="text-gray-500">{{ record.maintenance_type }}</div>
+                                </div>
+                            </div>
+                            <div class="p-4">
+                                <div class="mb-3">
+                                    <p class="font-medium text-gray-700">Description:</p>
+                                    <p class="text-gray-600">{{ record.description }}</p>
+                                </div>
+
+                                {% if record.next_maintenance_date %}
+                                <div class="mb-3">
+                                    <p class="font-medium text-gray-700">Next Maintenance:</p>
+                                    <p class="text-gray-600">{{ record.next_maintenance_date.strftime('%B %d, %Y') }}</p>
+                                </div>
+                                {% endif %} {% if record.notes %}
+                                <div>
+                                    <p class="font-medium text-gray-700">Notes:</p>
+                                    <p class="text-gray-600">{{ record.notes }}</p>
+                                </div>
+                                {% endif %} {% if record.parts_replaced %}
+                                <div class="mt-4">
+                                    <p class="font-medium text-gray-700 mb-2">Parts Replaced:</p>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        {% for part in record.parts_replaced %}
+                                        <div class="bg-white rounded-lg p-3 border border-gray-200">
+                                            <div class="font-medium">{{ part.part_name }}</div>
+                                            <div class="text-sm text-gray-500">Part #: {{ part.part_number|default('N/A', true) }}</div>
+                                            <div class="text-sm text-gray-500">Cost: ${{ part.cost }} x {{ part.quantity }}</div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="bg-gray-50 px-4 py-3 text-right">
+                                <a href="{{ url_for('asset_management.maintenance_details', record_id=record.id) }}" class="text-blue-600 hover:text-blue-800 font-medium">
+                                    View Details <i class="fas fa-arrow-right ml-1"></i>
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-16">
+                        <div class="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
+                            <i class="fas fa-tools text-gray-400 text-3xl"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold text-gray-700 mb-2">No Maintenance Records</h3>
+                        <p class="text-gray-500 mb-6">This asset hasn't had any maintenance yet.</p>
+                        <a href="{{ url_for('asset_management.add_maintenance') }}?asset_id={{ asset.id }}" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-medium rounded-full hover:shadow-lg transition-all">
+                            <i class="fas fa-plus mr-2"></i> Add Maintenance Record
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Assignment History Tab -->
+                <div id="assignment-tab" class="tab-content hidden">
+                    <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                        <i class="fas fa-history text-blue-500 mr-2"></i> Assignment History
+                    </h3>
+
+                    {% if assignment_history %}
+                    <div class="relative">
+                        <!-- Timeline -->
+                        <div class="absolute left-0 top-0 bottom-0 w-0.5 bg-gray-200 ml-6"></div>
+
+                        <div class="space-y-8 pl-10">
+                            {% for assignment in assignment_history %}
+                            <div class="relative">
+                                <div class="absolute left-0 top-0 w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-500 -ml-12">
+                                    <i class="fas fa-user-check"></i>
+                                </div>
+
+                                <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
+                                        <div>
+                                            <div class="font-bold text-lg">{{ assignment.assigned_to.full_name }}</div>
+                                            <div class="text-gray-500">Assigned by {{ assignment.assigned_by.full_name }}</div>
+                                        </div>
+                                        <div class="mt-2 md:mt-0">
+                                            <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+                                                {{ assignment.assignment_date.strftime('%B %d, %Y') }}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-4">
+                                        <p class="font-medium text-gray-700 mb-1">Assignment Period:</p>
+                                        <p class="text-gray-600">
+                                            {{ assignment.assignment_date.strftime('%b %d, %Y') }} {% if assignment.return_date %} to {{ assignment.return_date.strftime('%b %d, %Y') }} {% else %} to Present {% endif %}
+                                        </p>
+                                    </div>
+
+                                    {% if assignment.notes %}
+                                    <div class="mt-4">
+                                        <p class="font-medium text-gray-700 mb-1">Notes:</p>
+                                        <p class="text-gray-600">{{ assignment.notes }}</p>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-16">
+                        <div class="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
+                            <i class="fas fa-history text-gray-400 text-3xl"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold text-gray-700 mb-2">No Assignment History</h3>
+                        <p class="text-gray-500">This asset hasn't been assigned to anyone yet.</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Depreciation Tab -->
+                <div id="depreciation-tab" class="tab-content hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xl font-bold text-gray-800 flex items-center">
+                            <i class="fas fa-chart-line text-blue-500 mr-2"></i> Depreciation History
+                        </h3>
+                        <div class="text-right">
+                            <div class="text-sm text-gray-500">Current Value</div>
+                            <div class="text-2xl font-bold">${{ asset.current_value|default(asset.purchase_price, true)|round(2) }}</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white border border-gray-200 rounded-xl p-6 mb-8">
+                        <canvas id="depreciationChart" height="300"></canvas>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left text-gray-500">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3">Date</th>
+                                    <th scope="col" class="px-6 py-3">Value</th>
+                                    <th scope="col" class="px-6 py-3">Depreciation</th>
+                                    <th scope="col" class="px-6 py-3">Cumulative Depreciation</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if depreciation_history %} {% for record in depreciation_history|sort(attribute='record_date') %}
+                                <tr class="bg-white border-b hover:bg-gray-50">
+                                    <td class="px-6 py-4 font-medium text-gray-900">
+                                        {{ record.record_date.strftime('%b %d, %Y') }}
+                                    </td>
+                                    <td class="px-6 py-4">${{ record.value|round(2) }}</td>
+                                    <td class="px-6 py-4">${{ record.depreciation_amount|round(2) }}</td>
+                                    <td class="px-6 py-4">
+                                        ${{ (asset.purchase_price - record.value)|round(2) }}
+                                    </td>
+                                </tr>
+                                {% endfor %} {% else %}
+                                <tr>
+                                    <td colspan="4" class="px-6 py-4 text-center text-gray-500">
+                                        No depreciation records found
+                                    </td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Documents Tab -->
+                <div id="documents-tab" class="tab-content hidden">
+                    <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                        <i class="fas fa-file-alt text-blue-500 mr-2"></i> Asset Documents
+                    </h3>
+
+                    <div class="text-center py-16">
+                        <div class="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
+                            <i class="fas fa-cloud-upload-alt text-gray-400 text-3xl"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold text-gray-700 mb-2">No Documents Uploaded</h3>
+                        <p class="text-gray-500 mb-6">Upload manuals, warranties, or other documents related to this asset.</p>
+                        <button class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-medium rounded-full hover:shadow-lg transition-all">
+                            <i class="fas fa-plus mr-2"></i> Upload Document
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript for Tabs and Charts -->
+<!-- JavaScript for Tabs and Charts -->
+<script>
+    // Tab functionality
+    document.querySelectorAll('.tab-button').forEach(button => {
+        button.addEventListener('click', () => {
+            // Remove active class from all buttons
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active', 'text-blue-600', 'border-blue-500');
+                btn.classList.add('text-gray-500');
+            });
+
+            // Add active class to clicked button
+            button.classList.add('active', 'text-blue-600', 'border-blue-500');
+            button.classList.remove('text-gray-500');
+
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+            });
+
+            // Show selected tab content
+            const tabId = button.getAttribute('data-tab');
+            document.getElementById(`${tabId}-tab`).classList.remove('hidden');
+        });
+    });
+</script>
+
+<style>
+    .tab-button {
+        position: relative;
+        transition: all 0.3s;
+        white-space: nowrap;
+    }
+    
+    .tab-button:after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        width: 0;
+        height: 2px;
+        background-color: #3b82f6;
+        transition: width 0.3s;
+    }
+    
+    .tab-button:hover:after,
+    .tab-button.active:after {
+        width: 100%;
+    }
+    
+    .tab-button.active {
+        color: #3b82f6;
+    }
+</style>
+{% endblock %}

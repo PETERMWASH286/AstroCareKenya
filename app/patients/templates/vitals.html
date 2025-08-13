@@ -1,0 +1,491 @@
+{% extends "base.html" %} {% block title %}Patient Vitals – {{ patient.reg_no }}{% endblock %} {% block content %}
+<div class="min-h-screen p-4 md:p-8">
+    <div class="max-w-4xl mx-auto space-y-12">
+        <!-- Patient Header (unchanged) -->
+        <div class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-2">
+                    <i class="fas fa-heart-pulse text-red-500 mr-2"></i>Capture Vitals
+                </h1>
+                <div class="flex items-center space-x-4">
+                    <div class="bg-gradient-to-r from-blue-500 to-purple-500 px-4 py-2 rounded-lg shadow-sm">
+                        <span class="text-white font-semibold">
+              {{ patient.first_name }} {{ patient.last_name }}
+            </span>
+                    </div>
+                    <div class="text-sm text-gray-600 dark:text-gray-400">
+                        <i class="fas fa-id-card mr-1"></i>{{ patient.reg_no }}
+                        <span class="mx-2">•</span>
+                        <i class="fas fa-cake-candles mr-1"></i>{{ patient.age }} yrs
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4 md:mt-0">
+                <a href="{{ url_for('patients_web.triage') }}" class="inline-flex items-center px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-lg transition-all">
+                    <i class="fas fa-arrow-left mr-2"></i>Back to Queue
+                </a>
+            </div>
+        </div>
+
+        <!-- Vitals + TB Screening Form -->
+        <section class="bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:bg-gray-800 rounded-2xl shadow-lg p-6 md:p-8">
+            <form id="vitalsForm" class="space-y-6">
+                <!-- 1) Vital Signs Grid (unchanged) -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Temperature -->
+                    <div>
+                        <label for="temp" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <i class="fas fa-thermometer-half text-orange-500 mr-1"></i>Temperature (°C)
+            </label>
+                        <input id="temp" name="temperature" type="number" step="0.1" min="32" max="42" required placeholder="36.5" class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                        />
+                    </div>
+                    <!-- Heart Rate -->
+                    <div>
+                        <label for="hr" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <i class="fas fa-heartbeat text-red-500 mr-1"></i>Heart Rate (BPM)
+            </label>
+                        <input id="hr" name="heart_rate" type="number" min="30" max="250" required placeholder="72" class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                        />
+                    </div>
+                    <!-- Blood Pressure -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <i class="fas fa-tachometer-alt text-purple-500 mr-1"></i>Blood Pressure (mmHg)
+            </label>
+                        <div class="flex space-x-2">
+                            <input id="bp_sys" name="bp_systolic" type="number" min="50" max="250" required placeholder="120" class="flex-1 px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                            />
+                            <span class="self-center font-bold text-gray-600 dark:text-gray-400">/</span>
+                            <input id="bp_dia" name="bp_diastolic" type="number" min="30" max="150" required placeholder="80" class="flex-1 px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                            />
+                        </div>
+                    </div>
+                    <!-- SpO₂ -->
+                    <div>
+                        <label for="spo2" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <i class="fas fa-lungs text-blue-500 mr-1"></i>SpO₂ (%)
+            </label>
+                        <input id="spo2" name="spo2" type="number" min="70" max="100" required placeholder="98" class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                        />
+                    </div>
+                    <!-- Respiratory Rate -->
+                    <div>
+                        <label for="rr" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <i class="fas fa-wind text-green-500 mr-1"></i>Respiratory Rate (BPM)
+            </label>
+                        <input id="rr" name="resp_rate" type="number" min="8" max="40" required placeholder="16" class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                        />
+                    </div>
+                    <!-- Pain Score -->
+                    <div>
+                        <label for="pain" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <i class="fas fa-exclamation-triangle text-yellow-500 mr-1"></i>Pain Score (0–10)
+            </label>
+                        <input id="pain" name="pain_score" type="number" min="0" max="10" required placeholder="0" class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                        />
+                    </div>
+                </div>
+
+                <!-- 2) TB Screening Section (NEW) -->
+                <div class="pt-6 border-t border-gray-200 dark:border-gray-700">
+                    <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-4 flex items-center">
+                        <i class="fas fa-procedures text-red-600 mr-2"></i>TB Screening
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Cough Duration -->
+                        <div>
+                            <label for="cough_duration" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <i class="fas fa-microphone-slash text-gray-500 mr-1"></i>Cough Duration (weeks)
+              </label>
+                            <input id="cough_duration" name="cough_duration" type="number" min="0" max="52" placeholder="2" class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                            />
+                        </div>
+                        <!-- Fever (Yes/No + Duration) -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <i class="fas fa-thermometer text-orange-500 mr-1"></i>Fever?
+              </label>
+                            <div class="flex space-x-4">
+                                <label class="inline-flex items-center">
+                  <input type="radio" name="fever" value="yes" class="form-radio text-indigo-600" />
+                  <span class="ml-2 text-gray-700 dark:text-gray-300">Yes</span>
+                </label>
+                                <label class="inline-flex items-center">
+                  <input type="radio" name="fever" value="no" checked class="form-radio text-indigo-600" />
+                  <span class="ml-2 text-gray-700 dark:text-gray-300">No</span>
+                </label>
+                            </div>
+                            <input id="fever_duration" name="fever_duration" type="number" min="0" max="52" placeholder="0" class="mt-2 w-full px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                                placeholder="Duration (weeks)" />
+                        </div>
+                        <!-- Night Sweats (Yes/No) -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <i class="fas fa-bed text-blue-500 mr-1"></i>Night Sweats?
+              </label>
+                            <div class="flex space-x-4">
+                                <label class="inline-flex items-center">
+                  <input type="radio" name="night_sweats" value="yes" class="form-radio text-indigo-600" />
+                  <span class="ml-2 text-gray-700 dark:text-gray-300">Yes</span>
+                </label>
+                                <label class="inline-flex items-center">
+                  <input type="radio" name="night_sweats" value="no" checked class="form-radio text-indigo-600" />
+                  <span class="ml-2 text-gray-700 dark:text-gray-300">No</span>
+                </label>
+                            </div>
+                        </div>
+                        <!-- Weight Loss (Yes/No + Approx. kg) -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <i class="fas fa-weight text-green-500 mr-1"></i>Weight Loss?
+              </label>
+                            <div class="flex space-x-4">
+                                <label class="inline-flex items-center">
+                  <input type="radio" name="weight_loss_flag" value="yes" class="form-radio text-indigo-600" />
+                  <span class="ml-2 text-gray-700 dark:text-gray-300">Yes</span>
+                </label>
+                                <label class="inline-flex items-center">
+                  <input type="radio" name="weight_loss_flag" value="no" checked class="form-radio text-indigo-600" />
+                  <span class="ml-2 text-gray-700 dark:text-gray-300">No</span>
+                </label>
+                            </div>
+                            <input id="weight_loss_amount" name="weight_loss_amount" type="number" min="0" max="50" placeholder="kg" class="mt-2 w-full px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                                placeholder="Approx. kg lost" />
+                        </div>
+                        <!-- Hemoptysis (Yes/No) -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <i class="fas fa-tint text-red-500 mr-1"></i>Hemoptysis?
+              </label>
+                            <div class="flex space-x-4">
+                                <label class="inline-flex items-center">
+                  <input type="radio" name="hemoptysis" value="yes" class="form-radio text-indigo-600" />
+                  <span class="ml-2 text-gray-700 dark:text-gray-300">Yes</span>
+                </label>
+                                <label class="inline-flex items-center">
+                  <input type="radio" name="hemoptysis" value="no" checked class="form-radio text-indigo-600" />
+                  <span class="ml-2 text-gray-700 dark:text-gray-300">No</span>
+                </label>
+                            </div>
+                        </div>
+                        <!-- HIV Status -->
+                        <div>
+                            <label for="hiv_status" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <i class="fas fa-virus text-pink-500 mr-1"></i>HIV Status
+              </label>
+                            <select id="hiv_status" name="hiv_status" required class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                <option value="">Select</option>
+                <option value="positive">Positive</option>
+                <option value="negative">Negative</option>
+                <option value="unknown">Unknown</option>
+              </select>
+                        </div>
+                        <!-- Diabetes (Yes/No) -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <i class="fas fa-syringe text-blue-700 mr-1"></i>Diabetes?
+              </label>
+                            <div class="flex space-x-4">
+                                <label class="inline-flex items-center">
+                  <input type="radio" name="diabetes" value="yes" class="form-radio text-indigo-600" />
+                  <span class="ml-2 text-gray-700 dark:text-gray-300">Yes</span>
+                </label>
+                                <label class="inline-flex items-center">
+                  <input type="radio" name="diabetes" value="no" checked class="form-radio text-indigo-600" />
+                  <span class="ml-2 text-gray-700 dark:text-gray-300">No</span>
+                </label>
+                            </div>
+                        </div>
+                        <!-- Prior TB History (Yes/No + Year) -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <i class="fas fa-bed text-yellow-600 mr-1"></i>Prior TB History?
+              </label>
+                            <div class="flex space-x-4">
+                                <label class="inline-flex items-center">
+                  <input type="radio" name="prior_tb" value="yes" class="form-radio text-indigo-600" />
+                  <span class="ml-2 text-gray-700 dark:text-gray-300">Yes</span>
+                </label>
+                                <label class="inline-flex items-center">
+                  <input type="radio" name="prior_tb" value="no" checked class="form-radio text-indigo-600" />
+                  <span class="ml-2 text-gray-700 dark:text-gray-300">No</span>
+                </label>
+                            </div>
+                            <input id="prior_tb_year" name="prior_tb_year" type="number" min="1950" max="2025" placeholder="Year" class="mt-2 w-full px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                                placeholder="Year of last treatment" />
+                        </div>
+                        <!-- Household Contact with TB (Yes/No) -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <i class="fas fa-users text-gray-700 mr-1"></i>Household TB Contact?
+              </label>
+                            <div class="flex space-x-4">
+                                <label class="inline-flex items-center">
+                  <input type="radio" name="household_contact" value="yes" class="form-radio text-indigo-600" />
+                  <span class="ml-2 text-gray-700 dark:text-gray-300">Yes</span>
+                </label>
+                                <label class="inline-flex items-center">
+                  <input type="radio" name="household_contact" value="no" checked class="form-radio text-indigo-600" />
+                  <span class="ml-2 text-gray-700 dark:text-gray-300">No</span>
+                </label>
+                            </div>
+                        </div>
+                        <!-- Smoking History -->
+                        <div>
+                            <label for="smoking" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <i class="fas fa-smoking text-gray-800 mr-1"></i>Smoking Status
+              </label>
+                            <select id="smoking" name="smoking_history" required class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                <option value="">Select</option>
+                <option value="never">Never</option>
+                <option value="former">Former</option>
+                <option value="current">Current</option>
+              </select>
+                        </div>
+                        <!-- Alcohol Use -->
+                        <div>
+                            <label for="alcohol" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <i class="fas fa-beer text-yellow-700 mr-1"></i>Alcohol Use
+              </label>
+                            <select id="alcohol" name="alcohol_use" required class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                <option value="">Select</option>
+                <option value="none">None</option>
+                <option value="moderate">Moderate</option>
+                <option value="heavy">Heavy</option>
+              </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3) Clinical Notes (unchanged) -->
+                <div>
+                    <label for="notes" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <i class="fas fa-comment-medical text-gray-500 mr-1"></i>Clinical Notes
+          </label>
+                    <textarea id="notes" name="notes" rows="4" placeholder="Enter additional observations..." class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"></textarea>
+                </div>
+
+                <!-- 4) Sticky Mobile Bar (unchanged) -->
+                <div class="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+                    <button id="saveBtnMobile" type="submit" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition">
+            <i class="fas fa-save mr-2"></i>Save
+          </button>
+                </div>
+
+                <!-- 5) Desktop Buttons (unchanged) -->
+                <div class="hidden md:flex justify-end space-x-4 border-t border-gray-200 dark:border-gray-700 pt-6">
+                    <button type="reset" class="px-6 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-lg font-semibold">
+            Cancel
+          </button>
+                    <button id="saveBtn" type="submit" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition">
+            <i class="fas fa-save mr-2"></i>Save Vitals
+          </button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Measurements Tabs (unchanged) -->
+        <div class="space-y-6">
+            <!-- Tab Buttons -->
+            <div class="flex space-x-4 border-b border-gray-300 dark:border-gray-700">
+                <button id="tabRecent" class="pb-2 border-b-2 border-indigo-600 text-indigo-600 font-semibold">Recent</button>
+                <button id="tabHistory" class="pb-2 text-gray-600 dark:text-gray-400 hover:text-indigo-600">Full History</button>
+            </div>
+
+            <!-- Recent Measurements -->
+            <section id="sectionRecent">
+                <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center">
+                    <i class="fas fa-clock text-gray-500 mr-2"></i>Recent Measurements
+                </h2>
+                <div class="overflow-auto rounded-lg shadow">
+                    <table class="w-full bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:bg-gray-800 text-left">
+                        <thead class="bg-gray-100 dark:bg-gray-700">
+                            <tr>
+                                <th class="px-4 py-2 text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">Time</th>
+                                <th class="px-4 py-2 text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">Name</th>
+                                <th class="px-4 py-2 text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">Reg No.</th>
+                                <th class="px-4 py-2 text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">Temp</th>
+                                <th class="px-4 py-2 text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">HR</th>
+                                <th class="px-4 py-2 text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">BP</th>
+                                <th class="px-4 py-2 text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">SpO₂</th>
+                                <th class="px-4 py-2 text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">RR</th>
+                                <th class="px-4 py-2 text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">Pain</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recentVitals" class="divide-y divide-gray-200 dark:divide-gray-700">
+                            <!-- JS will populate -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Full History -->
+            <section id="sectionHistory" class="hidden">
+                <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center">
+                    <i class="fas fa-archive text-gray-500 mr-2"></i>All Vitals History
+                </h2>
+                <div class="overflow-auto rounded-lg shadow">
+                    <table class="w-full bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:bg-gray-800 text-left">
+                        <thead class="bg-gray-100 dark:bg-gray-700">
+                            <tr>
+                                <th class="px-4 py-2 text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">Date</th>
+                                <th class="px-4 py-2 text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">Temp</th>
+                                <th class="px-4 py-2 text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">HR</th>
+                                <th class="px-4 py-2 text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">BP</th>
+                                <th class="px-4 py-2 text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">SpO₂</th>
+                                <th class="px-4 py-2 text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">RR</th>
+                                <th class="px-4 py-2 text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">Pain</th>
+                                <th class="px-4 py-2 text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyVitals" class="divide-y divide-gray-200 dark:divide-gray-700">
+                            <!-- JS will populate -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Tab logic (unchanged)
+    document.getElementById('tabRecent').addEventListener('click', () => {
+        document.getElementById('sectionRecent').classList.remove('hidden');
+        document.getElementById('sectionHistory').classList.add('hidden');
+        document.getElementById('tabRecent').classList.add('border-indigo-600', 'text-indigo-600');
+        document.getElementById('tabHistory').classList.remove('border-indigo-600', 'text-indigo-600');
+    });
+    document.getElementById('tabHistory').addEventListener('click', () => {
+        document.getElementById('sectionRecent').classList.add('hidden');
+        document.getElementById('sectionHistory').classList.remove('hidden');
+        document.getElementById('tabHistory').classList.add('border-indigo-600', 'text-indigo-600');
+        document.getElementById('tabRecent').classList.remove('border-indigo-600', 'text-indigo-600');
+    });
+
+    // timeAgo helper (unchanged)
+    function timeAgo(d) {
+        const diff = Date.now() - d.getTime();
+        if (diff < 60000) return 'Just now';
+        if (diff < 3600000) return Math.floor(diff / 60000) + 'm ago';
+        return Math.floor(diff / 3600000) + 'h ago';
+    }
+
+    // Fetch and render vitals (unchanged)
+    async function loadVitals() {
+        // 1) Latest 5 across all patients
+        const recentRes = await fetch(`/patients/api/vitals/recent?limit=5`);
+        if (recentRes.ok) {
+            const recents = await recentRes.json();
+            const tbody = document.getElementById('recentVitals');
+            recents.forEach(r => {
+                tbody.insertAdjacentHTML('beforeend', `
+          <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+            <td class="px-4 py-2 text-sm">${timeAgo(new Date(r.recorded_at))}</td>
+            <td class="px-4 py-2 text-sm">${r.patient_name}</td>
+            <td class="px-4 py-2 text-sm">${r.reg_no}</td>
+            <td class="px-4 py-2 text-sm">${r.temperature}°C</td>
+            <td class="px-4 py-2 text-sm">${r.heart_rate}</td>
+            <td class="px-4 py-2 text-sm">${r.bp_systolic}/${r.bp_diastolic}</td>
+            <td class="px-4 py-2 text-sm">${r.spo2}%</td>
+            <td class="px-4 py-2 text-sm">${r.resp_rate}</td>
+            <td class="px-4 py-2 text-sm">${r.pain_score}</td>
+          </tr>`);
+            });
+        }
+
+        // 2) Full patient history
+        const histRes = await fetch(`/patients/api/vitals/{{ patient.reg_no }}?all=1`);
+        if (histRes.ok) {
+            const history = await histRes.json();
+            const tbody = document.getElementById('historyVitals');
+            history.forEach(r => {
+                tbody.insertAdjacentHTML('beforeend', `
+          <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+            <td class="px-4 py-2 text-sm">${new Date(r.recorded_at).toLocaleString()}</td>
+            <td class="px-4 py-2 text-sm">${r.temperature}°C</td>
+            <td class="px-4 py-2 text-sm">${r.heart_rate}</td>
+            <td class="px-4 py-2 text-sm">${r.bp_systolic}/${r.bp_diastolic}</td>
+            <td class="px-4 py-2 text-sm">${r.spo2}%</td>
+            <td class="px-4 py-2 text-sm">${r.resp_rate}</td>
+            <td class="px-4 py-2 text-sm">${r.pain_score}</td>
+            <td class="px-4 py-2 text-sm">${r.notes||'—'}</td>
+          </tr>`);
+            });
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadVitals();
+    });
+
+    // On form submission, prepend to both tables (unchanged except handling the new TB fields):
+    document.getElementById('vitalsForm').addEventListener('submit', async e => {
+        e.preventDefault();
+
+        // Gather all form data, including TB screening
+        const formData = new FormData(e.target);
+        const payload = Object.fromEntries(formData.entries());
+
+        // Example payload will now include:
+        // { temperature, heart_rate, bp_systolic, bp_diastolic, spo2, resp_rate, pain_score,
+        //   cough_duration, fever, fever_duration, night_sweats, weight_loss_flag,
+        //   weight_loss_amount, hemoptysis, hiv_status, diabetes, prior_tb, prior_tb_year,
+        //   household_contact, smoking_history, alcohol_use, notes
+        // }
+
+        const resp = await fetch(`/patients/api/vitals/{{ patient.reg_no }}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (!resp.ok) {
+            const err = await resp.json();
+            showAlert('error', err.message || 'Error saving vitals');
+            return;
+        }
+
+        const r = await resp.json();
+        showAlert('success', r.message || 'Vitals saved successfully');
+        // Redirect to triage page
+        window.location.href = "{{ url_for('patients_web.triage') }}";
+
+
+        // Build the new row for Recent table (we’ll show only vitals here)
+        const rowRecent = `
+      <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+        <td class="px-4 py-2 text-sm">${timeAgo(new Date(r.recorded_at))}</td>
+        <td class="px-4 py-2 text-sm">${r.patient_name}</td>
+        <td class="px-4 py-2 text-sm">${r.reg_no}</td>
+        <td class="px-4 py-2 text-sm">${r.temperature}°C</td>
+        <td class="px-4 py-2 text-sm">${r.heart_rate}</td>
+        <td class="px-4 py-2 text-sm">${r.bp_systolic}/${r.bp_diastolic}</td>
+        <td class="px-4 py-2 text-sm">${r.spo2}%</td>
+        <td class="px-4 py-2 text-sm">${r.resp_rate}</td>
+        <td class="px-4 py-2 text-sm">${r.pain_score}</td>
+      </tr>`;
+        document.getElementById('recentVitals').insertAdjacentHTML('afterbegin', rowRecent);
+
+        // Build the new row for Full History (including notes; TB fields could be pulled if you wish)
+        const rowHistory = `
+      <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+        <td class="px-4 py-2 text-sm">${new Date(r.recorded_at).toLocaleString()}</td>
+        <td class="px-4 py-2 text-sm">${r.temperature}°C</td>
+        <td class="px-4 py-2 text-sm">${r.heart_rate}</td>
+        <td class="px-4 py-2 text-sm">${r.bp_systolic}/${r.bp_diastolic}</td>
+        <td class="px-4 py-2 text-sm">${r.spo2}%</td>
+        <td class="px-4 py-2 text-sm">${r.resp_rate}</td>
+        <td class="px-4 py-2 text-sm">${r.pain_score}</td>
+        <td class="px-4 py-2 text-sm">${r.notes || '—'}</td>
+      </tr>`;
+        document.getElementById('historyVitals').insertAdjacentHTML('afterbegin', rowHistory);
+
+        // Reset form (including TB fields)
+        e.target.reset();
+    });
+</script>
+{% endblock %}

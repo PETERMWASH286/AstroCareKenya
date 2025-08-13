@@ -1,0 +1,308 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header Section -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Disciplinary Actions</h1>
+            <p class="text-sm text-gray-500 mt-1">Manage employee disciplinary cases and actions</p>
+        </div>
+        <a href="{{ url_for('hr_web.disciplinary_cases_available') }}" class="mt-4 md:mt-0 flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition duration-200">
+            <i class="fas fa-plus mr-2"></i> New Action
+        </a>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="bg-white rounded-xl shadow-sm p-5 mb-8">
+        <form method="get" action="{{ url_for('hr_web.disciplinary_actions') }}">
+            <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Status</label>
+                    <select name="status" class="w-full text-sm rounded-lg border-gray-300 py-2 px-3 focus:ring-indigo-500 focus:border-indigo-500">
+                        <option value="">All Statuses</option>
+                        {% for status in statuses %}
+                        <option value="{{ status }}" {% if status == request.args.get('status') %}selected{% endif %}>{{ status }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Severity</label>
+                    <select name="severity" class="w-full text-sm rounded-lg border-gray-300 py-2 px-3 focus:ring-indigo-500 focus:border-indigo-500">
+                        <option value="">All Severities</option>
+                        {% for severity in severities %}
+                        <option value="{{ severity }}" {% if severity == request.args.get('severity') %}selected{% endif %}>{{ severity }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="md:col-span-2 lg:col-span-1">
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Search</label>
+                    <div class="relative">
+                        <input type="text" name="search" placeholder="Search actions..." class="w-full text-sm border border-gray-300 rounded-lg pl-10 pr-3 py-2 focus:ring-indigo-500 focus:border-indigo-500" value="{{ request.args.get('search', '') }}">
+                        <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    </div>
+                </div>
+                
+                <div class="md:col-span-3 lg:col-span-1 flex items-end space-x-2">
+                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition duration-200">
+                        Apply Filters
+                    </button>
+                    <a href="{{ url_for('hr_web.disciplinary_actions') }}" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-lg text-sm font-medium text-center transition duration-200">
+                        Clear
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Stats Summary -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+        <div class="bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-xl shadow-md p-5 text-white">
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="text-xs font-medium opacity-80">TOTAL ACTIONS</p>
+                    <h3 class="text-2xl font-bold mt-1">{{ actions.total }}</h3>
+                </div>
+                <div class="bg-indigo-400 p-3 rounded-lg">
+                    <i class="fas fa-gavel text-xl"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-md p-5 text-white">
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="text-xs font-medium opacity-80">ACTIVE CASES</p>
+                    <h3 class="text-2xl font-bold mt-1">
+                        {{ actions.items|selectattr('status', 'equalto', 'Active')|list|length }}
+                    </h3>
+                </div>
+                <div class="bg-blue-400 p-3 rounded-lg">
+                    <i class="fas fa-hourglass-half text-xl"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-gradient-to-r from-amber-500 to-amber-600 rounded-xl shadow-md p-5 text-white">
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="text-xs font-medium opacity-80">APPEALED ACTIONS</p>
+                    <h3 class="text-2xl font-bold mt-1">
+                        {{ actions.items|selectattr('status', 'equalto', 'Appealed')|list|length }}
+                    </h3>
+                </div>
+                <div class="bg-amber-400 p-3 rounded-lg">
+                    <i class="fas fa-balance-scale text-xl"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-xl shadow-md p-5 text-white">
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="text-xs font-medium opacity-80">COMPLETED</p>
+                    <h3 class="text-2xl font-bold mt-1">
+                        {{ actions.items|selectattr('status', 'equalto', 'Completed')|list|length }}
+                    </h3>
+                </div>
+                <div class="bg-emerald-400 p-3 rounded-lg">
+                    <i class="fas fa-check-circle text-xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions List -->
+    <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+        <!-- Table Header -->
+        <div class="border-b border-gray-200 bg-gray-50 px-6 py-3 flex justify-between items-center">
+            <h3 class="text-sm font-medium text-gray-700">Disciplinary Actions</h3>
+            <p class="text-xs text-gray-500">
+                Showing {{ actions.first }} - {{ actions.last }} of {{ actions.total }} actions
+            </p>
+        </div>
+        
+        <!-- Actions Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 p-5">
+            {% for action in actions.items %}
+            <div class="action-card bg-white rounded-lg shadow-sm hover:shadow-md transition duration-200 border-l-4 
+                        {% if action.status == 'Active' %}border-l-indigo-500
+                        {% elif action.status == 'Completed' %}border-l-emerald-500
+                        {% elif action.status == 'Appealed' %}border-l-amber-500
+                        {% elif action.status == 'Suspended' %}border-l-blue-500
+                        {% else %}border-l-gray-500{% endif %}">
+                <div class="p-5">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h4 class="font-semibold text-gray-900 text-sm">{{ action.action_type.name }}</h4>
+                            <div class="flex flex-wrap items-center mt-1 gap-1">
+                                <span class="text-xs text-gray-500">Case #{{ action.case.case_number }}</span>
+                                <span class="text-gray-300">•</span>
+                                <span class="text-xs text-gray-500">Employee: {{ action.case.employee.full_name }}</span>
+                            </div>
+                        </div>
+                        <div class="flex">
+                            <div class="dropdown relative">
+                                <button class="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-500">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                                <div class="dropdown-menu absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg py-1 z-10 hidden">
+                                    <a href="{{ url_for('hr_web.view_disciplinary_action', action_id=action.id) }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">View Details</a>
+                                    <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Edit Action</a>
+                                    <a href="#" class="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100">Archive</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-wrap items-center mt-4 gap-3">
+                        <div class="flex items-center">
+                            <span class="severity-indicator w-3 h-3 rounded-full inline-block mr-1
+                                {% if action.action_type.severity_level == 'Minor' %}bg-green-500
+                                {% elif action.action_type.severity_level == 'Moderate' %}bg-amber-500
+                                {% elif action.action_type.severity_level == 'Major' %}bg-orange-500
+                                {% else %}bg-red-500{% endif %}"></span>
+                            <span class="text-xs text-gray-600">{{ action.action_type.severity_level }}</span>
+                        </div>
+                        <div class="flex items-center">
+                            <i class="fas fa-calendar-day text-gray-400 text-xs mr-1"></i>
+                            <span class="text-xs text-gray-600">{{ action.effective_date.strftime('%d %b, %Y') }}</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="status-badge px-2 py-1 rounded-full text-xs font-semibold
+                                {% if action.status == 'Active' %}bg-blue-100 text-blue-800
+                                {% elif action.status == 'Completed' %}bg-emerald-100 text-emerald-800
+                                {% elif action.status == 'Appealed' %}bg-amber-100 text-amber-800
+                                {% elif action.status == 'Suspended' %}bg-blue-100 text-blue-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ action.status }}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-between items-center mt-5">
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 rounded-full bg-gray-200 border-2 border-white flex items-center justify-center -mr-2">
+                                <span class="text-xs font-medium text-gray-700">{{ action.assigned_by.initials }}</span>
+                            </div>
+                            <span class="text-xs text-gray-500 ml-3">Assigned by {{ action.assigned_by.full_name }}</span>
+                        </div>
+                        <a href="{{ url_for('hr_web.view_disciplinary_action', action_id=action.id) }}" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center">
+                            View Details <i class="fas fa-chevron-right ml-1 text-xs"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="col-span-2 text-center py-12">
+                <i class="fas fa-inbox text-4xl text-gray-300 mb-4"></i>
+                <h3 class="text-lg font-medium text-gray-500">No disciplinary actions found</h3>
+                <p class="text-sm text-gray-400 mt-2">Try adjusting your filters or create a new action</p>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Pagination -->
+        {% if actions.pages > 1 %}
+        <div class="border-t border-gray-200 px-6 py-4 flex items-center justify-between">
+            <div class="text-sm text-gray-500">
+                Page {{ actions.page }} of {{ actions.pages }}
+            </div>
+            <div class="flex space-x-2">
+                {% if actions.has_prev %}
+                <a href="{{ url_for('hr_web.disciplinary_actions', page=actions.prev_num, status=request.args.get('status'), severity=request.args.get('severity')) }}" 
+                   class="px-3 py-1 rounded border border-gray-300 text-sm text-gray-700 hover:bg-gray-50">
+                    Previous
+                </a>
+                {% endif %}
+                
+                {% for page_num in actions.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=3) %}
+                    {% if page_num %}
+                        {% if actions.page == page_num %}
+                        <span class="px-3 py-1 rounded bg-indigo-600 text-white text-sm font-medium">{{ page_num }}</span>
+                        {% else %}
+                        <a href="{{ url_for('hr_web.disciplinary_actions', page=page_num, status=request.args.get('status'), severity=request.args.get('severity')) }}" 
+                           class="px-3 py-1 rounded border border-gray-300 text-sm text-gray-700 hover:bg-gray-50">
+                            {{ page_num }}
+                        </a>
+                        {% endif %}
+                    {% else %}
+                        <span class="px-3 py-1 text-gray-300">...</span>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if actions.has_next %}
+                <a href="{{ url_for('hr_web.disciplinary_actions', page=actions.next_num, status=request.args.get('status'), severity=request.args.get('severity')) }}" 
+                   class="px-3 py-1 rounded border border-gray-300 text-sm text-gray-700 hover:bg-gray-50">
+                    Next
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Include dropdown script -->
+<script>
+    // Dropdown functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        const dropdownButtons = document.querySelectorAll('.dropdown button');
+        
+        dropdownButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const dropdownMenu = this.nextElementSibling;
+                const isOpen = dropdownMenu.classList.contains('hidden');
+                
+                // Close all other dropdowns
+                document.querySelectorAll('.dropdown-menu').forEach(menu => {
+                    menu.classList.add('hidden');
+                });
+                
+                // Toggle current dropdown
+                if (isOpen) {
+                    dropdownMenu.classList.remove('hidden');
+                } else {
+                    dropdownMenu.classList.add('hidden');
+                }
+            });
+        });
+        
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.dropdown')) {
+                document.querySelectorAll('.dropdown-menu').forEach(menu => {
+                    menu.classList.add('hidden');
+                });
+            }
+        });
+    });
+</script>
+
+<style>
+    .severity-indicator {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 5px;
+    }
+    
+    .action-card {
+        transition: all 0.3s ease;
+        border-left-width: 4px;
+    }
+    
+    .action-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .dropdown-menu {
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+</style>
+{% endblock %}

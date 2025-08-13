@@ -1,0 +1,555 @@
+{% extends 'base.html' %} {% block title %}Clinical Intelligence Dashboard - Astrocare{% endblock %} {% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header Section -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Clinical Intelligence Dashboard</h1>
+            <div class="mt-2 flex flex-wrap items-center gap-4">
+                <p class="text-gray-600 dark:text-gray-400">
+                    Analyze patient encounters, diagnoses, and clinical outcomes
+                </p>
+                <span class="px-3 py-1 bg-teal-100 text-teal-800 text-xs rounded-full flex items-center">
+                    <i class="fas fa-stethoscope mr-2"></i>
+                    {{ visits_count }} patient encounters
+                </span>
+            </div>
+        </div>
+        <div class="mt-4 md:mt-0">
+            <div class="flex space-x-2">
+                <button id="filterToggle" class="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <i class="fas fa-filter mr-2"></i>Filter
+                </button>
+                <button class="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors">
+                    <i class="fas fa-file-export mr-2"></i>Export Report
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters Section -->
+    <div id="filtersSection" class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mb-6 hidden">
+        <h2 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Filter Clinical Data</h2>
+        <form class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Date Range -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Date Range</label>
+                <div class="grid grid-cols-1 gap-2">
+                    <input type="date" name="date_from" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="From">
+                    <input type="date" name="date_to" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="To">
+                </div>
+            </div>
+
+            <!-- Department -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Department</label>
+                <select class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    <option>All Departments</option>
+                    <option>General Medicine</option>
+                    <option>Pediatrics</option>
+                    <option>Obstetrics & Gynecology</option>
+                    <option>Surgery</option>
+                    <option>Orthopedics</option>
+                </select>
+            </div>
+
+            <!-- Provider -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Healthcare Provider</label>
+                <select class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    <option>All Providers</option>
+                    <option>Dr. Jane Smith</option>
+                    <option>Dr. John Doe</option>
+                    <option>Dr. Sarah Johnson</option>
+                    <option>Dr. Michael Brown</option>
+                </select>
+            </div>
+
+            <div class="md:col-span-3 flex justify-end space-x-3">
+                <button type="reset" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+                    Reset Filters
+                </button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    Apply Filters
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <div class="bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl shadow p-6">
+            <div class="flex items-center">
+                <div class="mr-4 bg-white bg-opacity-20 p-3 rounded-full">
+                    <i class="fas fa-user-injured text-2xl"></i>
+                </div>
+                <div>
+                    <div class="text-sm font-medium">Patient Encounters</div>
+                    <div class="text-2xl font-bold mt-1">{{ visits_count }}</div>
+                    <div class="text-xs mt-1 opacity-80">{{ new_patients }} new patients</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-xl shadow p-6">
+            <div class="flex items-center">
+                <div class="mr-4 bg-white bg-opacity-20 p-3 rounded-full">
+                    <i class="fas fa-vial text-2xl"></i>
+                </div>
+                <div>
+                    <div class="text-sm font-medium">Lab Tests</div>
+                    <div class="text-2xl font-bold mt-1">{{ lab_tests_count }}</div>
+                    <div class="text-xs mt-1 opacity-80">{{ pending_lab_tests }} pending results</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-r from-teal-500 to-emerald-600 text-white rounded-xl shadow p-6">
+            <div class="flex items-center">
+                <div class="mr-4 bg-white bg-opacity-20 p-3 rounded-full">
+                    <i class="fas fa-x-ray text-2xl"></i>
+                </div>
+                <div>
+                    <div class="text-sm font-medium">Imaging Studies</div>
+                    <div class="text-2xl font-bold mt-1">{{ radiology_count }}</div>
+                    <div class="text-xs mt-1 opacity-80">{{ completed_radiology }} completed</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-xl shadow p-6">
+            <div class="flex items-center">
+                <div class="mr-4 bg-white bg-opacity-20 p-3 rounded-full">
+                    <i class="fas fa-pills text-2xl"></i>
+                </div>
+                <div>
+                    <div class="text-sm font-medium">Medications</div>
+                    <div class="text-2xl font-bold mt-1">{{ medications_count }}</div>
+                    <div class="text-xs mt-1 opacity-80">{{ dispensed_meds }} dispensed</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <!-- Visit Trends -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold text-gray-800 dark:text-white">Patient Encounters Trend</h2>
+                <div class="flex space-x-2">
+                    <button class="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">7D</button>
+                    <button class="text-xs px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded">30D</button>
+                    <button class="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">90D</button>
+                </div>
+            </div>
+            <div class="h-80">
+                <canvas id="visitsChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Diagnosis Distribution -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+            <h2 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Top Diagnoses</h2>
+            <div class="h-80">
+                <canvas id="diagnosisChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Clinical Data Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <!-- Vital Signs Summary -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+            <h2 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Vital Signs Summary</h2>
+            <div class="space-y-4">
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Blood Pressure</span>
+                        <span class="text-sm font-medium text-gray-500">{{ avg_bp_systolic }}/{{ avg_bp_diastolic }} mmHg</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                        <div class="bg-blue-600 h-2.5 rounded-full" style="width: 85%"></div>
+                    </div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Normal range: 90-120 / 60-80 mmHg</div>
+                </div>
+
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Heart Rate</span>
+                        <span class="text-sm font-medium text-gray-500">{{ avg_heart_rate }} bpm</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                        <div class="bg-green-600 h-2.5 rounded-full" style="width: 78%"></div>
+                    </div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Normal range: 60-100 bpm</div>
+                </div>
+
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Temperature</span>
+                        <span class="text-sm font-medium text-gray-500">{{ avg_temperature }} °C</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                        <div class="bg-amber-600 h-2.5 rounded-full" style="width: 92%"></div>
+                    </div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Normal range: 36.5-37.5 °C</div>
+                </div>
+
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Oxygen Saturation</span>
+                        <span class="text-sm font-medium text-gray-500">{{ avg_spo2 }}%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                        <div class="bg-teal-600 h-2.5 rounded-full" style="width: 96%"></div>
+                    </div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Normal range: 95-100%</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TB Screening Results -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+            <h2 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">TB Screening Results</h2>
+            <div class="h-64 flex items-center justify-center">
+                <canvas id="tbScreeningChart"></canvas>
+            </div>
+            <div class="mt-4 grid grid-cols-3 gap-2">
+                <div class="bg-blue-100 dark:bg-blue-900 p-3 rounded-lg text-center">
+                    <div class="text-2xl font-bold text-blue-800 dark:text-blue-200">{{ tb_positive }}</div>
+                    <div class="text-xs text-blue-600 dark:text-blue-300">Positive</div>
+                </div>
+                <div class="bg-green-100 dark:bg-green-900 p-3 rounded-lg text-center">
+                    <div class="text-2xl font-bold text-green-800 dark:text-green-200">{{ tb_negative }}</div>
+                    <div class="text-xs text-green-600 dark:text-green-300">Negative</div>
+                </div>
+                <div class="bg-amber-100 dark:bg-amber-900 p-3 rounded-lg text-center">
+                    <div class="text-2xl font-bold text-amber-800 dark:text-amber-200">{{ tb_pending }}</div>
+                    <div class="text-xs text-amber-600 dark:text-amber-300">Pending</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Patient Demographics -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+            <h2 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Patient Demographics</h2>
+            <div class="grid grid-cols-2 gap-4 mb-6">
+                <div class="bg-gray-50 dark:bg-gray-750 p-4 rounded-lg">
+                    <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Age Distribution</h3>
+                    <div class="h-48">
+                        <canvas id="ageChart"></canvas>
+                    </div>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-750 p-4 rounded-lg">
+                    <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Gender Distribution</h3>
+                    <div class="h-48">
+                        <canvas id="genderChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="text-center">
+                <div class="inline-flex rounded-md shadow-sm" role="group">
+                    <button type="button" class="px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-l-lg hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-blue-500 dark:focus:text-white">
+                        <i class="fas fa-map-marker-alt mr-1"></i> Location
+                    </button>
+                    <button type="button" class="px-4 py-2 text-sm font-medium text-gray-900 bg-white border-t border-b border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-blue-500 dark:focus:text-white">
+                        <i class="fas fa-notes-medical mr-1"></i> Insurance
+                    </button>
+                    <button type="button" class="px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-r-md hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-blue-500 dark:focus:text-white">
+                        <i class="fas fa-virus mr-1"></i> Comorbidities
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Consultations -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow overflow-hidden mb-6">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+            <h2 class="text-lg font-semibold text-gray-800 dark:text-white">Recent Clinical Encounters</h2>
+            <a href="" class="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
+                View All <i class="fas fa-arrow-right ml-1"></i>
+            </a>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-750">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Patient</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Visit Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Diagnosis</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Provider</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    {% for consultation in recent_consultations %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors">
+                        <td class="px-6 py-4">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-user text-blue-600"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <div class="text-sm font-medium text-gray-900 dark:text-white">{{ consultation.patient.full_name }}</div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">ID: {{ consultation.patient.reg_no }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                            {{ consultation.visit.visit_date|datetime }}
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm text-gray-900 dark:text-white">{{ consultation.diagnosis|truncate(40) }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                            {{ consultation.treated_by.username }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                {% if consultation.visit.visit_status == 'completed' %}bg-green-100 text-green-800
+                                {% else %}bg-amber-100 text-amber-800{% endif %}">
+                                {{ consultation.visit.visit_status|title }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <a href="" class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
+                                <i class="fas fa-file-medical"></i> View
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                            <i class="fas fa-stethoscope text-4xl mb-3"></i>
+                            <p>No clinical encounters found</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Quality Metrics -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mb-6">
+        <h2 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Clinical Quality Metrics</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="text-center p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                <div class="text-4xl font-bold text-blue-600 dark:text-blue-400">92%</div>
+                <div class="text-sm text-gray-600 dark:text-gray-300 mt-2">Medication Adherence</div>
+                <div class="mt-2 h-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full">
+                    <div class="h-2 bg-blue-600 rounded-full" style="width: 92%"></div>
+                </div>
+            </div>
+            <div class="text-center p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                <div class="text-4xl font-bold text-green-600 dark:text-green-400">87%</div>
+                <div class="text-sm text-gray-600 dark:text-gray-300 mt-2">Preventive Screenings</div>
+                <div class="mt-2 h-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full">
+                    <div class="h-2 bg-green-600 rounded-full" style="width: 87%"></div>
+                </div>
+            </div>
+            <div class="text-center p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                <div class="text-4xl font-bold text-amber-600 dark:text-amber-400">78%</div>
+                <div class="text-sm text-gray-600 dark:text-gray-300 mt-2">Patient Satisfaction</div>
+                <div class="mt-2 h-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full">
+                    <div class="h-2 bg-amber-600 rounded-full" style="width: 78%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Toggle filters visibility
+    document.getElementById('filterToggle').addEventListener('click', function() {
+        const filtersSection = document.getElementById('filtersSection');
+        filtersSection.classList.toggle('hidden');
+    });
+    // Initialize charts
+    document.addEventListener('DOMContentLoaded', function() {
+        // Visits Trend Chart (Line)
+        const visitsCtx = document.getElementById('visitsChart').getContext('2d');
+        new Chart(visitsCtx, {
+            type: 'line',
+            data: {
+                labels: {
+                    {
+                        visits_trend.labels | safe
+                    }
+                },
+                datasets: [{
+                    label: 'Patient Encounters',
+                    data: {
+                        {
+                            visits_trend.values
+                        }
+                    },
+                    borderColor: '#3B82F6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Diagnosis Distribution Chart (Bar)
+        const diagnosisCtx = document.getElementById('diagnosisChart').getContext('2d');
+        new Chart(diagnosisCtx, {
+            type: 'bar',
+            data: {
+                labels: {
+                    {
+                        diagnosis_data.labels | safe
+                    }
+                },
+                datasets: [{
+                    label: 'Diagnosis Count',
+                    data: {
+                        {
+                            diagnosis_data.values
+                        }
+                    },
+                    backgroundColor: [
+                        '#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6',
+                        '#EC4899', '#6B7280', '#84CC16', '#06B6D4', '#F97316'
+                    ]
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+
+        // TB Screening Chart (Doughnut)
+        const tbCtx = document.getElementById('tbScreeningChart').getContext('2d');
+        new Chart(tbCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Positive', 'Negative', 'Pending'],
+                datasets: [{
+                    data: [{
+                        {
+                            tb_positive
+                        }
+                    }, {
+                        {
+                            tb_negative
+                        }
+                    }, {
+                        {
+                            tb_pending
+                        }
+                    }],
+                    backgroundColor: ['#EF4444', '#10B981', '#F59E0B']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+
+        // Age Distribution Chart (Bar)
+        const ageCtx = document.getElementById('ageChart').getContext('2d');
+        new Chart(ageCtx, {
+            type: 'bar',
+            data: {
+                labels: ['0-18', '19-30', '31-45', '46-60', '61+'],
+                datasets: [{
+                    label: 'Patients',
+                    data: {
+                        {
+                            age_distribution
+                        }
+                    },
+                    backgroundColor: '#3B82F6'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Gender Distribution Chart (Pie)
+        const genderCtx = document.getElementById('genderChart').getContext('2d');
+        new Chart(genderCtx, {
+            type: 'pie',
+            data: {
+                labels: ['Male', 'Female', 'Other'],
+                datasets: [{
+                    data: {
+                        {
+                            gender_distribution
+                        }
+                    },
+                    backgroundColor: ['#3B82F6', '#EC4899', '#8B5CF6']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    });
+</script>
+
+<style>
+    .clinical-card {
+        transition: all 0.3s ease;
+        border-left: 4px solid transparent;
+    }
+    
+    .clinical-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        border-left-color: #3B82F6;
+    }
+    
+    .metric-badge {
+        transition: transform 0.2s ease;
+    }
+    
+    .metric-badge:hover {
+        transform: scale(1.05);
+    }
+</style>
+{% endblock %}

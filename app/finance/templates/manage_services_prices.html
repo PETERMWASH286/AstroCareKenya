@@ -1,0 +1,177 @@
+{% extends "base.html" %} {% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <!-- Header & Breadcrumb -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Manage Service Prices</h1>
+            <p class="mt-1 text-gray-600 dark:text-gray-400">
+                View, search, and update service pricing across all categories.
+            </p>
+        </div>
+        <div class="flex items-center space-x-2">
+            <a href="{{ url_for('finance_web_bp.financial_dashboard') }}" class="inline-flex items-center px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-all" data-tippy-content="Back to Dashboard">
+                <i class="fas fa-arrow-left mr-2"></i> Back to Dashboard
+            </a>
+            <a href="{{ url_for('finance_web_bp.add_service_price') }}" class="inline-flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-all" data-tippy-content="Add New Service">
+                <i class="fas fa-plus mr-2"></i> New Service
+            </a>
+        </div>
+    </div>
+
+    <!-- Search & Filters -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+        <div class="relative w-full sm:w-1/3">
+            <input type="text" id="serviceSearch" placeholder="Search services..." class="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                <i class="fas fa-search text-gray-400 dark:text-gray-500"></i>
+            </div>
+        </div>
+        <div class="flex space-x-2">
+            <select id="categoryFilter" class="w-full sm:w-48 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <option value="">All Categories</option>
+        {% for cat in categories %}
+          <option value="{{ cat }}">{{ cat }}</option>
+        {% endfor %}
+      </select>
+            <button id="resetFilters" class="px-4 py-2 bg-red-500 dark:bg-red-600 text-white rounded-lg hover:bg-red-600 dark:hover:bg-red-700 transition-all">
+        <i class="fas fa-undo mr-1"></i> Reset
+      </button>
+        </div>
+    </div>
+
+    <!-- Services Table -->
+    <div class="overflow-x-auto border rounded-2xl shadow-md dark:border-gray-700">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead class="bg-gradient-to-r from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-800 border-b border-gray-300 dark:border-gray-700">
+                <tr>
+                    <th class="px-6 py-4 text-left text-gray-500 dark:text-gray-400 font-medium text-sm">Service Name</th>
+                    <th class="px-6 py-4 text-left text-gray-500 dark:text-gray-400 font-medium text-sm">Category</th>
+                    <th class="px-6 py-4 text-left text-gray-500 dark:text-gray-400 font-medium text-sm">Price (KES)</th>
+                    <th class="px-6 py-4 text-left text-gray-500 dark:text-gray-400 font-medium text-sm">Duration</th>
+                    <th class="px-6 py-4 text-center text-gray-500 dark:text-gray-400 font-medium text-sm">Status</th>
+                    <th class="px-6 py-4 text-right text-gray-500 dark:text-gray-400 font-medium text-sm">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="servicesTableBody" class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+                {% for service in services %}
+                <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="text-gray-800 dark:text-gray-100 font-semibold">{{ service.name }}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="text-gray-700 dark:text-gray-300">{{ service.category }}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="text-gray-700 dark:text-gray-300">KSh {{ "%0.2f"|format(service.price) }}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="text-gray-700 dark:text-gray-300">{{ service.duration }} {% if service.is_pharmacy_product %}days{% else %}mins{% endif %}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                        {% if service.is_active %}
+                        <span class="px-2 py-1 rounded-full bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-xs font-semibold">Active</span> {% else %}
+                        <span class="px-2 py-1 rounded-full bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 text-xs font-semibold">Inactive</span> {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right space-x-2">
+                        <a href="{{ url_for('finance_web_bp.edit_service_price', service_id=service.id) }}" class="inline-flex items-center px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-800/50 transition-colors"
+                            data-tippy-content="Edit Price">
+                            <i class="fas fa-edit mr-1"></i> Edit
+                        </a>
+                        <button data-service-id="{{ service.id }}" class="inline-flex items-center px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg hover:bg-red-200 dark:hover:bg-red-800/50 transition-colors delete-btn" data-tippy-content="Delete Service">
+              <i class="fas fa-trash-alt"></i>
+            </button>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="px-6 py-12 text-center">
+                        <div class="text-gray-400 dark:text-gray-500 space-y-2">
+                            <i class="fas fa-box-open fa-2x"></i>
+                            <p>No services found.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Tippy.js Tooltips & Confirmation -->
+<link rel="stylesheet" href="https://unpkg.com/tippy.js@6/dist/tippy.css" />
+<script src="https://unpkg.com/@popperjs/core@2"></script>
+<script src="https://unpkg.com/tippy.js@6"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // Initialize tooltips
+        tippy('[data-tippy-content]', {
+            theme: 'light-border',
+            delay: [100, 50],
+            animation: 'scale',
+            arrow: true
+        });
+
+        // Search & filter functionality
+        const searchInput = document.getElementById('serviceSearch');
+        const categoryFilter = document.getElementById('categoryFilter');
+        const tableBody = document.getElementById('servicesTableBody');
+
+        function filterServices() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const selectedCategory = categoryFilter.value.toLowerCase();
+            const rows = tableBody.querySelectorAll('tr');
+
+            rows.forEach((row) => {
+                const name = row.querySelector('td:nth-child(1)').innerText.toLowerCase();
+                const category = row.querySelector('td:nth-child(2)').innerText.toLowerCase();
+                const matchesSearch = name.includes(searchTerm);
+                const matchesCategory = selectedCategory === '' || category === selectedCategory;
+
+                if (matchesSearch && matchesCategory) {
+                    row.classList.remove('hidden');
+                } else {
+                    row.classList.add('hidden');
+                }
+            });
+        }
+
+        searchInput.addEventListener('input', filterServices);
+        categoryFilter.addEventListener('change', filterServices);
+
+        // Reset filters
+        document.getElementById('resetFilters').addEventListener('click', () => {
+            searchInput.value = '';
+            categoryFilter.selectedIndex = 0;
+            filterServices();
+        });
+
+        // Delete confirmation
+        // Delete confirmation
+        document.querySelectorAll('.delete-btn').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const serviceId = btn.getAttribute('data-service-id');
+                if (confirm('Are you sure you want to delete this service?')) {
+                    fetch(`/finance/manage-service-prices/${serviceId}/delete`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                _method: 'DELETE'
+                            })
+                        })
+                        .then((res) => {
+                            if (res.ok) {
+                                location.reload();
+                            } else {
+                                alert('Failed to delete service.');
+                            }
+                        })
+                        .catch((err) => console.error(err));
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

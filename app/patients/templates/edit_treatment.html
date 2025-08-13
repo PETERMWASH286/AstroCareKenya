@@ -1,0 +1,537 @@
+{% extends "base.html" %} {% block title %}Edit Treatment Plan - {{ consultation.patient.full_name }}{% endblock %} {% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Header -->
+        <div class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-800 dark:text-white flex items-center">
+                    <i class="fas fa-edit text-blue-500 mr-3"></i> Edit Treatment Plan for {{ consultation.patient.full_name }}
+                </h1>
+                <div class="mt-2 flex flex-wrap gap-2">
+                    <span class="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100 px-3 py-1 rounded-full text-sm">
+                        Consultation ID: {{ consultation.id }}
+                    </span>
+                    <span class="bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-100 px-3 py-1 rounded-full text-sm">
+                        RegNo: {{ consultation.patient.reg_no }}
+                    </span>
+                    <span class="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100 px-3 py-1 rounded-full text-sm">
+                        Age: {{ consultation.patient.age }} years
+                    </span>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3">
+                <a href="{{ url_for('consultations_web.consultation_queue') }}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-gray-600 hover:bg-gray-700 transition-colors">
+                    <i class="fas fa-arrow-left mr-2"></i> Back to Queue
+                </a>
+            </div>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+            <!-- Patient Details Sidebar -->
+            <div class="xl:col-span-1 space-y-6">
+                <div class="bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800  dark:bg-gray-900 rounded-xl shadow-lg p-6">
+                    <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4 flex items-center">
+                        <i class="fas fa-heartbeat text-red-500 mr-2"></i> Current Vitals
+                    </h2>
+
+                    {% if visit.vitals %} {% set vit = visit.vitals %}
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- Temperature -->
+                        <div class="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            <i class="fas fa-temperature-high text-orange-500 text-2xl"></i>
+                            <div>
+                                <div class="text-sm text-gray-500 dark:text-gray-400">Temperature</div>
+                                <div class="text-lg font-medium text-gray-800 dark:text-gray-200">{{ vit.temperature }}°C</div>
+                            </div>
+                        </div>
+
+                        <!-- Heart Rate -->
+                        <div class="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            <i class="fas fa-heartbeat text-red-500 text-2xl"></i>
+                            <div>
+                                <div class="text-sm text-gray-500 dark:text-gray-400">Heart Rate</div>
+                                <div class="text-lg font-medium text-gray-800 dark:text-gray-200">{{ vit.heart_rate }} bpm</div>
+                            </div>
+                        </div>
+
+                        <!-- Blood Pressure -->
+                        <div class="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            <i class="fas fa-tachometer-alt text-purple-500 text-2xl"></i>
+                            <div>
+                                <div class="text-sm text-gray-500 dark:text-gray-400">Blood Pressure</div>
+                                <div class="text-lg font-medium text-gray-800 dark:text-gray-200">
+                                    {{ vit.bp_systolic }}/{{ vit.bp_diastolic }} mmHg
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SpO₂ -->
+                        <div class="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            <i class="fas fa-lungs text-blue-500 text-2xl"></i>
+                            <div>
+                                <div class="text-sm text-gray-500 dark:text-gray-400">SpO₂</div>
+                                <div class="text-lg font-medium text-gray-800 dark:text-gray-200">{{ vit.spo2 }} %</div>
+                            </div>
+                        </div>
+
+                        <!-- Respiratory Rate -->
+                        <div class="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            <i class="fas fa-wind text-green-500 text-2xl"></i>
+                            <div>
+                                <div class="text-sm text-gray-500 dark:text-gray-400">Respiratory Rate</div>
+                                <div class="text-lg font-medium text-gray-800 dark:text-gray-200">{{ vit.resp_rate }} bpm</div>
+                            </div>
+                        </div>
+
+                        <!-- Pain Score -->
+                        <div class="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            <i class="fas fa-exclamation-triangle text-yellow-500 text-2xl"></i>
+                            <div>
+                                <div class="text-sm text-gray-500 dark:text-gray-400">Pain Score</div>
+                                <div class="text-lg font-medium text-gray-800 dark:text-gray-200">{{ vit.pain_score }}/10</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if vit.notes %}
+                    <div class="mt-4 p-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                        <h3 class="font-semibold text-gray-700 dark:text-gray-300 mb-1">Clinical Notes</h3>
+                        <p class="text-gray-800 dark:text-gray-200">{{ vit.notes }}</p>
+                    </div>
+                    {% endif %} {% else %}
+                    <div class="text-center py-8 text-gray-500 dark:text-gray-400 italic">
+                        No vitals recorded for this visit.
+                    </div>
+                    {% endif %}
+                </div>
+
+
+                <!-- Treatment History Card -->
+                <div class="bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800  dark:bg-gray-900 rounded-xl shadow-lg p-6">
+                    <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4 flex items-center">
+                        <i class="fas fa-history text-indigo-500 mr-2"></i> Treatment History
+                    </h2>
+                    <div class="space-y-4 max-h-96 overflow-y-auto">
+                        {% for consultation in visit.patient.consultations|sort(attribute='created_at', reverse=True) %}
+                        <div class="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    {{ consultation.created_at.strftime('%d %b %Y') }}
+                                </span>
+                                <span class="text-xs px-2 py-1 rounded-full 
+                                          {% if consultation.visit_id == visit.id %}bg-green-100 text-green-800
+                                          {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                    {% if consultation.visit_id == visit.id %}Current Visit{% else %}Previous{% endif %}
+                                </span>
+                            </div>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+                                {{ consultation.diagnosis or 'No diagnosis recorded' }}
+                            </p>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-4 text-gray-500 dark:text-gray-400">
+                            No previous treatments found
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Form Section -->
+            <div class="xl:col-span-2">
+                <div class="bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800  dark:bg-gray-900 rounded-xl shadow-lg overflow-hidden">
+                    <form method="POST" class="divide-y divide-gray-200 dark:divide-gray-700">
+
+                        <!-- Clinical Sections -->
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 p-8">
+                            <!-- Left Column -->
+                            <div class="space-y-6">
+                                <!-- History -->
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+          <i class="fas fa-history text-blue-500 mr-2"></i>
+          Medical History
+        </label>
+                                    <textarea rows="4" readonly class="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600">
+          {{ consultation.history }}
+        </textarea>
+                                </div>
+
+                                <!-- Examination -->
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+          <i class="fas fa-search-plus text-green-500 mr-2"></i>
+          Physical Examination
+        </label>
+                                    <textarea rows="4" readonly class="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600">
+          {{ consultation.examination }}
+        </textarea>
+                                </div>
+                            </div>
+
+                            <!-- Right Column -->
+                            <div class="space-y-6">
+                                <!-- Diagnosis -->
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+          <i class="fas fa-diagnoses text-purple-500 mr-2"></i>
+          Diagnosis
+        </label>
+                                    <textarea rows="3" readonly class="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600">
+          {{ consultation.diagnosis }}
+        </textarea>
+                                </div>
+
+                                <!-- Treatment Plan -->
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+          <i class="fas fa-prescription-bottle-alt text-red-500 mr-2"></i>
+          Treatment Plan
+        </label>
+                                    <textarea rows="5" readonly class="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600">
+          {{ consultation.treatment_plan }}
+        </textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Medication Administration Section -->
+                        <div class="space-y-6">
+                            <div class="dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+                                <div class="flex justify-between items-center mb-4">
+                                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
+                                        <i class="fas fa-pills text-green-500 mr-2"></i> Medication Administration
+                                    </h3>
+                                    <button type="button" onclick="addDrug()" class="px-3 py-1 bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300 rounded-lg hover:bg-green-200 dark:hover:bg-green-800 transition-colors">
+                                        <i class="fas fa-plus mr-1"></i> Add Drug
+                                    </button>
+                                </div>
+
+                                <!-- Drug Entries Container -->
+                                <div id="drugContainer" class="space-y-4">
+                                    {% for med in existing_medications %}
+                                    <div class="drug-entry grid grid-cols-12 gap-4 items-start mb-4">
+                                        <div class="col-span-5">
+                                            <select class="drug-select w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600" name="drug[]">
+                                                <option value="">Select Medication</option>
+                                                {% for service in medications %}
+                                                <option value="{{ service.id }}" 
+                                                    data-price="{{ service.price }}"
+                                                    {% if service.id == med.service_id %}selected{% endif %}>
+                                                    {{ service.name }} - Ksh {{ service.price|number_format }}
+                                                </option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="col-span-2">
+                                            <input type="text" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600" placeholder="Dose" name="drug_dose[]" value="{{ med.dose }}">
+                                        </div>
+                                        <div class="col-span-2">
+                                            <select class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600" name="drug_frequency[]">
+                                                <option value="OD" {% if med.frequency == 'OD' %}selected{% endif %}>Once Daily</option>
+                                                <option value="BD" {% if med.frequency == 'BD' %}selected{% endif %}>Twice Daily</option>
+                                                <option value="TDS" {% if med.frequency == 'TDS' %}selected{% endif %}>Thrice Daily</option>
+                                                <option value="QID" {% if med.frequency == 'QID' %}selected{% endif %}>Four Times Daily</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-span-2">
+                                            <input type="number" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600" name="drug_quantity[]" placeholder="Qty" min="1" value="{{ med.quantity }}">
+                                        </div>
+                                        <div class="col-span-2">
+                                            <input type="number" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600" name="drug_duration[]" placeholder="Days" min="1" value="{{ med.duration }}">
+                                        </div>
+                                        <div class="col-span-1 flex justify-end">
+                                            <button type="button" onclick="removeDrug(this)" class="text-red-500 hover:text-red-700 dark:hover:text-red-400">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+
+                                <!-- Total Price -->
+                                <div class="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+                                    <div class="flex justify-between items-center">
+                                        <span class="font-medium text-gray-700 dark:text-gray-300">Total Medication Cost:</span>
+                                        <span id="totalCost" class="text-xl font-bold text-green-600 dark:text-green-400">Ksh 0</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Add this template section -->
+                        <template id="drugTemplate">
+    <div class="drug-entry grid grid-cols-12 gap-4 items-start mb-4">
+        <div class="col-span-5">
+            <select class="drug-select w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600" 
+                    name="drug[]">
+                <option value="">Select Medication</option>
+                {% for med in medications %}
+                <option value="{{ med.id }}" data-price="{{ med.price }}">
+                    {{ med.name }} - Ksh {{ med.price|number_format }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-span-2">
+            <input type="text" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600" 
+                   placeholder="Dose" name="drug_dose[]">
+        </div>
+        <div class="col-span-2">
+            <select class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600" 
+                    name="drug_frequency[]">
+                <option value="OD">Once Daily</option>
+                <option value="BD">Twice Daily</option>
+                <option value="TDS">Thrice Daily</option>
+                <option value="QID">Four Times Daily</option>
+            </select>
+        </div>
+        <div class="col-span-2">
+            <input type="number" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600" 
+                   name="drug_quantity[]" placeholder="Qty" min="1" value="1">
+        </div>
+        <div class="col-span-2">
+            <input type="number" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600" 
+                   name="drug_duration[]" placeholder="Days" min="1">
+        </div>
+        <div class="col-span-1 flex justify-end">
+            <button type="button" onclick="removeDrug(this)" 
+                    class="text-red-500 hover:text-red-700 dark:hover:text-red-400">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+</template>
+                        <!-- Additional Services Section -->
+                        <div class="p-8 bg-gray-50 dark:bg-gray-700/20">
+                            <div class="space-y-6">
+                                <!-- Lab Tests -->
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                        <i class="fas fa-flask text-orange-500 mr-2"></i>
+                                        Lab Tests
+                                    </label>
+                                    <select name="lab_tests" multiple class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
+                                        {% for service in lab_tests %}
+                                        <option value="{{ service.id }}" 
+                                            {% if service.id in existing_lab_ids %}selected{% endif %}>
+                                            {{ service.name }} - Ksh {{ service.price|number_format }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <!-- Imaging Studies -->
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                        <i class="fas fa-x-ray text-purple-500 mr-2"></i>
+                                        Imaging Studies
+                                    </label>
+                                    <select name="imaging_studies" multiple class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+                                        {% for service in imaging_services %}
+                                        <option value="{{ service.id }}" 
+                                            {% if service.id in existing_radiology_ids %}selected{% endif %}>
+                                            {{ service.name }} - Ksh {{ service.price|number_format }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <!-- Clinical Notes -->
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+          <i class="fas fa-sticky-note text-yellow-500 mr-2"></i> Clinical Notes
+        </label>
+                                    <textarea rows="3" readonly class="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600">
+          {{ consultation.notes }}
+        </textarea>
+                                </div>
+
+
+                                <!-- Form Actions -->
+                                <div class="flex justify-end space-x-4">
+                                    <button type="reset" class="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                        Reset Form
+                                    </button>
+                                    <button type="submit" class="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg font-semibold shadow-md transition-all">
+                                        <i class="fas fa-save mr-2"></i>
+                                        Update Treatment Plan
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Include Choices.js for multi-select -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
+<script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+
+<script>
+    // Update the DOMContentLoaded event listener
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize multi-select inputs
+        const selects = document.querySelectorAll('select[multiple]');
+        selects.forEach(select => {
+            new Choices(select, {
+                removeItemButton: true,
+                searchEnabled: true,
+                placeholderValue: select.dataset.placeholder,
+                noResultsText: 'No results found',
+                itemSelectText: 'Click to select'
+            });
+        });
+
+        // Initialize existing medication selects
+        document.querySelectorAll('.drug-select').forEach(select => {
+            new Choices(select, {
+                searchEnabled: true,
+                itemSelectText: '',
+                placeholderValue: 'Select Medication'
+            });
+
+            // Add price data attribute to existing selections
+            const selectedOption = select.querySelector('option[selected]');
+            if (selectedOption) {
+                select.dataset.price = selectedOption.dataset.price;
+            }
+        });
+
+        // Calculate initial total cost
+        updateTotalCost();
+
+        // Add event listeners to existing quantity inputs
+        document.querySelectorAll('[name="drug_quantity[]"]').forEach(input => {
+            input.addEventListener('input', updateTotalCost);
+        });
+    });
+</script>
+
+<script>
+    function addDrug() {
+        const container = document.getElementById('drugContainer');
+        const template = document.getElementById('drugTemplate');
+
+        if (!template) {
+            console.error('Drug template not found!');
+            return;
+        }
+
+        const clone = template.content.cloneNode(true);
+        const select = clone.querySelector('.drug-select');
+
+        // Initialize Choices.js for the new select
+        new Choices(select, {
+            searchEnabled: true,
+            itemSelectText: '',
+            placeholderValue: 'Select Medication'
+        });
+
+        // Add event listeners to new inputs
+        clone.querySelector('[name="drug_quantity[]"]').addEventListener('input', updateTotalCost);
+        select.addEventListener('change', () => updateTotalCost());
+
+        container.appendChild(clone);
+        updateTotalCost();
+    }
+
+    function removeDrug(button) {
+        button.closest('.drug-entry').remove();
+        updateTotalCost();
+    }
+
+    function updateDrugPrice(select) {
+        const selectedOption = select.options[select.selectedIndex];
+        const price = selectedOption ? selectedOption.dataset.price : 0;
+
+        updateTotalCost();
+    }
+
+    function updateTotalCost() {
+        let total = 0;
+        const drugEntries = document.querySelectorAll('.drug-entry');
+
+        drugEntries.forEach(entry => {
+            const select = entry.querySelector('.drug-select');
+            const quantityInput = entry.querySelector('[name="drug_quantity[]"]');
+
+            if (!select || !quantityInput) return;
+
+            const selectedOption = select.querySelector('option:checked');
+            const price = selectedOption && selectedOption.dataset.price ?
+                parseFloat(selectedOption.dataset.price) :
+                0;
+            const quantity = quantityInput.value ?
+                parseFloat(quantityInput.value) :
+                0;
+
+            if (!isNaN(price) && !isNaN(quantity)) {
+                total += price * quantity;
+            }
+        });
+
+        const totalCostEl = document.getElementById('totalCost');
+        if (totalCostEl) {
+            totalCostEl.textContent = `Ksh ${total.toLocaleString()}`;
+        }
+    }
+
+
+    // Update event listener to include quantity inputs
+    document.addEventListener('input', function(e) {
+        if (e.target.matches('[name="drug_quantity[]"], .drug-select')) {
+            updateTotalCost();
+        }
+    });
+</script>
+
+<style>
+    .drug-entry {
+        transition: all 0.3s ease;
+    }
+    
+    .choices__list--dropdown .choices__item--selectable {
+        padding-right: 1rem;
+    }
+    
+    .choices__list--dropdown .choices__item--selectable::after {
+        content: attr(data-price);
+        float: right;
+        color: #4B5563;
+        font-size: 0.875rem;
+    }
+    
+    .dark .choices__list--dropdown .choices__item--selectable::after {
+        color: #D1D5DB;
+    }
+</style>
+<style>
+    textarea {
+        min-height: 100px;
+        transition: all 0.2s ease;
+    }
+    
+    .choices__list--multiple .choices__item {
+        background-color: #3B82F6;
+        border-color: #3B82F6;
+        color: white;
+        margin: 2px;
+    }
+    
+    .dark .choices__list--dropdown {
+        background-color: #1F2937;
+        border-color: #374151;
+    }
+    
+    .dark .choices__input {
+        background-color: #1F2937;
+        color: white;
+    }
+</style>
+{% endblock %}

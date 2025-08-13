@@ -1,0 +1,340 @@
+<!DOCTYPE html> {% extends "base.html" %} {% block title %}Asset Management Reports{% endblock %} {% block content %}
+<div class="min-h-screen bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Header Section -->
+        <div class="mb-8">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">Asset Management Reports</h1>
+                    <p class="mt-2 text-gray-600">Comprehensive overview of your organization's assets</p>
+                </div>
+                <div class="flex space-x-3">
+                    <button class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Export Report
+          </button>
+                    <button class="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            Schedule Report
+          </button>
+                </div>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-lg p-5 text-white">
+                    <div class="text-sm font-medium mb-1">Total Assets Value</div>
+                    <div class="text-2xl font-bold">${{ depreciation_data | sum(attribute='total_value') | round | int }}</div>
+                    <div class="mt-2 text-xs opacity-80">Current value: ${{ depreciation_data | sum(attribute='current_value') | round | int }}</div>
+                </div>
+
+                <div class="bg-gradient-to-r from-green-500 to-green-600 rounded-xl shadow-lg p-5 text-white">
+                    <div class="text-sm font-medium mb-1">Maintenance Costs</div>
+                    <div class="text-2xl font-bold">${{ maintenance_costs | sum(attribute='total_maintenance_cost') | round | int }}</div>
+                    <div class="mt-2 text-xs opacity-80">{{ maintenance_costs | sum(attribute='maintenance_count') }} maintenance records</div>
+                </div>
+
+                <div class="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl shadow-lg p-5 text-white">
+                    <div class="text-sm font-medium mb-1">Overdue Maintenance</div>
+                    <div class="text-2xl font-bold">{{ overdue_maintenance | length }}</div>
+                    <div class="mt-2 text-xs opacity-80">Assets needing attention</div>
+                </div>
+
+                <div class="bg-gradient-to-r from-amber-500 to-amber-600 rounded-xl shadow-lg p-5 text-white">
+                    <div class="text-sm font-medium mb-1">Assigned Assets</div>
+                    <div class="text-2xl font-bold">{{ current_assignments | length }}</div>
+                    <div class="mt-2 text-xs opacity-80">Currently in use</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Dashboard Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Depreciation by Category -->
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold text-gray-900">Depreciation by Category</h2>
+                    <div class="text-sm text-gray-500">{{ depreciation_data | length }} categories</div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assets</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Value</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Depreciation</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for item in depreciation_data %}
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900">{{ item.name }}</div>
+                                    <div class="text-sm text-gray-500">{{ item.depreciation_period }} years</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">{{ item.asset_count }}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">${{ item.total_value | round | int }}</div>
+                                    <div class="text-sm text-gray-500">${{ item.current_value | round | int }} current</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-red-600">${{ item.total_depreciation | round | int }}</div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Asset Status Distribution -->
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold text-gray-900">Asset Status Distribution</h2>
+                    <div class="text-sm text-gray-500">{{ status_counts | length }} status groups</div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                    {% for status in status_counts | groupby('status') %}
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="font-medium text-gray-900">{{ status.grouper }}</span>
+                            <span class="text-sm font-semibold bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                {{ status.list | sum(attribute='count') }} assets
+              </span>
+                        </div>
+                        <div class="text-sm text-gray-600 mb-3">Total value: ${{ status.list | sum(attribute='sum') | round | int }}</div>
+                        <div class="space-y-2">
+                            {% for location in status.list %}
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-600">{{ location.location or 'No location' }}</span>
+                                <span class="font-medium">{{ location.count }} assets</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Maintenance Costs -->
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold text-gray-900">Maintenance Costs</h2>
+                    <div class="text-sm text-gray-500">Top {{ maintenance_costs | length }} assets</div>
+                </div>
+                <div class="space-y-4">
+                    {% for asset in maintenance_costs %}
+                    <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h3 class="font-medium text-gray-900">{{ asset.name }}</h3>
+                                <p class="text-sm text-gray-500">{{ asset.serial_number }}</p>
+                            </div>
+                            <div class="text-right">
+                                <div class="font-bold text-red-600">${{ asset.total_maintenance_cost | round | int }}</div>
+                                <div class="text-sm text-gray-500">{{ asset.maintenance_count }} maintenance records</div>
+                            </div>
+                        </div>
+                        <div class="mt-3 flex items-center text-sm text-gray-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg> Technician: {{ asset.technician_name }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Overdue Maintenance -->
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold text-gray-900">Overdue Maintenance</h2>
+                    <span class="bg-red-100 text-red-800 text-sm font-semibold px-3 py-1 rounded-full">
+            {{ overdue_maintenance | length }} overdue
+          </span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asset</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Technician</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for item in overdue_maintenance %}
+                            <tr class="hover:bg-red-50">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900">{{ item.name }}</div>
+                                    <div class="text-sm text-gray-500">{{ item.serial_number }}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-red-600 font-medium">{{ item.next_maintenance_date.strftime('%b %d, %Y') }}</div>
+                                    <div class="text-xs text-gray-500">{{ (datetime.utcnow() - item.next_maintenance_date).days }} days overdue</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {{ item.technician_name }}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="3" class="px-6 py-4 text-center text-sm text-gray-500">
+                                    No overdue maintenance records
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Current Assignments -->
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold text-gray-900">Current Assignments</h2>
+                    <div class="text-sm text-gray-500">{{ current_assignments | length }} assignments</div>
+                </div>
+                <div class="space-y-4">
+                    {% for assignment in current_assignments %}
+                    <div class="flex items-center border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition">
+                        <div class="flex-shrink-0 w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium text-gray-900 truncate">{{ assignment.name }}</p>
+                            <p class="text-sm text-gray-500 truncate">{{ assignment.serial_number }}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm font-medium text-gray-900">{{ assignment.assigned_to }}</p>
+                            <p class="text-sm text-gray-500">{{ assignment.department }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Depreciation Trends -->
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold text-gray-900">Depreciation Trends</h2>
+                    <div class="text-sm text-gray-500">Last 12 months</div>
+                </div>
+                <div class="h-64">
+                    <!-- Chart container -->
+                    <div class="h-full w-full">
+                        <canvas id="depreciationChart"></canvas>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Month</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg Depreciation</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for trend in depreciation_trend %}
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ trend.month }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">${{ trend.avg_depreciation | round(2) }}</div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js for depreciation trends -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('depreciationChart').getContext('2d');
+        const labels = {
+            {
+                depreciation_trend | map(attribute = 'month') | list | tojson
+            }
+        };
+        const data = {
+            {
+                depreciation_trend | map(attribute = 'avg_depreciation') | list | tojson
+            }
+        };
+
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Average Depreciation',
+                    data: data,
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    borderColor: 'rgb(59, 130, 246)',
+                    borderWidth: 2,
+                    pointBackgroundColor: 'rgb(59, 130, 246)',
+                    pointRadius: 4,
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgb(17, 24, 39)',
+                        padding: 12,
+                        titleFont: {
+                            size: 14
+                        },
+                        bodyFont: {
+                            size: 13
+                        },
+                        callbacks: {
+                            label: function(context) {
+                                return `Avg: $${context.parsed.y.toFixed(2)}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value;
+                            }
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

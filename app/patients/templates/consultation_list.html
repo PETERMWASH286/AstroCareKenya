@@ -1,0 +1,34 @@
+{% extends "base.html" %} {% block title %}Consultations – {{ patient.reg_no }}{% endblock %} {% block content %}
+<div class="p-6">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold">Consultations for {{ patient.first_name }} {{ patient.last_name }}</h1>
+        <a href="{{ url_for('consultations_web.new_consultation', reg_no=patient.reg_no) }}" class="px-4 py-2 bg-green-500 text-white rounded-lg"><i class="fas fa-plus mr-1"></i>New</a>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead class="bg-gray-50 dark:bg-gray-700">
+                <tr>
+                    <th class="px-4 py-2 text-left">Date</th>
+                    <th class="px-4 py-2 text-left">Diagnosis</th>
+                    <th class="px-4 py-2">View</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                {% for c in consults %}
+                <tr class="hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <td class="px-4 py-2">{{ c.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td class="px-4 py-2">{{ c.diagnosis|truncate(40) }}</td>
+                    <td class="px-4 py-2 text-center">
+                        <a href="{{ url_for('consultations_web.view_consultation', reg_no=patient.reg_no, cid=c.id) }}" class="text-blue-500 hover:underline">Details</a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="3" class="p-4 text-center text-gray-500">No consultations yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

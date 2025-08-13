@@ -1,0 +1,349 @@
+{% extends "base.html" %} {% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header Section -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 space-y-4 md:space-y-0">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Laboratory Test Results</h1>
+            <p class="text-gray-600 dark:text-gray-400">Comprehensive overview of all laboratory diagnostics</p>
+        </div>
+        <div class="flex items-center space-x-3">
+            <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all 
+                         flex items-center space-x-2 shadow-lg hover:shadow-xl">
+                <i class="fas fa-file-export"></i>
+                <span>Export Data</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800  dark:bg-gray-900 dark:bg-gray-800 rounded-2xl p-4 mb-6 shadow-xl backdrop-blur-lg bg-opacity-50">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
+            <div class="flex items-center space-x-4 w-full md:w-auto">
+                <div class="relative w-full md:w-64">
+                    <input type="text" class="w-full pl-10 pr-4 py-2 rounded-lg bg-gray-50 dark:bg-gray-700 border-0 
+                                  focus:ring-2 focus:ring-blue-500 transition-all" placeholder="Search tests...">
+                    <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                </div>
+                <div class="hidden md:flex space-x-2">
+                    <button class="px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 
+                                text-sm transition-all hover:bg-blue-200 dark:hover:bg-blue-800">
+                        All Tests
+                    </button>
+                    <button class="px-3 py-1 rounded-full bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300 
+                                text-sm transition-all hover:bg-green-200 dark:hover:bg-green-800">
+                        Verified
+                    </button>
+                    <button class="px-3 py-1 rounded-full bg-orange-100 dark:bg-orange-900 text-orange-600 dark:text-orange-300 
+                                text-sm transition-all hover:bg-orange-200 dark:hover:bg-orange-800">
+                        Critical
+                    </button>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3 w-full md:w-auto">
+                <div class="relative">
+                    <input type="date" class="bg-gray-50 dark:bg-gray-700 border-0 rounded-lg py-2 px-4 
+                                  focus:ring-2 focus:ring-blue-500 transition-all">
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Enhanced Table -->
+    <div class="bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800  dark:bg-gray-900 dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-900">
+                    <tr>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Patient
+                        </th>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Test Details
+                        </th>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Status
+                        </th>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Timeline
+                        </th>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Actions
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    {% for test in lab_tests %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">
+                        <!-- Patient Column -->
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 h-10 w-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-user-injured text-blue-500 dark:text-blue-300"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <div class="text-sm font-medium text-gray-900 dark:text-white">
+                                        {{ test.consultation.patient.full_name }}
+                                    </div>
+                                    <div class="text-sm text-gray-500 dark:text-gray-400">
+                                        {{ test.consultation.patient.reg_no }} • {{ test.consultation.patient.age }}y
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- Test Details Column -->
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900 dark:text-white font-medium">
+                                {{ test.service.name }}
+                            </div>
+                            <div class="text-sm text-gray-500 dark:text-gray-400">
+                                Requested: {{ test.requested_at.strftime('%b %d, %Y %H:%M') }}
+                            </div>
+                        </td>
+
+                        <!-- Status Column -->
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="h-2 w-2 rounded-full 
+                                    {% if test.status == 'verified' %}bg-green-500
+                                    {% elif test.status == 'critical' %}bg-red-500
+                                    {% else %}bg-blue-500{% endif %} mr-2"></div>
+                                <span class="text-sm font-medium 
+                                    {% if test.status == 'verified' %}text-green-700 dark:text-green-400
+                                    {% elif test.status == 'critical' %}text-red-700 dark:text-red-400
+                                    {% else %}text-blue-700 dark:text-blue-400{% endif %}">
+                                    {{ test.status|title }}
+                                </span> {% if test.status == 'critical' %}
+                                <i class="fas fa-exclamation-triangle ml-2 text-red-500"></i> {% endif %}
+                            </div>
+                        </td>
+
+                        <!-- Timeline Column -->
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900 dark:text-white">
+                                {% if test.completed_at %} Completed: {{ test.completed_at.strftime('%b %d, %Y %H:%M') }} {% else %}
+                                <span class="text-gray-400">Pending completion</span> {% endif %}
+                            </div>
+                            <div class="text-sm text-gray-500 dark:text-gray-400">
+                                Turnaround: {{ (test.completed_at - test.requested_at)|duration if test.completed_at else 'N/A' }}
+                            </div>
+                        </td>
+
+                        <!-- Actions Column -->
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center space-x-4">
+                                <a href="{{ url_for('consultations_web.view_lab_test', test_id=test.id) }}" class="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300" data-tippy-content="View detailed test results">
+                                    <i class="fas fa-file-medical"></i>
+                                </a>
+                                {% if test.status != 'verified' %}
+                                <button class="text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300 verify-btn" data-test-id="{{ test.id }}" data-tippy-content="Verify this test result">
+                <i class="fas fa-check-double"></i>
+            </button> {% endif %}
+                                <div class="relative">
+                                    <button class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" data-tippy-content="More actions" id="dropdownButton-{{ test.id }}">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <div class="absolute right-0 mt-1 hidden w-48 bg-white dark:bg-gray-800 rounded-md shadow-xl py-1 border border-gray-200 dark:border-gray-700 z-50" id="dropdownMenu-{{ test.id }}">
+                                        <a href="#" class="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                            <i class="fas fa-print mr-3 text-gray-400"></i> Print
+                                        </a>
+                                        <a href="#" class="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                            <i class="fas fa-share mr-3 text-gray-400"></i> Share
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<script src="https://unpkg.com/@popperjs/core@2"></script>
+<script src="https://unpkg.com/tippy.js@6"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize Tippy
+        tippy('[data-tippy-content]', {
+            theme: 'light-border',
+            animation: 'fade',
+            placement: 'bottom'
+        });
+
+        // Enhanced Dropdown Logic
+        document.querySelectorAll('[id^="dropdownButton"]').forEach(button => {
+            const menuId = button.id.replace('Button', 'Menu');
+            const menu = document.getElementById(menuId);
+            let popperInstance = null;
+
+            // Initialize Popper
+            popperInstance = Popper.createPopper(button, menu, {
+                placement: 'bottom-end',
+                modifiers: [{
+                    name: 'offset',
+                    options: {
+                        offset: [0, 8],
+                    },
+                }, ],
+            });
+
+            // Toggle Menu
+            button.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isVisible = menu.style.display === 'block';
+                hideAllDropdowns();
+                if (!isVisible) {
+                    showDropdown(menu, popperInstance);
+                }
+            });
+
+            // Hide on outside click
+            document.addEventListener('click', (e) => {
+                if (!button.contains(e.target) && !menu.contains(e.target)) {
+                    hideDropdown(menu, popperInstance);
+                }
+            });
+        });
+
+        function showDropdown(menu, popper) {
+            menu.style.display = 'block';
+            popper.update();
+        }
+
+        function hideDropdown(menu, popper) {
+            menu.style.display = 'none';
+        }
+
+        function hideAllDropdowns() {
+            document.querySelectorAll('[id^="dropdownMenu"]').forEach(menu => {
+                menu.style.display = 'none';
+            });
+        }
+
+        // Verify button handler remains the same
+    });
+</script>
+
+<style>
+    /* Dropdown Styles */
+    
+    [id^="dropdownMenu"] {
+        display: none;
+    }
+    
+    .dark [id^="dropdownMenu"] {
+        background: #1f2937;
+        border-color: #374151;
+    }
+    
+    .dark [id^="dropdownMenu"] a {
+        color: #f3f4f6;
+    }
+    
+    .dark [id^="dropdownMenu"] a:hover {
+        background: #374151;
+    }
+</style>
+<style>
+    /* Improved dropdown styling */
+    
+    .dropdown-menu {
+        min-width: 160px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        border: 1px solid rgba(125, 125, 125, 0.1);
+    }
+    
+    .dropdown-menu a {
+        transition: all 0.2s ease;
+    }
+    
+    .tippy-box {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(4px);
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        color: #1f2937;
+        box-shadow: 0 4px 14px -2px rgba(0, 0, 0, 0.08);
+    }
+    
+    .dark .tippy-box {
+        background: rgba(31, 41, 55, 0.95);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #f3f4f6;
+    }
+    
+    .tippy-arrow {
+        color: rgba(255, 255, 255, 0.95);
+    }
+    
+    .dark .tippy-arrow {
+        color: rgba(31, 41, 55, 0.95);
+    }
+</style>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Verify button handler
+        document.querySelectorAll('.verify-btn').forEach(btn => {
+            btn.addEventListener('click', async function() {
+                const testId = this.dataset.testId;
+                const row = this.closest('tr');
+
+                try {
+                    const response = await fetch(`/lab-tests/${testId}/verify`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+
+                    const data = await response.json();
+                    if (data.status === 'success') {
+                        // Update status indicator
+                        const statusBadge = row.querySelector('.h-2.w-2');
+                        const statusText = row.querySelector('span');
+
+                        statusBadge.classList.remove('bg-blue-500');
+                        statusBadge.classList.add('bg-green-500');
+                        statusText.textContent = 'Verified';
+                        statusText.classList.remove('text-blue-700', 'dark:text-blue-400');
+                        statusText.classList.add('text-green-700', 'dark:text-green-400');
+
+                        // Remove verify button
+                        this.remove();
+                    }
+                } catch (error) {
+                    console.error('Verification failed:', error);
+                }
+            });
+        });
+
+
+    });
+</script>
+
+<style>
+    table {
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+    
+    th {
+        position: sticky;
+        top: 0;
+        background: inherit;
+        z-index: 10;
+    }
+    
+    tr:last-child td {
+        border-bottom: 0;
+    }
+    
+    @media (prefers-reduced-motion: no-preference) {
+        tr {
+            transition: all 0.2s ease;
+        }
+    }
+</style>
+{% endblock %}

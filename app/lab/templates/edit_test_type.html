@@ -1,0 +1,926 @@
+{% extends "base.html" %} 
+
+{% block content %}
+<style>
+    .glass-panel {
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    }
+    
+    .dark .glass-panel {
+        background: rgba(30, 41, 59, 0.7);
+        border: 1px solid rgba(30, 41, 59, 0.5);
+    }
+    
+    .parameter-card {
+        transition: all 0.3s ease;
+        border: 1px solid #e2e8f0;
+    }
+    
+    .parameter-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        border-color: #cbd5e1;
+    }
+    
+    .dark .parameter-card {
+        border-color: #334155;
+    }
+    
+    .dark .parameter-card:hover {
+        border-color: #475569;
+    }
+    
+    .range-group, .option-group {
+        animation: slideIn 0.3s ease-out;
+    }
+    
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .toggle-checkbox:checked {
+        right: 0;
+        border-color: #2563eb;
+    }
+    
+    .toggle-checkbox:checked + .toggle-label {
+        background-color: #2563eb;
+    }
+    
+    .form-section {
+        display: none;
+    }
+    
+    .form-section.active {
+        display: block;
+        animation: fadeIn 0.3s ease-in-out;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .nav-item {
+        transition: all 0.2s ease;
+        border-left: 3px solid transparent;
+    }
+    
+    .nav-item:hover {
+        background-color: rgba(37, 99, 235, 0.1);
+    }
+    
+    .nav-item.active {
+        border-left-color: #2563eb;
+        background-color: rgba(37, 99, 235, 0.1);
+    }
+    
+    .unit-selector {
+        display: flex;
+    }
+    
+    .unit-selector select {
+        border-radius: 0.5rem 0 0 0.5rem;
+        border-right: none;
+    }
+    
+    .unit-selector input {
+        border-radius: 0 0.5rem 0.5rem 0;
+    }
+    
+    .progress-bar {
+        height: 6px;
+        border-radius: 3px;
+        overflow: hidden;
+    }
+    
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(to right, #2563eb, #8b5cf6);
+        transition: width 0.3s ease;
+    }
+</style>
+
+<div class="container mx-auto px-4 py-8 max-w-7xl">
+    <div class="mb-8 text-center">
+        <h1 class="text-3xl font-bold mb-3 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            Laboratory Test Management
+        </h1>
+        <p class="text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
+            Configure comprehensive laboratory tests in a structured workflow
+        </p>
+        
+        <div class="mt-6 max-w-3xl mx-auto flex justify-center space-x-4">
+            <div class="nav-item active p-3 rounded-lg cursor-pointer flex items-center" data-section="test-info">
+                <i class="fas fa-flask text-blue-600 w-6 mr-1"></i>
+                <span class="font-medium">Test Information</span>
+            </div>
+            
+            <div class="nav-item p-3 rounded-lg cursor-pointer flex items-center" data-section="parameters">
+                <i class="fas fa-cogs text-purple-600 w-6 mr-1"></i>
+                <span class="font-medium">Parameters</span>
+            </div>
+            
+            <div class="nav-item p-3 rounded-lg cursor-pointer flex items-center" data-section="panels">
+                <i class="fas fa-object-group text-indigo-600 w-6 mr-1"></i>
+                <span class="font-medium">Test Panels</span>
+            </div>
+            
+            <div class="nav-item p-3 rounded-lg cursor-pointer flex items-center" data-section="review">
+                <i class="fas fa-check-circle text-green-600 w-6 mr-1"></i>
+                <span class="font-medium">Review & Submit</span>
+            </div>
+        </div>
+
+        <div class="mt-6 max-w-3xl mx-auto">
+            <div class="progress-bar bg-gray-200 dark:bg-gray-700 mb-2">
+                <div class="progress-fill w-1/4"></div>
+            </div>
+            <div class="flex justify-between text-sm text-gray-500 dark:text-gray-400">
+                <span>Test Info</span>
+                <span>Parameters</span>
+                <span>Panels</span>
+                <span>Review</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex flex-col md:flex-row gap-6">
+
+
+        <div class="flex-1 glass-panel rounded-2xl shadow-xl overflow-hidden">
+            <form method="POST" class="p-6 md:p-8">
+                <div class="form-section active" id="test-info">
+                    <h2 class="text-2xl font-semibold mb-6 pb-2 border-b border-gray-200 dark:border-gray-700">
+                        <i class="fas fa-flask mr-3 text-blue-600"></i>Test Information
+                    </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <label class="block text-sm font-medium mb-2">Test Name *</label>
+                <input type="text" class="w-full px-4 py-3 rounded-lg border-0 ring-2 ring-gray-200 dark:ring-gray-700 focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 transition-all"
+                       name="test_name" id="test_name" placeholder="e.g., Thyroid Function Test" required>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium mb-2">Department *</label>
+                <select class="w-full px-4 py-3 rounded-lg border-0 ring-2 ring-gray-200 dark:ring-gray-700 focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800"
+                        name="department" id="department">
+                    <option>Hematology</option>
+                    <option>Biochemistry</option>
+                    <option>Serology</option>
+                    <option>Microbiology</option>
+                    <option>Immunology</option>
+                    <option>Endocrinology</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium mb-2">Sample Type *</label>
+                <select class="w-full px-4 py-3 rounded-lg border-0 ring-2 ring-gray-200 dark:ring-gray-700 focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800"
+                        name="sample_type" id="sample_type">
+                    <option>Blood (EDTA)</option>
+                    <option>Serum</option>
+                    <option>Urine</option>
+                    <option>Plasma</option>
+                    <option>CSF</option>
+                    <option>Stool</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium mb-2">Short Code</label>
+                <input type="text" class="w-full px-4 py-3 rounded-lg border-0 ring-2 ring-gray-200 dark:ring-gray-700 focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 transition-all"
+                       name="short_code" id="short_code" placeholder="e.g., TFT">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium mb-2">Device Manufacturer</label>
+                <input type="text" class="w-full px-4 py-3 rounded-lg border-0 ring-2 ring-gray-200 dark:ring-gray-700 focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 transition-all"
+                       name="device_manufacturer" id="device_manufacturer" placeholder="e.g., Abbott Laboratories">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium mb-2">Turnaround Time</label>
+                <div class="flex">
+                    <input type="number" class="w-20 px-4 py-3 rounded-l-lg border-0 ring-2 ring-r-0 ring-gray-200 dark:ring-gray-700 focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800"
+                           name="turnaround_time_value" id="turnaround_time_value" value="24">
+                    <select class="flex-1 px-4 py-3 rounded-r-lg border-0 ring-2 ring-l-0 ring-gray-200 dark:ring-gray-700 focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800"
+                            name="turnaround_time_unit" id="turnaround_time_unit">
+                        <option>Hours</option>
+                        <option>Days</option>
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium mb-2">LOINC Code</label>
+                <input type="text" class="w-full px-4 py-3 rounded-lg border-0 ring-2 ring-gray-200 dark:ring-gray-700 focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 transition-all"
+                       name="loinc_code" id="loinc_code" placeholder="e.g., 12345-6">
+            </div>
+
+            <div class="flex items-center">
+                <label class="block text-sm font-medium mb-2 mr-4">Active Status</label>
+                <div class="relative inline-block w-12 mr-2 align-middle select-none">
+                    <input type="checkbox" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"
+                           name="active_status" id="active_status" checked>
+                    <label class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer" for="active_status"></label>
+                </div>
+                <span class="text-sm">Active</span>
+            </div>
+        </div>
+
+        <div class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700 flex justify-between">
+            <div></div>
+            <button type="button" class="next-section px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all"
+                    data-next="parameters">
+                Continue to Parameters <i class="fas fa-arrow-right ml-2"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="form-section" id="parameters">
+        <div class="flex justify-between items-center mb-6 pb-2 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-2xl font-semibold">
+                <i class="fas fa-cogs mr-3 text-purple-600"></i>Test Parameters
+            </h2>
+            <button type="button" onclick="addParameter()" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors">
+                <i class="fas fa-plus mr-2"></i>Add Parameter
+            </button>
+        </div>
+
+        <div id="parameters-container">
+            <div class="parameter-card mb-6 p-5 rounded-xl bg-white dark:bg-gray-800">
+                <div class="flex justify-between items-start mb-4">
+                    <h3 class="text-lg font-medium">Parameter #1</h3>
+                    <button type="button" onclick="removeParameter(this)" class="text-red-500 hover:text-red-700">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Parameter Name *</label>
+                        <input type="text" class="w-full px-4 py-2 rounded-lg border-0 ring-2 ring-gray-200 dark:ring-gray-700 focus:ring-2 focus:ring-blue-500 bg-gray-50 dark:bg-gray-750 transition-all"
+                               name="parameters[0][name]" id="parameter_0_name" placeholder="e.g., TSH Level" required>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Synonym</label>
+                        <input type="text" class="w-full px-4 py-2 rounded-lg border-0 ring-2 ring-gray-200 dark:ring-gray-700 focus:ring-2 focus:ring-blue-500 bg-gray-50 dark:bg-gray-750 transition-all"
+                               name="parameters[0][synonym]" id="parameter_0_synonym" placeholder="e.g., Thyroid Stimulating Hormone">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Result Type *</label>
+                        <select class="w-full px-4 py-2 rounded-lg border-0 ring-2 ring-gray-200 dark:ring-gray-700 focus:ring-2 focus:ring-blue-500 bg-gray-50 dark:bg-gray-750"
+                                name="parameters[0][result_type]" id="parameter_0_result_type" onchange="toggleResultOptions(this)">
+                            <option value="numeric">Numeric</option>
+                            <option value="categorical">Categorical</option>
+                            <option value="text">Text</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Unit</label>
+                        <div class="unit-selector flex">
+                            <select class="w-1/2 px-4 py-2 rounded-l-lg border-0 ring-2 ring-r-0 ring-gray-200 dark:ring-gray-700 focus:ring-2 focus:ring-blue-500 bg-gray-50 dark:bg-gray-750"
+                                    name="parameters[0][unit_predefined]" id="parameter_0_unit_predefined">
+                                <option value="">Select Unit</option>
+                                <option value="μIU/mL">μIU/mL</option>
+                                <option value="mg/dL">mg/dL</option>
+                                <option value="mmol/L">mmol/L</option>
+                                <option value="U/L">U/L</option>
+                                <option value="g/dL">g/dL</option>
+                                <option value="%">%</option>
+                                <option value="cells/μL">cells/μL</option>
+                                <option value="ng/mL">ng/mL</option>
+                                <option value="pg/mL">pg/mL</option>
+                            </select>
+                            <input type="text" class="w-1/2 px-4 py-2 rounded-r-lg border-0 ring-2 ring-l-0 ring-gray-200 dark:ring-gray-700 focus:ring-2 focus:ring-blue-500 bg-gray-50 dark:bg-gray-750"
+                                   name="parameters[0][unit_custom]" id="parameter_0_unit_custom" placeholder="Or type custom unit">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="ranges-section" class="mt-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h4 class="text-md font-medium">Reference Ranges</h4>
+                        <button type="button" onclick="addRange(this)" class="px-3 py-1 text-sm bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 rounded hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors">
+                            <i class="fas fa-plus mr-1"></i>Add Range
+                        </button>
+                    </div>
+
+                    <div class="ranges-container space-y-4">
+                        <div class="range-group p-4 rounded-lg bg-gray-50 dark:bg-gray-750">
+                            <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium mb-1">Age Min</label>
+                                    <input type="number" class="w-full px-3 py-1.5 rounded border-0 ring-1 ring-gray-200 dark:ring-gray-700 focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-800"
+                                           name="parameters[0][ranges][0][age_min]" id="parameter_0_range_0_age_min">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium mb-1">Age Max</label>
+                                    <input type="number" class="w-full px-3 py-1.5 rounded border-0 ring-1 ring-gray-200 dark:ring-gray-700 focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-800"
+                                           name="parameters[0][ranges][0][age_max]" id="parameter_0_range_0_age_max">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium mb-1">Age Unit</label>
+                                    <select class="w-full px-3 py-1.5 rounded border-0 ring-1 ring-gray-200 dark:ring-gray-700 focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-800"
+                                            name="parameters[0][ranges][0][age_unit]" id="parameter_0_range_0_age_unit">
+                                        <option>Years</option>
+                                        <option>Months</option>
+                                        <option>Days</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium mb-1">Sex</label>
+                                    <select class="w-full px-3 py-1.5 rounded border-0 ring-1 ring-gray-200 dark:ring-gray-700 focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-800"
+                                            name="parameters[0][ranges][0][sex]" id="parameter_0_range_0_sex">
+                                        <option>Any</option>
+                                        <option>Male</option>
+                                        <option>Female</option>
+                                    </select>
+                                </div>
+                                <div class="flex items-end">
+                                    <button type="button" onclick="removeRange(this)" class="px-2 py-1.5 text-red-500 hover:text-red-700">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-3">
+                                <div>
+                                    <label class="block text-sm font-medium mb-1">Normal Min</label>
+                                    <input type="number" step="0.0001" class="w-full px-3 py-1.5 rounded border-0 ring-1 ring-gray-200 dark:ring-gray-700 focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-800"
+                                           name="parameters[0][ranges][0][normal_min]" id="parameter_0_range_0_normal_min">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium mb-1">Normal Max</label>
+                                    <input type="number" step="0.0001" class="w-full px-3 py-1.5 rounded border-0 ring-1 ring-gray-200 dark:ring-gray-700 focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-800"
+                                           name="parameters[0][ranges][0][normal_max]" id="parameter_0_range_0_normal_max">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium mb-1">Critical Min</label>
+                                    <input type="number" step="0.0001" class="w-full px-3 py-1.5 rounded border-0 ring-1 ring-gray-200 dark:ring-gray-700 focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-800"
+                                           name="parameters[0][ranges][0][critical_min]" id="parameter_0_range_0_critical_min">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium mb-1">Critical Max</label>
+                                    <input type="number" step="0.0001" class="w-full px-3 py-1.5 rounded border-0 ring-1 ring-gray-200 dark:ring-gray-700 focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-800"
+                                           name="parameters[0][ranges][0][critical_max]" id="parameter_0_range_0_critical_max">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="options-section" class="mt-6 hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <h4 class="text-md font-medium">Result Options</h4>
+                        <button type="button" onclick="addOption(this)" class="px-3 py-1 text-sm bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 rounded hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors">
+                            <i class="fas fa-plus mr-1"></i>Add Option
+                        </button>
+                    </div>
+
+                    <div class="options-container space-y-3">
+                        <div class="option-group flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-750">
+                            <div class="flex-1">
+                                <label class="block text-sm font-medium mb-1">Option Value</label>
+                                <input type="text" class="w-full px-3 py-1.5 rounded border-0 ring-1 ring-gray-200 dark:ring-gray-700 focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-800"
+                                       name="parameters[0][options][0][value]" id="parameter_0_option_0_value" placeholder="e.g., Negative">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Option Code</label>
+                                <input type="text" class="w-full px-3 py-1.5 rounded border-0 ring-1 ring-gray-200 dark:ring-gray-700 focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-800"
+                                       name="parameters[0][options][0][code]" id="parameter_0_option_0_code" placeholder="e.g., NEG">
+                            </div>
+                            <button type="button" onclick="removeOption(this)" class="mt-5 px-2 py-1 text-red-500 hover:text-red-700">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700 flex justify-between">
+            <button type="button" class="prev-section px-6 py-3 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
+                    data-prev="test-info">
+                <i class="fas fa-arrow-left mr-2"></i> Back to Test Info
+            </button>
+            <button type="button" class="next-section px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all"
+                    data-next="panels">
+                Continue to Panels <i class="fas fa-arrow-right ml-2"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="form-section" id="panels">
+        <div class="flex justify-between items-center mb-6 pb-2 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-2xl font-semibold">
+                <i class="fas fa-object-group mr-3 text-indigo-600"></i>Test Panels
+            </h2>
+            <button type="button" onclick="addPanel()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors">
+                <i class="fas fa-plus mr-2"></i>Add Panel
+            </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <label class="block text-sm font-medium mb-2">Assign to Existing Panels</label>
+                <select multiple class="w-full h-40 px-4 py-3 rounded-lg border-0 ring-2 ring-gray-200 dark:ring-gray-700 focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800"
+                        name="assigned_panels[]" id="assigned_panels">
+                    <option>Complete Blood Count (CBC)</option>
+                    <option>Basic Metabolic Panel</option>
+                    <option>Liver Function Test</option>
+                    <option>Lipid Profile</option>
+                    <option>Thyroid Function Test</option>
+                    <option>Electrolyte Panel</option>
+                </select>
+            </div>
+
+            <div id="new-panels" class="space-y-4">
+                <div class="panel-card p-5 rounded-xl bg-white dark:bg-gray-800">
+                    <div class="flex justify-between items-start mb-3">
+                        <h3 class="text-lg font-medium">New Panel</h3>
+                        <button type="button" onclick="removePanel(this)" class="text-red-500 hover:text-red-700">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Panel Name *</label>
+                        <input type="text" class="w-full px-4 py-2 rounded-lg border-0 ring-2 ring-gray-200 dark:ring-gray-700 focus:ring-2 focus:ring-blue-500 bg-gray-50 dark:bg-gray-750 transition-all"
+                               name="new_panels[0][name]" id="new_panel_0_name" placeholder="e.g., Comprehensive Metabolic Panel" required>
+                    </div>
+                    <div class="flex items-center mt-4">
+                        <label class="block text-sm font-medium mr-4">Active Status</label>
+                        <div class="relative inline-block w-12 mr-2 align-middle select-none">
+                            <input type="checkbox" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"
+                                   name="new_panels[0][active_status]" id="new_panel_0_active_status" checked>
+                            <label class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer" for="new_panel_0_active_status"></label>
+                        </div>
+                        <span class="text-sm">Active</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700 flex justify-between">
+            <button type="button" class="prev-section px-6 py-3 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
+                    data-prev="parameters">
+                <i class="fas fa-arrow-left mr-2"></i> Back to Parameters
+            </button>
+            <button type="button" class="next-section px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all"
+                    data-next="review">
+                Review & Submit <i class="fas fa-arrow-right ml-2"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="form-section" id="review">
+        <h2 class="text-2xl font-semibold mb-6 pb-2 border-b border-gray-200 dark:border-gray-700">
+            <i class="fas fa-check-circle mr-3 text-green-600"></i>Review & Submit
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="p-5 rounded-xl bg-white dark:bg-gray-800">
+                <h3 class="text-lg font-semibold mb-4 text-blue-600 dark:text-blue-400">
+                    <i class="fas fa-flask mr-2"></i>Test Information
+                </h3>
+                <div class="space-y-3">
+                    <div>
+                        <span class="text-sm text-gray-500 dark:text-gray-400">Test Name:</span>
+                        <p class="font-medium" id="review_test_name"></p>
+                    </div>
+                    <div>
+                        <span class="text-sm text-gray-500 dark:text-gray-400">Department:</span>
+                        <p class="font-medium" id="review_department"></p>
+                    </div>
+                    <div>
+                        <span class="text-sm text-gray-500 dark:text-gray-400">Sample Type:</span>
+                        <p class="font-medium" id="review_sample_type"></p>
+                    </div>
+                    <div>
+                        <span class="text-sm text-gray-500 dark:text-gray-400">Turnaround Time:</span>
+                        <p class="font-medium" id="review_turnaround_time"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-5 rounded-xl bg-white dark:bg-gray-800">
+                <h3 class="text-lg font-semibold mb-4 text-purple-600 dark:text-purple-400">
+                    <i class="fas fa-cogs mr-2"></i>Parameters
+                </h3>
+                <div class="space-y-3">
+                    <div>
+                        <span class="text-sm text-gray-500 dark:text-gray-400">Parameters Count:</span>
+                        <p class="font-medium" id="review_parameters_count"></p>
+                    </div>
+                    <div>
+                        <span class="text-sm text-gray-500 dark:text-gray-400">Reference Ranges:</span>
+                        <p class="font-medium" id="review_reference_ranges"></p>
+                    </div>
+                    <div>
+                        <span class="text-sm text-gray-500 dark:text-gray-400">Categorical Options:</span>
+                        <p class="font-medium" id="review_categorical_options"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="md:col-span-2 p-5 rounded-xl bg-white dark:bg-gray-800">
+                <h3 class="text-lg font-semibold mb-4 text-indigo-600 dark:text-indigo-400">
+                    <i class="fas fa-object-group mr-2"></i>Panels
+                </h3>
+                <div class="space-y-3">
+                    <div>
+                        <span class="text-sm text-gray-500 dark:text-gray-400">Assigned Panels:</span>
+                        <p class="font-medium" id="review_assigned_panels"></p>
+                    </div>
+                    <div>
+                        <span class="text-sm text-gray-500 dark:text-gray-400">New Panels:</span>
+                        <p class="font-medium" id="review_new_panels"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-8 p-5 rounded-xl bg-blue-50 dark:bg-blue-900/30">
+            <h4 class="font-semibold text-blue-700 dark:text-blue-300 mb-3 flex items-center">
+                <i class="fas fa-info-circle mr-2"></i> Final Steps
+            </h4>
+            <p class="text-sm text-blue-600 dark:text-blue-300 mb-4">
+                Review all information carefully before submitting. Once submitted, the test configuration will be available for use in the laboratory system.
+            </p>
+            <div class="flex items-center">
+                <input type="checkbox" id="confirmation" name="confirmation" class="mr-3">
+                <label for="confirmation" class="text-sm text-blue-700 dark:text-blue-300">
+                    I confirm that all test information is accurate and complete
+                </label>
+            </div>
+        </div>
+
+        <div class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700 flex justify-between">
+            <button type="button" class="prev-section px-6 py-3 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
+                    data-prev="panels">
+                <i class="fas fa-arrow-left mr-2"></i> Back to Panels
+            </button>
+            <button type="submit" class="px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-xl shadow-lg hover:shadow-xl transition-all">
+                <i class="fas fa-save mr-2"></i>Submit Laboratory Test
+            </button>
+        </div>
+    </div>
+</form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Global counters
+    let paramCounter = 1;
+    let rangeCounter = 1;
+    let optionCounter = 1;
+    let panelCounter = 1;
+    
+    // Navigation functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize toggle switches
+        document.querySelectorAll('.toggle-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const label = this.nextElementSibling;
+                if (this.checked) {
+                    label.classList.add('bg-primary');
+                    label.classList.remove('bg-gray-300');
+                } else {
+                    label.classList.remove('bg-primary');
+                    label.classList.add('bg-gray-300');
+                }
+            });
+        });
+        
+        // Navigation items
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', function() {
+                const sectionId = this.getAttribute('data-section');
+                showSection(sectionId);
+            });
+        });
+        
+        // Next buttons
+        document.querySelectorAll('.next-section').forEach(button => {
+            button.addEventListener('click', function() {
+                const sectionId = this.getAttribute('data-next');
+                showSection(sectionId);
+            });
+        });
+        
+        // Previous buttons
+        document.querySelectorAll('.prev-section').forEach(button => {
+            button.addEventListener('click', function() {
+                const sectionId = this.getAttribute('data-prev');
+                showSection(sectionId);
+            });
+        });
+        
+        // Unit selector logic
+        document.querySelectorAll('.unit-selector select').forEach(select => {
+            select.addEventListener('change', function() {
+                if (this.value === 'custom') {
+                    this.nextElementSibling.style.display = 'block';
+                } else {
+                    this.nextElementSibling.style.display = 'none';
+                }
+            });
+        });
+    });
+    
+    function showSection(sectionId) {
+        // Hide all sections
+        document.querySelectorAll('.form-section').forEach(section => {
+            section.classList.remove('active');
+        });
+        
+        // Show selected section
+        document.getElementById(sectionId).classList.add('active');
+        
+        // Update navigation
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.classList.remove('active');
+        });
+        
+        document.querySelector(`.nav-item[data-section="${sectionId}"]`).classList.add('active');
+        
+        // Update progress bar
+        const sections = ['test-info', 'parameters', 'panels', 'review'];
+        const index = sections.indexOf(sectionId) + 1;
+        const progress = (index / sections.length) * 100;
+        document.querySelector('.progress-fill').style.width = `${progress}%`;
+    }
+    
+    // Add new parameter
+    function addParameter() {
+        paramCounter++;
+        const container = document.getElementById('parameters-container');
+        const newParam = document.createElement('div');
+        newParam.className = 'parameter-card mb-6 p-5 rounded-xl bg-white dark:bg-gray-800';
+        newParam.innerHTML = `
+            <div class="flex justify-between items-start mb-4">
+                <h3 class="text-lg font-medium">Parameter #${paramCounter}</h3>
+                <button type="button" onclick="removeParameter(this)" class="text-red-500 hover:text-red-700">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium mb-2">Parameter Name *</label>
+                    <input type="text" class="w-full px-4 py-2 rounded-lg border-0 ring-2 ring-gray-200 dark:ring-gray-700 focus:ring-2 focus:ring-blue-500 bg-gray-50 dark:bg-gray-750 transition-all" 
+                           placeholder="e.g., TSH Level" required>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium mb-2">Synonym</label>
+                    <input type="text" class="w-full px-4 py-2 rounded-lg border-0 ring-2 ring-gray-200 dark:ring-gray-700 focus:ring-2 focus:ring-blue-500 bg-gray-50 dark:bg-gray-750 transition-all" 
+                           placeholder="e.g., Thyroid Stimulating Hormone">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium mb-2">Result Type *</label>
+                    <select class="w-full px-4 py-2 rounded-lg border-0 ring-2 ring-gray-200 dark:ring-gray-700 focus:ring-2 focus:ring-blue-500 bg-gray-50 dark:bg-gray-750" 
+                            onchange="toggleResultOptions(this)">
+                        <option value="numeric">Numeric</option>
+                        <option value="categorical">Categorical</option>
+                        <option value="text">Text</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium mb-2">Unit</label>
+                    <div class="unit-selector flex">
+                        <select class="w-1/2 px-4 py-2 rounded-l-lg border-0 ring-2 ring-r-0 ring-gray-200 dark:ring-gray-700 focus:ring-2 focus:ring-blue-500 bg-gray-50 dark:bg-gray-750">
+                            <option value="">Select Unit</option>
+                            <option value="μIU/mL">μIU/mL</option>
+                            <option value="mg/dL">mg/dL</option>
+                            <option value="mmol/L">mmol/L</option>
+                            <option value="U/L">U/L</option>
+                            <option value="g/dL">g/dL</option>
+                            <option value="%">%</option>
+                            <option value="cells/μL">cells/μL</option>
+                            <option value="ng/mL">ng/mL</option>
+                            <option value="pg/mL">pg/mL</option>
+                        </select>
+                        <input type="text" class="w-1/2 px-4 py-2 rounded-r-lg border-0 ring-2 ring-l-0 ring-gray-200 dark:ring-gray-700 focus:ring-2 focus:ring-blue-500 bg-gray-50 dark:bg-gray-750" 
+                               placeholder="Or type custom unit">
+                    </div>
+                </div>
+            </div>
+            
+            <div id="ranges-section" class="mt-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h4 class="text-md font-medium">Reference Ranges</h4>
+                    <button type="button" onclick="addRange(this)" class="px-3 py-1 text-sm bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 rounded hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors">
+                        <i class="fas fa-plus mr-1"></i>Add Range
+                    </button>
+                </div>
+                
+                <div class="ranges-container space-y-4"></div>
+            </div>
+            
+            <div id="options-section" class="mt-6 hidden">
+                <div class="flex justify-between items-center mb-4">
+                    <h4 class="text-md font-medium">Result Options</h4>
+                    <button type="button" onclick="addOption(this)" class="px-3 py-1 text-sm bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 rounded hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors">
+                        <i class="fas fa-plus mr-1"></i>Add Option
+                    </button>
+                </div>
+                
+                <div class="options-container space-y-3"></div>
+            </div>
+        `;
+        container.appendChild(newParam);
+    }
+    
+    // Remove parameter
+    function removeParameter(button) {
+        if (document.querySelectorAll('.parameter-card').length > 1) {
+            button.closest('.parameter-card').remove();
+            // Recalculate parameter numbers
+            const parameters = document.querySelectorAll('.parameter-card');
+            parameters.forEach((param, index) => {
+                param.querySelector('h3').textContent = `Parameter #${index + 1}`;
+            });
+            paramCounter = parameters.length;
+        } else {
+            alert("At least one parameter is required.");
+        }
+    }
+    
+    // Add new range
+    function addRange(button) {
+        const container = button.parentElement.nextElementSibling;
+        rangeCounter++;
+        const newRange = document.createElement('div');
+        newRange.className = 'range-group p-4 rounded-lg bg-gray-50 dark:bg-gray-750';
+        newRange.innerHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">Age Min</label>
+                    <input type="number" class="w-full px-3 py-1.5 rounded border-0 ring-1 ring-gray-200 dark:ring-gray-700 focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-800">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Age Max</label>
+                    <input type="number" class="w-full px-3 py-1.5 rounded border-0 ring-1 ring-gray-200 dark:ring-gray-700 focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-800">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Age Unit</label>
+                    <select class="w-full px-3 py-1.5 rounded border-0 ring-1 ring-gray-200 dark:ring-gray-700 focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-800">
+                        <option>Years</option>
+                        <option>Months</option>
+                        <option>Days</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Sex</label>
+                    <select class="w-full px-3 py-1.5 rounded border-0 ring-1 ring-gray-200 dark:ring-gray-700 focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-800">
+                        <option>Any</option>
+                        <option>Male</option>
+                        <option>Female</option>
+                    </select>
+                </div>
+                <div class="flex items-end">
+                    <button type="button" onclick="removeRange(this)" class="px-2 py-1.5 text-red-500 hover:text-red-700">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-3">
+                <div>
+                    <label class="block text-sm font-medium mb-1">Normal Min</label>
+                    <input type="number" step="0.0001" class="w-full px-3 py-1.5 rounded border-0 ring-1 ring-gray-200 dark:ring-gray-700 focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-800">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Normal Max</label>
+                    <input type="number" step="0.0001" class="w-full px-3 py-1.5 rounded border-0 ring-1 ring-gray-200 dark:ring-gray-700 focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-800">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Critical Min</label>
+                    <input type="number" step="0.0001" class="w-full px-3 py-1.5 rounded border-0 ring-1 ring-gray-200 dark:ring-gray-700 focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-800">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Critical Max</label>
+                    <input type="number" step="0.0001" class="w-full px-3 py-1.5 rounded border-0 ring-1 ring-gray-200 dark:ring-gray-700 focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-800">
+                </div>
+            </div>
+        `;
+        container.appendChild(newRange);
+    }
+    
+    // Remove range
+    function removeRange(button) {
+        if (button.closest('.ranges-container').children.length > 1) {
+            button.closest('.range-group').remove();
+        } else {
+            alert("At least one range is required for numeric parameters.");
+        }
+    }
+    
+    // Add new option
+    function addOption(button) {
+        const container = button.parentElement.nextElementSibling;
+        optionCounter++;
+        const newOption = document.createElement('div');
+        newOption.className = 'option-group flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-750';
+        newOption.innerHTML = `
+            <div class="flex-1">
+                <label class="block text-sm font-medium mb-1">Option Value</label>
+                <input type="text" class="w-full px-3 py-1.5 rounded border-0 ring-1 ring-gray-200 dark:ring-gray-700 focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-800" 
+                       placeholder="e.g., Negative">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">Option Code</label>
+                <input type="text" class="w-full px-3 py-1.5 rounded border-0 ring-1 ring-gray-200 dark:ring-gray-700 focus:ring-1 focus:ring-blue-500 bg-white dark:bg-gray-800" 
+                       placeholder="e.g., NEG">
+            </div>
+            <button type="button" onclick="removeOption(this)" class="mt-5 px-2 py-1 text-red-500 hover:text-red-700">
+                <i class="fas fa-trash"></i>
+            </button>
+        `;
+        container.appendChild(newOption);
+    }
+    
+    // Remove option
+    function removeOption(button) {
+        if (button.closest('.options-container').children.length > 1) {
+            button.closest('.option-group').remove();
+        } else {
+            alert("At least one option is required for categorical parameters.");
+        }
+    }
+    
+    // Toggle result options based on result type
+    function toggleResultOptions(select) {
+        const paramCard = select.closest('.parameter-card');
+        const rangesSection = paramCard.querySelector('#ranges-section');
+        const optionsSection = paramCard.querySelector('#options-section');
+        
+        if (select.value === 'numeric') {
+            rangesSection.classList.remove('hidden');
+            optionsSection.classList.add('hidden');
+        } else if (select.value === 'categorical') {
+            rangesSection.classList.add('hidden');
+            optionsSection.classList.remove('hidden');
+        } else {
+            rangesSection.classList.add('hidden');
+            optionsSection.classList.add('hidden');
+        }
+    }
+    
+    // Add new panel
+    function addPanel() {
+        panelCounter++;
+        const container = document.getElementById('new-panels');
+        const newPanel = document.createElement('div');
+        newPanel.className = 'panel-card p-5 rounded-xl bg-white dark:bg-gray-800';
+        newPanel.innerHTML = `
+            <div class="flex justify-between items-start mb-3">
+                <h3 class="text-lg font-medium">New Panel</h3>
+                <button type="button" onclick="removePanel(this)" class="text-red-500 hover:text-red-700">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-2">Panel Name *</label>
+                <input type="text" class="w-full px-4 py-2 rounded-lg border-0 ring-2 ring-gray-200 dark:ring-gray-700 focus:ring-2 focus:ring-blue-500 bg-gray-50 dark:bg-gray-750 transition-all" 
+                       placeholder="e.g., Comprehensive Metabolic Panel" required>
+            </div>
+            <div class="flex items-center mt-4">
+                <label class="block text-sm font-medium mr-4">Active Status</label>
+                <div class="relative inline-block w-12 mr-2 align-middle select-none">
+                    <input type="checkbox" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" checked>
+                    <label class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+                </div>
+                <span class="text-sm">Active</span>
+            </div>
+        `;
+        container.appendChild(newPanel);
+    }
+    
+    // Remove panel
+    function removePanel(button) {
+        if (document.querySelectorAll('.panel-card').length > 1) {
+            button.closest('.panel-card').remove();
+        } else {
+            alert("At least one panel is required.");
+        }
+    }
+</script>
+{% endblock %}

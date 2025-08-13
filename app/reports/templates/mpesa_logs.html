@@ -1,0 +1,347 @@
+{% extends 'base.html' %} {% block title %}M-Pesa Transaction Logs - Astrocare{% endblock %} {% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header Section -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800 dark:text-white">M-Pesa Transaction Monitoring</h1>
+            <div class="mt-2 flex flex-wrap items-center gap-4">
+                <p class="text-gray-600 dark:text-gray-400">
+                    Track and analyze payment transactions
+                </p>
+                <span class="px-3 py-1 bg-blue-100 text-blue-800 text-xs rounded-full flex items-center">
+                    <i class="fas fa-money-bill-wave mr-2"></i>
+                    {{ transactions | length }} transactions
+                </span>
+            </div>
+        </div>
+        <div class="mt-4 md:mt-0">
+            <div class="flex space-x-2">
+                <button id="filterToggle" class="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <i class="fas fa-filter mr-2"></i>Filter
+                </button>
+                <button id="exportBtn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                    <i class="fas fa-file-export mr-2"></i>Export
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %} {% if messages %}
+    <div class="mb-6">
+        {% for category, message in messages %}
+        <div class="px-4 py-3 rounded-lg text-sm {{ 'bg-green-100 text-green-800' if category == 'success' else 'bg-red-100 text-red-800' }}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %} {% endwith %}
+
+    <!-- Filters Section -->
+    <div id="filtersSection" class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mb-6 hidden">
+        <h2 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Filter Transactions</h2>
+        <form method="get" class="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <!-- Status Filter -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Status</label>
+                <select name="status" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    <option value="">All Statuses</option>
+                    <option value="pending" {% if status_filter=='pending' %}selected{% endif %}>Pending</option>
+                    <option value="requested" {% if status_filter=='requested' %}selected{% endif %}>Requested</option>
+                    <option value="completed" {% if status_filter=='completed' %}selected{% endif %}>Completed</option>
+                    <option value="failed" {% if status_filter=='failed' %}selected{% endif %}>Failed</option>
+                </select>
+            </div>
+
+            <!-- Phone Filter -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Phone Number</label>
+                <input type="text" name="phone" value="{{ phone_filter or '' }}" placeholder="Search phone number" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+            </div>
+
+            <!-- Date Range -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Date Range</label>
+                <div class="grid grid-cols-1 gap-2">
+                    <input type="date" name="date_from" value="{{ date_from or '' }}" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="From">
+                    <input type="date" name="date_to" value="{{ date_to or '' }}" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="To">
+                </div>
+            </div>
+
+            <!-- Payment Method -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Payment Method</label>
+                <select name="method" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    <option value="">All Methods</option>
+                    <option value="stk" {% if request.args.get('method') == 'stk' %}selected{% endif %}>STK Push</option>
+                    <option value="paybill" {% if request.args.get('method') == 'paybill' %}selected{% endif %}>Paybill</option>
+                </select>
+            </div>
+
+            <div class="md:col-span-4 flex justify-end space-x-3 mt-4">
+                <a href="{{ url_for('reports_web.mpesa_logs') }}" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+                    Clear Filters
+                </a>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    Apply Filters
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <div class="bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl shadow p-6">
+            <div class="flex items-center">
+                <div class="mr-4 bg-white bg-opacity-20 p-3 rounded-full">
+                    <i class="fas fa-money-check-alt text-2xl"></i>
+                </div>
+                <div>
+                    <div class="text-sm font-medium">Total Transactions</div>
+                    <div class="text-2xl font-bold mt-1">{{ summary.total_count }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-r from-green-500 to-teal-600 text-white rounded-xl shadow p-6">
+            <div class="flex items-center">
+                <div class="mr-4 bg-white bg-opacity-20 p-3 rounded-full">
+                    <i class="fas fa-check-circle text-2xl"></i>
+                </div>
+                <div>
+                    <div class="text-sm font-medium">Successful</div>
+                    <div class="text-2xl font-bold mt-1">{{ summary.completed_count }}</div>
+                    <div class="text-xs mt-1 opacity-80">{{ summary.completed_percentage }}% success rate</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-xl shadow p-6">
+            <div class="flex items-center">
+                <div class="mr-4 bg-white bg-opacity-20 p-3 rounded-full">
+                    <i class="fas fa-spinner text-2xl"></i>
+                </div>
+                <div>
+                    <div class="text-sm font-medium">Pending</div>
+                    <div class="text-2xl font-bold mt-1">{{ summary.pending_count }}</div>
+                    <div class="text-xs mt-1 opacity-80">{{ summary.pending_percentage }}% of total</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-xl shadow p-6">
+            <div class="flex items-center">
+                <div class="mr-4 bg-white bg-opacity-20 p-3 rounded-full">
+                    <i class="fas fa-coins text-2xl"></i>
+                </div>
+                <div>
+                    <div class="text-sm font-medium">Total Amount</div>
+                    <div class="text-2xl font-bold mt-1">{{ summary.total_amount | currency }}</div>
+                    <div class="text-xs mt-1 opacity-80">Avg {{ summary.avg_amount | currency }} per transaction</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transactions Table -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-750">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Transaction</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Patient & Contact</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Payment Details</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    {% for t in transactions %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors">
+                        <!-- Transaction Details -->
+                        <td class="px-6 py-4">
+                            <div class="flex items-start">
+                                <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg mr-4">
+                                    <i class="fas fa-mobile-alt text-purple-600 dark:text-purple-400 text-xl"></i>
+                                </div>
+                                <div>
+                                    <div class="text-sm font-medium text-gray-900 dark:text-white">
+                                        #{{ t.id }}
+                                    </div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                        <span class="font-medium">Created:</span> {{ t.created_at|datetime }}
+                                    </div>
+                                    <div class="mt-2">
+                                        <span class="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                                            {{ t.payment_method|upper }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- Patient & Contact -->
+                        <td class="px-6 py-4">
+                            <div class="text-sm font-medium text-gray-900 dark:text-white">
+                                {{ t.patient.full_name }}
+                            </div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                <i class="fas fa-id-card mr-1"></i> {{ t.patient.id_number }}
+                            </div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                <i class="fas fa-phone mr-1"></i> {{ t.phone }}
+                            </div>
+                        </td>
+
+                        <!-- Payment Details -->
+                        <td class="px-6 py-4">
+                            <div class="text-lg font-bold text-gray-900 dark:text-white">
+                                {{ t.amount|currency }}
+                            </div>
+                            {% if t.receipt_number %}
+                            <div class="text-sm text-gray-500 dark:text-gray-400">
+                                <i class="fas fa-receipt mr-1"></i> {{ t.receipt_number }}
+                            </div>
+                            {% endif %} {% if t.checkout_request_id %}
+                            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1 break-all">
+                                <span class="font-medium">Req ID:</span> {{ t.checkout_request_id }}
+                            </div>
+                            {% endif %}
+                        </td>
+
+                        <!-- Status -->
+                        <td class="px-6 py-4">
+                            <div class="mb-2">
+                                <span class="px-3 py-1 rounded-full text-xs font-semibold flex items-center w-fit
+                                    {% if t.status == 'completed' %}bg-green-100 text-green-800
+                                    {% elif t.status == 'failed' %}bg-red-100 text-red-800
+                                    {% elif t.status == 'pending' %}bg-amber-100 text-amber-800
+                                    {% else %}bg-blue-100 text-blue-800{% endif %}">
+                                    {% if t.status == 'completed' %}
+                                    <i class="fas fa-check-circle mr-1"></i>
+                                    {% elif t.status == 'failed' %}
+                                    <i class="fas fa-times-circle mr-1"></i>
+                                    {% elif t.status == 'pending' %}
+                                    <i class="fas fa-clock mr-1"></i>
+                                    {% else %}
+                                    <i class="fas fa-sync-alt mr-1"></i>
+                                    {% endif %}
+                                    {{ t.status|title }}
+                                </span>
+                            </div>
+                            <!-- Replace it with: -->
+                            {% if t.paid_at %}
+                            <div class="text-xs text-gray-500 dark:text-gray-400">
+                                <i class="far fa-clock mr-1"></i> Paid at {{ t.paid_at|datetime('time') }}
+                            </div>
+                            {% endif %} {% if t.error_message %}
+                            <div class="text-xs text-red-500 dark:text-red-400 mt-1">
+                                <i class="fas fa-exclamation-circle mr-1"></i> {{ t.error_message|truncate(40) }}
+                            </div>
+                            {% endif %}
+                        </td>
+
+                        <!-- Actions -->
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <div class="flex justify-end space-x-2">
+                                <a href="{{ url_for('reports_web.transaction_details', transaction_id=t.id) }}" class="p-2 bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-lg transition-colors" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <button class="p-2 bg-purple-100 hover:bg-purple-200 text-purple-600 rounded-lg transition-colors" title="Resend Notification" data-id="{{ t.id }}">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                                <button class="p-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition-colors" title="Debug Info" data-id="{{ t.id }}">
+                                    <i class="fas fa-bug"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-12 text-center">
+                            <div class="text-gray-400 dark:text-gray-500">
+                                <i class="fas fa-mobile-alt text-4xl mb-3"></i>
+                                <p class="text-lg font-medium">No M-Pesa transactions found</p>
+                                <p class="mt-1">Try adjusting your filters</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="mt-6 flex justify-between items-center">
+        <div class="text-sm text-gray-500 dark:text-gray-400">
+            Showing {{ pagination.first }} to {{ pagination.last }} of {{ pagination.total }} transactions
+        </div>
+        <div class="flex space-x-2">
+            {% if pagination.has_prev %}
+            <a href="{{ url_for('reports_web.mpesa_logs', page=pagination.prev_num, **request.args) }}" class="px-3 py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+                <i class="fas fa-chevron-left"></i>
+            </a>
+            {% endif %} {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=3) %} {% if page_num %} {% if page_num == pagination.page %}
+            <span class="px-3 py-1 bg-blue-600 text-white rounded-lg">{{ page_num }}</span> {% else %}
+            <a href="{{ url_for('reports_web.mpesa_logs', page=page_num, **request.args) }}" class="px-3 py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+                            {{ page_num }}
+                        </a> {% endif %} {% else %}
+            <span class="px-3 py-1">...</span> {% endif %} {% endfor %} {% if pagination.has_next %}
+            <a href="{{ url_for('reports_web.mpesa_logs', page=pagination.next_num, **request.args) }}" class="px-3 py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+                <i class="fas fa-chevron-right"></i>
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Stats & Charts Section -->
+    <div class="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+            <h2 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Transaction Status Distribution</h2>
+            <div class="h-64 flex items-center justify-center">
+                <canvas id="statusChart"></canvas>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+            <h2 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Daily Transaction Value</h2>
+            <div class="h-64">
+                <canvas id="dailyTrendChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Toggle filters visibility
+    document.getElementById('filterToggle').addEventListener('click', function() {
+        const filtersSection = document.getElementById('filtersSection');
+        filtersSection.classList.toggle('hidden');
+    });
+
+    // Export button functionality
+    document.getElementById('exportBtn').addEventListener('click', function() {
+        // Clone current URL parameters
+        const params = new URLSearchParams(window.location.search);
+
+        // Open export endpoint in new tab
+    });
+</script>
+
+<style>
+    .transaction-row:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+    
+    .status-badge {
+        transition: all 0.2s ease;
+    }
+    
+    .status-badge:hover {
+        transform: scale(1.05);
+    }
+</style>
+{% endblock %}

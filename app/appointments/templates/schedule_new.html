@@ -1,0 +1,232 @@
+{% extends "base.html" %} {% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="dark:bg-gray-900 p-8 rounded-3xl shadow-2xl space-y-8 bg-gradient-to-br from-white/10 to-transparent backdrop-blur-lg">
+        <header class="flex items-center justify-between">
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+                <i class="fas fa-calendar-star text-indigo-400 mr-3"></i>New Appointment
+            </h1>
+            <div class="flex items-center space-x-4">
+                <div class="h-12 w-12 bg-indigo-500/10 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-clock text-indigo-400 text-xl"></i>
+                </div>
+            </div>
+        </header>
+
+        <form method="POST" class="space-y-8">
+            <!-- Patient Search - Enhanced -->
+            <div class="group relative">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 ml-1">Find Patient</label>
+                <div class="relative transition-all duration-300 hover:scale-[99.5%]">
+                    <input type="text" id="patient-search" class="mt-1 w-full bg-gray-50/50 dark:bg-gray-800 border-2 border-gray-200/50 dark:border-gray-700 rounded-xl px-5 py-3.5 text-gray-900 dark:text-gray-100 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 placeholder-gray-400"
+                        placeholder="Search patients..." autocomplete="off" />
+                    <i class="fas fa-search absolute right-5 top-5 text-gray-400 dark:text-gray-500"></i>
+                </div>
+                <input type="hidden" name="patient_id" id="patient-id" required>
+                <ul id="patient-results" class="mt-2 absolute w-full z-50 max-h-72 overflow-y-auto bg-white dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 rounded-xl shadow-xl hidden transition-all origin-top"></ul>
+            </div>
+
+            <!-- Patient Details Card -->
+            <div id="patient-details" class="hidden transform transition-all duration-300 opacity-0 scale-95">
+                <div class="bg-gradient-to-r from-indigo-50/50 to-blue-50/50 dark:from-gray-800 dark:to-gray-700 p-6 rounded-xl border-2 border-indigo-100/50 dark:border-gray-700">
+                    <div class="flex items-start justify-between">
+                        <div class="flex items-center space-x-4">
+                            <div class="h-14 w-14 bg-indigo-400/10 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-user-injured text-indigo-400 text-2xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-semibold text-gray-900 dark:text-white" id="patient-name"></h3>
+                                <p class="text-sm text-indigo-500 font-medium" id="patient-reg"></p>
+                            </div>
+                        </div>
+                        <button type="button" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" onclick="clearPatient()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+                        <div class="space-y-1">
+                            <label class="text-xs font-medium text-gray-500 dark:text-gray-400">Age</label>
+                            <p class="text-gray-900 dark:text-gray-100 font-medium" id="patient-age"></p>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-xs font-medium text-gray-500 dark:text-gray-400">Gender</label>
+                            <p class="text-gray-900 dark:text-gray-100 font-medium" id="patient-gender"></p>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-xs font-medium text-gray-500 dark:text-gray-400">Last Visit</label>
+                            <p class="text-gray-900 dark:text-gray-100 font-medium" id="patient-last-visit"></p>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-xs font-medium text-gray-500 dark:text-gray-400">Phone</label>
+                            <p class="text-gray-900 dark:text-gray-100 font-medium" id="patient-phone"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Clinic Selector - Modernized -->
+            <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 ml-1">Facility</label>
+                <select name="clinic_id" required class="mt-1 w-full bg-gray-50/50 dark:bg-gray-800 border-2 border-gray-200/50 dark:border-gray-700 rounded-xl px-4 py-3.5 text-gray-900 dark:text-gray-100 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 appearance-none">
+                    <option value="" disabled selected>Select medical facility...</option>
+                    {% for c in clinics %}
+                    <option value="{{ c.id }}" class="py-2">{{ c.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!--=== Doctor Selector ===-->
+            <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 ml-1">
+          Doctor
+        </label>
+                <select name="doctor_id" required class="mt-1 w-full bg-gray-50/50 dark:bg-gray-800 border-2 border-gray-200/50 dark:border-gray-700 rounded-xl px-4 py-3.5 text-gray-900 dark:text-gray-100 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 appearance-none">
+          <option value="" disabled selected>Select doctor...</option>
+          {% for d in doctors %}
+            <option value="{{ d.id }}">{{ d.full_name }}</option>
+          {% endfor %}
+        </select>
+            </div>
+            <!-- Date & Time Picker - Enhanced -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 ml-1">Appointment Date</label>
+                    <div class="relative">
+                        <input type="date" name="appointment_date" required class="mt-1 w-full bg-gray-50/50 dark:bg-gray-800 border-2 border-gray-200/50 dark:border-gray-700 rounded-xl px-4 py-3.5 text-gray-900 dark:text-gray-100 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900"
+                        />
+                        <i class="fas fa-calendar-alt absolute right-4 top-4 text-gray-400 dark:text-gray-500"></i>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 ml-1">Time Slot</label>
+                    <div class="relative">
+                        <input type="time" name="appointment_time" required class="mt-1 w-full bg-gray-50/50 dark:bg-gray-800 border-2 border-gray-200/50 dark:border-gray-700 rounded-xl px-4 py-3.5 text-gray-900 dark:text-gray-100 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900"
+                        />
+                        <i class="fas fa-clock absolute right-4 top-4 text-gray-400 dark:text-gray-500"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reason Input - Modernized -->
+            <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 ml-1">Visit Reason</label>
+                <textarea name="reason" rows="3" required class="mt-1 w-full bg-gray-50/50 dark:bg-gray-800 border-2 border-gray-200/50 dark:border-gray-700 rounded-xl px-4 py-3.5 text-gray-900 dark:text-gray-100 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900"
+                    placeholder="Describe the reason for visit..."></textarea>
+            </div>
+
+            <!-- Submit Button - Animated -->
+            <div class="flex justify-end pt-6">
+                <button type="submit" class="inline-flex items-center bg-indigo-500 hover:bg-indigo-600 text-white px-8 py-4 rounded-xl shadow-lg transition-all duration-300 transform hover:scale-[1.02] group">
+                    <i class="fas fa-check-circle mr-3 group-hover:rotate-12 transition-transform"></i>
+                    Confirm Appointment
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    const searchInput = document.getElementById('patient-search');
+    const resultsList = document.getElementById('patient-results');
+    const hiddenId = document.getElementById('patient-id');
+    const patientDetails = document.getElementById('patient-details');
+
+    let timeout = null;
+
+    searchInput.addEventListener('input', () => {
+        clearTimeout(timeout);
+        const q = searchInput.value.trim();
+        if (!q) {
+            resultsList.innerHTML = '';
+            resultsList.classList.add('hidden');
+            return;
+        }
+        timeout = setTimeout(() => {
+            fetch(`{{ url_for('appointments_web.patient_search') }}?q=${encodeURIComponent(q)}`)
+                .then(res => res.json())
+                .then(data => {
+                    resultsList.innerHTML = data.map(p => `
+                        <li class="px-5 py-3.5 hover:bg-indigo-50/50 dark:hover:bg-gray-700 cursor-pointer flex justify-between items-center transition-colors"
+                            data-patient-id="${p.id}"
+                            data-patient-dob="${p.date_of_birth}"
+                            data-patient-gender="${p.gender}"
+                            data-patient-phone="${p.phone}"
+                            data-patient-email="${p.email}">
+                            <div>
+                                <div class="font-medium text-gray-900 dark:text-gray-100">${p.full_name}</div>
+                                <div class="text-sm text-indigo-500">${p.reg_no}</div>
+                            </div>
+                            <div class="text-sm text-gray-500 dark:text-gray-400">${p.phone}</div>
+                        </li>
+                    `).join('');
+                    resultsList.classList.toggle('hidden', data.length === 0);
+                });
+        }, 300);
+    });
+
+    resultsList.addEventListener('click', async(e) => {
+        const li = e.target.closest('li');
+        if (!li) return;
+
+        const patient = {
+            id: li.dataset.patientId,
+            name: li.querySelector('div:first-child > div:first-child').textContent,
+            reg: li.querySelector('div:first-child > div:last-child').textContent,
+            dob: li.dataset.patientDob,
+            gender: li.dataset.patientGender,
+            phone: li.dataset.patientPhone,
+            email: li.dataset.patientEmail
+        };
+
+        // Set hidden field and search input
+        hiddenId.value = patient.id;
+        searchInput.value = `${patient.name} (${patient.reg})`;
+        resultsList.classList.add('hidden');
+
+        // Show patient details card
+        document.getElementById('patient-name').textContent = patient.name;
+        document.getElementById('patient-reg').textContent = patient.reg;
+        document.getElementById('patient-age').textContent = calculateAge(patient.dob);
+        document.getElementById('patient-gender').textContent = patient.gender || 'N/A';
+        document.getElementById('patient-phone').textContent = patient.phone;
+
+        patientDetails.classList.remove('hidden', 'opacity-0', 'scale-95');
+        patientDetails.classList.add('opacity-100', 'scale-100');
+    });
+
+    function calculateAge(dob) {
+        if (!dob) return 'N/A';
+        const birthDate = new Date(dob);
+        const ageDifMs = Date.now() - birthDate.getTime();
+        const ageDate = new Date(ageDifMs);
+        return Math.abs(ageDate.getUTCFullYear() - 1970) + ' yrs';
+    }
+
+    function clearPatient() {
+        hiddenId.value = '';
+        searchInput.value = '';
+        patientDetails.classList.remove('opacity-100', 'scale-100');
+        patientDetails.classList.add('opacity-0', 'scale-95', 'hidden');
+    }
+</script>
+
+<style>
+    #patient-results::-webkit-scrollbar {
+        width: 8px;
+    }
+    
+    #patient-results::-webkit-scrollbar-track {
+        background: rgba(243, 244, 246, 0.5);
+        border-radius: 0 8px 8px 0;
+    }
+    
+    #patient-results::-webkit-scrollbar-thumb {
+        background: #6366f1;
+        border-radius: 8px;
+    }
+    
+    .dark #patient-results::-webkit-scrollbar-track {
+        background: rgba(31, 41, 55, 0.5);
+    }
+</style>
+{% endblock %}

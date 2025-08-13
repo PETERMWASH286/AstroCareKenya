@@ -1,0 +1,245 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+        <!-- Card Header -->
+        <div class="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-5">
+            <div class="flex flex-col md:flex-row md:items-center justify-between">
+                <!-- Left Section - Case Info -->
+                <div class="mb-4 md:mb-0">
+                    <h2 class="text-2xl font-bold text-white">Change Case Status</h2>
+                    <p class="text-blue-100 mt-1">Update status for case #{{ case.case_number }}</p>
+                    
+                    <!-- Current Status -->
+                    <div class="flex flex-wrap gap-2 mt-3">
+                        <span class="px-3 py-1 bg-white/20 text-white rounded-full text-sm font-medium">
+                            Current Status: {{ case.status.value }}
+                        </span>
+                    </div>
+                </div>
+                
+                <!-- Middle Section - Employee Info -->
+                <div class="flex items-center bg-white/10 backdrop-blur-sm rounded-xl p-3 mb-4 md:mb-0">
+                    <div class="flex-shrink-0">
+                        {% if case.employee.profile_image %}
+                        <img src="{{ case.employee.profile_image }}" 
+                             class="h-12 w-12 rounded-full object-cover border-2 border-white">
+                        {% else %}
+                        <div class="bg-gray-200 border-2 border-dashed rounded-xl w-12 h-12 flex items-center justify-center">
+                            <span class="text-gray-500 font-bold">{{ case.employee.full_name[0]|upper }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-semibold text-white">{{ case.employee.full_name }}</h3>
+                        <div class="text-xs text-blue-100">
+                            {{ case.employee.department.name if case.employee.department else 'No Department' }}
+                        </div>
+                        <div class="text-xs text-blue-50 mt-1">
+                            Employee ID: {{ case.employee.id }}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Right Section - Case Details -->
+                <div class="bg-white/10 backdrop-blur-sm rounded-xl p-3">
+                    <div class="flex flex-col">
+                        <div class="flex items-center text-sm text-blue-50">
+                            <i class="fas fa-calendar-day mr-2"></i>
+                            <span>Incident: {{ case.incident_date.strftime('%b %d, %Y') }}</span>
+                        </div>
+                        <div class="flex items-center text-sm text-blue-50 mt-1">
+                            <i class="fas fa-flag mr-2"></i>
+                            <span>Reported: {{ case.date_reported.strftime('%b %d, %Y') }}</span>
+                        </div>
+                        <div class="flex items-center text-sm text-blue-50 mt-1">
+                            <i class="fas fa-layer-group mr-2"></i>
+                            <span>Severity: {{ case.severity.value }}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Status Icon -->
+                <div class="hidden md:flex bg-white/20 p-3 rounded-full self-start">
+                    <i class="fas fa-exchange-alt text-white text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card Body -->
+        <div class="px-6 py-8">
+            <form action="{{ url_for('hr_web.update_case_status', case_id=case.id) }}" 
+                  method="POST"
+                  class="space-y-6">
+
+                <!-- Status Selection -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                        <i class="fas fa-sync-alt mr-2 text-blue-500"></i>
+                        New Status
+                    </label>
+                    <select name="status" required
+                            class="mt-1 block w-full py-3 px-4 border border-gray-300 bg-white rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+                        {% for status in statuses %}
+                            <option value="{{ status }}" {% if status == case.status.value %}selected{% endif %}>
+                                {{ status }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Status Notes -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                        <i class="fas fa-sticky-note mr-2 text-blue-500"></i>
+                        Status Change Notes
+                    </label>
+                    <textarea name="notes" rows="4" placeholder="Add any relevant details about this status change"
+                              class="mt-1 block w-full py-3 px-4 border border-gray-300 bg-white rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">{{ case.notes or '' }}</textarea>
+                </div>
+
+                <!-- Status Guide -->
+                <div class="bg-blue-50 rounded-xl p-4 border border-blue-100">
+                    <h3 class="text-sm font-semibold text-blue-800 flex items-center mb-2">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        Status Guide
+                    </h3>
+                    <ul class="text-sm text-blue-700 space-y-1">
+                        <li class="flex items-start">
+                            <span class="text-blue-500 mr-2">•</span>
+                            <span><strong>Open</strong>: Initial case status after reporting</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-blue-500 mr-2">•</span>
+                            <span><strong>Under Investigation</strong>: Case is being actively investigated</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-blue-500 mr-2">•</span>
+                            <span><strong>Hearing Scheduled</strong>: Formal hearing has been arranged</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-blue-500 mr-2">•</span>
+                            <span><strong>Decision Pending</strong>: Waiting for final decision after hearing</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-blue-500 mr-2">•</span>
+                            <span><strong>Closed</strong>: Case has been resolved</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-blue-500 mr-2">•</span>
+                            <span><strong>Appealed</strong>: Decision has been appealed</span>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-blue-500 mr-2">•</span>
+                            <span><strong>Archived</strong>: Case has been archived</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Buttons -->
+                <div class="flex items-center justify-end space-x-4 pt-6">
+                    <a href="{{ url_for('hr_web.view_disciplinary_case', case_id=case.id) }}"
+                       class="flex items-center px-5 py-3 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 transition-colors duration-300">
+                        <i class="fas fa-times mr-2"></i> Cancel
+                    </a>
+                    <button type="submit"
+                            class="flex items-center px-5 py-3 bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-medium rounded-xl hover:from-blue-700 hover:to-indigo-800 transition-all duration-300 shadow-md hover:shadow-lg">
+                        <i class="fas fa-save mr-2"></i> Update Status
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Status Change Effects -->
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+    <div class="bg-white rounded-2xl shadow-sm p-6">
+        <h3 class="text-lg font-semibold text-gray-800 flex items-center mb-4">
+            <i class="fas fa-bolt text-yellow-500 mr-2"></i>
+            Status Change Effects
+        </h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- When Closing Case -->
+            <div class="border border-green-100 rounded-xl p-4 bg-green-50">
+                <h4 class="font-medium text-green-800 flex items-center">
+                    <i class="fas fa-check-circle mr-2"></i>
+                    Closing This Case
+                </h4>
+                <ul class="mt-2 text-sm text-green-700 space-y-1">
+                    <li>• Resolution date will be set to today</li>
+                    <li>• Case will be marked as resolved</li>
+                    <li>• No further actions can be added</li>
+                </ul>
+            </div>
+            
+            <!-- When Reopening Case -->
+            <div class="border border-blue-100 rounded-xl p-4 bg-blue-50">
+                <h4 class="font-medium text-blue-800 flex items-center">
+                    <i class="fas fa-redo mr-2"></i>
+                    Reopening This Case
+                </h4>
+                <ul class="mt-2 text-sm text-blue-700 space-y-1">
+                    <li>• Resolution date will be cleared</li>
+                    <li>• Case will return to active status</li>
+                    <li>• New actions can be added</li>
+                </ul>
+            </div>
+            
+            <!-- When Appealing Case -->
+            <div class="border border-purple-100 rounded-xl p-4 bg-purple-50">
+                <h4 class="font-medium text-purple-800 flex items-center">
+                    <i class="fas fa-balance-scale mr-2"></i>
+                    Appealing This Case
+                </h4>
+                <ul class="mt-2 text-sm text-purple-700 space-y-1">
+                    <li>• Case will be locked for modifications</li>
+                    <li>• Appeal process will be initiated</li>
+                    <li>• Hearing may be scheduled</li>
+                </ul>
+            </div>
+            
+            <!-- When Archiving Case -->
+            <div class="border border-gray-100 rounded-xl p-4 bg-gray-50">
+                <h4 class="font-medium text-gray-800 flex items-center">
+                    <i class="fas fa-archive mr-2"></i>
+                    Archiving This Case
+                </h4>
+                <ul class="mt-2 text-sm text-gray-700 space-y-1">
+                    <li>• Case will be moved to historical records</li>
+                    <li>• No further modifications allowed</li>
+                    <li>• Still accessible for reporting</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Smooth transitions */
+    select, textarea, button {
+        transition: all 0.3s ease;
+    }
+    
+    /* Focus styles */
+    select:focus, textarea:focus {
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+    }
+    
+    /* Status guide styling */
+    .status-guide li {
+        position: relative;
+        padding-left: 1.5rem;
+    }
+    
+    .status-guide li:before {
+        content: '•';
+        position: absolute;
+        left: 0;
+        color: #3b82f6;
+        font-weight: bold;
+    }
+</style>
+{% endblock %}

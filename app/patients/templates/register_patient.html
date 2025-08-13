@@ -1,0 +1,634 @@
+{% extends "base.html" %} {% block title %}Patient Registration{% endblock %} {% block content %}
+<div class="min-h-screen p-6">
+    <div class="max-w-6xl mx-auto"> {# Increased max-width for two columns #}
+<div class=" text-center relative"> {# Increased bottom margin and added relative for absolute positioning of date #}
+    <h1 class="text-4xl font-extrabold text-gray-900 dark:text-white mb-3 tracking-tight leading-tight"> {# Larger, bolder, tighter tracking #}
+        <i class="fas fa-user-plus mr-3 text-blue-600 animate-pulse"></i> {# Slightly larger icon, animated pulse for modern feel #}
+        Patient Registration & Onboarding
+    </h1>
+    <p class="text-lg text-gray-600 dark:text-gray-300 mb-4 italic">
+        Seamlessly manage patient records, from search to registration.
+    </p>
+    <div id="todayDate" class="absolute top-0 right-0 mt-2 mr-2 text-sm text-gray-500 dark:text-gray-400 font-medium">
+        Today: Loading Date...
+    </div>
+</div>
+
+<div class="relative flex py-3 items-center">
+    <div class="flex-grow border-t border-gray-300 dark:border-gray-700"></div>
+    <span class="flex-shrink mx-4 text-gray-500 dark:text-gray-400 font-medium text-sm uppercase">
+        Patient Details
+    </span>
+    <div class="flex-grow border-t border-gray-300 dark:border-gray-700"></div>
+</div>
+
+{# --- Start of Two-Column Layout --- #}
+<div class="flex flex-col md:flex-row gap-6"> {# Flex container for columns #}
+
+            <div class="md:w-1/3 w-full"> {# Occupies 1/3 width on medium screens and up #}
+                <div class="bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
+                    <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-4">
+                        <i class="fas fa-search mr-2 text-blue-400"></i>Find Existing Patient
+                    </h2>
+                    <div class="relative">
+                        <input type="text" id="patientSearch" class="w-full pl-12 pr-4 py-3 rounded-lg border-2 border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Search by name, phone, or registration number...">
+                        <i class="fas fa-search absolute left-4 top-4 text-gray-400 dark:text-gray-500"></i>
+                    </div>
+                    <div id="searchResults" class="mt-4 hidden space-y-2 max-h-80 overflow-y-auto"></div>
+                </div>
+            </div>
+
+            <div class="md:w-2/3 w-full"> {# Occupies 2/3 width on medium screens and up #}
+                <form class="bg-white/80 backdrop-blur-md dark:bg-gray-900/80 rounded-xl shadow-lg p-6 md:p-8" id="registrationForm" novalidate>
+
+                    <div class="mb-10">
+                        <div class="flex items-center">
+                            <div class="step-indicator active flex-1 flex items-center relative">
+                                <div class="step-icon flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-md transform transition-transform duration-300">
+                                    <i class="fas fa-id-card text-lg"></i>
+                                </div>
+                                <div class="ml-4 font-medium text-sm md:text-base hidden md:block text-blue-500 font-semibold">Personal</div>
+                            </div>
+
+                            <div class="flex-auto border-t-2 transition-all duration-500 ease-in-out border-gray-300 dark:border-gray-600 step-connector"></div>
+
+                            <div class="step-indicator flex-1 flex items-center relative">
+                                <div class="step-icon flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-full bg-gradient-to-br from-gray-300 to-gray-400 dark:from-gray-600 dark:to-gray-700 text-gray-500 shadow-md transform transition-transform duration-300 group-hover:scale-105">
+                                    <i class="fas fa-address-book text-lg"></i>
+                                </div>
+                                <div class="ml-4 font-medium text-sm md:text-base hidden md:block text-gray-500 dark:text-gray-400">Contact</div>
+                            </div>
+
+                            <div class="flex-auto border-t-2 transition-all duration-500 ease-in-out border-gray-300 dark:border-gray-600 step-connector"></div>
+
+                            <div class="step-indicator flex-1 flex items-center relative">
+                                <div class="step-icon flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-full bg-gradient-to-br from-gray-300 to-gray-400 dark:from-gray-600 dark:to-gray-700 text-gray-500 shadow-md transform transition-transform duration-300 group-hover:scale-105">
+                                    <i class="fas fa-users text-lg"></i>
+                                </div>
+                                <div class="ml-4 font-medium text-sm md:text-base hidden md:block text-gray-500 dark:text-gray-400">Next of Kin</div>
+                            </div>
+
+                            <div class="flex-auto border-t-2 transition-all duration-500 ease-in-out border-gray-300 dark:border-gray-600 step-connector"></div>
+
+                            <div class="step-indicator flex-1 flex items-center relative">
+                                <div class="step-icon flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-full bg-gradient-to-br from-gray-300 to-gray-400 dark:from-gray-600 dark:to-gray-700 text-gray-500 shadow-md transform transition-transform duration-300 group-hover:scale-105">
+                                    <i class="fas fa-credit-card text-lg"></i>
+                                </div>
+                                <div class="ml-4 font-medium text-sm md:text-base hidden md:block text-gray-500 dark:text-gray-400">Payment</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="form-steps">
+
+                        <div class="form-step active-step">
+                            <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-6">Personal Information</h2>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Registration No.</label>
+                                    <input type="text" id="regNo" class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700" readonly>
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Age (Years)</label>
+                                        <input type="number" id="age" min="0" max="120" class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date of Birth</label>
+                                        <input type="date" id="dob" required class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label for="firstName" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">First Name</label>
+                                    <input type="text" id="firstName" name="firstName" required class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500"/>
+                                </div>
+
+                                <div>
+                                    <label for="lastName" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Last Name</label>
+                                    <input type="text" id="lastName" name="lastName" required class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500"/>
+                                </div>
+
+                                <div class="md:col-span-2">
+                                    <label for="gender" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Gender</label>
+                                    <select id="gender" name="gender" required class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500">
+                                        <option value="" disabled selected>Select gender</option>
+                                        <option value="Male">Male</option>
+                                        <option value="Female">Female</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-step hidden">
+                            <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-6">Contact Details</h2>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone Number</label>
+                                    <input type="tel" id="phone" required class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email (Optional)</label>
+                                    <input type="email" id="email" class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-step hidden">
+                            <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-6">Next of Kin (Optional)</h2>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Name</label>
+                                    <input type="text" id="kinName" class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Relationship</label>
+                                    <input type="text" id="kinRelationship" class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone Number</label>
+                                    <input type="tel" id="kinPhone" class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                                    <input type="email" id="kinEmail" class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-step hidden">
+                            <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-6">Payment Method</h2>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="space-y-4">
+                                    <div class="flex items-center">
+                                        <input type="radio" name="payment" id="cash" value="cash" class="hidden peer" checked>
+                                        <label for="cash" class="flex items-center p-4 w-full rounded-lg border-2 border-gray-200 dark:border-gray-600 peer-checked:border-blue-500 peer-checked:shadow-md bg-gray-50 dark:bg-gray-800 cursor-pointer transition-all">
+                                            <i class="fas fa-money-bill-wave text-2xl text-green-500 mr-4"></i>
+                                            <div>
+                                                <h3 class="font-medium text-gray-700 dark:text-gray-200">Cash Payment</h3>
+                                                <p class="text-sm text-gray-500 dark:text-gray-400">Pay directly at the facility</p>
+                                            </div>
+                                        </label>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <input type="radio" name="payment" id="insurance" value="insurance" class="hidden peer">
+                                        <label for="insurance" class="flex items-center p-4 w-full rounded-lg border-2 border-gray-200 dark:border-gray-600 peer-checked:border-blue-500 peer-checked:shadow-md bg-gray-50 dark:bg-gray-800 cursor-pointer transition-all">
+                                            <i class="fas fa-shield-alt text-2xl text-purple-500 mr-4"></i>
+                                            <div>
+                                                <h3 class="font-medium text-gray-700 dark:text-gray-200">Insurance</h3>
+                                                <p class="text-sm text-gray-500 dark:text-gray-400">Use insurance coverage</p>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div id="insurance-details" class="hidden space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Insurance Provider</label>
+                                        <select name="insurance_provider" class="w-full py-2 px-4 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500">
+                                            <option value="">Select Provider</option>
+                                            {% if insurance_providers %}{% for provider in insurance_providers %}<option value="{{ provider.id }}">{{ provider.name }}</option>{% endfor %}{% else %}<option disabled>No providers available</option>{% endif %}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Insurance Number</label>
+                                        <input type="text" id="insuranceNumber" name="insurance_number" class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500" placeholder="Enter Insurance Number">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-10 flex justify-between items-center" id="form-navigation-buttons">
+                        <button id="prevBtn" type="button" class="flex items-center justify-center bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-white py-2 px-6 rounded-full font-semibold transition-all duration-300 transform hover:-translate-x-1 shadow-md">
+                            <i class="fas fa-arrow-left mr-2"></i> Previous
+                        </button>
+                        <button id="nextBtn" type="button" class="flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white py-2 px-6 rounded-full font-semibold transition-all duration-300 transform hover:translate-x-1 shadow-md">
+                            Next <i class="fas fa-arrow-right ml-2"></i>
+                        </button>
+                        <button id="submitBtn" type="submit" class="hidden bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white py-3 px-8 rounded-full font-semibold transition-all duration-300 flex items-center justify-center shadow-lg">
+                            <i id="submitIcon" class="fas fa-save mr-2"></i>
+                            <span id="submitText">Register Patient</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+            {# --- End of Two-Column Layout --- #}
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const submitBtn = document.getElementById('submitBtn');
+    const formSteps = [...document.querySelectorAll('.form-step')];
+    const stepIndicators = [...document.querySelectorAll('.step-indicator')];
+    const stepConnectors = [...document.querySelectorAll('.step-connector')];
+    const form = document.getElementById('registrationForm');
+        const todayDateElement = document.getElementById('todayDate');
+        const today = new Date();
+
+        // Options for formatting the date
+        const options = {
+            weekday: 'long', // "Thursday"
+            year: 'numeric', // "2025"
+            month: 'long', // "July"
+            day: 'numeric' // "24"
+        };
+
+        const formattedDate = today.toLocaleDateString('en-US', options); // Using 'en-US' for common English format
+
+        todayDateElement.textContent = `Today: ${formattedDate}`;
+    let currentStep = 0;
+
+    // --- Event Listeners ---
+    nextBtn.addEventListener('click', () => {
+        if (validateCurrentStep()) {
+            if (currentStep < formSteps.length - 1) {
+                currentStep++;
+                updateFormUI();
+            }
+        }
+    });
+
+    prevBtn.addEventListener('click', () => {
+        if (currentStep > 0) {
+            currentStep--;
+            updateFormUI();
+        }
+    });
+
+    // Add event listener for payment method change
+    document.querySelectorAll('input[name="payment"]').forEach(radio => {
+        radio.addEventListener('change', (event) => {
+            const insuranceDetails = document.getElementById('insurance-details');
+            if (event.target.value === 'insurance') {
+                insuranceDetails.classList.remove('hidden');
+            } else {
+                insuranceDetails.classList.add('hidden');
+            }
+        });
+    });
+
+
+    // --- Functions ---
+    function updateFormUI() {
+        // Update form step visibility
+        formSteps.forEach((step, index) => {
+            step.classList.toggle('active-step', index === currentStep);
+            step.classList.toggle('hidden', index !== currentStep);
+        });
+
+        // Update step indicator styles and connector lines
+        stepIndicators.forEach((indicator, index) => {
+            const icon = indicator.querySelector('.step-icon');
+            const text = indicator.querySelector('div:last-child'); // Selects the text div
+
+            if (index < currentStep) {
+                // Completed steps: bluish icon, bluish text, checkmark
+                indicator.classList.remove('active', 'text-gray-500', 'dark:text-gray-400');
+                indicator.classList.add('complete', 'text-blue-500', 'font-semibold');
+                icon.classList.remove('from-gray-300', 'to-gray-400', 'dark:from-gray-600', 'dark:to-gray-700');
+                icon.classList.add('from-blue-500', 'to-indigo-600', 'text-white');
+                icon.innerHTML = `<i class="fas fa-check"></i>`;
+                text.classList.remove('text-gray-500', 'dark:text-gray-400');
+                text.classList.add('text-blue-500', 'font-semibold');
+            } else if (index === currentStep) {
+                // Active step: bluish icon, bluish text, original icon
+                indicator.classList.remove('complete', 'text-gray-500', 'dark:text-gray-400');
+                indicator.classList.add('active', 'text-blue-500', 'font-semibold');
+                icon.classList.remove('from-gray-300', 'to-gray-400', 'dark:from-gray-600', 'dark:to-gray-700', 'text-white');
+                icon.classList.add('from-blue-500', 'to-indigo-600', 'text-white');
+                // Reset icon to original if it was a checkmark
+                const icons = ['fa-id-card', 'fa-address-book', 'fa-users', 'fa-credit-card'];
+                icon.innerHTML = `<i class="fas ${icons[index]}"></i>`;
+                text.classList.remove('text-gray-500', 'dark:text-gray-400');
+                text.classList.add('text-blue-500', 'font-semibold');
+            } else {
+                // Future steps: gray icon, gray text, original icon
+                indicator.classList.remove('active', 'complete', 'text-blue-500', 'font-semibold');
+                indicator.classList.add('text-gray-500', 'dark:text-gray-400');
+                icon.classList.remove('from-blue-500', 'to-indigo-600', 'text-white');
+                icon.classList.add('from-gray-300', 'to-gray-400', 'dark:from-gray-600', 'dark:to-gray-700');
+                const icons = ['fa-id-card', 'fa-address-book', 'fa-users', 'fa-credit-card'];
+                icon.innerHTML = `<i class="fas ${icons[index]}"></i>`;
+                text.classList.remove('text-blue-500', 'font-semibold');
+                text.classList.add('text-gray-500', 'dark:text-gray-400');
+            }
+        });
+
+        // Update connector line styles
+        stepConnectors.forEach((connector, index) => {
+            if (index < currentStep) {
+                connector.classList.remove('border-gray-300', 'dark:border-gray-600');
+                connector.classList.add('border-blue-500');
+            } else {
+                connector.classList.remove('border-blue-500');
+                connector.classList.add('border-gray-300', 'dark:border-gray-600');
+            }
+        });
+
+        // Update button visibility and styling
+        if (currentStep === formSteps.length - 1) {
+            // On the last step (Payment page)
+            prevBtn.classList.remove('hidden'); // Ensure Previous button is visible
+            nextBtn.classList.add('hidden'); // Hide the Next button
+            submitBtn.classList.remove('hidden'); // Show the Submit button
+
+            // Adjust the flex justification for the last page
+            document.getElementById('form-navigation-buttons').classList.remove('justify-between');
+            document.getElementById('form-navigation-buttons').classList.add('justify-center'); // Center submit button
+
+            // Give the submit button more width
+            submitBtn.classList.add('w-1/2', 'md:w-1/3'); // Example: make it wider on medium and up screens
+            submitBtn.classList.remove('w-full'); // Remove previous full width if it was there
+
+        } else if (currentStep === 0) {
+            // On the first step
+            prevBtn.classList.add('hidden'); // Hide Previous button
+            nextBtn.classList.remove('hidden'); // Show Next button
+            submitBtn.classList.add('hidden'); // Hide Submit button
+
+            // Ensure justify-between for other pages
+            document.getElementById('form-navigation-buttons').classList.remove('justify-center');
+            document.getElementById('form-navigation-buttons').classList.add('justify-between');
+
+            // Reset submit button width if it was changed
+            submitBtn.classList.remove('w-1/2', 'md:w-1/3');
+            submitBtn.classList.add('w-full'); // Or whatever its default non-final step width should be
+        } else {
+            // On intermediate steps
+            prevBtn.classList.remove('hidden'); // Show Previous button
+            nextBtn.classList.remove('hidden'); // Show Next button
+            submitBtn.classList.add('hidden'); // Hide Submit button
+
+            // Ensure justify-between for other pages
+            document.getElementById('form-navigation-buttons').classList.remove('justify-center');
+            document.getElementById('form-navigation-buttons').classList.add('justify-between');
+
+            // Reset submit button width if it was changed
+            submitBtn.classList.remove('w-1/2', 'md:w-1/3');
+            submitBtn.classList.add('w-full'); // Or whatever its default non-final step width should be
+        }
+    }
+
+    function validateCurrentStep() {
+        const currentStepElement = formSteps[currentStep];
+        const currentStepFields = currentStepElement.querySelectorAll('input[required], select[required]');
+        let isValid = true;
+        for (const field of currentStepFields) {
+            if (!field.checkValidity()) {
+                field.classList.add('border-red-500', 'focus:ring-red-500');
+                isValid = false;
+            } else {
+                field.classList.remove('border-red-500', 'focus:ring-red-500');
+            }
+        }
+        if (!isValid) {
+            form.reportValidity(); // Show native browser validation messages
+        }
+        return isValid;
+    }
+
+    // Initialize the form
+    updateFormUI();
+});
+</script>
+<script>
+
+    // Age <-> DOB Conversion
+    const ageInput = document.getElementById('age');
+    const dobInput = document.getElementById('dob');
+
+    function calculateAge(dob) {
+        const today = new Date();
+        const birthDate = new Date(dob);
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+        }
+        return age;
+    }
+
+    dobInput.addEventListener('change', () => {
+        if (dobInput.value) {
+            ageInput.value = calculateAge(dobInput.value);
+        }
+    });
+
+    ageInput.addEventListener('input', () => {
+        if (ageInput.value) {
+            const currentYear = new Date().getFullYear();
+            const birthYear = currentYear - ageInput.value;
+            dobInput.value = `${birthYear}-01-01`;
+        }
+    });
+
+    // Grab references to the button, its icon, and its text
+    const submitBtn = document.getElementById('submitBtn');
+    const submitIcon = document.getElementById('submitIcon');
+    const submitText = document.getElementById('submitText');
+
+    // Grab the search field and results container
+    const patientSearch = document.getElementById('patientSearch');
+    const searchResults = document.getElementById('searchResults');
+
+    // These fields we fill when selecting an existing patient
+const formFields = {
+    regNo: document.getElementById('regNo'),
+    firstName: document.getElementById('firstName'),
+    lastName: document.getElementById('lastName'),
+    dob: document.getElementById('dob'),
+    age: document.getElementById('age'),
+    gender: document.getElementById('gender'), // ADD THIS LINE
+    phone: document.getElementById('phone'),
+    email: document.getElementById('email'),
+    kinName: document.getElementById('kinName'),
+    kinRelationship: document.getElementById('kinRelationship'),
+    kinPhone: document.getElementById('kinPhone'),
+    kinEmail: document.getElementById('kinEmail')
+};
+
+    // Utility: calculate age from a date string (YYYY-MM-DD)
+    function calculateAge(dob) {
+        const today = new Date();
+        const birthDate = new Date(dob);
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+        }
+        return age;
+    }
+    // Function to set the button state to "registering"
+    function setButtonToRegistering() {
+        submitBtn.disabled = true; // Disable the button
+        submitIcon.className = 'fas fa-spinner fa-spin mr-2'; // Add a loading spinner
+        submitText.textContent = 'Registering Patient...'; // Change text
+    }
+    // Function to revert the button back to "Register Patient"
+    function setButtonToRegister() {
+        submitIcon.className = 'fas fa-save mr-2';
+        submitText.textContent = 'Register Patient';
+    }
+
+    // Function to switch the button to "Start Revisit"
+    function setButtonToRevisit() {
+        submitIcon.className = 'fas fa-stethoscope mr-2'; // you can pick any FontAwesome icon
+        submitText.textContent = 'Start Revisit';
+    }
+
+    // Whenever the user types in search, if they clear it (length < 3), revert the button
+    patientSearch.addEventListener('input', e => {
+        const query = e.target.value.trim();
+        if (query.length < 3) {
+            // Hide results and revert button
+            searchResults.classList.add('hidden');
+            setButtonToRegister();
+            return;
+        }
+        // Otherwise, continue to search (handled below)...
+    });
+
+    // AJAX: searchPatients
+    async function searchPatients(query) {
+        const resp = await fetch(`/patients/api/search?query=${encodeURIComponent(query)}`);
+        if (!resp.ok) {
+            console.error('Search error', resp.status);
+            return [];
+        }
+        return await resp.json(); // expect an array of patient objects
+    }
+
+    // Handle input events to show search results
+    patientSearch.addEventListener('input', async e => {
+        const query = e.target.value.trim();
+        if (query.length < 3) {
+            return; // already handled above
+        }
+
+        const results = await searchPatients(query);
+
+    searchResults.innerHTML = results.map(patient => `
+    <div class="p-3 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer patient-result" 
+            data-regno="${patient.regNo}"
+            data-firstname="${patient.firstName}"
+            data-lastname="${patient.lastName}"
+            data-dob="${patient.dob}"
+            data-phone="${patient.phone}"
+            data-email="${patient.email}"
+            data-kinname="${patient.kinName}"
+            data-kinrelationship="${patient.kinRelationship}"
+            data-kinphone="${patient.kinPhone}"
+            data-kinemail="${patient.kinEmail}"
+            data-gender="${patient.gender || ''}">  <div class="font-medium">${patient.firstName} ${patient.lastName}</div>
+        <div class="text-sm text-gray-500">${patient.phone} • Reg: ${patient.regNo}</div>
+    </div>
+    `).join('');
+
+        searchResults.classList.remove('hidden');
+
+        // When a user clicks one of the results, fill the form & switch button
+        document.querySelectorAll('.patient-result').forEach(result => {
+            result.addEventListener('click', () => {
+                // Populate each form field from the data- attributes
+                Object.keys(formFields).forEach(field => {
+                    const dataKey = field.toLowerCase();
+                    if (result.dataset[dataKey]) {
+                        formFields[field].value = result.dataset[dataKey];
+                    }
+                });
+
+                // If DOB is present, recalc age
+                if (result.dataset.dob) {
+                    formFields.age.value = calculateAge(result.dataset.dob);
+                }
+
+                // Hide the search results, clear search input
+                searchResults.classList.add('hidden');
+                patientSearch.value = '';
+
+                // Now that an existing patient is selected, switch button to "Start Revisit"
+                setButtonToRevisit();
+            });
+        });
+    });
+
+    // Payment Method Toggle (unchanged)
+    document.querySelectorAll('input[name="payment"]').forEach(radio => {
+        radio.addEventListener('change', e => {
+            const insuranceDetails = document.getElementById('insurance-details');
+            insuranceDetails.classList.toggle('hidden', e.target.value !== 'insurance');
+        });
+    });
+
+    // On page load, ensure the button is in "Register Patient" mode
+    document.addEventListener('DOMContentLoaded', () => {
+        setButtonToRegister();
+    });
+
+    // Submit handler (unchanged from your original code)
+    document.getElementById('registrationForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        setButtonToRegistering();
+
+        // Gather the values
+        const payload = {
+            regNo: document.getElementById('regNo').value,
+            age: document.getElementById('age').value,
+            dob: document.getElementById('dob').value,
+            firstName: document.getElementById('firstName').value,
+            lastName: document.getElementById('lastName').value,
+            email: document.getElementById('email').value,
+            gender: document.getElementById('gender').value,
+            phone: document.getElementById('phone').value,
+            kinName: document.getElementById('kinName').value,
+            kinRelationship: document.getElementById('kinRelationship').value,
+            kinPhone: document.getElementById('kinPhone').value,
+            kinEmail: document.getElementById('kinEmail').value,
+            paymentMethod: document.querySelector('input[name="payment"]:checked').value,
+            insuranceProvider: null,
+            insuranceNumber: document.getElementById('insuranceNumber').value,
+
+        };
+
+        // Only include insurance if that section is visible
+        const insSection = document.getElementById('insurance-details');
+        if (insSection && !insSection.classList.contains('hidden')) {
+            const sel = insSection.querySelector('select');
+            if (sel) payload.insuranceProvider = sel.value;
+        }
+
+        try {
+            const resp = await fetch('/patients/api/add/patients', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+            if (!resp.ok) throw new Error(`Server: ${resp.status}`);
+            const data = await resp.json();
+
+            // show success alert (your showAlert function)
+            showAlert('success', data.message + ` (Reg#: ${data.regNo})`);
+
+            // after the alert, redirect based on paymentMethod
+            setTimeout(() => {
+                const reg = encodeURIComponent(data.regNo);
+                if (data.paymentMethod === 'cash') {
+                    window.location.href = `/patients/cash-payment/${reg}`;
+                } else {
+                    window.location.href = `/patients/insurance-booking/${reg}`;
+                }
+            }, 1500);
+        } catch (err) {
+            console.error(err);
+            showAlert('error', `Error saving patient: ${err.message}`, 6000);
+        }
+    });
+</script>
+{% endblock %}

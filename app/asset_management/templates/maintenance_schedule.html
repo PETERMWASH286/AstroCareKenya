@@ -1,0 +1,579 @@
+{% extends "base.html" %} {% block content %}
+
+<style>
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        height: 100%;
+        width: 4px;
+        background-color: #e5e7eb;
+    }
+    
+    .upcoming-item {
+        border-left: 4px solid #3b82f6;
+    }
+    
+    .overdue-item {
+        border-left: 4px solid #ef4444;
+    }
+    
+    .completed-item {
+        border-left: 4px solid #10b981;
+    }
+    
+    .progress-ring__circle {
+        transition: stroke-dashoffset 0.35s;
+        transform: rotate(-90deg);
+        transform-origin: 50% 50%;
+    }
+    
+    .maintenance-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        transition: all 0.3s ease;
+    }
+    
+    .status-badge {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        border-radius: 9999px;
+        padding: 4px 10px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    
+    .filter-card {
+        transition: all 0.3s ease;
+    }
+    
+    .filter-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+</style>
+
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8">
+    <div class="container mx-auto px-4 max-w-7xl">
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
+            <div>
+                <h1 class="text-3xl md:text-4xl font-bold text-gray-800">Maintenance Schedule</h1>
+                <p class="mt-2 text-gray-600">Manage and track all maintenance activities</p>
+            </div>
+            <div class="flex flex-wrap gap-3">
+                <a href="{{ url_for('asset_management.add_maintenance') }}" class="flex items-center px-5 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-medium shadow-md hover:shadow-lg transition-shadow">
+                    <i class="fas fa-plus mr-2"></i> Schedule Maintenance
+                </a>
+                <button @click="showFilters = !showFilters" class="flex items-center px-5 py-3 bg-white text-gray-700 border border-gray-300 rounded-xl font-medium hover:bg-gray-50 transition-colors">
+                    <i class="fas fa-filter mr-2"></i> Filter
+                </button>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-blue-500">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="text-gray-600 text-sm">Upcoming Maintenance</p>
+                        <h3 class="text-2xl font-bold text-gray-800 mt-1">{{ upcoming|length }}</h3>
+                    </div>
+                    <div class="p-3 bg-blue-100 rounded-full">
+                        <i class="fas fa-calendar-alt text-blue-500 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-green-500">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="text-gray-600 text-sm">Completed</p>
+                        <h3 class="text-2xl font-bold text-gray-800 mt-1">{{ past_maintenance.total }}</h3>
+                    </div>
+                    <div class="p-3 bg-green-100 rounded-full">
+                        <i class="fas fa-check-circle text-green-500 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-amber-500">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="text-gray-600 text-sm">Overdue</p>
+                        <h3 class="text-2xl font-bold text-gray-800 mt-1">0</h3>
+                    </div>
+                    <div class="p-3 bg-amber-100 rounded-full">
+                        <i class="fas fa-exclamation-triangle text-amber-500 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-purple-500">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="text-gray-600 text-sm">Avg. Cost</p>
+                        <h3 class="text-2xl font-bold text-gray-800 mt-1">0</h3>
+                    </div>
+                    <div class="p-3 bg-purple-100 rounded-full">
+                        <i class="fas fa-dollar-sign text-purple-500 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters (Alpine.js) -->
+        <div x-data="{ showFilters: false }" class="mb-8">
+            <div x-show="showFilters" x-collapse class="bg-white rounded-2xl shadow-lg p-6">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div>
+                        <label class="block text-gray-700 mb-2 font-medium">Date Range</label>
+                        <div class="relative">
+                            <input type="text" placeholder="Select date range" class="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <i class="fas fa-calendar absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-700 mb-2 font-medium">Maintenance Type</label>
+                        <select class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="">All Types</option>
+                            <option value="Preventive">Preventive</option>
+                            <option value="Corrective">Corrective</option>
+                            <option value="Predictive">Predictive</option>
+                            <option value="Emergency">Emergency</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-700 mb-2 font-medium">Technician</label>
+                        <select class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="">All Technicians</option>
+                            {% for technician in technicians %}
+                            <option value="{{ technician.id }}">{{ technician.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-gray-700 mb-2 font-medium">Status</label>
+                        <select class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="">All Status</option>
+                            <option value="upcoming">Upcoming</option>
+                            <option value="completed">Completed</option>
+                            <option value="overdue">Overdue</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end gap-3">
+                    <button class="px-5 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200">
+                        Reset
+                    </button>
+                    <button class="px-5 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-medium">
+                        Apply Filters
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upcoming Maintenance Timeline -->
+        <div class="mb-12">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Upcoming Maintenance</h2>
+                <div class="flex items-center text-sm text-gray-500">
+                    <span class="flex items-center mr-4"><div class="w-3 h-3 rounded-full bg-blue-500 mr-2"></div> Scheduled</span>
+                    <span class="flex items-center"><div class="w-3 h-3 rounded-full bg-red-500 mr-2"></div> Overdue</span>
+                </div>
+            </div>
+
+            {% if upcoming %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for record in upcoming %}
+                <div class="maintenance-card bg-white rounded-2xl shadow-lg overflow-hidden relative">
+                    <!-- Status Indicator -->
+                    <div class="absolute top-4 right-4">
+                        <span class="px-3 py-1 rounded-full text-sm font-medium {{ 'bg-red-100 text-red-800' if record.next_maintenance_date < datetime.utcnow() else 'bg-blue-100 text-blue-800' }}">
+                            {{ "Overdue" if record.next_maintenance_date < datetime.utcnow() else "Scheduled" }}
+                        </span>
+                    </div>
+
+                    <!-- Card Header -->
+                    <div class="p-6 border-b border-gray-100">
+                        <div class="flex items-center">
+                            <div class="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white text-lg font-bold">
+                                {{ record.asset.name[0] }}
+                            </div>
+                            <div class="ml-4">
+                                <h3 class="font-bold text-gray-800 text-lg">{{ record.asset.name }}</h3>
+                                <p class="text-gray-600 text-sm">{{ record.asset.serial_number }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card Body -->
+                    <div class="p-6">
+                        <div class="grid grid-cols-2 gap-4 mb-6">
+                            <div>
+                                <p class="text-gray-600 text-sm">Maintenance Date</p>
+                                <p class="font-medium">{{ record.next_maintenance_date.strftime('%b %d, %Y') }}</p>
+                            </div>
+                            <div>
+                                <p class="text-gray-600 text-sm">Type</p>
+                                <span class="px-2 py-1 bg-blue-50 text-blue-700 rounded-full text-xs">
+                                    {{ record.maintenance_type }}
+                                </span>
+                            </div>
+                            <div>
+                                <p class="text-gray-600 text-sm">Assigned To</p>
+                                <p class="font-medium">{{ record.technician.name }}</p>
+                            </div>
+                            <div>
+                                <p class="text-gray-600 text-sm">Estimated Cost</p>
+                                <p class="font-medium">${{ record.cost }}</p>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <p class="text-gray-600 text-sm">Description</p>
+                            <p class="font-medium truncate">{{ record.description[:60] }}{% if record.description|length > 60 %}...{% endif %}</p>
+                        </div>
+
+                        <!-- Progress Ring -->
+                        <div class="flex items-center">
+                            <div class="relative w-16 h-16 mr-4">
+                                <svg class="w-16 h-16" viewBox="0 0 36 36">
+                                    <circle cx="18" cy="18" r="15.9155" class="fill-none stroke-gray-200 stroke-2"/>
+                                    <circle cx="18" cy="18" r="15.9155" 
+                                            class="progress-ring__circle fill-none stroke-blue-500 stroke-2"
+                                            stroke-dasharray="100"
+                                            stroke-dashoffset="{{ 100 - (loop.index / upcoming|length * 100) }}"/>
+                                    <text x="18" y="21" class="text-center text-xs font-bold fill-blue-500" text-anchor="middle">
+                                        {{ loop.index }}/{{ upcoming|length }}
+                                    </text>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-gray-600 text-sm">Priority</p>
+                                <div class="flex items-center mt-1">
+                                    {% for i in range(3) %}
+                                    <div class="w-3 h-3 rounded-full {{ 'bg-blue-500' if i < 2 else 'bg-gray-300' }} mr-1"></div>
+                                    {% endfor %}
+                                    <span class="ml-2 text-xs text-gray-600">High</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card Footer -->
+                    <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-between">
+                        <a href="#" class="text-blue-600 hover:text-blue-800 font-medium text-sm">View Asset Details</a>
+                        <div class="flex space-x-2">
+                            <button class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 hover:bg-blue-200">
+                                <i class="fas fa-edit text-xs"></i>
+                            </button>
+                            <button class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600 hover:bg-green-200">
+                                <i class="fas fa-check text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="bg-white rounded-2xl shadow-lg p-12 text-center">
+                <div class="max-w-md mx-auto">
+                    <div class="w-24 h-24 mx-auto bg-gradient-to-r from-blue-100 to-indigo-100 rounded-full flex items-center justify-center mb-6">
+                        <i class="fas fa-calendar-check text-indigo-500 text-3xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-800 mb-3">No Upcoming Maintenance</h3>
+                    <p class="text-gray-600 mb-6">You don't have any maintenance scheduled for the next 30 days. Great job keeping up with maintenance!</p>
+                    <a href="{{ url_for('asset_management.add_maintenance') }}" class="inline-block px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-medium shadow-md hover:shadow-lg transition-shadow">
+                        Schedule Maintenance
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Past Maintenance Records -->
+        <div class="mb-12">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Past Maintenance Records</h2>
+                <div class="text-sm text-gray-500">
+                    Showing {{ past_maintenance.items|length }} of {{ past_maintenance.total }} records
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50 border-b border-gray-200">
+                            <tr>
+                                <th class="py-4 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asset</th>
+                                <th class="py-4 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                <th class="py-4 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Technician</th>
+                                <th class="py-4 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                                <th class="py-4 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cost</th>
+                                <th class="py-4 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="py-4 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for record in past_maintenance.items %}
+                            <tr class="hover:bg-gray-50 transition-colors">
+                                <td class="py-4 px-6 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white text-sm font-bold mr-3">
+                                            {{ record.asset.name[0] }}
+                                        </div>
+                                        <div>
+                                            <div class="font-medium text-gray-900">{{ record.asset.name }}</div>
+                                            <div class="text-sm text-gray-500">{{ record.asset.serial_number }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="py-4 px-6 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">{{ record.maintenance_date.strftime('%b %d, %Y') }}</div>
+                                    <div class="text-sm text-gray-500">{{ record.maintenance_date.strftime('%I:%M %p') }}</div>
+                                </td>
+                                <td class="py-4 px-6 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-700 text-xs font-bold mr-2">
+                                            {{ record.technician.name[0] }}
+                                        </div>
+                                        <span>{{ record.technician.name }}</span>
+                                    </div>
+                                </td>
+                                <td class="py-4 px-6 whitespace-nowrap">
+                                    <span class="px-2 py-1 text-xs rounded-full 
+                                        {{ 'bg-blue-100 text-blue-800' if record.maintenance_type == 'Preventive' }}
+                                        {{ 'bg-yellow-100 text-yellow-800' if record.maintenance_type == 'Corrective' }}
+                                        {{ 'bg-purple-100 text-purple-800' if record.maintenance_type == 'Predictive' }}
+                                        {{ 'bg-red-100 text-red-800' if record.maintenance_type == 'Emergency' }}">
+                                        {{ record.maintenance_type }}
+                                    </span>
+                                </td>
+                                <td class="py-4 px-6 whitespace-nowrap">
+                                    <span class="font-medium">${{ record.cost }}</span>
+                                </td>
+                                <td class="py-4 px-6 whitespace-nowrap">
+                                    <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
+                                        Completed
+                                    </span>
+                                </td>
+                                <td class="py-4 px-6 whitespace-nowrap text-sm">
+                                    <div class="flex space-x-2">
+                                        <a href="#" class="text-blue-600 hover:text-blue-900">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="#" class="text-gray-600 hover:text-gray-900">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="#" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="7" class="py-12 px-6 text-center">
+                                    <div class="max-w-md mx-auto">
+                                        <div class="w-16 h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                                            <i class="fas fa-inbox text-gray-400 text-2xl"></i>
+                                        </div>
+                                        <h3 class="text-lg font-medium text-gray-900 mb-1">No Maintenance Records</h3>
+                                        <p class="text-gray-500">You haven't completed any maintenance tasks yet.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if past_maintenance.pages > 1 %}
+                <div class="bg-white px-6 py-4 border-t border-gray-200">
+                    <nav class="flex items-center justify-between">
+                        <div class="text-sm text-gray-700">
+                            Showing <span class="font-medium">{{ past_maintenance.first }}</span> to
+                            <span class="font-medium">{{ past_maintenance.last }}</span> of
+                            <span class="font-medium">{{ past_maintenance.total }}</span> results
+                        </div>
+                        <div class="flex space-x-2">
+                            <a href="{{ url_for('asset_management.maintenance_schedule', page=past_maintenance.prev_num) if past_maintenance.has_prev else '#' }}" class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 {{ 'opacity-50 cursor-not-allowed' if not past_maintenance.has_prev }}">
+                                Previous
+                            </a> {% for page_num in past_maintenance.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %} {% if page_num %}
+                            <a href="{{ url_for('asset_management.maintenance_schedule', page=page_num) }}" class="px-4 py-2 rounded-lg {{ 'bg-blue-500 text-white' if page_num == past_maintenance.page else 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50' }}">
+                                        {{ page_num }}
+                                    </a> {% else %}
+                            <span class="px-4 py-2">...</span> {% endif %} {% endfor %}
+
+                            <a href="{{ url_for('asset_management.maintenance_schedule', page=past_maintenance.next_num) if past_maintenance.has_next else '#' }}" class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 {{ 'opacity-50 cursor-not-allowed' if not past_maintenance.has_next }}">
+                                Next
+                            </a>
+                        </div>
+                    </nav>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Maintenance Metrics -->
+        <div class="mb-12">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">Maintenance Metrics</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Cost Breakdown -->
+                <div class="bg-white rounded-2xl shadow-lg p-6">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">Cost Breakdown</h3>
+                    <div class="h-64">
+                        <canvas id="costChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Maintenance by Type -->
+                <div class="bg-white rounded-2xl shadow-lg p-6">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">Maintenance by Type</h3>
+                    <div class="h-64">
+                        <canvas id="typeChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Technician Performance -->
+                <div class="bg-white rounded-2xl shadow-lg p-6">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">Top Technicians</h3>
+                    <div class="space-y-4">
+                        {% for i in range(3) %}
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-700 font-bold mr-3">
+                                T{{ loop.index }}
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex justify-between mb-1">
+                                    <span class="font-medium">Technician {{ loop.index }}</span>
+                                    <span class="text-sm text-gray-600">12 tasks</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div class="bg-gradient-to-r from-green-400 to-blue-500 h-2 rounded-full" style="width: {{ 70 + loop.index * 10 }}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Initialize charts when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        // Cost Breakdown Chart
+        const costCtx = document.getElementById('costChart').getContext('2d');
+        const costChart = new Chart(costCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                datasets: [{
+                    label: 'Maintenance Cost ($)',
+                    data: [1200, 1900, 1500, 2100, 1800, 2400],
+                    backgroundColor: [
+                        'rgba(59, 130, 246, 0.7)',
+                        'rgba(99, 102, 241, 0.7)',
+                        'rgba(139, 92, 246, 0.7)',
+                        'rgba(168, 85, 247, 0.7)',
+                        'rgba(217, 70, 239, 0.7)',
+                        'rgba(236, 72, 153, 0.7)'
+                    ],
+                    borderColor: [
+                        'rgb(59, 130, 246)',
+                        'rgb(99, 102, 241)',
+                        'rgb(139, 92, 246)',
+                        'rgb(168, 85, 247)',
+                        'rgb(217, 70, 239)',
+                        'rgb(236, 72, 153)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            display: false
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+
+        // Maintenance Type Chart
+        const typeCtx = document.getElementById('typeChart').getContext('2d');
+        const typeChart = new Chart(typeCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Preventive', 'Corrective', 'Predictive', 'Emergency'],
+                datasets: [{
+                    label: 'Maintenance by Type',
+                    data: [45, 25, 15, 15],
+                    backgroundColor: [
+                        'rgba(59, 130, 246, 0.7)',
+                        'rgba(239, 68, 68, 0.7)',
+                        'rgba(245, 158, 11, 0.7)',
+                        'rgba(139, 92, 246, 0.7)'
+                    ],
+                    borderColor: [
+                        'rgb(59, 130, 246)',
+                        'rgb(239, 68, 68)',
+                        'rgb(245, 158, 11)',
+                        'rgb(139, 92, 246)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                },
+                cutout: '65%'
+            }
+        });
+    });
+
+    // Add interactivity to progress rings
+    document.querySelectorAll('.progress-ring__circle').forEach(circle => {
+                const radius = circle.r.baseVal.value;
+                const circumference = radius * 2 * Math.PI;
+
+                circle.style.strokeDasharray = `${circumference} ${circumference}`;
+                circle.style.strokeDashoffset = circumference;
+
+                const offset = circumference - (parseInt(circle.getAttribute('stroke-dashoffset')) / 100 * circumference; circle.style.strokeDashoffset = offset;
+                });
+</script>
+
+{% endblock %}

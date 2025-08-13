@@ -1,0 +1,199 @@
+{% extends "base.html" %} {% block content %}
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="bg-gradient-to-br from-white/30 to-white/10 dark:from-gray-900/50 dark:to-gray-800/30 backdrop-blur-xl rounded-3xl shadow-2xl p-8">
+        <!-- Profile Header -->
+        <div class="flex items-center justify-between mb-8">
+            <h1 class="text-3xl font-bold bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">
+                Profile Settings
+            </h1>
+            <div class="flex items-center space-x-3">
+                <div class="h-12 w-12 bg-blue-500/10 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-user-edit text-blue-400 text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data" class="space-y-8">
+            <!-- Profile Picture Section -->
+            <div class="group relative">
+                <div class="flex flex-col md:flex-row items-center gap-8">
+                    <!-- Current Avatar -->
+                    <div class="relative">
+                        <div class="h-32 w-32 rounded-full bg-gray-100 dark:bg-gray-700 border-4 border-white/20 dark:border-gray-600 shadow-lg overflow-hidden">
+                            <img id="avatar-preview" src="{{ current_user.profile_image or url_for('static', filename='images/default-avatar.jpg') }}" class="object-cover w-full h-full" alt="Profile picture">
+                        </div>
+                        <button type="button" onclick="document.getElementById('avatar-upload').click()" class="absolute -bottom-2 -right-2 bg-blue-500 p-2 rounded-full shadow-lg hover:bg-blue-600 transition-all">
+                            <i class="fas fa-camera text-white text-sm"></i>
+                        </button>
+                    </div>
+
+                    <!-- Upload Controls -->
+                    <div class="flex-1 w-full">
+                        <div class="space-y-4">
+                            <input type="file" id="avatar-upload" name="profile_image" class="hidden" accept="image/*" onchange="previewImage(event)">
+                            <div class="border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl p-6 text-center transition-colors hover:border-blue-400 group">
+                                <div class="flex flex-col items-center">
+                                    <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 dark:text-gray-500 mb-3 group-hover:text-blue-400"></i>
+                                    <p class="text-sm text-gray-600 dark:text-gray-300">
+                                        <span class="text-blue-500 cursor-pointer">Click to upload</span> or drag and drop
+                                    </p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                        PNG, JPG up to 2MB
+                                    </p>
+                                </div>
+                            </div>
+                            <button type="button" onclick="removeImage()" class="text-red-500 text-sm hover:text-red-600 transition-colors">
+                                <i class="fas fa-trash mr-2"></i>Remove current photo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Form -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Left Column -->
+                <div class="space-y-6">
+                    <div class="bg-white/5 p-6 rounded-2xl border border-gray-100/30 dark:border-gray-700">
+                        <label class="block text-sm font-medium mb-4 text-gray-700 dark:text-gray-300">Personal Information</label>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-medium mb-2 text-gray-500 dark:text-gray-400">Full Name</label>
+                                <input type="text" name="full_name" value="{{ current_user.full_name }}" class="w-full bg-gray-50/50 dark:bg-gray-800 border-2 border-gray-200/30 dark:border-gray-700 rounded-xl px-4 py-3 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-400 focus:border-transparent">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium mb-2 text-gray-500 dark:text-gray-400">Email Address</label>
+                                <input type="email" name="email" value="{{ current_user.email }}" class="w-full bg-gray-50/50 dark:bg-gray-800 border-2 border-gray-200/30 dark:border-gray-700 rounded-xl px-4 py-3 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-400 focus:border-transparent">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column -->
+                <div class="space-y-6">
+                    <div class="bg-white/5 p-6 rounded-2xl border border-gray-100/30 dark:border-gray-700">
+                        <label class="block text-sm font-medium mb-4 text-gray-700 dark:text-gray-300">Professional Details</label>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-medium mb-2 text-gray-500 dark:text-gray-400">Department</label>
+                                <select name="department_id" disabled class="w-full bg-gray-50/50 dark:bg-gray-800 border-2 border-gray-200/30 dark:border-gray-700 rounded-xl px-4 py-3 text-gray-900 dark:text-gray-100 cursor-not-allowed opacity-70">
+                                    {% for dept in departments %}
+                                    <option value="{{ dept.id }}" {% if dept == current_user.department %}selected{% endif %}>
+                                        {{ dept.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <p class="text-xs text-red-500 mt-1">Department changes are restricted. Please contact the administrator.</p>
+
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium mb-2 text-gray-500 dark:text-gray-400">Role</label>
+                                <select name="role_id" disabled class="w-full bg-gray-50/50 dark:bg-gray-800 border-2 border-gray-200/30 dark:border-gray-700 rounded-xl px-4 py-3 text-gray-900 dark:text-gray-100 cursor-not-allowed opacity-70">
+                                    {% for role in roles %}
+                                    <option value="{{ role.id }}" {% if role in current_user.roles %}selected{% endif %}>
+                                        {{ role.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <p class="text-xs text-red-500 mt-1">Role changes are restricted. Please contact the administrator.</p>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="flex justify-end gap-4 pt-8 border-t border-gray-100/30 dark:border-gray-700">
+                <button type="reset" class="px-6 py-3 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-50/50 dark:hover:bg-gray-700 transition-colors">
+                    Reset Changes
+                </button>
+                <button type="submit" class="px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:scale-[1.02]">
+                    Save Profile
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Image Preview Function
+    function previewImage(event) {
+        const reader = new FileReader();
+        reader.onload = function() {
+            const output = document.getElementById('avatar-preview');
+            output.src = reader.result;
+            output.classList.add('animate-pulse');
+            setTimeout(() => output.classList.remove('animate-pulse'), 500);
+        };
+        reader.readAsDataURL(event.target.files[0]);
+    }
+
+    // Remove Image Function
+    function removeImage() {
+        document.getElementById('avatar-preview').src = "{{ url_for('static', filename='images/default-avatar.jpg') }}";
+        document.getElementById('avatar-upload').value = '';
+    }
+
+    // Drag & Drop Handling
+    const dropZone = document.querySelector('.border-dashed');
+
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, highlight, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, unhighlight, false);
+    });
+
+    function highlight(e) {
+        dropZone.classList.add('border-blue-400', 'bg-blue-50/20');
+    }
+
+    function unhighlight(e) {
+        dropZone.classList.remove('border-blue-400', 'bg-blue-50/20');
+    }
+
+    dropZone.addEventListener('drop', handleDrop, false);
+
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        document.getElementById('avatar-upload').files = files;
+        previewImage({
+            target: {
+                files
+            }
+        });
+    }
+</script>
+
+<style>
+    input[type="file"]::file-selector-button {
+        display: none;
+    }
+    
+    .animate-pulse {
+        animation: pulse 0.5s ease-in-out;
+    }
+    
+    @keyframes pulse {
+        0%,
+        100% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(0.98);
+        }
+    }
+</style>
+{% endblock %}

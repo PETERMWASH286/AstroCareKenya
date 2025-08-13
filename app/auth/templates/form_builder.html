@@ -1,0 +1,678 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4">
+    <div class="max-w-7xl mx-auto">
+        <!-- Form Builder Header -->
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">AstroCare Form Builder</h1>
+                <p class="text-gray-600 mt-2">Create custom forms for your hospital needs</p>
+            </div>
+            <div class="mt-4 md:mt-0 flex flex-wrap gap-3">
+                <button id="preview-btn" class="px-5 py-3 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-medium hover:from-blue-700 hover:to-indigo-800 transition duration-200 shadow-md hover:shadow-lg flex items-center justify-center">
+                    <i class="fas fa-eye mr-2"></i>
+                    Preview Form
+                </button>
+                <button id="export-pdf-btn" class="px-5 py-3 rounded-lg bg-gradient-to-r from-green-600 to-emerald-700 text-white font-medium hover:from-green-700 hover:to-emerald-800 transition duration-200 shadow-md hover:shadow-lg flex items-center justify-center">
+                    <i class="fas fa-file-pdf mr-2"></i>
+                    Export as PDF
+                </button>
+                <button id="save-template-btn" class="px-5 py-3 rounded-lg bg-gradient-to-r from-purple-600 to-fuchsia-700 text-white font-medium hover:from-purple-700 hover:to-fuchsia-800 transition duration-200 shadow-md hover:shadow-lg flex items-center justify-center">
+                    <i class="fas fa-save mr-2"></i>
+                    Save Template
+                </button>
+            </div>
+        </div>
+
+        <!-- Form Builder Main Area -->
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <!-- Elements Palette -->
+            <div class="lg:col-span-1 bg-white rounded-xl shadow-md p-6 h-fit">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Form Elements</h2>
+                <p class="text-gray-600 mb-4">Drag elements to the canvas</p>
+                
+                <div class="space-y-3">
+                    <div draggable="true" data-type="text" class="drag-element p-4 bg-blue-50 border border-blue-200 rounded-lg cursor-move hover:bg-blue-100 transition-colors">
+                        <div class="flex items-center">
+                            <i class="fas fa-font text-blue-600 mr-3"></i>
+                            <span>Text Input</span>
+                        </div>
+                    </div>
+                    
+                    <div draggable="true" data-type="textarea" class="drag-element p-4 bg-green-50 border border-green-200 rounded-lg cursor-move hover:bg-green-100 transition-colors">
+                        <div class="flex items-center">
+                            <i class="fas fa-align-left text-green-600 mr-3"></i>
+                            <span>Text Area</span>
+                        </div>
+                    </div>
+                    
+                    <div draggable="true" data-type="select" class="drag-element p-4 bg-purple-50 border border-purple-200 rounded-lg cursor-move hover:bg-purple-100 transition-colors">
+                        <div class="flex items-center">
+                            <i class="fas fa-caret-down text-purple-600 mr-3"></i>
+                            <span>Dropdown</span>
+                        </div>
+                    </div>
+                    
+                    <div draggable="true" data-type="checkbox" class="drag-element p-4 bg-amber-50 border border-amber-200 rounded-lg cursor-move hover:bg-amber-100 transition-colors">
+                        <div class="flex items-center">
+                            <i class="fas fa-check-square text-amber-600 mr-3"></i>
+                            <span>Checkbox</span>
+                        </div>
+                    </div>
+                    
+                    <div draggable="true" data-type="radio" class="drag-element p-4 bg-rose-50 border border-rose-200 rounded-lg cursor-move hover:bg-rose-100 transition-colors">
+                        <div class="flex items-center">
+                            <i class="fas fa-dot-circle text-rose-600 mr-3"></i>
+                            <span>Radio Buttons</span>
+                        </div>
+                    </div>
+                    
+                    <div draggable="true" data-type="date" class="drag-element p-4 bg-indigo-50 border border-indigo-200 rounded-lg cursor-move hover:bg-indigo-100 transition-colors">
+                        <div class="flex items-center">
+                            <i class="fas fa-calendar text-indigo-600 mr-3"></i>
+                            <span>Date Picker</span>
+                        </div>
+                    </div>
+                    
+                    <div draggable="true" data-type="section" class="drag-element p-4 bg-gray-50 border border-gray-200 rounded-lg cursor-move hover:bg-gray-100 transition-colors">
+                        <div class="flex items-center">
+                            <i class="fas fa-grip-lines text-gray-600 mr-3"></i>
+                            <span>Section Header</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-8">
+                    <h3 class="text-lg font-medium text-gray-800 mb-3">Form Settings</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Form Title</label>
+                            <input type="text" id="form-title" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="Patient Registration Form">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Hospital Branch</label>
+                            <select class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option>Main Hospital</option>
+                                <option>West Campus</option>
+                                <option>Children's Wing</option>
+                                <option>Cardiology Center</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Canvas Area -->
+            <div class="lg:col-span-2 bg-white rounded-xl shadow-md p-6 min-h-[600px]">
+                <div id="form-canvas" class="space-y-6">
+                    <!-- Form Header -->
+                    <div class="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-xl p-6 text-center text-white">
+                        <h1 class="text-2xl font-bold" id="form-title-display">Patient Registration Form</h1>
+                        <div class="mt-2 flex flex-wrap justify-center gap-4">
+                            <div>
+                                <i class="fas fa-hospital mr-2"></i>
+                                <span>AstroCare Hospital</span>
+                            </div>
+                            <div>
+                                <i class="fas fa-map-marker-alt mr-2"></i>
+                                <span>123 Medical Plaza, Health City</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Form Elements Container -->
+                    <div id="elements-container" class="space-y-6">
+                        <!-- This is where dragged elements will appear -->
+                        <div class="text-center py-12 text-gray-500 border-2 border-dashed rounded-xl" id="empty-canvas-message">
+                            <i class="fas fa-hand-pointer text-3xl mb-3"></i>
+                            <p>Drag form elements here to start building</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Form Footer -->
+                    <div class="border-t border-gray-200 pt-6 mt-8 text-sm text-gray-600">
+                        <div class="flex flex-wrap justify-between">
+                            <div>
+                                <p class="font-medium">AstroCare Hospital</p>
+                                <p>Quality Healthcare Since 2005</p>
+                            </div>
+                            <div class="mt-4 sm:mt-0">
+                                <p>Form ID: AC-2023-REG-001</p>
+                                <p>Generated: {{ now.strftime('%Y-%m-%d') }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Properties Panel -->
+            <div class="lg:col-span-1 bg-white rounded-xl shadow-md p-6 h-fit">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Properties</h2>
+                <div id="properties-panel" class="space-y-5">
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-mouse-pointer text-2xl mb-3"></i>
+                        <p>Select an element to edit its properties</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Preview Modal -->
+<div id="preview-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black bg-opacity-50">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+        <div class="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-4 flex justify-between items-center">
+            <h3 class="text-xl font-semibold text-white">Form Preview</h3>
+            <button id="close-preview" class="text-white hover:text-blue-200">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        <div class="p-6 overflow-y-auto max-h-[80vh]">
+            <div id="form-preview" class="space-y-6">
+                <!-- Preview content will be injected here -->
+            </div>
+        </div>
+        <div class="flex justify-end gap-3 px-6 py-4 bg-gray-50">
+            <button id="close-preview-btn" class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-100">
+                Close
+            </button>
+            <button id="export-from-preview" class="px-4 py-2 rounded-lg bg-gradient-to-r from-green-600 to-emerald-700 text-white font-medium hover:from-green-700 hover:to-emerald-800">
+                <i class="fas fa-file-pdf mr-2"></i> Export as PDF
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Save Template Modal -->
+<div id="save-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black bg-opacity-50">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
+        <div class="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-4">
+            <h3 class="text-xl font-semibold text-white">Save Form Template</h3>
+        </div>
+        <div class="p-6">
+            <form id="save-template-form" class="space-y-5">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Template Name</label>
+                    <input type="text" required class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., Patient Registration">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                    <select class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option>Patient Forms</option>
+                        <option>Clinical Forms</option>
+                        <option>HR & Staff</option>
+                        <option>Billing & Financial</option>
+                        <option>Legal & Compliance</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <textarea rows="3" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Brief description of the template"></textarea>
+                </div>
+            </form>
+        </div>
+        <div class="flex justify-end gap-3 px-6 py-4 bg-gray-50">
+            <button id="cancel-save" class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-100">
+                Cancel
+            </button>
+            <button type="submit" form="save-template-form" class="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-fuchsia-700 text-white font-medium hover:from-purple-700 hover:to-fuchsia-800">
+                Save Template
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+    .drag-element {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .drag-element.dragging {
+        opacity: 0.5;
+        transform: scale(0.98);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+    
+    .form-element {
+        position: relative;
+        padding: 1.5rem;
+        border: 2px dashed transparent;
+        border-radius: 0.75rem;
+        transition: all 0.2s ease;
+    }
+    
+    .form-element:hover {
+        background-color: #f9fafb;
+        border-color: #d1d5db;
+    }
+    
+    .form-element.selected {
+        border-color: #3b82f6;
+        background-color: #eff6ff;
+    }
+    
+    .element-actions {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+    }
+    
+    .form-element:hover .element-actions {
+        opacity: 1;
+    }
+</style>
+
+<script>
+    // Initialize variables
+    let selectedElement = null;
+    let formElements = [];
+    
+    // DOM Elements
+    const formCanvas = document.getElementById('form-canvas');
+    const elementsContainer = document.getElementById('elements-container');
+    const emptyCanvasMessage = document.getElementById('empty-canvas-message');
+    const propertiesPanel = document.getElementById('properties-panel');
+    const formTitleInput = document.getElementById('form-title');
+    const formTitleDisplay = document.getElementById('form-title-display');
+    
+    // Modals
+    const previewModal = document.getElementById('preview-modal');
+    const saveModal = document.getElementById('save-modal');
+    
+    // Update form title when input changes
+    formTitleInput.addEventListener('input', () => {
+        formTitleDisplay.textContent = formTitleInput.value;
+    });
+    
+    // Setup drag and drop
+    document.querySelectorAll('.drag-element').forEach(element => {
+        element.addEventListener('dragstart', (e) => {
+            e.dataTransfer.setData('text/plain', element.getAttribute('data-type'));
+            element.classList.add('dragging');
+        });
+        
+        element.addEventListener('dragend', () => {
+            document.querySelectorAll('.drag-element').forEach(el => {
+                el.classList.remove('dragging');
+            });
+        });
+    });
+    
+    elementsContainer.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        elementsContainer.classList.add('bg-blue-50');
+    });
+    
+    elementsContainer.addEventListener('dragleave', () => {
+        elementsContainer.classList.remove('bg-blue-50');
+    });
+    
+    elementsContainer.addEventListener('drop', (e) => {
+        e.preventDefault();
+        elementsContainer.classList.remove('bg-blue-50');
+        
+        const elementType = e.dataTransfer.getData('text/plain');
+        addElementToCanvas(elementType);
+        
+        // Hide empty canvas message
+        if (emptyCanvasMessage) {
+            emptyCanvasMessage.style.display = 'none';
+        }
+    });
+    
+    // Add element to canvas
+    function addElementToCanvas(type) {
+        const elementId = `element-${Date.now()}`;
+        let elementHTML = '';
+        
+        switch(type) {
+            case 'text':
+                elementHTML = `
+                    <div class="form-element" id="${elementId}" draggable="true">
+                        <div class="element-actions flex gap-2">
+                            <button class="edit-element p-1 text-blue-600 hover:text-blue-800">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="delete-element p-1 text-red-600 hover:text-red-800">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Text Input</label>
+                        <input type="text" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Enter text">
+                    </div>
+                `;
+                break;
+            case 'textarea':
+                elementHTML = `
+                    <div class="form-element" id="${elementId}" draggable="true">
+                        <div class="element-actions flex gap-2">
+                            <button class="edit-element p-1 text-blue-600 hover:text-blue-800">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="delete-element p-1 text-red-600 hover:text-red-800">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Text Area</label>
+                        <textarea class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" rows="3" placeholder="Enter text"></textarea>
+                    </div>
+                `;
+                break;
+            case 'select':
+                elementHTML = `
+                    <div class="form-element" id="${elementId}" draggable="true">
+                        <div class="element-actions flex gap-2">
+                            <button class="edit-element p-1 text-blue-600 hover:text-blue-800">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="delete-element p-1 text-red-600 hover:text-red-800">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Dropdown</label>
+                        <select class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option>Option 1</option>
+                            <option>Option 2</option>
+                            <option>Option 3</option>
+                        </select>
+                    </div>
+                `;
+                break;
+            case 'checkbox':
+                elementHTML = `
+                    <div class="form-element" id="${elementId}" draggable="true">
+                        <div class="element-actions flex gap-2">
+                            <button class="edit-element p-1 text-blue-600 hover:text-blue-800">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="delete-element p-1 text-red-600 hover:text-red-800">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Checkbox Group</label>
+                        <div class="space-y-2">
+                            <div class="flex items-center">
+                                <input type="checkbox" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                <label class="ml-2 text-gray-700">Option 1</label>
+                            </div>
+                            <div class="flex items-center">
+                                <input type="checkbox" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                <label class="ml-2 text-gray-700">Option 2</label>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                break;
+            case 'section':
+                elementHTML = `
+                    <div class="form-element" id="${elementId}" draggable="true">
+                        <div class="element-actions flex gap-2">
+                            <button class="edit-element p-1 text-blue-600 hover:text-blue-800">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="delete-element p-1 text-red-600 hover:text-red-800">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                        <div class="border-b border-gray-300 pb-2 mb-4">
+                            <h3 class="text-lg font-semibold text-gray-800">Section Title</h3>
+                            <p class="text-gray-600">Section description goes here</p>
+                        </div>
+                    </div>
+                `;
+                break;
+            default:
+                elementHTML = `
+                    <div class="form-element" id="${elementId}" draggable="true">
+                        <div class="element-actions flex gap-2">
+                            <button class="edit-element p-1 text-blue-600 hover:text-blue-800">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="delete-element p-1 text-red-600 hover:text-red-800">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">New Element</label>
+                        <input type="text" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                `;
+        }
+        
+        elementsContainer.insertAdjacentHTML('beforeend', elementHTML);
+        
+        // Add event listeners to the new element
+        const newElement = document.getElementById(elementId);
+        newElement.addEventListener('click', () => selectElement(newElement));
+        
+        newElement.querySelector('.delete-element').addEventListener('click', (e) => {
+            e.stopPropagation();
+            newElement.remove();
+            selectedElement = null;
+            showDefaultProperties();
+            
+            // Show empty message if no elements left
+            if (elementsContainer.children.length === 0) {
+                emptyCanvasMessage.style.display = 'block';
+            }
+        });
+        
+        // Add drag functionality for rearranging
+        newElement.addEventListener('dragstart', (e) => {
+            e.dataTransfer.setData('text/plain', elementId);
+            newElement.classList.add('dragging');
+        });
+        
+        newElement.addEventListener('dragend', () => {
+            newElement.classList.remove('dragging');
+        });
+        
+        // Add drop targets for rearranging
+        newElement.addEventListener('dragover', (e) => {
+            e.preventDefault();
+        });
+        
+        newElement.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const draggedId = e.dataTransfer.getData('text/plain');
+            const draggedElement = document.getElementById(draggedId);
+            
+            if (draggedElement && draggedElement !== newElement) {
+                const rect = newElement.getBoundingClientRect();
+                const offset = e.clientY - rect.top;
+                
+                if (offset < rect.height / 2) {
+                    elementsContainer.insertBefore(draggedElement, newElement);
+                } else {
+                    elementsContainer.insertBefore(draggedElement, newElement.nextSibling);
+                }
+            }
+        });
+    }
+    
+    // Select element for editing
+    function selectElement(element) {
+        // Deselect previously selected element
+        if (selectedElement) {
+            selectedElement.classList.remove('selected');
+        }
+        
+        // Select new element
+        element.classList.add('selected');
+        selectedElement = element;
+        
+        // Show properties for this element
+        showElementProperties(element);
+    }
+    
+    // Show properties for selected element
+    function showElementProperties(element) {
+        const elementType = element.querySelector('input, select, textarea') ? 
+            element.querySelector('input, select, textarea').tagName.toLowerCase() : 
+            'section';
+            
+        let propertiesHTML = '';
+        
+        switch(elementType) {
+            case 'input':
+                propertiesHTML = `
+                    <h3 class="text-lg font-medium text-gray-800 mb-4">Text Input Properties</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Label</label>
+                            <input type="text" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="Text Input">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Placeholder</label>
+                            <input type="text" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="Enter text">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Required</label>
+                            <div class="mt-1">
+                                <label class="inline-flex items-center">
+                                    <input type="checkbox" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                    <span class="ml-2 text-gray-700">This field is required</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                break;
+            case 'textarea':
+                propertiesHTML = `
+                    <h3 class="text-lg font-medium text-gray-800 mb-4">Text Area Properties</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Label</label>
+                            <input type="text" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="Text Area">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Placeholder</label>
+                            <input type="text" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="Enter text">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Rows</label>
+                            <input type="number" min="1" max="10" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="3">
+                        </div>
+                    </div>
+                `;
+                break;
+            case 'section':
+                propertiesHTML = `
+                    <h3 class="text-lg font-medium text-gray-800 mb-4">Section Properties</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                            <input type="text" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="Section Title">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                            <textarea class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" rows="2">Section description goes here</textarea>
+                        </div>
+                    </div>
+                `;
+                break;
+            default:
+                propertiesHTML = `
+                    <h3 class="text-lg font-medium text-gray-800 mb-4">Element Properties</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Label</label>
+                            <input type="text" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="Element Label">
+                        </div>
+                    </div>
+                `;
+        }
+        
+        propertiesPanel.innerHTML = propertiesHTML;
+    }
+    
+    // Show default properties panel
+    function showDefaultProperties() {
+        propertiesPanel.innerHTML = `
+            <div class="text-center py-8 text-gray-500">
+                <i class="fas fa-mouse-pointer text-2xl mb-3"></i>
+                <p>Select an element to edit its properties</p>
+            </div>
+        `;
+    }
+    
+    // Preview functionality
+    document.getElementById('preview-btn').addEventListener('click', () => {
+        const formPreview = document.getElementById('form-preview');
+        formPreview.innerHTML = document.getElementById('form-canvas').innerHTML;
+        
+        // Remove edit elements from preview
+        formPreview.querySelectorAll('.element-actions').forEach(el => el.remove());
+        formPreview.querySelectorAll('.form-element').forEach(el => {
+            el.classList.remove('form-element', 'selected');
+            el.removeAttribute('draggable');
+            el.removeAttribute('id');
+        });
+        
+        previewModal.classList.remove('hidden');
+        document.body.classList.add('overflow-hidden');
+    });
+    
+    // Close preview modal
+    document.getElementById('close-preview').addEventListener('click', () => {
+        previewModal.classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+    });
+    
+    document.getElementById('close-preview-btn').addEventListener('click', () => {
+        previewModal.classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+    });
+    
+    // Export to PDF functionality
+    document.getElementById('export-pdf-btn').addEventListener('click', generatePDF);
+    document.getElementById('export-from-preview').addEventListener('click', generatePDF);
+    
+    function generatePDF() {
+        // In a real app, this would use a PDF generation library
+        alert('PDF generation would happen here. In a real app, this would:\n1. Convert the form to PDF\n2. Add hospital header/footer\n3. Save to database');
+        
+        // Close preview if open
+        previewModal.classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+    }
+    
+    // Save template functionality
+    document.getElementById('save-template-btn').addEventListener('click', () => {
+        saveModal.classList.remove('hidden');
+        document.body.classList.add('overflow-hidden');
+    });
+    
+    document.getElementById('cancel-save').addEventListener('click', () => {
+        saveModal.classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+    });
+    
+    // Handle form submission
+    document.getElementById('save-template-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        alert('Template would be saved to database here');
+        saveModal.classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+    });
+    
+    // Close modals when clicking outside
+    [previewModal, saveModal].forEach(modal => {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.classList.add('hidden');
+                document.body.classList.remove('overflow-hidden');
+            }
+        });
+    });
+    
+    // Initialize
+    showDefaultProperties();
+</script>
+{% endblock %}

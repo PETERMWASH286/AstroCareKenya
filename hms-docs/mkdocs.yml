@@ -1,0 +1,58 @@
+site_name: AstroCare User Guide
+site_description: Modern user manual for AstroCare — the multi-hospital HMS
+site_author: AstroCare Team
+
+theme:
+  name: material
+  palette:
+    primary: teal
+    accent: amber
+  font:
+    text: Roboto
+    code: Roboto Mono
+  features:
+    - navigation.instant
+    - content.code.annotate
+    - header.autohide
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Access & Onboarding: getting-started/access.md
+      - Navigation & Productivity: getting-started/navigation.md
+      - First-Time Checklist: getting-started/checklist.md
+  - Features:
+      - Patients: features/patients.md
+      - Appointments: features/appointments.md
+      - Medical Services:
+          - Consultation: features/services/consultation.md
+          - Special Clinics: features/services/special-clinics.md
+          - Optician Clinic: features/services/optician.md
+          - Dental Clinic: features/services/dental.md
+      - Billing & Payments: features/billing.md
+      - Pharmacy: features/pharmacy.md
+      - Laboratory: features/lab.md
+      - Radiology: features/radiology.md
+      - Finance: features/finance.md
+      - Inventory & Supplies: features/inventory.md
+      - Human Resources (HR): features/hr.md
+      - Reports & Analytics: features/reports.md
+      - Administration & Multi-Hospital: features/admin.md
+      - Security & Compliance: features/security.md
+      - Integrations: features/integrations.md
+  - Support:
+      - FAQ: support/faq.md
+      - Troubleshooting: support/troubleshooting.md
+      - Contact: support/contact.md
+
+plugins:
+  - search
+  - mkdocstrings
+
+extra_css:
+  - css/custom.css  # Optional: add Tailwind-like branding if needed
+
+markdown_extensions:
+  - admonition
+  - toc:
+      permalink: true

@@ -1,0 +1,302 @@
+{% extends "patient-base.html" %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto">
+        <div class="mb-8 md:mb-10 text-center md:text-left">
+            <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white leading-tight">
+                <i class="fas fa-envelope-open-text text-blue-600 dark:text-blue-400 mr-3"></i> Secure Messages
+            </h1>
+            <p class="mt-3 text-lg text-gray-600 dark:text-gray-300">
+                Your secure communication hub for messages from your healthcare providers and AstroCare support.
+            </p>
+        </div>
+
+        <div class="flex flex-col lg:flex-row gap-6">
+
+            <div class="lg:w-1/3 xl:w-1/4 bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 flex flex-col h-full lg:min-h-[70vh]">
+                <a href=""
+                   class="inline-flex items-center justify-center w-full px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 mb-6">
+                    <i class="fas fa-plus-circle mr-2"></i> Compose New Message
+                </a>
+
+                <div class="mb-4">
+                    <label for="message-search" class="sr-only">Search Messages</label>
+                    <div class="relative mb-3">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-search text-gray-400 dark:text-gray-500"></i>
+                        </div>
+                        <input type="text" id="message-search" placeholder="Search sender or subject..."
+                               class="block w-full pl-10 pr-3 py-2 rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 sm:text-sm">
+                    </div>
+                    <select id="filter-read-status" class="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 sm:text-sm p-2">
+                        <option value="all">All Messages</option>
+                        <option value="unread">Unread</option>
+                        <option value="read">Read</option>
+                    </select>
+                </div>
+
+                <div id="message-list" class="flex-grow overflow-y-auto pr-2 custom-scrollbar">
+                    {% if messages %}
+                        {% for message in messages %}
+                        <div class="message-item p-4 rounded-lg mb-2 cursor-pointer
+                            {% if not message.read %} bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-700 font-semibold text-gray-900 dark:text-white
+                            {% else %} bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300
+                            {% endif %}
+                            hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors duration-200"
+                            data-message-id="{{ message.id }}"
+                            data-sender="{{ message.sender | lower }}"
+                            data-subject="{{ message.subject | lower }}"
+                            data-read="{{ message.read | lower }}">
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="text-sm {% if not message.read %}text-blue-700 dark:text-blue-300{% endif %}">{{ message.sender }}</span>
+                                <span class="text-xs text-gray-500 dark:text-gray-400">{{ message.date.strftime('%b %d, %I:%M %p') }}</span>
+                            </div>
+                            <p class="text-base truncate {% if not message.read %}text-blue-800 dark:text-blue-100{% endif %}">{{ message.subject }}</p>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center p-6 text-gray-600 dark:text-gray-400">
+                            <i class="fas fa-inbox text-5xl mb-3 text-blue-400"></i>
+                            <p class="font-semibold text-lg mb-1">Your inbox is empty!</p>
+                            <p class="text-sm">No messages to display. Start by composing a new message.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div id="message-detail-pane" class="lg:w-2/3 xl:w-3/4 bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 flex flex-col lg:min-h-[70vh]">
+                <div class="flex-grow flex items-center justify-center text-center text-gray-600 dark:text-gray-400">
+                    <div id="initial-message-prompt">
+                        <i class="fas fa-arrow-left text-blue-400 text-4xl mb-3 block lg:hidden"></i>
+                        <i class="fas fa-inbox text-blue-400 text-4xl mb-3 hidden lg:block"></i>
+                        <p class="text-lg font-semibold">Select a message to view its content.</p>
+                        <p class="text-sm mt-1">Click on any message in the left panel to open it here.</p>
+                    </div>
+                    <div id="message-content" class="hidden w-full h-full flex flex-col">
+                        <div class="flex items-start justify-between border-b border-gray-200 dark:border-gray-700 pb-4 mb-4">
+                            <div>
+                                <h2 class="text-2xl font-bold text-gray-900 dark:text-white" id="detail-subject"></h2>
+                                <p class="text-gray-600 dark:text-gray-300 text-sm mt-1">From: <span id="detail-sender" class="font-medium"></span></p>
+                                <p class="text-gray-500 dark:text-gray-400 text-xs" id="detail-date"></p>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button onclick="markAsUnread()" class="inline-flex items-center p-2 rounded-full text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-150" title="Mark as Unread">
+                                    <i class="fas fa-envelope"></i>
+                                </button>
+                                <button onclick="archiveMessage()" class="inline-flex items-center p-2 rounded-full text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-150" title="Archive">
+                                    <i class="fas fa-archive"></i>
+                                </button>
+                                <a href="#" id="reply-button" class="inline-flex items-center p-2 rounded-full text-white bg-blue-600 hover:bg-blue-700 transition-colors duration-150" title="Reply">
+                                    <i class="fas fa-reply"></i>
+                                </a>
+                            </div>
+                        </div>
+                        <div class="flex-grow overflow-y-auto custom-scrollbar text-gray-800 dark:text-gray-200 leading-relaxed text-lg" id="detail-body">
+                            <p>This is a placeholder for the message body. In a real application, this would be fetched via an API call when a message is selected.</p>
+                            <p class="mt-4">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+<style>
+    /* Custom Scrollbar for better aesthetics */
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: #f1f1f1; /* Light mode */
+        border-radius: 10px;
+    }
+    .dark .custom-scrollbar::-webkit-scrollbar-track {
+        background: #4a5568; /* Dark mode */
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #a0aec0; /* Light mode */
+        border-radius: 10px;
+    }
+    .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #718096; /* Dark mode */
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #718096; /* Light mode */
+    }
+    .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #a0aec0; /* Dark mode */
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const messageItems = document.querySelectorAll('.message-item');
+        const initialMessagePrompt = document.getElementById('initial-message-prompt');
+        const messageContentPane = document.getElementById('message-content');
+        const detailSubject = document.getElementById('detail-subject');
+        const detailSender = document.getElementById('detail-sender');
+        const detailDate = document.getElementById('detail-date');
+        const detailBody = document.getElementById('detail-body');
+        const replyButton = document.getElementById('reply-button');
+
+        const searchInput = document.getElementById('message-search');
+        const filterReadStatus = document.getElementById('filter-read-status');
+
+        let activeMessageId = null; // To keep track of the currently selected message
+
+        // Function to simulate fetching message details (in a real app, this would be an AJAX call)
+        async function fetchMessageDetails(messageId) {
+            // In a real Flask app, you'd make an AJAX request here:
+            // const response = await fetch(`/api/patient/messages/${messageId}`);
+            // const data = await response.json();
+            // return data;
+
+            // For now, simulate data based on the provided messages (and add a dummy body)
+            const allMessages = [
+                {'id': 1, 'sender': 'Dr. Sarah Johnson (Nairobi General)', 'subject': 'Your recent lab results', 'date': new Date(2025, 6, 30, 14, 0), 'read': false, 'body': 'Dear Patient, Your recent blood test results are now available for review in your health records section. Please log in to view them. If you have any questions, you can schedule a follow-up consultation. Best regards, Dr. Sarah Johnson.'},
+                {'id': 2, 'sender': 'Admin (AstroCare Support)', 'subject': 'System Update Notification', 'date': new Date(2025, 6, 29, 10, 0), 'read': true, 'body': 'Dear User, We are performing a routine system update on August 5th, 2025, between 2:00 AM and 4:00 AM EAT. During this time, there might be brief interruptions to service. We apologize for any inconvenience. The AstroCare Team.'},
+                {'id': 3, 'sender': 'Billing Dept (Kenyatta National)', 'subject': 'Regarding outstanding balance', 'date': new Date(2025, 6, 28, 9, 30), 'read': false, 'body': 'Dear Patient, This is a reminder regarding an outstanding balance on your account. Please log into the billing section of your portal or contact us at +254 7XX XXX XXX to settle this. Thank you, Billing Department.'},
+            ];
+            return allMessages.find(msg => msg.id === messageId);
+        }
+
+        async function displayMessage(messageItem) {
+            const messageId = parseInt(messageItem.dataset.messageId);
+            activeMessageId = messageId; // Set the active message ID
+
+            // Remove active state from all items
+            messageItems.forEach(item => item.classList.remove('ring-2', 'ring-blue-500', 'dark:ring-blue-400'));
+            // Add active state to the clicked item
+            messageItem.classList.add('ring-2', 'ring-blue-500', 'dark:ring-blue-400');
+
+            // Mark as read in UI and conceptually
+            if (messageItem.dataset.read === 'false') {
+                messageItem.classList.remove('bg-blue-50', 'dark:bg-blue-950', 'border-blue-200', 'dark:border-blue-700', 'font-semibold', 'text-gray-900', 'dark:text-white');
+                messageItem.classList.add('bg-gray-100', 'dark:bg-gray-700', 'border-gray-200', 'dark:border-gray-600', 'text-gray-700', 'dark:text-gray-300');
+                messageItem.dataset.read = 'true';
+                // In a real app, you'd send an AJAX request to mark as read on the server
+                // fetch(`/api/patient/messages/${messageId}/read`, { method: 'POST' });
+            }
+
+            initialMessagePrompt.classList.add('hidden');
+            messageContentPane.classList.remove('hidden');
+
+            // Fetch and display content
+            const messageDetails = await fetchMessageDetails(messageId);
+
+            if (messageDetails) {
+                detailSubject.textContent = messageDetails.subject;
+                detailSender.textContent = messageDetails.sender;
+                detailDate.textContent = messageDetails.date.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true });
+                detailBody.innerHTML = `<p>${messageDetails.body.replace(/\n/g, '<br>')}</p>`; // Basic line break handling
+                replyButton.href = `') }}?reply_to=${messageId}`;
+            } else {
+                detailSubject.textContent = 'Message Not Found';
+                detailSender.textContent = '';
+                detailDate.textContent = '';
+                detailBody.innerHTML = '<p>The content for this message could not be loaded.</p>';
+                replyButton.href = '#';
+            }
+        }
+
+        // Add click listeners to message items
+        messageItems.forEach(item => {
+            item.addEventListener('click', () => displayMessage(item));
+        });
+
+        // Filtering and Searching
+        function applyFiltersAndSearch() {
+            const searchTerm = searchInput.value.toLowerCase().trim();
+            const readStatusFilter = filterReadStatus.value;
+
+            let visibleCount = 0;
+            messageItems.forEach(item => {
+                const sender = item.dataset.sender;
+                const subject = item.dataset.subject;
+                const readStatus = item.dataset.read;
+
+                const matchesSearch = searchTerm === '' || sender.includes(searchTerm) || subject.includes(searchTerm);
+                const matchesReadStatus = readStatusFilter === 'all' || readStatus === readStatusFilter;
+
+                if (matchesSearch && matchesReadStatus) {
+                    item.style.display = 'block';
+                    visibleCount++;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+
+            // Handle no results for filters/search
+            const messageListDiv = document.getElementById('message-list');
+            const noResultsFoundDiv = document.getElementById('no-results-found');
+            if (visibleCount === 0 && (searchTerm !== '' || readStatusFilter !== 'all')) {
+                if (!noResultsFoundDiv) {
+                    messageListDiv.innerHTML = `
+                        <div id="no-results-found" class="text-center p-6 text-gray-600 dark:text-gray-400">
+                            <i class="fas fa-filter text-5xl mb-3 text-blue-400"></i>
+                            <p class="font-semibold text-lg mb-1">No Messages Found</p>
+                            <p class="text-sm">Adjust your filters or search terms.</p>
+                        </div>
+                    `;
+                }
+            } else if (noResultsFoundDiv) {
+                noResultsFoundDiv.remove(); // Remove the "no results" message if items are now visible
+                // Re-add original empty state if no messages at all (though unlikely after initial render)
+            }
+        }
+
+        searchInput.addEventListener('input', applyFiltersAndSearch);
+        filterReadStatus.addEventListener('change', applyFiltersAndSearch);
+
+        // Placeholder for action buttons
+        window.markAsUnread = function() {
+            if (activeMessageId) {
+                alert(`Message ${activeMessageId} marked as unread. (Functionality to update on server goes here)`);
+                // Find the message item and revert its UI state
+                const item = document.querySelector(`.message-item[data-message-id="${activeMessageId}"]`);
+                if (item) {
+                    item.classList.add('bg-blue-50', 'dark:bg-blue-950', 'border-blue-200', 'dark:border-blue-700', 'font-semibold', 'text-gray-900', 'dark:text-white');
+                    item.classList.remove('bg-gray-100', 'dark:bg-gray-700', 'border-gray-200', 'dark:border-gray-600', 'text-gray-700', 'dark:text-gray-300');
+                    item.dataset.read = 'false';
+                }
+            }
+        };
+
+        window.archiveMessage = function() {
+            if (activeMessageId) {
+                alert(`Message ${activeMessageId} archived. (Functionality to archive on server goes here)`);
+                // In a real app, you'd remove the item from the DOM or move it to an archive view
+                const itemToRemove = document.querySelector(`.message-item[data-message-id="${activeMessageId}"]`);
+                if (itemToRemove) itemToRemove.remove();
+                // Reset detail pane
+                initialMessagePrompt.classList.remove('hidden');
+                messageContentPane.classList.add('hidden');
+                activeMessageId = null;
+            }
+        };
+
+        // Optionally, automatically select the first message on load if any exist
+        if (messageItems.length > 0) {
+            // Check if there's a message ID in the URL (e.g., from a notification)
+            const urlParams = new URLSearchParams(window.location.search);
+            const messageToOpen = urlParams.get('message_id');
+
+            let messageToSelect = messageItems[0]; // Default to first message
+
+            if (messageToOpen) {
+                const foundMessage = document.querySelector(`.message-item[data-message-id="${messageToOpen}"]`);
+                if (foundMessage) {
+                    messageToSelect = foundMessage;
+                }
+            }
+            displayMessage(messageToSelect);
+        }
+    });
+</script>
+{% endblock %}

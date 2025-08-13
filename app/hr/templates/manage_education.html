@@ -1,0 +1,169 @@
+{% extends 'base.html' %} {% block content %}
+<div class="min-h-screen bg-gray-50 py-8">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="mb-8 flex justify-between items-start">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Education Management</h1>
+                <p class="mt-2 text-sm text-gray-600">
+                    Manage academic qualifications for {{ employee.full_name }}
+                </p>
+            </div>
+            <a href="{{ url_for('hr_web.staff_bio', user_id=employee.id) }}" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                <i class="fas fa-arrow-left mr-2"></i> Back to Bio
+            </a>
+        </div>
+
+        <!-- Add New Education Form -->
+        <div class="bg-white shadow-xl rounded-lg overflow-hidden mb-8">
+            <div class="px-6 py-5 bg-gradient-to-r from-indigo-500 to-purple-600">
+                <h2 class="text-lg font-medium text-white">Add New Education</h2>
+            </div>
+
+            <form method="POST" class="px-6 py-8">
+                <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+                    <div class="sm:col-span-6">
+                        <label for="institution" class="block text-sm font-medium text-gray-700">Institution</label>
+                        <input type="text" id="institution" name="institution" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                    </div>
+
+                    <div class="sm:col-span-4">
+                        <label for="degree" class="block text-sm font-medium text-gray-700">Degree/Certificate</label>
+                        <input type="text" id="degree" name="degree" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                    </div>
+
+                    <div class="sm:col-span-2">
+                        <label for="field_of_study" class="block text-sm font-medium text-gray-700">Field of Study</label>
+                        <input type="text" id="field_of_study" name="field_of_study" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                    </div>
+
+                    <div class="sm:col-span-3">
+                        <label for="start_date" class="block text-sm font-medium text-gray-700">Start Date</label>
+                        <input type="date" id="start_date" name="start_date" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                    </div>
+
+                    <div class="sm:col-span-3">
+                        <label for="end_date" class="block text-sm font-medium text-gray-700">End Date</label>
+                        <input type="date" id="end_date" name="end_date" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                    </div>
+
+                    <div class="sm:col-span-2">
+                        <label for="grade" class="block text-sm font-medium text-gray-700">Grade/GPA</label>
+                        <input type="text" id="grade" name="grade" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                    </div>
+
+                    <div class="sm:col-span-4">
+                        <div class="flex items-center mt-6">
+                            <input id="is_current" name="is_current" type="checkbox" class="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
+                            <label for="is_current" class="ml-2 block text-sm text-gray-700">Currently enrolled</label>
+                        </div>
+                    </div>
+
+                    <div class="sm:col-span-6">
+                        <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
+                        <textarea id="description" name="description" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"></textarea>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex justify-end">
+                    <button type="submit" class="inline-flex justify-center py-2 px-8 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+            Add Education
+          </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Education Records -->
+        <div class="bg-white shadow-xl rounded-lg overflow-hidden">
+            <div class="px-6 py-5 bg-gradient-to-r from-gray-700 to-gray-900">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-lg font-medium text-white">Education History</h2>
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-600 text-white">
+            {{ bio.educations|length }} records
+          </span>
+                </div>
+            </div>
+
+            <div class="px-6 py-4">
+                {% if bio.educations %}
+                <div class="space-y-6">
+                    {% for edu in bio.educations %}
+                    <div class="border border-gray-200 rounded-lg p-5 hover:shadow-md transition-shadow duration-300">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-900">{{ edu.degree }}</h3>
+                                <p class="text-sm text-indigo-600">{{ edu.institution }}</p>
+                                <p class="text-sm text-gray-500 mt-1">
+                                    {% if edu.field_of_study %}{{ edu.field_of_study }} • {% endif %} {{ edu.start_date.strftime('%b %Y') }} - {% if edu.end_date %}{{ edu.end_date.strftime('%b %Y') }} {% else %}Present{% endif %}
+                                </p>
+                            </div>
+                            <div class="flex space-x-2">
+                                <a href="#" class="text-indigo-600 hover:text-indigo-900">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <form action="{{ url_for('hr_web.delete_education', edu_id=edu.id) }}" method="POST">
+                                    <button type="submit" class="text-red-600 hover:text-red-900">
+                    <i class="fas fa-trash-alt"></i>
+                  </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        {% if edu.description %}
+                        <div class="mt-4">
+                            <p class="text-sm text-gray-600">{{ edu.description }}</p>
+                        </div>
+                        {% endif %} {% if edu.grade %}
+                        <div class="mt-3 flex items-center">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                <i class="fas fa-star mr-1"></i> Grade: {{ edu.grade }}
+              </span> {% if edu.is_current %}
+                            <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                <i class="fas fa-circle-notch fa-spin mr-1"></i> Current
+              </span> {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-10">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+          </svg>
+                    <h3 class="mt-2 text-lg font-medium text-gray-900">No education records</h3>
+                    <p class="mt-1 text-sm text-gray-500">
+                        Add the first education record using the form above.
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Flash Messages -->
+{% with messages = get_flashed_messages(with_categories=true) %} {% if messages %}
+<div id="flash-messages" class="fixed bottom-4 right-4 z-50 space-y-2">
+    {% for category, message in messages %}
+    <div class="bg-{% if category == 'success' %}green{% else %}red{% endif %}-500 text-white px-4 py-2 rounded-md shadow-lg flex items-start max-w-md">
+        <div class="flex-1">
+            <p class="text-sm font-medium">{{ message }}</p>
+        </div>
+        <button type="button" class="ml-4 flex-shrink-0 text-white hover:text-gray-200 focus:outline-none" onclick="this.parentElement.remove()">
+            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+            </svg>
+          </button>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+    // Auto-dismiss flash messages after 5 seconds
+    setTimeout(() => {
+        const flashMessages = document.getElementById('flash-messages');
+        if (flashMessages) flashMessages.remove();
+    }, 5000);
+</script>
+{% endif %} {% endwith %} {% endblock %}

@@ -1,0 +1,84 @@
+<!-- /home/pincho/Desktop/astrocare/app/reports/templates/reports/audit_logs.html -->
+
+{% extends "base.html" %} {% block title %}Audit Logs{% endblock %} {% block content %}
+<div class="min-h-screen p-6 md:p-8">
+    <div class="max-w-7xl mx-auto space-y-6">
+        <!-- Header -->
+        <div class="flex items-center justify-between">
+            <h1 class="text-3xl font-bold text-gray-800 dark:text-white">
+                <i class="fas fa-file-alt text-yellow-500 mr-2"></i>Audit Logs
+            </h1>
+            <form method="GET" class="flex space-x-2">
+                <input type="text" name="model" value="{{ model_filter or '' }}" placeholder="Filter by Model" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <input type="text" name="action" value="{{ action_filter or '' }}" placeholder="Filter by Action" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition">
+          Apply
+        </button>
+            </form>
+        </div>
+
+        <!-- Log Table -->
+        <div class="overflow-x-auto rounded-2xl shadow-md bg-white dark:bg-gray-900">
+            <table class="w-full text-left">
+                <thead class="bg-gray-100 dark:bg-gray-800">
+                    <tr>
+                        <th class="px-4 py-3 text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">Timestamp</th>
+                        <th class="px-4 py-3 text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">User</th>
+                        <th class="px-4 py-3 text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">Action</th>
+                        <th class="px-4 py-3 text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">Model</th>
+                        <th class="px-4 py-3 text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">Record ID</th>
+                        <th class="px-4 py-3 text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">Details</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                    {% for log in logs %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
+                            {% if log.username %}{{ log.username }}{% else %}<span class="italic text-gray-500">system</span>{% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ log.action }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ log.model_name }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ log.record_id }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
+                            <button class="text-indigo-600 dark:text-indigo-400 hover:underline" onclick="toggleDetails({{ log.id }})">
+                View
+              </button>
+                            <div id="details-{{ log.id }}" class="mt-2 hidden text-xs text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+                                <pre class="whitespace-pre-wrap">{{ log.details | tojson(indent=2) }}</pre>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        <nav class="flex justify-between items-center pt-4">
+            {% if pagination.has_prev %}
+            <a href="{{ url_for('reports_web.view_audit_logs', page=pagination.prev_num, per_page=pagination.per_page, model=model_filter, action=action_filter) }}" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition">
+          &larr; Previous
+        </a> {% else %}
+            <span class="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-400 rounded-lg cursor-not-allowed">&larr; Previous</span> {% endif %}
+
+            <span class="text-sm text-gray-600 dark:text-gray-400">
+        Page {{ pagination.page }} of {{ pagination.pages }}
+      </span> {% if pagination.has_next %}
+            <a href="{{ url_for('reports_web.view_audit_logs', page=pagination.next_num, per_page=pagination.per_page, model=model_filter, action=action_filter) }}" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition">
+          Next &rarr;
+        </a> {% else %}
+            <span class="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-400 rounded-lg cursor-not-allowed">Next &rarr;</span> {% endif %}
+        </nav>
+    </div>
+</div>
+
+<script>
+    function toggleDetails(logId) {
+        const elem = document.getElementById(`details-${logId}`);
+        elem.classList.toggle('hidden');
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,527 @@
+{# --- Improved Modern Sidebar Component --- #} {# All menu modules included without permission checks #} {# --- Improved Modern Sidebar Component --- #} {# All menu modules included without permission checks #}
+
+
+
+
+
+
+
+<aside id="sidebar" class="fixed left-0 top-30 h-screen w-72 bg-white text-gray-700 min-h-screen p-4 shadow-lg 
+              transition-all duration-300 ease-in-out transform -translate-x-full md:translate-x-0
+              dark:bg-gradient-to-b dark:from-gray-900 dark:to-black dark:text-gray-300 
+              flex-shrink-0 overflow-y-auto hide-scrollbar">
+    <div class="flex justify-between items-center mb-2">
+        {# Optional: Your existing logo or title could go here, or be hidden when collapsed #}
+        <span id="sidebar-title" class="text-xl font-semibold text-gray-800 dark:text-white transition-opacity duration-300"></span>
+        <button id="sidebar-desktop-toggle" class="hidden md:block text-gray-600 hover:text-blue-500 dark:text-gray-400 dark:hover:text-blue-400 focus:outline-none transition-colors">
+            <i id="sidebar-toggle-icon" class="fas fa-angle-double-left text-lg"></i> {# << CHANGED ICON HERE #}
+        </button>
+        <button id="sidebar-close" class="text-gray-500 hover:text-red-500 focus:outline-none md:hidden dark:text-gray-400 dark:hover:text-red-400 transition-colors">
+                <i class="fas fa-times text-xl"></i> {# Larger close icon for mobile #}
+            </button>
+    </div>
+
+<nav class="mt-4">
+    <ul class="space-y-0.5"> {# Reduced space between main links #}
+        <li>
+            <a href="/dashboard" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-100 transition-all dark:hover:bg-gray-700 dark:text-gray-200 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <i class="fas fa-home text-blue-500 dark:text-blue-400"></i>
+                <span class="sidebar-text text-sm transition-opacity duration-300">Dashboard</span> {# Font size reduced #}
+            </a>
+        </li>
+
+        <li class="dropdown-group">
+            <button class="dropdown-btn flex items-center justify-between w-full p-3 rounded-lg hover:bg-blue-100 transition-all dark:hover:bg-gray-700 dark:text-gray-200 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-file-medical text-green-500 dark:text-green-400"></i>
+                    <span class="sidebar-text text-sm transition-opacity duration-300">My Health Records</span> {# Font size reduced #}
+                </div>
+                <i class="fas fa-chevron-down text-xs sidebar-text transition-transform duration-300"></i>
+            </button>
+            <ul class="dropdown-content pl-6 space-y-0.5"> {# Reduced space between sub-links #}
+                <li>
+                    <a href="/patient/reports/all" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-50 transition-all dark:hover:bg-gray-800 dark:text-gray-300 text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <i class="fas fa-clipboard-list text-purple-500 dark:text-purple-400 text-xs"></i> {# Icon size already small, kept at text-xs #}
+                        <span class="sidebar-text text-xs transition-opacity duration-300">All Reports</span> {# Font size reduced #}
+                    </a>
+                </li>
+                <li>
+                    <a href="/patient/reports/hospital-view" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-50 transition-all dark:hover:bg-gray-800 dark:text-gray-300 text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <i class="fas fa-hospital text-indigo-500 dark:text-indigo-400 text-xs"></i>
+                        <span class="sidebar-text text-xs transition-opacity duration-300">Reports by Hospital</span> {# Font size reduced #}
+                    </a>
+                </li>
+                <li>
+                    <a href="/patient/imaging-results" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-50 transition-all dark:hover:bg-gray-800 dark:text-gray-300 text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <i class="fas fa-x-ray text-red-500 dark:text-red-400 text-xs"></i>
+                        <span class="sidebar-text text-xs transition-opacity duration-300">Imaging Results</span> {# Font size reduced #}
+                    </a>
+                </li>
+                <li>
+                    <a href="/patient/lab-results" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-50 transition-all dark:hover:bg-gray-800 dark:text-gray-300 text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <i class="fas fa-flask text-yellow-600 dark:text-yellow-500 text-xs"></i>
+                        <span class="sidebar-text text-xs transition-opacity duration-300">Lab Results</span> {# Font size reduced #}
+                    </a>
+                </li>
+            </ul>
+        </li>
+
+        <li class="dropdown-group">
+            <button class="dropdown-btn flex items-center justify-between w-full p-3 rounded-lg hover:bg-blue-100 transition-all dark:hover:bg-gray-700 dark:text-gray-200 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-calendar-alt text-orange-500 dark:text-orange-400"></i>
+                    <span class="sidebar-text text-sm transition-opacity duration-300">Appointments</span> {# Font size reduced #}
+                </div>
+                <i class="fas fa-chevron-down text-xs sidebar-text transition-transform duration-300"></i>
+            </button>
+            <ul class="dropdown-content pl-6 space-y-0.5"> {# Reduced space between sub-links #}
+                <li>
+                    <a href="/patient/appointments/my" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-50 transition-all dark:hover:bg-gray-800 dark:text-gray-300 text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <i class="fas fa-clock text-pink-500 dark:text-pink-400 text-xs"></i>
+                        <span class="sidebar-text text-xs transition-opacity duration-300">My Appointments</span> {# Font size reduced #}
+                    </a>
+                </li>
+                <li>
+                    <a href="/patient/appointments/book" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-50 transition-all dark:hover:bg-gray-800 dark:text-gray-300 text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <i class="fas fa-calendar-plus text-teal-500 dark:text-teal-400 text-xs"></i>
+                        <span class="sidebar-text text-xs transition-opacity duration-300">Book New Appointment</span> {# Font size reduced #}
+                    </a>
+                </li>
+                <li>
+                    <a href="/patient/appointments/hospital-selection" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-50 transition-all dark:hover:bg-gray-800 dark:text-gray-300 text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <i class="fas fa-building text-cyan-500 dark:text-cyan-400 text-xs"></i>
+                        <span class="sidebar-text text-xs transition-opacity duration-300">Book by Hospital</span> {# Font size reduced #}
+                    </a>
+                </li>
+            </ul>
+        </li>
+
+        <li>
+            <a href="/patient/telehealth" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-100 transition-all dark:hover:bg-gray-700 dark:text-gray-200 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <i class="fas fa-video text-purple-600 dark:text-purple-500"></i>
+                <span class="sidebar-text text-sm transition-opacity duration-300">Telehealth</span> {# Font size reduced #}
+            </a>
+        </li>
+
+        <li class="dropdown-group">
+            <button class="dropdown-btn flex items-center justify-between w-full p-3 rounded-lg hover:bg-blue-100 transition-all dark:hover:bg-gray-700 dark:text-gray-200 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-pills text-red-600 dark:text-red-500"></i>
+                    <span class="sidebar-text text-sm transition-opacity duration-300">Medications</span> {# Font size reduced #}
+                </div>
+                <i class="fas fa-chevron-down text-xs sidebar-text transition-transform duration-300"></i>
+            </button>
+            <ul class="dropdown-content pl-6 space-y-0.5"> {# Reduced space between sub-links #}
+                <li>
+                    <a href="/patient/medications/current" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-50 transition-all dark:hover:bg-gray-800 dark:text-gray-300 text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <i class="fas fa-prescription-bottle-alt text-green-600 dark:text-green-500 text-xs"></i>
+                        <span class="sidebar-text text-xs transition-opacity duration-300">My Prescriptions</span> {# Font size reduced #}
+                    </a>
+                </li>
+                <li>
+                    <a href="/patient/medications/refills" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-50 transition-all dark:hover:bg-gray-800 dark:text-gray-300 text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <i class="fas fa-sync-alt text-yellow-500 dark:text-yellow-400 text-xs"></i>
+                        <span class="sidebar-text text-xs transition-opacity duration-300">Request Refills</span> {# Font size reduced #}
+                    </a>
+                </li>
+            </ul>
+        </li>
+
+        <li>
+            <a href="/patient/messages" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-100 transition-all dark:hover:bg-gray-700 dark:text-gray-200 text-gray-700 focus:outline-none focus:ring-2 focus:ring-2 focus:ring-blue-500">
+                <i class="fas fa-comments text-indigo-600 dark:text-indigo-500"></i>
+                <span class="sidebar-text text-sm transition-opacity duration-300">Messages</span> {# Font size reduced #}
+            </a>
+        </li>
+
+        <li>
+            <a href="/patient/billing" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-100 transition-all dark:hover:bg-gray-700 dark:text-gray-200 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <i class="fas fa-receipt text-lime-600 dark:text-lime-500"></i>
+                <span class="sidebar-text text-sm transition-opacity duration-300">Billing & Payments</span> {# Font size reduced #}
+            </a>
+        </li>
+
+        <li class="dropdown-group">
+            <button class="dropdown-btn flex items-center justify-between w-full p-3 rounded-lg hover:bg-blue-100 transition-all dark:hover:bg-gray-700 dark:text-gray-200 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-user-circle text-gray-600 dark:text-gray-400"></i>
+                    <span class="sidebar-text text-sm transition-opacity duration-300">Profile</span> {# Font size reduced #}
+                </div>
+                <i class="fas fa-chevron-down text-xs sidebar-text transition-transform duration-300"></i>
+            </button>
+            <ul class="dropdown-content pl-6 space-y-0.5"> {# Reduced space between sub-links #}
+                <li>
+                    <a href="/patient/profile/details" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-50 transition-all dark:hover:bg-gray-800 dark:text-gray-300 text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <i class="fas fa-id-card text-fuchsia-500 dark:text-fuchsia-400 text-xs"></i>
+                        <span class="sidebar-text text-xs transition-opacity duration-300">My Details</span> {# Font size reduced #}
+                    </a>
+                </li>
+                <li>
+                    <a href="/patient/profile/security" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-50 transition-all dark:hover:bg-gray-800 dark:text-gray-300 text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <i class="fas fa-shield-alt text-emerald-500 dark:text-emerald-400 text-xs"></i>
+                        <span class="sidebar-text text-xs transition-opacity duration-300">Security</span> {# Font size reduced #}
+                    </a>
+                </li>
+                <li>
+                    <a href="/patient/profile/preferences" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-50 transition-all dark:hover:bg-gray-800 dark:text-gray-300 text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <i class="fas fa-sliders-h text-rose-500 dark:text-rose-400 text-xs"></i>
+                        <span class="sidebar-text text-xs transition-opacity duration-300">Preferences</span> {# Font size reduced #}
+                    </a>
+                </li>
+            </ul>
+        </li>
+
+        <li>
+            <a href="/patient/help" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-100 transition-all dark:hover:bg-gray-700 dark:text-gray-200 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <i class="fas fa-question-circle text-amber-500 dark:text-amber-400"></i>
+                <span class="sidebar-text text-sm transition-opacity duration-300">Help & Support</span> {# Font size reduced #}
+            </a>
+        </li>
+    </ul>
+</nav>
+
+    {# Optional: Add footer elements like user profile or theme toggle here #}
+    <div class="mt-auto pt-4 border-t border-gray-200 dark:border-gray-700">
+        <a href="" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-200 transition-all dark:hover:bg-gray-800 dark:text-gray-200 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <i class="fas fa-sign-out-alt text-gray-500 dark:text-gray-400"></i>
+            <span class="sidebar-text transition-opacity duration-300">Logout</span>
+        </a>
+    </div>
+</aside>
+
+<style>
+    /* Existing styles */
+    
+    .dropdown-content {
+        max-height: 0;
+        opacity: 0;
+        overflow: hidden;
+        transition: all 0.3s ease-in-out;
+        will-change: max-height, opacity;
+    }
+    
+    .dropdown-content.active {
+        max-height: 500px;
+        opacity: 1;
+    }
+    
+    .dropdown-subcontent {
+        max-height: 0;
+        opacity: 0;
+        overflow: hidden;
+        transition: all 0.3s ease-in-out;
+        will-change: max-height, opacity;
+    }
+    
+    .dropdown-subcontent.active {
+        max-height: 300px;
+        opacity: 1;
+    }
+    
+    .rotate-chevron {
+        transform: rotate(180deg);
+    }
+    
+    .hide-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+    
+    .hide-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+    /* Styles for collapsed sidebar */
+    /* --- Existing Styles for reference --- */
+    
+    #sidebar {
+        /* ... your existing sidebar styles ... */
+        transition: width 0.3s ease-in-out;
+        /* Ensure width transition is smooth */
+    }
+    
+    #main-content {
+        /* ... your existing main content styles ... */
+        transition: margin-left 0.3s ease-in-out;
+        /* Ensure margin transition is smooth */
+    }
+    
+    #sidebar.collapsed {
+        width: 5rem;
+        /* Tailwind class w-20. Adjust if you prefer w-16 (4rem) etc. */
+    }
+    
+    #sidebar.collapsed .sidebar-text,
+    #sidebar.collapsed #sidebar-title {
+        opacity: 0;
+        width: 0;
+        height: 0;
+        /* Adding height 0 can sometimes help ensure full collapse */
+        overflow: hidden;
+        pointer-events: none;
+        white-space: nowrap;
+        margin: 0;
+        /* Ensure no margin is contributing to layout */
+        padding: 0;
+        /* Ensure no padding is contributing to layout */
+        display: inline-block;
+        /* Or display: none, but opacity/width usually works with transitions */
+        transition: opacity 0.2s ease-out, width 0.2s ease-out, height 0.2s ease-out, margin 0.2s ease-out, padding 0.2s ease-out;
+    }
+    
+    #main-content.sidebar-collapsed {
+        margin-left: 5rem;
+        /* Should match the collapsed sidebar width */
+    }
+    
+    #sidebar.collapsed #sidebar-desktop-toggle {
+        /* The main toggle button for collapse/expand */
+        margin-left: auto;
+        margin-right: auto;
+        /* If it's a flex container itself and you want its icon centered: */
+        /* display: flex; */
+        /* justify-content: center; */
+        /* align-items: center; */
+    }
+    /* --- Styles for Centering Icons in Nav Links/Buttons when Collapsed --- */
+    /* 1. Target the link (<a>) and button (<button>) elements directly */
+    
+    #sidebar.collapsed nav ul li a,
+    #sidebar.collapsed nav ul li>button.dropdown-btn {
+        /* Be specific for dropdown buttons that are direct children of li */
+        display: flex;
+        /* Ensure it's a flex container */
+        align-items: center;
+        /* Vertical centering (already in your HTML via 'items-center') */
+        justify-content: center;
+        /* HORIZONTAL CENTERING - THIS IS KEY */
+        padding-left: 0.5rem;
+        /* Adjust padding as needed for visual balance */
+        padding-right: 0.5rem;
+        /* e.g., if sidebar is w-20 (5rem), p-2 (0.5rem) on each side leaves 4rem for the icon */
+        /* Original p-3 (0.75rem) is also fine, adjust to your visual preference */
+    }
+    /* 2. Ensure icons themselves don't have extra margins from space-x-* utilities */
+    
+    #sidebar.collapsed nav ul li a>.fas,
+    /* Icon directly in <a> */
+    
+    #sidebar.collapsed nav ul li a>svg,
+    /* If using SVG icons directly in <a> */
+    
+    #sidebar.collapsed nav ul li>button.dropdown-btn .flex.items-center>.fas,
+    /* Icon inside the typical div wrapper in your dropdown buttons */
+    
+    #sidebar.collapsed nav ul li>button.dropdown-btn .flex.items-center>svg {
+        /* SVG Icon inside the div wrapper */
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+    /* 3. For dropdown buttons, ensure the inner div (that wraps icon and text) behaves */
+    
+    #sidebar.collapsed nav ul li>button.dropdown-btn .flex.items-center {
+        /* This div is a flex item of the button. */
+        /* The button itself now has justify-content: center. */
+        /* This div should shrink to the width of its visible content (the icon). */
+        /* No specific margin should be needed here if the icon inside it has its margins reset. */
+        padding: 0;
+        /* Remove any padding this inner div might have had */
+    }
+    /* 4. Ensure dropdown chevrons (if part of .sidebar-text) are also hidden and don't affect layout */
+    
+    #sidebar.collapsed nav ul li>button.dropdown-btn>.fa-chevron-down.sidebar-text {
+        /* This is already covered by the general .sidebar-text hiding rules if you added the class */
+        /* If not, explicitly hide it: */
+        /* opacity: 0; width: 0; overflow: hidden; margin: 0; padding: 0; */
+    }
+    /* Ensure dropdown contents are fully hidden and don't interfere */
+    
+    #sidebar.collapsed .dropdown-content,
+    #sidebar.collapsed .dropdown-subcontent {
+        max-height: 0 !important;
+        opacity: 0 !important;
+        overflow: hidden !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: none !important;
+        /* Hide borders too if they take up space */
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const sidebar = document.getElementById('sidebar');
+    const sidebarToggle = document.getElementById('sidebar-toggle'); // Mobile toggle
+    const sidebarClose = document.getElementById('sidebar-close'); // Mobile close
+    const sidebarOverlay = document.getElementById('sidebar-overlay');
+    const mainContent = document.getElementById('main-content');
+    const sidebarDesktopToggle = document.getElementById('sidebar-desktop-toggle');
+    const sidebarToggleIcon = document.getElementById('sidebar-toggle-icon');
+    const sidebarTitle = document.getElementById('sidebar-title');
+
+    // Force sidebar to be collapsed on every page load
+    let isSidebarCollapsed = true; // 🎯 CHANGE THIS LINE 🎯
+
+    // Remove the localStorage check for initial state if you always want it collapsed
+    // const savedState = localStorage.getItem('sidebarCollapsed');
+    // isSidebarCollapsed = savedState === 'true'; // COMMENT OUT OR REMOVE THIS LINE
+
+    // Function to open/close the sidebar (for mobile)
+    function toggleMobileSidebar() {
+        sidebar.classList.toggle('-translate-x-full');
+        if (sidebarOverlay) {
+            sidebarOverlay.classList.toggle('hidden');
+        }
+    }
+
+    if (sidebarToggle) {
+        sidebarToggle.addEventListener('click', toggleMobileSidebar);
+    }
+    if (sidebarClose) {
+        sidebarClose.addEventListener('click', toggleMobileSidebar);
+    }
+    if (sidebarOverlay) {
+        sidebarOverlay.addEventListener('click', toggleMobileSidebar);
+    }
+
+    // Apply initial state
+    // This block will now always execute with isSidebarCollapsed = true
+    if (isSidebarCollapsed) {
+        sidebar.classList.add('collapsed', 'w-20');
+        mainContent.classList.add('sidebar-collapsed', 'md:ml-20');
+        sidebarToggleIcon.classList.replace('fa-angle-double-left', 'fa-angle-double-right');
+        sidebarTitle.classList.add('opacity-0', 'w-0', 'overflow-hidden', 'pointer-events-none');
+
+        // Close all dropdowns if collapsed
+        document.querySelectorAll('.dropdown-content, .dropdown-subcontent').forEach(d => d.classList.remove('active'));
+        document.querySelectorAll('.fa-chevron-down').forEach(icon => icon.classList.remove('rotate-chevron'));
+    } else {
+        // This 'else' block will effectively never run with the change above
+        sidebar.classList.remove('collapsed');
+        sidebar.classList.add('w-72');
+        mainContent.classList.remove('sidebar-collapsed');
+        mainContent.classList.add('md:ml-72');
+        sidebarToggleIcon.classList.replace('fa-angle-double-right', 'fa-angle-double-left');
+        sidebarTitle.classList.remove('opacity-0', 'w-0', 'overflow-hidden', 'pointer-events-none');
+    }
+
+    // Toggle function (this will still save state if you allow users to expand it)
+    function toggleDesktopSidebar() {
+        isSidebarCollapsed = !isSidebarCollapsed;
+        localStorage.setItem('sidebarCollapsed', isSidebarCollapsed); // State will be saved here
+
+        sidebar.classList.toggle('collapsed');
+        mainContent.classList.toggle('sidebar-collapsed');
+
+        if (isSidebarCollapsed) {
+            sidebar.classList.replace('w-72', 'w-20');
+            mainContent.classList.replace('md:ml-72', 'md:ml-20');
+            sidebarToggleIcon.classList.replace('fa-angle-double-left', 'fa-angle-double-right');
+            sidebarTitle.classList.add('opacity-0', 'w-0', 'overflow-hidden', 'pointer-events-none');
+
+            // Close all dropdowns
+            document.querySelectorAll('.dropdown-content, .dropdown-subcontent').forEach(d => d.classList.remove('active'));
+            document.querySelectorAll('.fa-chevron-down').forEach(icon => icon.classList.remove('rotate-chevron'));
+        } else {
+            sidebar.classList.replace('w-20', 'w-72');
+            mainContent.classList.replace('md:ml-20', 'md:ml-72');
+            sidebarToggleIcon.classList.replace('fa-angle-double-right', 'fa-angle-double-left');
+            sidebarTitle.classList.remove('opacity-0', 'w-0', 'overflow-hidden', 'pointer-events-none');
+        }
+    }
+
+    if (sidebarDesktopToggle) {
+        sidebarDesktopToggle.addEventListener('click', toggleDesktopSidebar);
+    }
+
+    // --- Existing Dropdown Functionality (unchanged) ---
+    document.querySelectorAll('.dropdown-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const dropdown = this.nextElementSibling;
+            const chevron = this.querySelector('.fa-chevron-down');
+
+            // This condition is important: prevent opening dropdowns if sidebar is collapsed
+            if (sidebar.classList.contains('collapsed')) {
+                return;
+            }
+
+            document.querySelectorAll('.dropdown-group > .dropdown-content').forEach(d => {
+                if (d !== dropdown && d.classList.contains('active')) {
+                    d.classList.remove('active');
+                    const prevBtn = d.previousElementSibling;
+                    if (prevBtn && prevBtn.classList.contains('dropdown-btn')) {
+                        const prevChevron = prevBtn.querySelector('.fa-chevron-down');
+                        if (prevChevron) {
+                            prevChevron.classList.remove('rotate-chevron');
+                        }
+                    }
+                }
+            });
+
+            document.querySelectorAll('.dropdown-subgroup .dropdown-subcontent').forEach(d => {
+                d.classList.remove('active');
+                const prevChevron = d.previousElementSibling.querySelector('.fa-chevron-down');
+                if (prevChevron) {
+                    prevChevron.classList.remove('rotate-chevron');
+                }
+            });
+
+            dropdown.classList.toggle('active');
+            if (chevron) {
+                chevron.classList.toggle('rotate-chevron');
+            }
+        });
+    });
+
+    document.querySelectorAll('.dropdown-sub-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const subDropdown = this.nextElementSibling;
+            const chevron = this.querySelector('.fa-chevron-down');
+
+            // This condition is important: prevent opening dropdowns if sidebar is collapsed
+            if (sidebar.classList.contains('collapsed')) {
+                return;
+            }
+
+            this.closest('.dropdown-content').querySelectorAll('.dropdown-subgroup .dropdown-subcontent').forEach(d => {
+                if (d !== subDropdown && d.classList.contains('active')) {
+                    d.classList.remove('active');
+                    const prevChevron = d.previousElementSibling.querySelector('.fa-chevron-down');
+                    if (prevChevron) {
+                        prevChevron.classList.remove('rotate-chevron');
+                    }
+                }
+            });
+
+            subDropdown.classList.toggle('active');
+            if (chevron) {
+                chevron.classList.toggle('rotate-chevron');
+            }
+        });
+    });
+
+    document.addEventListener('click', function(e) {
+        if (sidebar.classList.contains('collapsed')) return;
+
+        const openDropdowns = document.querySelectorAll('.dropdown-content.active, .dropdown-subcontent.active');
+        let clickedInsideDropdown = false;
+
+        openDropdowns.forEach(dropdown => {
+            if (dropdown.previousElementSibling.contains(e.target) || dropdown.contains(e.target)) {
+                clickedInsideDropdown = true;
+            }
+        });
+
+        if (!clickedInsideDropdown) {
+            openDropdowns.forEach(dropdown => {
+                dropdown.classList.remove('active');
+                const chevron = dropdown.previousElementSibling.querySelector('.fa-chevron-down.rotate-chevron');
+                if (chevron) {
+                    chevron.classList.remove('rotate-chevron');
+                }
+            });
+        }
+    });
+});
+</script>

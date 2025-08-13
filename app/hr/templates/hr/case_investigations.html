@@ -1,0 +1,310 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Case Header -->
+    <div class="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl shadow-xl overflow-hidden mb-8">
+        <div class="px-6 py-5">
+            <div class="flex flex-col md:flex-row md:items-center justify-between">
+                <div class="mb-4 md:mb-0">
+                    <h2 class="text-2xl font-bold text-white">Case Investigations</h2>
+                    <p class="text-blue-100 mt-1">Case #{{ case.case_number }}</p>
+                    
+                    <div class="flex flex-wrap gap-2 mt-3">
+                        <span class="px-3 py-1 bg-white/20 text-white rounded-full text-sm font-medium">
+                            Status: {{ case.status.value }}
+                        </span>
+                        <span class="px-3 py-1 bg-white/20 text-white rounded-full text-sm font-medium">
+                            Severity: {{ case.severity.value }}
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="flex items-center bg-white/10 backdrop-blur-sm rounded-xl p-3">
+                    <div class="flex-shrink-0">
+                        {% if case.employee.profile_image %}
+                        <img src="{{ case.employee.profile_image }}" 
+                             class="h-12 w-12 rounded-full object-cover border-2 border-white">
+                        {% else %}
+                        <div class="bg-gray-200 border-2 border-dashed rounded-xl w-12 h-12 flex items-center justify-center">
+                            <span class="text-gray-500 font-bold">{{ case.employee.full_name[0]|upper }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-semibold text-white">{{ case.employee.full_name }}</h3>
+                        <div class="text-xs text-blue-100">
+                            {{ case.employee.department.name if case.employee.department else 'No Department' }}
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            
+            <!-- Incident Preview -->
+            <div class="mt-4 pt-4 border-t border-blue-400/30">
+                <h4 class="text-sm font-semibold text-blue-100 flex items-center">
+                    <i class="fas fa-exclamation-circle mr-2"></i>
+                    Incident Description
+                </h4>
+                <p class="text-white text-sm mt-1">
+                    {{ case.incident_description }}
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Investigations List -->
+    <div class="bg-white rounded-2xl shadow-xl overflow-hidden mb-8">
+        <div class="px-6 py-5 border-b border-gray-100 flex justify-between items-center">
+            <h3 class="text-lg font-semibold text-gray-800">
+                <i class="fas fa-search mr-2 text-blue-500"></i>
+                Investigations ({{ investigations|length }})
+            </h3>
+            <button @click="showForm = !showForm"
+                    class="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-medium rounded-xl hover:from-blue-700 hover:to-indigo-800 transition-all duration-300 shadow-md hover:shadow-lg flex items-center">
+                <i class="fas fa-plus mr-2"></i> Add Investigation
+            </button>
+        </div>
+        
+        <div class="px-6 py-8">
+            {% if investigations %}
+            <div class="space-y-6">
+                {% for inv in investigations %}
+                <div class="border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900">{{ inv.title }}</h3>
+                            <div class="flex items-center mt-2 text-sm text-gray-500">
+                                <i class="fas fa-user mr-2"></i>
+                                <span>{{ inv.investigator.full_name }}</span>
+                                <span class="mx-2">•</span>
+                                <i class="fas fa-calendar-day mr-2"></i>
+                                <span>{{ inv.start_date.strftime('%b %d, %Y') }}</span>
+                                <span class="mx-2">•</span>
+                                <span class="px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                      {% if inv.status == 'Active' %}bg-yellow-100 text-yellow-800
+                                      {% elif inv.status == 'Completed' %}bg-green-100 text-green-800
+                                      {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                    {{ inv.status }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="flex space-x-2">
+                            <a href="#" class="text-blue-600 hover:text-blue-800 p-2 rounded-full hover:bg-blue-50">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="#" class="text-red-600 hover:text-red-800 p-2 rounded-full hover:bg-red-50">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <h4 class="text-sm font-medium text-gray-700 mb-2">Findings</h4>
+                        <p class="text-gray-700 whitespace-pre-line">{{ inv.findings }}</p>
+                    </div>
+                    
+                    {% if inv.evidence %}
+                    <div class="mt-6">
+                        <h4 class="text-sm font-medium text-gray-700 mb-3">Evidence</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {% for evidence in inv.evidence %}
+                            <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                        <i class="fas fa-file-pdf text-blue-600"></i>
+                                    </div>
+                                    <div class="ml-4">
+                                        <p class="text-sm font-medium text-gray-900 truncate">{{ evidence.title }}</p>
+                                        <p class="text-xs text-gray-500">Uploaded: {{ evidence.uploaded_at.strftime('%b %d') }}</p>
+                                    </div>
+                                </div>
+                                <div class="mt-4 flex justify-end">
+                                    <a href="#" class="text-blue-600 hover:text-blue-800 text-sm flex items-center">
+                                        <i class="fas fa-download mr-1"></i> Download
+                                    </a>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-12">
+                <div class="mx-auto h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                    <i class="fas fa-search text-gray-400 text-2xl"></i>
+                </div>
+                <h3 class="text-lg font-medium text-gray-900 mb-1">No investigations found</h3>
+                <p class="text-gray-500 mb-6">Start the first investigation for this case</p>
+                <button @click="showForm = true"
+                        class="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-medium rounded-xl hover:from-blue-700 hover:to-indigo-800 transition-all duration-300 shadow-md hover:shadow-lg">
+                    <i class="fas fa-plus mr-2"></i> Add Investigation
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Add Investigation Form -->
+    <div x-show="showForm" x-transition class="bg-white rounded-2xl shadow-xl overflow-hidden">
+        <div class="px-6 py-5 border-b border-gray-100">
+            <h3 class="text-lg font-semibold text-gray-800 flex items-center">
+                <i class="fas fa-file-invoice mr-2 text-blue-500"></i>
+                Add Investigation Findings
+            </h3>
+        </div>
+        
+        <div class="px-6 py-8">
+            <form method="POST" enctype="multipart/form-data" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                            <i class="fas fa-heading mr-2 text-blue-500"></i>
+                            Investigation Title
+                        </label>
+                        <input type="text" name="title" placeholder="Investigation summary" 
+                               class="mt-1 block w-full py-3 px-4 border border-gray-300 bg-white rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                            <i class="fas fa-calendar-day mr-2 text-blue-500"></i>
+                            Investigation Date
+                        </label>
+                        <input type="date" name="start_date" required
+                               value="{{ today.strftime('%Y-%m-%d') }}"
+                               class="mt-1 block w-full py-3 px-4 border border-gray-300 bg-white rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                            <i class="fas fa-clipboard-check mr-2 text-blue-500"></i>
+                            Status
+                        </label>
+                        <select name="status" class="mt-1 block w-full py-3 px-4 border border-gray-300 bg-white rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+                            {% for status in statuses %}
+                            <option value="{{ status }}">{{ status }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                            <i class="fas fa-user mr-2 text-blue-500"></i>
+                            Investigator
+                        </label>
+                        <div class="mt-1 flex items-center p-3 bg-gray-50 rounded-xl">
+                            <div class="flex-shrink-0 h-10 w-10">
+                                {% if current_user.profile_image %}
+                                <img src="{{ current_user.profile_image }}" class="h-10 w-10 rounded-full">
+                                {% else %}
+                                <div class="bg-gray-200 border-2 border-dashed rounded-full w-10 h-10 flex items-center justify-center">
+                                    <span class="text-gray-500 font-bold">{{ current_user.full_name[0]|upper }}</span>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="ml-4">
+                                <div class="text-sm font-medium text-gray-900">{{ current_user.full_name }}</div>
+                                <div class="text-sm text-gray-500">{{ current_user.role|title }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                        <i class="fas fa-file-alt mr-2 text-blue-500"></i>
+                        Investigation Findings
+                    </label>
+                    <textarea name="findings" rows="6" required placeholder="Enter detailed investigation findings..."
+                              class="mt-1 block w-full py-3 px-4 border border-gray-300 bg-white rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"></textarea>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                        <i class="fas fa-paperclip mr-2 text-blue-500"></i>
+                        Evidence Documents
+                    </label>
+                    <div class="mt-1 flex justify-center px-6 pt-8 pb-12 border-2 border-dashed border-gray-300 rounded-2xl hover:border-blue-400 transition-colors">
+                        <div class="space-y-1 text-center">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                            <div class="flex text-sm text-gray-600 justify-center">
+                                <label class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                                    <span>Upload files</span>
+                                    <input id="evidence" name="evidence" type="file" class="sr-only" multiple>
+                                </label>
+                                <p class="pl-1">or drag and drop</p>
+                            </div>
+                            <p class="text-xs text-gray-500">
+                                PDF, DOC, JPG, PNG up to 10MB each
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex items-center justify-end space-x-4 pt-6">
+                    <button type="button" @click="showForm = false"
+                            class="flex items-center px-5 py-3 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 transition-colors duration-300">
+                        <i class="fas fa-times mr-2"></i> Cancel
+                    </button>
+                    <button type="submit"
+                            class="flex items-center px-5 py-3 bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-medium rounded-xl hover:from-blue-700 hover:to-indigo-800 transition-all duration-300 shadow-md hover:shadow-lg">
+                        <i class="fas fa-save mr-2"></i> Save Investigation
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Alpine.js for interactivity -->
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('investigationPage', () => ({
+            showForm: false,
+            init() {
+                // Show form if no investigations exist
+                this.showForm = {{ 'true' if not investigations else 'false' }};
+            }
+        }))
+    })
+</script>
+
+<style>
+    /* Animation for file upload */
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.02); }
+        100% { transform: scale(1); }
+    }
+    
+    [x-show="showForm"] {
+        animation: fadeIn 0.3s ease-out;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .border-dashed:hover {
+        animation: pulse 2s infinite;
+    }
+    
+    /* Smooth transitions */
+    select, input, textarea, button {
+        transition: all 0.3s ease;
+    }
+    
+    /* Focus styles */
+    select:focus, input:focus, textarea:focus {
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+    }
+</style>
+{% endblock %}

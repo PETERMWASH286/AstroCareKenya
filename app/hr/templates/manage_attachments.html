@@ -1,0 +1,264 @@
+{% extends 'base.html' %} {% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="mb-8 flex flex-col md:flex-row md:items-center md:justify-between">
+            <div class="flex items-center">
+                <div class="bg-amber-100 p-3 rounded-xl mr-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+          </svg>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">Document Attachments</h1>
+                    <p class="mt-1 text-sm text-gray-600">
+                        Manage files for <span class="font-medium text-amber-600">{{ employee.full_name }}</span>
+                    </p>
+                </div>
+            </div>
+            <div class="mt-4 md:mt-0">
+                <a href="{{ url_for('hr_web.staff_bio', user_id=employee.id) }}" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                    <i class="fas fa-arrow-left mr-2"></i> Back to Bio
+                </a>
+            </div>
+        </div>
+
+        <!-- Two Column Layout -->
+        <div class="flex flex-col lg:flex-row gap-8">
+            <!-- Upload Form -->
+            <div class="lg:w-1/3">
+                <div class="bg-white rounded-2xl shadow-xl overflow-hidden h-full">
+                    <div class="px-6 py-5 bg-gradient-to-r from-amber-500 to-orange-500">
+                        <h2 class="text-lg font-medium text-white">Upload New Document</h2>
+                    </div>
+
+                    <form method="POST" enctype="multipart/form-data" class="px-6 py-8">
+                        <div class="space-y-6">
+                            <!-- File Upload -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Document</label>
+                                <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg">
+                                    <div class="space-y-1 text-center">
+                                        <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                      <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                                        <div class="flex text-sm text-gray-600">
+                                            <label for="file" class="relative cursor-pointer bg-white rounded-md font-medium text-amber-600 hover:text-amber-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-amber-500">
+                        <span>Upload a file</span>
+                        <input id="file" name="file" type="file" class="sr-only">
+                      </label>
+                                            <p class="pl-1">or drag and drop</p>
+                                        </div>
+                                        <p class="text-xs text-gray-500">PDF, DOC, JPG, PNG up to 10MB</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Title -->
+                            <div>
+                                <label for="title" class="block text-sm font-medium text-gray-700">Document Title</label>
+                                <input type="text" id="title" name="title" class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent sm:text-sm" placeholder="e.g., Passport Copy, Employment Contract">
+                            </div>
+
+                            <!-- Description -->
+                            <div>
+                                <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
+                                <textarea id="description" name="description" rows="3" class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent sm:text-sm" placeholder="Brief description of the document"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="mt-8">
+                            <button type="submit" class="w-full inline-flex justify-center py-3 px-8 border border-transparent shadow-sm text-sm font-medium rounded-full text-white bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500">
+                Upload Document
+              </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Document Library -->
+            <div class="lg:w-2/3">
+                <div class="bg-white rounded-2xl shadow-xl overflow-hidden h-full">
+                    <div class="px-6 py-5 bg-gradient-to-r from-gray-800 to-gray-900">
+                        <div class="flex items-center justify-between">
+                            <h2 class="text-lg font-medium text-white">Document Library</h2>
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-600 text-white">
+                {{ bio.attachments|length }} files
+              </span>
+                        </div>
+                    </div>
+
+                    <div class="px-6 py-8">
+                        {% if bio.attachments %}
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {% for attachment in bio.attachments|sort(attribute='uploaded_at', reverse=True) %}
+                            <div class="bg-gradient-to-br from-gray-50 to-white rounded-xl p-6 shadow hover:shadow-md transition-shadow border border-gray-100">
+                                <div class="flex items-start">
+                                    <!-- File Icon -->
+                                    <div class="flex-shrink-0">
+                                        <div class="bg-amber-100 w-14 h-14 rounded-xl flex items-center justify-center">
+                                            {% if attachment.file_type == 'application/pdf' %}
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg> {% elif 'word' in attachment.file_type %}
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg> {% elif 'image' in attachment.file_type %}
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg> {% else %}
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                      </svg> {% endif %}
+                                        </div>
+                                    </div>
+
+                                    <div class="ml-4 flex-1 min-w-0">
+                                        <div class="flex justify-between items-start">
+                                            <div class="min-w-0">
+                                                <h3 class="text-lg font-semibold text-gray-900 truncate">{{ attachment.title }}</h3>
+                                                <p class="text-sm text-amber-600 truncate">
+                                                    {{ attachment.file_type|replace('application/', '')|replace('image/', '')|upper }} • {{ attachment.uploaded_at.strftime('%b %d, %Y') }}
+                                                </p>
+                                            </div>
+                                            <div class="flex space-x-2">
+                                                <a href="" class="text-amber-600 hover:text-amber-900" title="Download">
+                                                    <i class="fas fa-download"></i>
+                                                </a>
+                                                <form action="{{ url_for('hr_web.delete_attachment', attach_id=attachment.id) }}" method="POST">
+                                                    <button type="submit" class="text-red-600 hover:text-red-900" title="Delete">
+                            <i class="fas fa-trash-alt"></i>
+                          </button>
+                                                </form>
+                                            </div>
+                                        </div>
+
+                                        {% if attachment.description %}
+                                        <div class="mt-3">
+                                            <p class="text-sm text-gray-600">{{ attachment.description }}</p>
+                                        </div>
+                                        {% endif %}
+
+                                        <div class="mt-4 flex items-center">
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                        <i class="fas fa-hdd mr-1"></i> {{ (attachment.file_size or 0)|filesizeformat }}
+                      </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="text-center py-12">
+                            <div class="mx-auto h-24 w-24 flex items-center justify-center rounded-full bg-gray-100">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+                            </div>
+                            <h3 class="mt-4 text-lg font-medium text-gray-900">No documents uploaded</h3>
+                            <p class="mt-2 text-sm text-gray-500">
+                                Upload your first document using the form on the left.
+                            </p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Flash Messages -->
+{% with messages = get_flashed_messages(with_categories=true) %} {% if messages %}
+<div id="flash-messages" class="fixed bottom-4 right-4 z-50 space-y-2">
+    {% for category, message in messages %}
+    <div class="bg-{% if category == 'success' %}green{% else %}red{% endif %}-500 text-white px-4 py-3 rounded-xl shadow-lg flex items-start max-w-md">
+        <div class="flex-1">
+            <p class="text-sm font-medium">{{ message }}</p>
+        </div>
+        <button type="button" class="ml-4 flex-shrink-0 text-white hover:text-gray-200 focus:outline-none" onclick="this.parentElement.remove()">
+            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+            </svg>
+          </button>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+    // Auto-dismiss flash messages after 5 seconds
+    setTimeout(() => {
+        const flashMessages = document.getElementById('flash-messages');
+        if (flashMessages) flashMessages.remove();
+    }, 5000);
+</script>
+{% endif %} {% endwith %}
+
+<!-- Drag and Drop Script -->
+<script>
+    const dropArea = document.querySelector('.border-dashed');
+
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropArea.addEventListener(eventName, highlight, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, unhighlight, false);
+    });
+
+    function highlight() {
+        dropArea.classList.add('border-amber-500', 'bg-amber-50');
+    }
+
+    function unhighlight() {
+        dropArea.classList.remove('border-amber-500', 'bg-amber-50');
+    }
+
+    dropArea.addEventListener('drop', handleDrop, false);
+
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        const fileInput = document.getElementById('file');
+
+        if (files.length) {
+            fileInput.files = files;
+
+            // Update UI to show file name
+            const fileName = files[0].name;
+            const uploadLabel = dropArea.querySelector('label span');
+            uploadLabel.textContent = fileName;
+
+            // Add a visual indicator
+            const fileInfo = document.createElement('p');
+            fileInfo.className = 'mt-2 text-sm text-amber-600';
+            fileInfo.textContent = `${fileName} (${formatFileSize(files[0].size)})`;
+
+            // Remove previous file info if exists
+            const existingInfo = dropArea.querySelector('.file-info');
+            if (existingInfo) existingInfo.remove();
+
+            fileInfo.classList.add('file-info');
+            dropArea.querySelector('.text-center').appendChild(fileInfo);
+        }
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1) + ' ' + sizes[i]);
+    }
+</script>
+{% endblock %}

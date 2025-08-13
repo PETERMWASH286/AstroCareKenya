@@ -1,0 +1,815 @@
+{% extends "base.html" %} 
+
+{% block title %}Payment – {{ patient.full_name }} ({{ patient.reg_no }}){% endblock %} 
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-b from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-12 px-4 md:px-8">
+    <div class="max-w-6xl mx-auto space-y-10">
+        <div class="relative bg-white dark:bg-gray-800 rounded-3xl shadow-xl overflow-hidden">
+            <div class="absolute inset-0 bg-gradient-to-br from-green-200 to-green-400 opacity-10"></div>
+            <div class="relative p-8 flex flex-col md:flex-row items-start md:items-center space-y-4 md:space-y-0 md:space-x-6">
+                <div class="flex-shrink-0 h-16 w-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
+                    <i class="fas fa-user-circle text-4xl text-green-600 dark:text-green-300"></i>
+                </div>
+                <div class="w-full">
+                    <h1 class="text-3xl font-extrabold text-gray-800 dark:text-gray-100 flex items-center">
+                        <i class="fas fa-file-invoice-dollar text-green-500 mr-3"></i> Process Payment
+                    </h1>
+                    <div class="mt-2 flex flex-col sm:flex-row sm:space-x-4 text-gray-600 dark:text-gray-400">
+                        <div><span class="font-semibold dark:text-gray-200">Patient:</span> {{ patient.full_name }}</div>
+                        <div class="mt-1 sm:mt-0"><span class="font-semibold dark:text-gray-200">Reg#:</span> {{ patient.reg_no }}</div>
+                    </div>
+                    <div class="mt-2 flex flex-col sm:flex-row sm:space-x-4 text-gray-600 dark:text-gray-400">
+                        <div><span class="font-semibold dark:text-gray-200">Phone:</span> {{ patient.phone }}</div>
+                        <div class="mt-1 sm:mt-0">
+                            <span class="font-semibold dark:text-gray-200">Cover:</span> {% if patient.payment_method == 'insurance' and patient.insurance_provider_name %}
+                            <span class="text-indigo-600 dark:text-indigo-300 font-semibold">{{ patient.insurance_provider_name }}</span> {% elif patient.payment_method == 'insurance' %}
+                            <span class="text-indigo-600 dark:text-indigo-300 font-semibold">Insurance</span> {% else %}
+                            <span class="text-green-600 dark:text-green-300 font-semibold">Cash</span> {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <form id="paymentForm" action="{{ url_for('patients_web.process_payment') }}" method="POST" class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="md:col-span-1 bg-white dark:bg-gray-800 rounded-3xl shadow-xl overflow-hidden flex flex-col">
+                <div class="px-8 py-6 border-b border-gray-200 dark:border-gray-700">
+                    <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-100">Unpaid Services</h2>
+                </div>
+                <div class="overflow-x-auto flex-grow">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm text-left">
+                        <thead class="bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800">
+                            <tr>
+                                <th class="px-6 py-4">
+                                    <input type="checkbox" id="checkAll" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                </th>
+                                <th class="px-6 py-4 text-gray-700 dark:text-gray-300 uppercase tracking-wider">Service Name</th>
+                                <th class="px-6 py-4 text-gray-700 dark:text-gray-300 uppercase tracking-wider">Type</th>
+                                <th class="px-6 py-4 text-gray-700 dark:text-gray-300 uppercase tracking-wider">Date</th>
+                                <th class="px-6 py-4 text-right text-gray-700 dark:text-gray-300 uppercase tracking-wider">Amount (KES)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="servicesBody" class="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-900">
+                            {% for svc in unpaid_services %}
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                <td class="px-6 py-4">
+                                    <input type="checkbox" name="svcCheckbox" value="{{ svc.id }}" data-name="{{ svc.name }}" data-amount="{{ svc.amount }}" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded svc-checkbox">
+                                </td>
+                                <td class="px-6 py-4 text-gray-800 dark:text-gray-100">{{ svc.name }}</td>
+                                <td class="px-6 py-4 text-gray-600 dark:text-gray-400">{{ svc.type }}</td>
+                                <td class="px-6 py-4 text-gray-600 dark:text-gray-400">{{ svc.date }}</td>
+                                <td class="px-6 py-4 text-right font-semibold text-indigo-600 dark:text-indigo-400">
+                                    KES {{ svc.amount | round(2) }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot class="bg-gray-100 dark:bg-gray-800">
+                            <tr>
+                                <td colspan="4" class="px-6 py-4 text-right font-bold text-gray-800 dark:text-gray-100">Total Due:</td>
+                                <td id="dynamicTotal" class="px-6 py-4 text-right font-bold text-green-600 dark:text-green-400">
+                                    KES 0.00
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <div class="px-8 py-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+                    <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300">Selected Services:</h3>
+                    <ul id="selectedList" class="mt-2 list-disc list-inside text-gray-800 dark:text-gray-200">
+                        </ul>
+                </div>
+            </div>
+
+            <div class="md:col-span-1 space-y-8 flex flex-col">
+                <input type="hidden" name="selectedServiceIds" id="selectedServiceIds" value="">
+                <input type="hidden" name="totalAmountValue" id="totalAmountValue" value="0">
+                <input type="hidden" name="patientRegNo" value="{{ patient.reg_no }}">
+                <input type="hidden" name="paymentMethod" id="paymentMethod" value="stk">
+
+                <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-8 space-y-6">
+                    <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-100 flex items-center">
+                        <i class="fas fa-receipt text-blue-500 mr-3"></i> Payment Summary
+                    </h2>
+                    <div id="summaryServicesList" class="space-y-3">
+                        <p class="text-gray-600 dark:text-gray-400 italic" id="noServicesSelectedSummary">No services selected yet.</p>
+                    </div>
+                    <div class="border-t border-gray-200 dark:border-gray-700 pt-4 flex justify-between items-center">
+                        <span class="text-xl font-bold text-gray-800 dark:text-gray-100">Total to Pay:</span>
+                        <span id="summaryTotalAmount" class="text-3xl font-extrabold text-green-600 dark:text-green-400">KES 0.00</span>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-8 space-y-8 flex-grow">
+                    <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-100">Select Payment Method</h2>
+                    <div class="flex flex-col md:flex-row md:items-center md:space-x-6 space-y-4 md:space-y-0">
+                        <label class="flex items-center space-x-3">
+                            <input
+                              type="radio"
+                              name="paymentMethodRadio"
+                              value="stk"
+                              checked
+                              class="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600"
+                            >
+                            <span class="text-gray-700 dark:text-gray-300 font-medium">M-PESA STK</span>
+                          </label>
+                        <label class="flex items-center space-x-3">
+                            <input
+                              type="radio"
+                              name="paymentMethodRadio"
+                              value="paybill"
+                              class="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600"
+                            >
+                            <span class="text-gray-700 dark:text-gray-300 font-medium">Paybill Code</span>
+                          </label>
+                    </div>
+
+                    <div id="stkForm" class="space-y-6">
+                        <div class="bg-gray-50 dark:bg-gray-700 p-6 rounded-2xl border border-gray-200 dark:border-gray-600">
+                            <label for="stkPhone" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Mobile Payment (+254)
+                            </label>
+                            <div class="relative">
+                                <input type="tel" id="stkPhone" name="stkPhone" class="w-full px-4 py-3 rounded-lg bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="01XXXXXXXX or 07XXXXXXXX"
+                                    pattern="^(01|07)[0-9]{8}$">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="paybillForm" class="space-y-6 hidden">
+                        <div class="bg-gray-50 dark:bg-gray-700 p-6 rounded-2xl border border-gray-200 dark:border-gray-600">
+                            <label for="paybillRef" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Paybill Transaction Code
+                            </label>
+                            <input type="text" id="paybillRef" name="selectedTransactionId" class="w-full py-3 px-4 rounded-lg bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. AB12CD34EF">
+                        </div>
+                        <button type="button" id="verifyPaymentBtn" class="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-lg font-semibold transition-transform transform hover:scale-105 shadow-md flex items-center justify-center space-x-2">
+                            <i class="fas fa-check-circle text-lg"></i>
+                            <span>Verify Payment</span>
+                        </button>
+                    </div>
+
+                    <div class="mt-auto pt-4">
+                        <button type="button" id="processPaymentBtn" class="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white py-4 rounded-2xl font-semibold transition-transform transform hover:scale-105 shadow-xl flex items-center justify-center space-x-3">
+                            <i class="fas fa-credit-card text-xl"></i>
+                            <span class="text-lg">Process Payment</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </form>
+        </div>
+</div>
+
+<div id="paymentOverlay" class="fixed inset-0 bg-black/30 flex items-center justify-center z-[999] hidden">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 flex flex-col items-center space-y-5 max-w-xs w-full mx-4">
+        <div class="relative">
+            <i class="fas fa-spinner fa-spin text-4xl text-blue-500"></i>
+            <div class="absolute inset-0 rounded-full bg-blue-500/10 animate-ping"></div>
+        </div>
+        
+        <p class="text-xl font-semibold text-gray-800 dark:text-gray-100 tracking-tight">
+            Processing payment...
+        </p>
+        
+        <div class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+            <div id="overlayProgress" class="h-full bg-gradient-to-r from-blue-400 to-indigo-600 
+                animate-[progress_1.5s_ease-in-out_infinite] origin-left"></div>
+        </div>
+        
+        <div id="dynamicMessages" class="min-h-[60px] w-full pt-2 transition-all duration-500 ease-in-out">
+            </div>
+    </div>
+</div>
+
+<style>
+@keyframes progress {
+  0% { transform: scaleX(0); opacity: 0.1; }
+  50% { transform: scaleX(0.5); opacity: 1; }
+  100% { transform: scaleX(1); opacity: 0.1; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in { animation: fadeIn 0.5s ease forwards; }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const messageContainer = document.getElementById('dynamicMessages');
+    const messages = [
+        "Please wait while we process your payment...",
+        "Ask the patient to enter their M-Pesa PIN on their phone now",
+        "Important: Complete payment within 2 minutes or it will time out",
+        "Billing Tip: Always verify patient details before submitting",
+        "Billing Tip: Keep payment descriptions clear and specific",
+        "Billing Tip: Double-check amounts before confirming payments",
+        "Billing Tip: Reconcile transactions daily for accurate records"
+    ];
+    
+    let currentIndex = 0;
+    let messageInterval; // Declare messageInterval in a scope accessible by managePaymentOverlay
+
+    function showNextMessage() {
+        // Create message element
+        const messageEl = document.createElement('p');
+        messageEl.className = 'text-sm text-gray-500 dark:text-gray-400 text-center fade-in';
+        messageEl.textContent = messages[currentIndex];
+        
+        // Clear container and add new message
+        messageContainer.innerHTML = '';
+        messageContainer.appendChild(messageEl);
+        
+        // Update index for next message
+        currentIndex = (currentIndex + 1) % messages.length;
+    }
+    
+    // Initial message and rotation
+    showNextMessage();
+    messageInterval = setInterval(showNextMessage, 5000); // Assign to messageInterval
+
+    // This global object allows other parts of your JavaScript to control the overlay messages.
+    // For example, when showing the overlay, you might call managePaymentOverlay.startMessages();
+    // When hiding it, call managePaymentOverlay.stopMessages();
+    window.managePaymentOverlay = {
+        stopMessages: () => {
+            if (messageInterval) {
+                clearInterval(messageInterval);
+                messageInterval = null; // Clear the interval ID
+            }
+        },
+        startMessages: () => {
+            if (!messageInterval) { // Only start if not already running
+                showNextMessage(); // Show initial message immediately
+                messageInterval = setInterval(showNextMessage, 5000);
+            }
+        },
+        // You might add functions to show/hide the entire overlay here
+        show: () => {
+            document.getElementById('paymentOverlay').classList.remove('hidden');
+            window.managePaymentOverlay.startMessages();
+        },
+        hide: () => {
+            document.getElementById('paymentOverlay').classList.add('hidden');
+            window.managePaymentOverlay.stopMessages();
+        }
+    };
+
+    // Optional: Example of how to show/hide for testing (you'd trigger this from your payment form submission)
+    // document.getElementById('yourPaymentFormId').addEventListener('submit', function(event) {
+    //     event.preventDefault(); // Prevent default form submission for testing
+    //     window.managePaymentOverlay.show();
+    //     // In a real scenario, you'd then make an AJAX call for payment and hide the overlay on success/failure
+    //     // setTimeout(() => {
+    //     //     window.managePaymentOverlay.hide();
+    //     // }, 10000); // Hide after 10 seconds for demonstration
+    // });
+});
+</script>
+
+<div id="receiptModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] hidden">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-[95%] max-w-sm p-5 relative my-8">
+        <button id="closeReceipt" class="absolute top-3 right-3 text-gray-500 hover:text-gray-700 dark:text-gray-300">
+            <i class="fas fa-times text-xl"></i>
+        </button>
+
+        <div id="receiptContent" class="overflow-y-auto max-h-[75vh] scroll-smooth" style="scrollbar-width: none; -ms-overflow-style: none;">
+            <div class="space-y-4 font-receipt text-sm">
+                <div class="text-center mb-5">
+                    <div class="mb-3">
+                        {% if hospital_info and hospital_info.logo_url %}
+                            <img src="{{ hospital_info.logo_url }}" alt="{{ hospital_info.display_name or hospital_info.name }}" class="h-14 mx-auto">
+                        {% else %}
+                            <i class="fas fa-hospital text-5xl text-blue-500 mx-auto"></i>
+                        {% endif %}
+                        <h2 class="text-2xl font-bold mt-2 tracking-tight">{{ hospital_info.display_name or hospital_info.name or 'Hospital Name' }}</h2>
+                        {% if hospital_info.tagline %}<p class="text-sm text-gray-600 dark:text-gray-400">{{ hospital_info.tagline }}</p>{% endif %}
+                    </div>
+                    <div class="grid grid-cols-2 gap-3 text-xs"> {# Adjusted font size for contact details #}
+                        <div class="text-left">
+                            <p>{{ hospital_info.address_line1 or '' }}</p>
+                            <p>{{ hospital_info.city or '' }}, {{ hospital_info.country or '' }}</p>
+                            {% if hospital_info.postal_code %}<p>P.O Box {{ hospital_info.postal_code }}</p>{% endif %}
+                        </div>
+                        <div class="text-right">
+                            <p>{{ hospital_info.primary_contact or '' }}</p>
+                            {% if hospital_info.email %}<p>{{ hospital_info.email }}</p>{% endif %}
+                            {% if hospital_info.website %}<p>{{ hospital_info.website }}</p>{% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border-y border-dashed border-gray-300 py-3 text-center">
+                    <h3 class="text-base font-bold uppercase">CASH RECEIPT</h3>
+                    <p class="text-xs text-gray-500">System Generated</p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 mt-3">
+                    <div>
+                        <p><span class="font-semibold">Patient:</span> <span id="r_patientName"></span></p>
+                        <p><span class="font-semibold">Reg No:</span> <span id="r_regNo"></span></p>
+                    </div>
+                    <div class="text-right">
+                        <p><span class="font-semibold">Receipt:</span> <span id="r_receiptNo"></span></p>
+                        <p><span class="font-semibold">Date:</span> <span id="r_date"></span></p>
+                    </div>
+                </div>
+
+                <table class="w-full mt-3">
+                    <thead>
+                        <tr class="border-b border-gray-200">
+                            <th class="text-left pb-2 text-xs">DESCRIPTION</th>
+                            <th class="text-right pb-2 text-xs">AMOUNT</th>
+                        </tr>
+                    </thead>
+                    <tbody id="r_servicesList" class="divide-y divide-gray-200">
+                        </tbody>
+                    <tfoot class="bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                            <td class="pt-3 font-semibold">Subtotal</td>
+                            <td class="pt-3 text-right" id="r_subtotal"></td>
+                        </tr>
+                        <tr>
+                            <td>Tax (0%)</td>
+                            <td class="text-right">0.00</td>
+                        </tr>
+                        <tr class="border-t border-gray-300">
+                            <td class="pt-2 font-bold">TOTAL</td>
+                            <td class="pt-2 text-right font-bold" id="r_total"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+
+                <div class="grid grid-cols-2 gap-3 mt-4">
+                    <div>
+                        <p class="font-semibold">Payment Method:</p>
+                        <p id="r_paymentMethod">CASH</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-semibold">Amount Received:</p>
+                        <p id="r_amountReceived"></p>
+                    </div>
+                </div>
+
+                <div class="text-center text-xs mt-4 text-gray-500 border-t pt-3">
+                    <p>** Official Computer Generated Receipt **</p>
+                    <p>Valid with original stamp & signature</p>
+                    <p>Thank you for choosing {{ hospital_info.display_name or hospital_info.name or 'Our Hospital' }}</p>
+                    <p class="mt-2">Emergency Contact: {{ hospital_info.emergency_contact or 'N/A' }}</p>
+                    <p>KRA PIN: {{ hospital_info.kra_pin or 'N/A' }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-5 flex justify-end gap-3">
+            <button id="printReceipt" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm">
+                <i class="fas fa-print mr-2"></i>Print
+            </button>
+            <button id="downloadPdf" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm">
+                <i class="fas fa-file-pdf mr-2"></i>PDF
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Add any custom font imports or overrides here */
+    @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300;400;500&display=swap');
+    .font-receipt {
+        font-family: 'Roboto Mono', monospace;
+    }
+
+    /* General receipt styling adjustments */
+    table {
+        font-size: 0.8rem;
+        line-height: 1.2;
+    }
+
+    th, td {
+        padding: 0.25rem 0;
+    }
+
+    #receiptContent h2 {
+        font-size: 1.5rem;
+    }
+
+    #receiptContent h3 {
+        font-size: 1.1rem;
+    }
+
+    /* Print Specific Styles */
+    @media print {
+        body > *:not(#receiptModal) {
+            display: none !important; /* Hide everything except the receipt modal */
+        }
+        #receiptModal {
+            position: static !important; /* Remove fixed positioning for print */
+            background: none !important; /* No background overlay */
+            box-shadow: none !important; /* No shadow */
+            display: block !important; /* Ensure it's visible */
+            width: auto !important; /* Auto width */
+            margin: 0 !important; /* No margins */
+        }
+        #receiptModal > div { /* The inner content div */
+            width: 80mm !important; /* Standard receipt width */
+            max-width: 80mm !important;
+            min-width: 80mm !important;
+            padding: 5mm !important;
+            margin: 0 auto !important;
+            box-shadow: none !important;
+            border-radius: 0 !important;
+            background-color: white !important; /* Ensure white background for print */
+        }
+        #receiptModal button,
+        #receiptModal .fa-times {
+            display: none !important; /* Hide buttons and close icon in print */
+        }
+        .scroll-smooth {
+            overflow: visible !important; /* Ensure all content is visible, no scrollbars */
+            max-height: unset !important;
+        }
+
+        /* Adjust font sizes for print if needed */
+        .font-receipt {
+            font-size: 0.75rem !important; /* Smaller font for print */
+        }
+        #receiptContent h2 {
+            font-size: 1.2rem !important;
+        }
+        #receiptContent h3 {
+            font-size: 1rem !important;
+        }
+        .grid-cols-2 {
+            grid-template-columns: 1fr !important; /* Force single column for contact and patient details */
+        }
+        .grid-cols-2 > div {
+            text-align: left !important; /* Align text to left in single column */
+        }
+        .grid-cols-2 > div:last-child {
+            margin-top: 5px; /* Add some space between sections */
+        }
+    }
+
+    /* Specific styles for PDF export via html2canvas and jspdf */
+    .pdf-export #receiptContent {
+        width: 80mm !important;
+        /* min-height: 400mm !important; */ /* This might be too restrictive, let content dictate height */
+        padding: 5mm !important;
+        box-sizing: border-box; /* Include padding in width */
+        background-color: white !important; /* Ensure white background */
+    }
+    .pdf-export #receiptContent * {
+        margin: 0 !important;
+        padding: 1px !important;
+        box-sizing: border-box;
+    }
+    .pdf-export h2 {
+        font-size: 1.2rem !important;
+    }
+    .pdf-export h3 {
+        font-size: 1rem !important;
+    }
+    .pdf-export .space-y-4 > * + * {
+        margin-top: 0.5rem !important;
+    }
+    .pdf-export table {
+        font-size: 0.7rem !important;
+    }
+    .pdf-export .grid-cols-2 {
+        grid-template-columns: 1fr !important; /* Force single column for PDF */
+    }
+    .pdf-export .grid-cols-2 > div {
+        text-align: left !important;
+    }
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://unpkg.com/feather-icons"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        feather.replace();
+
+        const stkForm = document.getElementById('stkForm');
+        const paybillForm = document.getElementById('paybillForm');
+        const paymentRadios = document.querySelectorAll('input[name="paymentMethodRadio"]');
+        const processBtn = document.getElementById('processPaymentBtn');
+        const paymentForm = document.getElementById('paymentForm');
+        const paymentMethodHidden = document.getElementById('paymentMethod');
+        const checkAllBox = document.getElementById('checkAll');
+        const svcCheckboxes = Array.from(document.getElementsByName('svcCheckbox'));
+        const dynamicTotal = document.getElementById('dynamicTotal'); // Total Due in Unpaid Services
+        const totalField = document.getElementById('totalAmountValue');
+        const selectedIdsEl = document.getElementById('selectedServiceIds');
+        const selectedList = document.getElementById('selectedList'); // Selected Services List in Unpaid Services
+
+        const summaryServicesList = document.getElementById('summaryServicesList'); // New: for Payment Summary
+        const summaryTotalAmount = document.getElementById('summaryTotalAmount'); // New: for Payment Summary
+        const noServicesSelectedSummary = document.getElementById('noServicesSelectedSummary'); // New: for Payment Summary
+
+        const paymentOverlay = document.getElementById('paymentOverlay');
+        const receiptModal = document.getElementById('receiptModal');
+        const closeReceiptBtn = document.getElementById('closeReceipt');
+        const printReceiptBtn = document.getElementById('printReceipt');
+        const downloadPdfBtn = document.getElementById('downloadPdf');
+        const receiptContent = document.getElementById('receiptContent');
+
+        // Function to populate and show the receipt modal
+        window.showReceipt = (patient, transaction, services, paymentMethod, amountReceived) => {
+            document.getElementById('r_patientName').textContent = `${patient.first_name} ${patient.last_name}`;
+            document.getElementById('r_regNo').textContent = patient.reg_no;
+            document.getElementById('r_receiptNo').textContent = transaction.receipt_number;
+            document.getElementById('r_date').textContent = new Date(transaction.paid_at).toLocaleString();
+            document.getElementById('r_paymentMethod').textContent = paymentMethod.toUpperCase(); // Display payment method
+            document.getElementById('r_amountReceived').textContent = `KES ${parseFloat(amountReceived).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+
+            const tbody = document.getElementById('r_servicesList');
+            tbody.innerHTML = '';
+            let subtotal = 0;
+            services.forEach(s => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="px-4 py-2 text-gray-800 dark:text-gray-100">${s.name}</td>
+                    <td class="px-4 py-2 text-right text-gray-800 dark:text-gray-100">${parseFloat(s.price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                `;
+                tbody.appendChild(tr);
+                subtotal += parseFloat(s.price);
+            });
+
+            document.getElementById('r_subtotal').textContent = subtotal.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+            document.getElementById('r_total').textContent = subtotal.toLocaleString(undefined, { // Assuming total is subtotal for this simple receipt
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+
+            receiptModal.classList.remove('hidden');
+        };
+
+        // Close receipt modal
+        closeReceiptBtn.addEventListener('click', () => {
+            receiptModal.classList.add('hidden');
+            // Redirect to the payment-processing page
+            window.location.href = '/billing/payment-processing';
+        });
+        // Print Receipt functionality
+        printReceiptBtn.addEventListener('click', () => {
+            window.print();
+        });
+
+        // Download PDF functionality
+        downloadPdfBtn.addEventListener('click', () => {
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', [80, 200]); // Portrait, mm, custom size (width 80mm, height 200mm, adjust height as needed)
+
+            // Add a class to the content for PDF-specific styling
+            receiptContent.classList.add('pdf-export');
+
+            html2canvas(receiptContent, {
+                scale: 3, // Increase scale for better quality
+                useCORS: true, // If you have images from different origin
+                allowTaint: true, // Allow images to be "tainted" (cross-origin without CORS)
+                windowWidth: receiptContent.scrollWidth,
+                windowHeight: receiptContent.scrollHeight
+            }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const imgWidth = 80; // Fixed width for the receipt
+                const pageHeight = 200; // Fixed height, adjust if content overflows
+                const imgHeight = canvas.height * imgWidth / canvas.width;
+                let heightLeft = imgHeight;
+                let position = 0;
+
+                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                heightLeft -= pageHeight;
+
+                while (heightLeft >= 0) {
+                    position = heightLeft - imgHeight;
+                    pdf.addPage();
+                    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                    heightLeft -= pageHeight;
+                }
+
+                pdf.save('receipt.pdf');
+                // Remove the PDF-specific class after generation
+                receiptContent.classList.remove('pdf-export');
+            }).catch(error => {
+                console.error("Error generating PDF:", error);
+                alert('Failed to generate PDF. Please try again.');
+                receiptContent.classList.remove('pdf-export'); // Ensure class is removed even on error
+            });
+        });
+
+        // Toggle between STK and Paybill forms
+        paymentRadios.forEach(radio => {
+            radio.addEventListener('change', () => {
+                if (radio.value === 'stk' && radio.checked) {
+                    stkForm.classList.remove('hidden');
+                    paybillForm.classList.add('hidden');
+                } else if (radio.value === 'paybill' && radio.checked) {
+                    paybillForm.classList.remove('hidden');
+                    stkForm.classList.add('hidden');
+                }
+            });
+        });
+
+        // Re-calculate total & update selected lists whenever any checkbox changes
+        function updateSelection() {
+            let sum = 0;
+            const selectedIds = [];
+            const selectedNames = [];
+            const selectedServicesDetails = []; // To store name and amount for summary
+
+            svcCheckboxes.forEach(cb => {
+                if (cb.checked) {
+                    const amount = parseFloat(cb.getAttribute('data-amount') || '0');
+                    const name = cb.getAttribute('data-name');
+                    sum += amount;
+                    selectedIds.push(cb.value);
+                    selectedNames.push(name);
+                    selectedServicesDetails.push({ name: name, amount: amount });
+                }
+            });
+
+            // Update Total Due in Unpaid Services section
+            dynamicTotal.textContent = `KES ${sum.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            })}`;
+            totalField.value = sum.toFixed(2);
+            selectedIdsEl.value = selectedIds.join(',');
+
+            // Update the displayed list of selected services in the left column
+            selectedList.innerHTML = '';
+            if (selectedNames.length) {
+                selectedNames.forEach(name => {
+                    const li = document.createElement('li');
+                    li.textContent = name;
+                    selectedList.appendChild(li);
+                });
+            } else {
+                const li = document.createElement('li');
+                li.textContent = '— None —';
+                selectedList.appendChild(li);
+            }
+
+            // --- New: Update Payment Summary Card ---
+            summaryServicesList.innerHTML = ''; // Clear previous items
+            if (selectedServicesDetails.length) {
+                noServicesSelectedSummary.classList.add('hidden'); // Hide "No services selected" message
+                selectedServicesDetails.forEach(service => {
+                    const div = document.createElement('div');
+                    div.classList.add('flex', 'justify-between', 'items-center', 'text-gray-700', 'dark:text-gray-300');
+                    div.innerHTML = `
+                        <span class="font-medium">${service.name}</span>
+                        <span class="font-semibold">KES ${service.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    `;
+                    summaryServicesList.appendChild(div);
+                });
+            } else {
+                noServicesSelectedSummary.classList.remove('hidden'); // Show "No services selected" message
+            }
+
+            // Update total in Payment Summary Card
+            summaryTotalAmount.textContent = `KES ${sum.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            })}`;
+            // --- End New ---
+        }
+
+        svcCheckboxes.forEach(cb => {
+            cb.addEventListener('change', () => {
+                updateSelection();
+                if (!cb.checked) {
+                    checkAllBox.checked = false;
+                } else if (svcCheckboxes.every(x => x.checked)) {
+                    checkAllBox.checked = true;
+                }
+            });
+        });
+
+        // “Check All” toggles each row checkbox
+        checkAllBox.addEventListener('change', () => {
+            svcCheckboxes.forEach(cb => cb.checked = checkAllBox.checked);
+            updateSelection();
+        });
+
+        // Initialize selected list and summary to “None”/“0.00”
+        updateSelection();
+
+        // Verify Payment button (demo only)
+        document.getElementById('verifyPaymentBtn').addEventListener('click', () => {
+            const code = document.getElementById('paybillRef').value.trim();
+            if (!code) {
+                return alert('Please enter a Paybill transaction code to verify.');
+            }
+            alert('Payment code verified: ' + code);
+        });
+
+        // Polling function
+        async function pollTransactionStatus(checkoutId, maxDuration = 120000, interval = 2000) {
+            const startTime = Date.now();
+            paymentOverlay.classList.remove('hidden');
+
+            const poll = async() => {
+                try {
+                    const res = await fetch(`/patients/check-status?checkout_id=${checkoutId}`);
+                    const data = await res.json();
+
+                    if (data.status === 'success') {
+             paymentOverlay.classList.add('hidden');
+            const tx = data.transaction;
+             const pt = data.patient;
+             const services = data.services;
+             const amountReceived = tx.amount; // Assuming transaction.amount is the received amount
+             const paymentMethod = tx.payment_method; // Assuming transaction.payment_method exists
+
+             window.showReceipt(pt, tx, services, paymentMethod, amountReceived);
+                        receiptModal.classList.remove('hidden');
+                        return;
+                    }
+
+                    if (Date.now() - startTime < maxDuration) {
+                        setTimeout(poll, interval);
+                    } else {
+                        paymentOverlay.classList.add('hidden');
+                        alert('Payment not confirmed within 2 minutes. Please check later.');
+                    }
+                } catch (err) {
+                    paymentOverlay.classList.add('hidden');
+                    console.error('Polling error:', err);
+                    alert('Failed to verify payment status. Please try again later.');
+                }
+            };
+            poll();
+        }
+
+        // Process Payment button
+        processBtn.addEventListener('click', async() => {
+            const method = document.querySelector('input[name="paymentMethodRadio"]:checked').value;
+            paymentMethodHidden.value = method;
+
+            // Validate STK phone
+            if (method === 'stk') {
+                const phoneInput = document.getElementById('stkPhone').value.trim();
+                if (!/^(?:01|07)[0-9]{8}$/.test(phoneInput)) {
+                    return alert('Please enter a valid 10-digit phone number starting with 01 or 07.');
+                }
+            }
+
+            // Validate Paybill
+            if (method === 'paybill') {
+                const ref = document.getElementById('paybillRef').value.trim();
+                if (!ref) {
+                    return alert('Please enter the Paybill transaction code.');
+                }
+            }
+
+            // Ensure at least one service is selected
+            if (!selectedIdsEl.value) {
+                return alert('No services selected.');
+            }
+
+            // Submit form via fetch
+            const formData = new FormData(paymentForm);
+            paymentOverlay.classList.remove('hidden');
+
+            try {
+                const response = await fetch(paymentForm.action, {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                if (data.status !== 'success') {
+                    paymentOverlay.classList.add('hidden');
+                    return alert(`Payment initiation failed: ${data.message || 'Unknown error'}`);
+                }
+
+                // STK → poll
+                if (method === 'stk' && data.checkout_id) {
+                    pollTransactionStatus(data.checkout_id);
+                } else {
+                    paymentOverlay.classList.add('hidden');
+                    alert('Payment processed via Paybill. Thank you.');
+                }
+            } catch (err) {
+                paymentOverlay.classList.add('hidden');
+                alert('Error while initiating payment. Please try again.');
+                console.error(err);
+            }
+        });
+
+
+    });
+</script>
+{% endblock %}

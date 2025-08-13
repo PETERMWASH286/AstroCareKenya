@@ -1,0 +1,334 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+        <!-- Card Header -->
+        <div class="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-5">
+            <div class="flex flex-col md:flex-row md:items-center justify-between">
+                <div class="mb-4 md:mb-0">
+                    <h2 class="text-2xl font-bold text-white">Schedule Hearing</h2>
+                    <p class="text-blue-100 mt-1">For Case #{{ case.case_number }}</p>
+                    
+                    <div class="flex flex-wrap gap-2 mt-3">
+                        <span class="px-3 py-1 bg-white/20 text-white rounded-full text-sm font-medium">
+                            {{ case.status.value }}
+                        </span>
+                        <span class="px-3 py-1 bg-white/20 text-white rounded-full text-sm font-medium">
+                            {{ case.severity.value }}
+                        </span>
+                        <span class="px-3 py-1 bg-white/20 text-white rounded-full text-sm font-medium">
+                            {{ case.case_type.name }}
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="flex items-center bg-white/10 backdrop-blur-sm rounded-xl p-3 mb-4 md:mb-0">
+                    <div class="flex-shrink-0">
+                        {% if case.employee.profile_image %}
+                        <img src="{{ case.employee.profile_image }}" 
+                             class="h-12 w-12 rounded-full object-cover border-2 border-white">
+                        {% else %}
+                        <div class="bg-gray-200 border-2 border-dashed rounded-xl w-12 h-12 flex items-center justify-center">
+                            <span class="text-gray-500 font-bold">{{ case.employee.full_name[0]|upper }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-semibold text-white">{{ case.employee.full_name }}</h3>
+                        <div class="text-xs text-blue-100">
+                            {{ case.employee.department.name if case.employee.department else 'No Department' }}
+                        </div>
+                        <div class="text-xs text-blue-50 mt-1">
+                            Employee ID: {{ case.employee.id }}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="hidden md:flex bg-white/20 p-3 rounded-full self-start">
+                    <i class="fas fa-gavel text-white text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card Body -->
+        <div class="px-6 py-8">
+            <form action="{{ url_for('hr_web.schedule_hearing', case_id=case.id) }}" 
+                  method="POST"
+                  class="space-y-8">
+                  
+                <!-- Hearing Details -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                            <i class="fas fa-calendar-alt mr-2 text-blue-500"></i>
+                            Hearing Date & Time
+                        </label>
+                        <input type="datetime-local" name="hearing_date" required
+                               min="{{ today.strftime('%Y-%m-%dT%H:%M') }}"
+                               class="mt-1 block w-full py-3 px-4 border border-gray-300 bg-white rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                            <i class="fas fa-map-marker-alt mr-2 text-blue-500"></i>
+                            Location
+                        </label>
+                        <input type="text" name="location" placeholder="Conference Room A" required
+                               class="mt-1 block w-full py-3 px-4 border border-gray-300 bg-white rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+                    </div>
+                </div>
+                
+                <!-- Chairperson Selection -->
+                <div class="pt-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                        <i class="fas fa-user-tie mr-2 text-blue-500"></i>
+                        Select Chairperson
+                    </label>
+                    <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                        {% for chairperson in chairpersons %}
+                        <label class="flex items-center p-4 border border-gray-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 cursor-pointer transition-all">
+                            <input type="radio" name="chairperson_id" value="{{ chairperson.id }}" 
+                                   class="h-4 w-4 text-blue-600 focus:ring-blue-500" required>
+                            <div class="ml-4 flex items-center">
+                                <div class="flex-shrink-0 h-10 w-10">
+                                    {% if chairperson.profile_image %}
+                                    <img src="{{ chairperson.profile_image }}" class="h-10 w-10 rounded-full">
+                                    {% else %}
+                                    <div class="bg-gray-200 border-2 border-dashed rounded-full w-10 h-10 flex items-center justify-center">
+                                        <span class="text-gray-500 font-bold">{{ chairperson.full_name[0]|upper }}</span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm font-medium text-gray-900">{{ chairperson.full_name }}</p>
+                                    <p class="text-sm text-gray-500">{{ chairperson.department.name if chairperson.department else 'No Department' }}</p>
+                                </div>
+                            </div>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- Participants Selection -->
+                <div class="pt-6">
+                    <div class="flex items-center justify-between">
+                        <label class="block text-sm font-medium text-gray-700 flex items-center">
+                            <i class="fas fa-users mr-2 text-blue-500"></i>
+                            Select Participants
+                        </label>
+                        <span class="text-sm text-gray-500">Select role for each participant</span>
+                    </div>
+                    
+                    <div class="mt-4 space-y-4">
+                        {% for user in other_users %}
+                        <div class="flex items-center justify-between p-4 border border-gray-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 transition-all">
+                            <label class="flex items-center cursor-pointer">
+                                <input type="checkbox" name="participants" value="{{ user.id }}" 
+                                       class="h-4 w-4 text-blue-600 rounded focus:ring-blue-500">
+                                <div class="ml-4 flex items-center">
+                                    <div class="flex-shrink-0 h-10 w-10">
+                                        {% if user.profile_image %}
+                                        <img src="{{ user.profile_image }}" class="h-10 w-10 rounded-full">
+                                        {% else %}
+                                        <div class="bg-gray-200 border-2 border-dashed rounded-full w-10 h-10 flex items-center justify-center">
+                                            <span class="text-gray-500 font-bold">{{ user.full_name[0]|upper }}</span>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="ml-3">
+                                        <p class="text-sm font-medium text-gray-900">{{ user.full_name }}</p>
+                                        <p class="text-sm text-gray-500">{{ user.department.name if user.department else 'No Department' }}</p>
+                                    </div>
+                                </div>
+                            </label>
+                            
+                            <div class="ml-4 flex-1 max-w-xs">
+                                <select name="role_{{ user.id }}" 
+                                        class="block w-full py-2 px-3 border border-gray-300 bg-white rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm">
+                                    <option value="Panel Member">Panel Member</option>
+                                    <option value="Witness">Witness</option>
+                                    <option value="Representative">Representative</option>
+                                    <option value="Observer">Observer</option>
+                                    <option value="Note Taker">Note Taker</option>
+                                    <option value="Legal Counsel">Legal Counsel</option>
+                                </select>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-8">
+                            <div class="mx-auto h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                                <i class="fas fa-users text-gray-400 text-xl"></i>
+                            </div>
+                            <h3 class="text-lg font-medium text-gray-900 mb-1">No participants available</h3>
+                            <p class="text-gray-500">All eligible users are already listed as chairperson options</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- Additional Notes -->
+                <div class="pt-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                        <i class="fas fa-sticky-note mr-2 text-blue-500"></i>
+                        Additional Notes
+                    </label>
+                    <textarea name="notes" rows="3" placeholder="Add any special instructions or notes for the hearing"
+                              class="mt-1 block w-full py-3 px-4 border border-gray-300 bg-white rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"></textarea>
+                </div>
+                
+                <!-- Buttons -->
+                <div class="flex items-center justify-end space-x-4 pt-8">
+                    <a href="{{ url_for('hr_web.view_disciplinary_case', case_id=case.id) }}"
+                       class="flex items-center px-5 py-3 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 transition-colors duration-300">
+                        <i class="fas fa-times mr-2"></i> Cancel
+                    </a>
+                    <button type="submit"
+                            class="flex items-center px-5 py-3 bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-medium rounded-xl hover:from-blue-700 hover:to-indigo-800 transition-all duration-300 shadow-md hover:shadow-lg">
+                        <i class="fas fa-calendar-plus mr-2"></i> Schedule Hearing
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Hearing Preparation Checklist -->
+    <div class="bg-white rounded-2xl shadow-sm p-6 mt-8">
+        <h3 class="text-lg font-semibold text-gray-800 flex items-center mb-4">
+            <i class="fas fa-clipboard-list text-blue-500 mr-2"></i>
+            Hearing Preparation Checklist
+        </h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="border border-blue-100 rounded-xl p-4 bg-blue-50">
+                <h4 class="font-medium text-blue-800 flex items-center">
+                    <i class="fas fa-file-contract mr-2"></i>
+                    Documentation
+                </h4>
+                <ul class="mt-2 text-sm text-blue-700 space-y-1">
+                    <li class="flex items-start">
+                        <span class="text-blue-500 mr-2">•</span>
+                        <span>Prepare all relevant case documents</span>
+                    </li>
+                    <li class="flex items-start">
+                        <span class="text-blue-500 mr-2">•</span>
+                        <span>Compile evidence and witness statements</span>
+                    </li>
+                    <li class="flex items-start">
+                        <span class="text-blue-500 mr-2">•</span>
+                        <span>Prepare hearing agenda</span>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="border border-purple-100 rounded-xl p-4 bg-purple-50">
+                <h4 class="font-medium text-purple-800 flex items-center">
+                    <i class="fas fa-users mr-2"></i>
+                    Participant Preparation
+                </h4>
+                <ul class="mt-2 text-sm text-purple-700 space-y-1">
+                    <li class="flex items-start">
+                        <span class="text-purple-500 mr-2">•</span>
+                        <span>Notify all participants of hearing details</span>
+                    </li>
+                    <li class="flex items-start">
+                        <span class="text-purple-500 mr-2">•</span>
+                        <span>Confirm attendance of key participants</span>
+                    </li>
+                    <li class="flex items-start">
+                        <span class="text-purple-500 mr-2">•</span>
+                        <span>Brief panel members on case details</span>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="border border-green-100 rounded-xl p-4 bg-green-50">
+                <h4 class="font-medium text-green-800 flex items-center">
+                    <i class="fas fa-user-clock mr-2"></i>
+                    Employee Rights
+                </h4>
+                <ul class="mt-2 text-sm text-green-700 space-y-1">
+                    <li class="flex items-start">
+                        <span class="text-green-500 mr-2">•</span>
+                        <span>Confirm employee has received notice</span>
+                    </li>
+                    <li class="flex items-start">
+                        <span class="text-green-500 mr-2">•</span>
+                        <span>Ensure right to representation</span>
+                    </li>
+                    <li class="flex items-start">
+                        <span class="text-green-500 mr-2">•</span>
+                        <span>Provide opportunity to present evidence</span>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="border border-yellow-100 rounded-xl p-4 bg-yellow-50">
+                <h4 class="font-medium text-yellow-800 flex items-center">
+                    <i class="fas fa-tasks mr-2"></i>
+                    Logistical Preparation
+                </h4>
+                <ul class="mt-2 text-sm text-yellow-700 space-y-1">
+                    <li class="flex items-start">
+                        <span class="text-yellow-500 mr-2">•</span>
+                        <span>Reserve and prepare hearing room</span>
+                    </li>
+                    <li class="flex items-start">
+                        <span class="text-yellow-500 mr-2">•</span>
+                        <span>Prepare recording equipment if needed</span>
+                    </li>
+                    <li class="flex items-start">
+                        <span class="text-yellow-500 mr-2">•</span>
+                        <span>Prepare any necessary technology</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alpine.js for interactivity -->
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('hearingSchedule', () => ({
+            init() {
+                // Set minimum time to next hour
+                const now = new Date();
+                const nextHour = new Date(now);
+                nextHour.setHours(now.getHours() + 1, 0, 0, 0);
+                
+                const minDate = nextHour.toISOString().slice(0, 16);
+                document.querySelector('input[type="datetime-local"]').min = minDate;
+            }
+        }))
+    })
+</script>
+
+<style>
+    /* Smooth transitions */
+    input, textarea, select, button {
+        transition: all 0.3s ease;
+    }
+    
+    /* Focus styles */
+    input:focus, textarea:focus, select:focus {
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+    }
+    
+    /* Custom checkbox styling */
+    input[type="checkbox"]:checked, 
+    input[type="radio"]:checked {
+        background-color: #3b82f6;
+        border-color: #3b82f6;
+    }
+    
+    /* Card hover effects */
+    .hover\:border-blue-400:hover {
+        border-color: #60a5fa;
+    }
+    
+    .hover\:bg-blue-50:hover {
+        background-color: #eff6ff;
+    }
+</style>
+{% endblock %}

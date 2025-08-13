@@ -1,0 +1,313 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-12 px-4 sm:px-6">
+    <div class="max-w-6xl mx-auto">
+        <!-- Policy Header with Gradient Background -->
+        <div class="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-t-2xl shadow-xl overflow-hidden">
+            <div class="px-8 py-10 sm:px-12 sm:py-12">
+                <div class="flex flex-col md:flex-row md:items-start md:justify-between">
+                    <div class="max-w-3xl">
+                        <div class="flex items-center gap-3 mb-4">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-white/20 text-white backdrop-blur-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd" />
+                                </svg>
+                                Version {{ policy.version }}
+                            </span>
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium 
+                                {% if policy.is_active %}bg-green-500/20 text-green-100{% else %}bg-gray-500/20 text-gray-100{% endif %}">
+                                {% if policy.is_active %}Active{% else %}Inactive{% endif %}
+                            </span>
+                        </div>
+                        
+                        <h1 class="text-3xl md:text-4xl font-bold text-white leading-tight">{{ policy.title }}</h1>
+                        <p class="text-blue-100 mt-3 text-lg">{{ policy.description if policy.description else 'Company disciplinary policy' }}</p>
+                        
+                        <div class="mt-6 flex flex-wrap gap-3">
+                            {% for category in policy.categories %}
+                            <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-white/10 text-white">
+                                {{ category.name }}
+                            </span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 md:mt-0 flex flex-col items-end">
+                        <div class="bg-white/10 backdrop-blur-sm p-4 rounded-xl">
+                            <div class="text-center">
+                                <div class="text-xs font-semibold text-blue-200 uppercase tracking-wider">Policy Code</div>
+                                <div class="text-2xl font-bold text-white mt-1">{{ policy.code }}</div>
+                            </div>
+                            
+                            <div class="mt-4 grid grid-cols-2 gap-4">
+                                <div>
+                                    <div class="text-xs font-semibold text-blue-200 uppercase tracking-wider">Effective</div>
+                                    <div class="text-sm font-medium text-white mt-1">{{ policy.effective_date.strftime('%b %d, %Y') }}</div>
+                                </div>
+                                <div>
+                                    <div class="text-xs font-semibold text-blue-200 uppercase tracking-wider">Review</div>
+                                    <div class="text-sm font-medium text-white mt-1">
+                                        {% if policy.review_date %}
+                                            {{ policy.review_date.strftime('%b %d, %Y') }}
+                                        {% else %}
+                                            <span class="text-blue-200">Not set</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="flex flex-col lg:flex-row gap-8 mt-8">
+            <!-- Left Column - Policy Content -->
+            <div class="lg:w-2/3">
+                <!-- Content Card -->
+                <div class="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+                    <div class="border-b border-gray-100 px-6 py-5 bg-gray-50">
+                        <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd" />
+                            </svg>
+                            Policy Content
+                        </h2>
+                    </div>
+                    <div class="p-6 md:p-8 prose prose-blue max-w-none">
+                        {{ policy.content|safe }}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Column - Metadata -->
+            <div class="lg:w-1/3">
+                <!-- Author Card -->
+                <div class="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 mb-8">
+                    <div class="border-b border-gray-100 px-6 py-5 bg-gray-50">
+                        <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-600" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+                            </svg>
+                            Created By
+                        </h2>
+                    </div>
+                    <div class="p-6">
+                        <div class="flex items-center">
+                            <div class="relative">
+                                <div class="bg-gray-200 border-2 border-dashed rounded-xl w-16 h-16 flex items-center justify-center">
+                                    <span class="text-2xl font-bold text-gray-600">{{ policy.created_by_user.initials }}</span>
+                                </div>
+                                <div class="absolute bottom-0 right-0 bg-green-500 rounded-full p-1 border-2 border-white">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-white" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <h3 class="text-lg font-bold text-gray-900">{{ policy.created_by_user.full_name }}</h3>
+                                <p class="text-gray-600">{{ policy.created_by_user.position if policy.created_by_user.position else 'HR Manager' }}</p>
+                                <p class="text-sm text-gray-500 mt-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline mr-1 -mt-1" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd" />
+                                    </svg>
+                                    {{ policy.created_at.strftime('%b %d, %Y') }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- History Card -->
+                <div class="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+                    <div class="border-b border-gray-100 px-6 py-5 bg-gray-50">
+                        <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-amber-600" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                            </svg>
+                            Policy History
+                        </h2>
+                    </div>
+                    <div class="p-6">
+                        <div class="space-y-6">
+                            <!-- Creation Event -->
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    <div class="flex items-center justify-center h-10 w-10 rounded-full bg-green-100">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-600" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="ml-4">
+                                    <h3 class="text-base font-semibold text-gray-900">Policy Created</h3>
+                                    <p class="text-sm text-gray-500 mt-1">Initial version established</p>
+                                    <div class="mt-1 text-xs text-gray-400">
+                                        {{ policy.created_at.strftime('%b %d, %Y at %I:%M %p') }}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Update Event -->
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    <div class="flex items-center justify-center h-10 w-10 rounded-full bg-blue-100">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
+                                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="ml-4">
+                                    <h3 class="text-base font-semibold text-gray-900">Last Updated</h3>
+                                    <p class="text-sm text-gray-500 mt-1">Content or metadata modified</p>
+                                    <div class="mt-1 text-xs text-gray-400">
+                                        {{ policy.updated_at.strftime('%b %d, %Y at %I:%M %p') }}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Review Event -->
+                            {% if policy.review_date %}
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    <div class="flex items-center justify-center h-10 w-10 rounded-full bg-amber-100">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-amber-600" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="ml-4">
+                                    <h3 class="text-base font-semibold text-gray-900">Scheduled Review</h3>
+                                    <p class="text-sm text-gray-500 mt-1">Policy review due date</p>
+                                    <div class="mt-1 text-sm {% if policy.review_date < date.today() %}text-red-500 font-medium{% else %}text-gray-900{% endif %}">
+                                        {{ policy.review_date.strftime('%b %d, %Y') }}
+                                        {% if policy.review_date < date.today() %}
+                                        <span class="ml-2 bg-red-100 text-red-800 text-xs px-2 py-0.5 rounded-full">Overdue</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="mt-12 flex flex-col sm:flex-row justify-center gap-4">
+            <a href="{{ url_for('hr_web.disciplinary_policies') }}" 
+                class="px-6 py-3.5 rounded-xl border border-gray-300 bg-white text-gray-700 font-bold hover:bg-gray-50 transition duration-200 flex items-center justify-center shadow-sm hover:shadow-md">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+                </svg>
+                Back to Policies
+            </a>
+            
+            <a href="#" 
+                class="px-6 py-3.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-bold hover:from-blue-700 hover:to-indigo-800 transition duration-200 shadow-lg hover:shadow-xl flex items-center justify-center transform hover:-translate-y-0.5">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                </svg>
+                Edit Policy
+            </a>
+            
+            {% if policy.is_active %}
+            <button 
+                class="px-6 py-3.5 rounded-xl bg-gradient-to-r from-red-500 to-orange-500 text-white font-bold hover:from-red-600 hover:to-orange-600 transition duration-200 shadow-lg hover:shadow-xl flex items-center justify-center transform hover:-translate-y-0.5">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                </svg>
+                Deactivate Policy
+            </button>
+            {% else %}
+            <button 
+                class="px-6 py-3.5 rounded-xl bg-gradient-to-r from-green-500 to-teal-500 text-white font-bold hover:from-green-600 hover:to-teal-600 transition duration-200 shadow-lg hover:shadow-xl flex items-center justify-center transform hover:-translate-y-0.5">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                </svg>
+                Activate Policy
+            </button>
+            {% endif %}
+            
+            <button 
+                class="px-6 py-3.5 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold hover:from-purple-700 hover:to-pink-700 transition duration-200 shadow-lg hover:shadow-xl flex items-center justify-center transform hover:-translate-y-0.5">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+                </svg>
+                Download PDF
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+    .prose-blue {
+        color: #1e293b;
+        line-height: 1.75;
+    }
+    .prose-blue h2 {
+        color: #1e40af;
+        font-weight: 700;
+        font-size: 1.75rem;
+        margin-top: 2.5rem;
+        margin-bottom: 1.25rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    .prose-blue h3 {
+        color: #1e40af;
+        font-weight: 600;
+        font-size: 1.5rem;
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+    }
+    .prose-blue p {
+        margin-bottom: 1.25rem;
+        font-size: 1.1rem;
+        line-height: 1.8;
+    }
+    .prose-blue ul {
+        list-style-type: disc;
+        padding-left: 2rem;
+        margin-bottom: 1.5rem;
+    }
+    .prose-blue ol {
+        list-style-type: decimal;
+        padding-left: 2rem;
+        margin-bottom: 1.5rem;
+    }
+    .prose-blue table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 1.5rem;
+        border-radius: 0.5rem;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .prose-blue th {
+        background-color: #eff6ff;
+        font-weight: 600;
+        padding: 0.75rem 1rem;
+        text-align: left;
+        color: #1e40af;
+    }
+    .prose-blue td {
+        padding: 0.75rem 1rem;
+        border-top: 1px solid #e2e8f0;
+    }
+    .prose-blue tr:nth-child(even) {
+        background-color: #f8fafc;
+    }
+    .prose-blue a {
+        color: #3b82f6;
+        text-decoration: underline;
+        font-weight: 500;
+    }
+    .prose-blue a:hover {
+        color: #2563eb;
+    }
+</style>
+{% endblock %}

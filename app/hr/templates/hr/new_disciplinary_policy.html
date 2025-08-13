@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4">
+    <div class="max-w-4xl mx-auto">
+        <!-- Header -->
+        <div class="mb-10 text-center">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-3">Create New Disciplinary Policy</h1>
+            <p class="text-gray-600 max-w-2xl mx-auto">
+                Establish clear guidelines for workplace conduct. Fill in all required fields to create a new policy document.
+            </p>
+        </div>
+
+        <!-- Form Container -->
+        <div class="bg-white rounded-xl shadow-xl overflow-hidden border border-gray-200">
+            <!-- Form Header -->
+            <div class="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-5">
+                <h2 class="text-xl font-semibold text-white">Policy Information</h2>
+            </div>
+
+            <!-- Form Body -->
+            <div class="p-6 md:p-8">
+                <form method="POST" class="space-y-6">
+
+                    <!-- Form Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Title Field -->
+                        <div class="md:col-span-2">
+                            <label class="block text-gray-700 font-medium mb-2" for="title">Policy Title *</label>
+                            <input type="text" id="title" name="title" required
+                                class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition duration-200"
+                                placeholder="Enter policy title">
+                        </div>
+
+                        <!-- Code Field -->
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-2" for="code">Policy Code *</label>
+                            <input type="text" id="code" name="code" required
+                                class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition duration-200"
+                                placeholder="e.g., HR-DP-001">
+                        </div>
+
+                        <!-- Version Field -->
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-2" for="version">Version *</label>
+                            <input type="text" id="version" name="version" required
+                                class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition duration-200"
+                                placeholder="e.g., 1.0.0">
+                        </div>
+
+                        <!-- Effective Date Field -->
+                        <div>
+                            <label class="block text-gray-700 font-medium mb-2" for="effective_date">Effective Date *</label>
+                            <input type="date" id="effective_date" name="effective_date" required
+                                class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition duration-200">
+                        </div>
+
+                        <!-- Categories Field -->
+                        <div class="md:col-span-2">
+                            <div class="flex items-center justify-between mb-2">
+                                <label class="block text-gray-700 font-medium">Categories *</label>
+                                <button type="button" id="add-category-btn"
+                                    class="flex items-center text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+                                    </svg>
+                                    Add New Category
+                                </button>
+                            </div>
+                            <div class="grid grid-cols-2 md:grid-cols-3 gap-3" id="categories-container">
+                                {% for category in categories %}
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="category-{{ category.id }}" name="categories" value="{{ category.id }}"
+                                        class="h-4 w-4 text-blue-600 rounded focus:ring-blue-500">
+                                    <label for="category-{{ category.id }}" class="ml-2 text-gray-700">
+                                        {{ category.name }}
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Content Field -->
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2" for="content">Policy Content *</label>
+                        <textarea id="content" name="content" rows="10" required
+                            class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition duration-200"
+                            placeholder="Enter detailed policy content..."></textarea>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t border-gray-200">
+                        <a href="{{ url_for('hr_web.disciplinary_policies') }}" 
+                            class="px-6 py-3 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition duration-200 text-center">
+                            Cancel
+                        </a>
+                        <button type="submit" 
+                            class="px-6 py-3 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-medium hover:from-blue-700 hover:to-indigo-800 transition duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
+                            Create Policy
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Info Section -->
+        <div class="mt-10 bg-blue-50 rounded-xl p-6 border border-blue-100">
+            <h3 class="text-lg font-semibold text-blue-800 mb-3">Policy Creation Guidelines</h3>
+            <ul class="space-y-2 text-blue-700 list-disc pl-5">
+                <li>Ensure policy titles are clear and descriptive</li>
+                <li>Use consistent version numbering (e.g., MAJOR.MINOR.PATCH)</li>
+                <li>Select all relevant categories for proper classification</li>
+                <li>Effective date must be in the future for new policies</li>
+                <li>Review content for clarity and compliance before submission</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Add Category Modal -->
+<div id="category-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black bg-opacity-50">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
+        <!-- Modal Header -->
+        <div class="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-4">
+            <h3 class="text-lg font-semibold text-white">Add New Category</h3>
+        </div>
+        
+        <!-- Modal Body -->
+        <div class="p-6">
+            <form id="category-form" class="space-y-4">
+                <div>
+                    <label for="category-name" class="block text-gray-700 font-medium mb-1">Category Name *</label>
+                    <input type="text" id="category-name" name="name" required
+                        class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                        placeholder="e.g., Attendance Policy">
+                </div>
+                <div>
+                    <label for="category-description" class="block text-gray-700 font-medium mb-1">Description</label>
+                    <textarea id="category-description" name="description" rows="3"
+                        class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                        placeholder="Brief description of the category"></textarea>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Modal Footer -->
+        <div class="flex justify-end gap-3 px-6 py-4 bg-gray-50">
+            <button type="button" id="cancel-category-btn"
+                class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 transition-colors">
+                Cancel
+            </button>
+            <button type="button" id="save-category-btn"
+                class="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-700 text-white hover:from-blue-700 hover:to-indigo-800 transition-colors">
+                Save Category
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- TinyMCE Script -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+
+
+        // Set minimum date for effective date
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('effective_date').min = today;
+
+        // Category Modal Handling
+        const modal = document.getElementById('category-modal');
+        const addBtn = document.getElementById('add-category-btn');
+        const cancelBtn = document.getElementById('cancel-category-btn');
+        const saveBtn = document.getElementById('save-category-btn');
+        const categoryForm = document.getElementById('category-form');
+        const categoriesContainer = document.getElementById('categories-container');
+
+        // Open modal
+        addBtn.addEventListener('click', () => {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        });
+
+        // Close modal
+        function closeModal() {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            categoryForm.reset();
+        }
+
+        cancelBtn.addEventListener('click', closeModal);
+
+        // Save new category
+        saveBtn.addEventListener('click', async () => {
+            const nameInput = document.getElementById('category-name');
+            const name = nameInput.value.trim();
+            
+            if (!name) {
+                alert('Category name is required');
+                nameInput.focus();
+                return;
+            }
+            
+            try {
+                const formData = new FormData(categoryForm);
+                const response = await fetch('/hr/disciplinary/policy-categories/new', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: formData.get('name'),
+                        description: formData.get('description')
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const newCategory = await response.json();
+                
+                // Add new category to the list
+                const categoryId = `category-${newCategory.id}`;
+                const categoryElement = document.createElement('div');
+                categoryElement.className = 'flex items-center';
+                categoryElement.innerHTML = `
+                    <input type="checkbox" id="${categoryId}" name="categories" value="${newCategory.id}" 
+                        class="h-4 w-4 text-blue-600 rounded focus:ring-blue-500">
+                    <label for="${categoryId}" class="ml-2 text-gray-700">
+                        ${newCategory.name}
+                    </label>
+                `;
+                
+                categoriesContainer.appendChild(categoryElement);
+                
+                // Close modal and reset form
+                closeModal();
+                
+                // Show success message
+                flashMessage('Category added successfully!', 'success');
+                
+            } catch (error) {
+                console.error('Error creating category:', error);
+                flashMessage(`Error: ${error.message}`, 'danger');
+            }
+        });
+
+        // Flash message function
+        function flashMessage(message, type) {
+            const flashDiv = document.createElement('div');
+            flashDiv.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg text-white font-medium transform transition-all duration-300 ${type === 'success' ? 'bg-green-500' : 'bg-red-500'}`;
+            flashDiv.textContent = message;
+            
+            document.body.appendChild(flashDiv);
+            
+            setTimeout(() => {
+                flashDiv.style.opacity = '0';
+                flashDiv.style.transform = 'translateY(-100%)';
+                setTimeout(() => {
+                    document.body.removeChild(flashDiv);
+                }, 300);
+            }, 3000);
+        }
+    });
+</script>
+
+<style>
+    /* Custom enhancements */
+    .tox-tinymce {
+        border-radius: 0.5rem !important;
+        border: 1px solid #e5e7eb !important;
+    }
+    input:focus, textarea:focus {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    }
+    #category-modal {
+        transition: opacity 0.3s ease;
+    }
+</style>
+{% endblock %}

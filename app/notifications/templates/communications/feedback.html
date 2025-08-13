@@ -1,0 +1,479 @@
+{% extends "base.html" %}
+{% block title %}Feedback Management | AstroCare{% endblock %}
+
+{% block head %}
+<link href="https://unpkg.com/pattern.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    .feedback-card {
+        transition: all 0.3s ease;
+        transform-style: preserve-3d;
+    }
+    .feedback-card:hover {
+        transform: translateY(-5px) rotateX(5deg);
+        box-shadow: 0 25px 50px -12px rgba(79, 70, 229, 0.25);
+    }
+    .sentiment-bubble {
+        animation: float 4s ease-in-out infinite;
+    }
+    .pattern-dots-sm {
+        background-color: #f0f9ff;
+    }
+    @keyframes float {
+        0% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+        100% { transform: translateY(0px); }
+    }
+    .feedback-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 1.5rem;
+    }
+    .highlight-card {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(79, 70, 229, 0.1) 100%);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .pulse {
+        animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.4); }
+        70% { box-shadow: 0 0 0 10px rgba(79, 70, 229, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50 py-8 px-4 sm:px-6">
+    <!-- Header -->
+    <div class="max-w-7xl mx-auto mb-12">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div>
+                <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-3">Patient Feedback</h1>
+                <p class="text-gray-600 max-w-2xl">
+                    Analyze feedback from SMS, email, and patient surveys. Understand patient sentiment to improve care quality.
+                </p>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm p-4 flex items-center">
+                <div class="pattern-dots-sm gray-light mr-4">
+                    <div class="bg-indigo-500 w-12 h-12 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-comments text-white text-xl"></i>
+                    </div>
+                </div>
+                <div>
+                    <div class="text-gray-500 text-sm">Total Feedback</div>
+                    <div class="text-2xl font-bold text-indigo-600">1,248</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto">
+        <!-- Stats and Filters -->
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
+            <!-- Stats Card 1 -->
+            <div class="bg-white rounded-xl shadow-sm p-6 flex items-center">
+                <div class="mr-4 text-green-500">
+                    <i class="fas fa-smile text-3xl"></i>
+                </div>
+                <div>
+                    <div class="text-gray-500 text-sm">Positive Feedback</div>
+                    <div class="text-2xl font-bold text-gray-900">846</div>
+                    <div class="text-green-500 text-sm flex items-center mt-1">
+                        <i class="fas fa-arrow-up mr-1"></i> 12% increase
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Stats Card 2 -->
+            <div class="bg-white rounded-xl shadow-sm p-6 flex items-center">
+                <div class="mr-4 text-yellow-500">
+                    <i class="fas fa-meh text-3xl"></i>
+                </div>
+                <div>
+                    <div class="text-gray-500 text-sm">Neutral Feedback</div>
+                    <div class="text-2xl font-bold text-gray-900">312</div>
+                    <div class="text-gray-500 text-sm mt-1">No change</div>
+                </div>
+            </div>
+            
+            <!-- Stats Card 3 -->
+            <div class="bg-white rounded-xl shadow-sm p-6 flex items-center">
+                <div class="mr-4 text-red-500">
+                    <i class="fas fa-frown text-3xl"></i>
+                </div>
+                <div>
+                    <div class="text-gray-500 text-sm">Negative Feedback</div>
+                    <div class="text-2xl font-bold text-gray-900">90</div>
+                    <div class="text-red-500 text-sm flex items-center mt-1">
+                        <i class="fas fa-arrow-down mr-1"></i> 5% decrease
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Filter Card -->
+            <div class="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
+                <h3 class="font-semibold mb-3">Filter Feedback</h3>
+                <div class="space-y-3">
+                    <select class="w-full bg-indigo-400/20 border border-indigo-300/30 rounded-lg px-3 py-2 text-white placeholder-indigo-200 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300">
+                        <option>All Sources</option>
+                        <option>SMS</option>
+                        <option>Email</option>
+                        <option>Patient Survey</option>
+                        <option>Phone Call</option>
+                    </select>
+                    
+                    <select class="w-full bg-indigo-400/20 border border-indigo-300/30 rounded-lg px-3 py-2 text-white placeholder-indigo-200 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300">
+                        <option>All Sentiments</option>
+                        <option>Positive</option>
+                        <option>Neutral</option>
+                        <option>Negative</option>
+                    </select>
+                    
+                    <input type="text" placeholder="Search feedback..." class="w-full bg-indigo-400/20 border border-indigo-300/30 rounded-lg px-3 py-2 text-white placeholder-indigo-200 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300">
+                    
+                    <button class="w-full bg-white text-indigo-600 font-medium py-2 rounded-lg hover:bg-indigo-50 transition">
+                        Apply Filters
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts and Highlights -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <!-- Sentiment Chart -->
+            <div class="lg:col-span-2 bg-white rounded-xl shadow-sm p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="font-semibold text-gray-900">Feedback Sentiment Over Time</h3>
+                    <div class="flex space-x-2">
+                        <button class="text-xs px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full">Last 7 Days</button>
+                        <button class="text-xs px-3 py-1 bg-gray-100 text-gray-700 rounded-full">Last 30 Days</button>
+                        <button class="text-xs px-3 py-1 bg-gray-100 text-gray-700 rounded-full">Last 90 Days</button>
+                    </div>
+                </div>
+                <div class="h-72">
+                    <canvas id="sentimentChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- Highlight Card -->
+            <div class="highlight-card rounded-xl p-6 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-indigo-400/10 rounded-full -mt-16 -mr-16"></div>
+                <div class="absolute bottom-0 left-0 w-48 h-48 bg-purple-400/10 rounded-full -mb-24 -ml-24"></div>
+                
+                <div class="relative z-10">
+                    <h3 class="font-semibold text-gray-900 text-lg mb-4">Feedback Highlights</h3>
+                    
+                    <div class="space-y-4">
+                        <div class="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-white">
+                            <div class="flex items-start">
+                                <div class="bg-green-100 text-green-800 rounded-full w-8 h-8 flex items-center justify-center mr-3 flex-shrink-0">
+                                    <i class="fas fa-thumbs-up text-sm"></i>
+                                </div>
+                                <div>
+                                    <div class="font-medium text-gray-900">Dr. Smith's bedside manner</div>
+                                    <div class="text-gray-600 text-sm">Mentioned in 42 positive feedbacks</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-white">
+                            <div class="flex items-start">
+                                <div class="bg-red-100 text-red-800 rounded-full w-8 h-8 flex items-center justify-center mr-3 flex-shrink-0">
+                                    <i class="fas fa-clock text-sm"></i>
+                                </div>
+                                <div>
+                                    <div class="font-medium text-gray-900">Waiting times</div>
+                                    <div class="text-gray-600 text-sm">Mentioned in 28 negative feedbacks</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-white">
+                            <div class="flex items-start">
+                                <div class="bg-blue-100 text-blue-800 rounded-full w-8 h-8 flex items-center justify-center mr-3 flex-shrink-0">
+                                    <i class="fas fa-stethoscope text-sm"></i>
+                                </div>
+                                <div>
+                                    <div class="font-medium text-gray-900">Diagnostic accuracy</div>
+                                    <div class="text-gray-600 text-sm">Praised in 37 positive feedbacks</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 pt-4 border-t border-white/20">
+                        <div class="flex items-center">
+                            <div class="bg-indigo-500 rounded-full w-10 h-10 flex items-center justify-center mr-3">
+                                <i class="fas fa-lightbulb text-white"></i>
+                            </div>
+                            <div class="text-gray-700">
+                                <span class="font-medium">Insight:</span> Patients value clear communication about treatment plans
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Feedback Grid -->
+        <div class="mb-8">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="font-semibold text-gray-900">Recent Patient Feedback</h3>
+                <div class="flex items-center space-x-2">
+                    <span class="text-sm text-gray-500">Sort by:</span>
+                    <select class="text-sm border border-gray-200 rounded-lg px-3 py-1 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        <option>Newest First</option>
+                        <option>Oldest First</option>
+                        <option>Highest Rating</option>
+                        <option>Lowest Rating</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="feedback-grid">
+                <!-- Feedback Card 1 -->
+                <div class="feedback-card bg-white rounded-xl shadow-sm p-6">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <div class="font-semibold text-gray-900">Sarah Johnson</div>
+                            <div class="text-sm text-gray-500">sarahj@example.com</div>
+                        </div>
+                        <div class="sentiment-bubble bg-green-100 text-green-800 rounded-full px-3 py-1 text-sm flex items-center">
+                            <i class="fas fa-smile mr-1"></i> Positive
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center mb-4">
+                        <div class="flex text-yellow-400 mr-2">
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <div class="text-sm text-gray-500">via Email • Today</div>
+                    </div>
+                    
+                    <div class="text-gray-700 mb-4">
+                        "Dr. Anderson was incredibly thorough and took the time to explain everything in detail. The staff was friendly and the clinic was very clean. Best experience I've had!"
+                    </div>
+                    
+                    <div class="flex justify-between items-center">
+                        <div class="text-xs bg-blue-100 text-blue-800 rounded-full px-2 py-1">
+                            <i class="fas fa-tag mr-1"></i> Doctor Communication
+                        </div>
+                        <button class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">
+                            <i class="fas fa-reply mr-1"></i> Respond
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Feedback Card 2 -->
+                <div class="feedback-card bg-white rounded-xl shadow-sm p-6">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <div class="font-semibold text-gray-900">Michael Chen</div>
+                            <div class="text-sm text-gray-500">+1 (555) 123-4567</div>
+                        </div>
+                        <div class="sentiment-bubble bg-red-100 text-red-800 rounded-full px-3 py-1 text-sm flex items-center">
+                            <i class="fas fa-frown mr-1"></i> Negative
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center mb-4">
+                        <div class="flex text-yellow-400 mr-2">
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="far fa-star"></i>
+                            <i class="far fa-star"></i>
+                            <i class="far fa-star"></i>
+                        </div>
+                        <div class="text-sm text-gray-500">via SMS • Yesterday</div>
+                    </div>
+                    
+                    <div class="text-gray-700 mb-4">
+                        "Waited 45 minutes past my appointment time. Receptionist seemed overwhelmed. Doctor was good but the wait was unacceptable for a scheduled appointment."
+                    </div>
+                    
+                    <div class="flex justify-between items-center">
+                        <div class="text-xs bg-orange-100 text-orange-800 rounded-full px-2 py-1">
+                            <i class="fas fa-tag mr-1"></i> Waiting Time
+                        </div>
+                        <button class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">
+                            <i class="fas fa-reply mr-1"></i> Respond
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Feedback Card 3 -->
+                <div class="feedback-card bg-white rounded-xl shadow-sm p-6">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <div class="font-semibold text-gray-900">Emma Rodriguez</div>
+                            <div class="text-sm text-gray-500">emma.rdz@example.com</div>
+                        </div>
+                        <div class="sentiment-bubble bg-green-100 text-green-800 rounded-full px-3 py-1 text-sm flex items-center">
+                            <i class="fas fa-smile mr-1"></i> Positive
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center mb-4">
+                        <div class="flex text-yellow-400 mr-2">
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star-half-alt"></i>
+                        </div>
+                        <div class="text-sm text-gray-500">via Survey • 2 days ago</div>
+                    </div>
+                    
+                    <div class="text-gray-700 mb-4">
+                        "The online appointment system is fantastic! Easy to use and saved me time. Nurse practitioner was very attentive and addressed all my concerns. Will definitely recommend."
+                    </div>
+                    
+                    <div class="flex justify-between items-center">
+                        <div class="text-xs bg-purple-100 text-purple-800 rounded-full px-2 py-1">
+                            <i class="fas fa-tag mr-1"></i> Online System
+                        </div>
+                        <button class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">
+                            <i class="fas fa-reply mr-1"></i> Respond
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Feedback Card 4 -->
+                <div class="feedback-card bg-white rounded-xl shadow-sm p-6">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <div class="font-semibold text-gray-900">Robert Kim</div>
+                            <div class="text-sm text-gray-500">+1 (555) 987-6543</div>
+                        </div>
+                        <div class="sentiment-bubble bg-yellow-100 text-yellow-800 rounded-full px-3 py-1 text-sm flex items-center">
+                            <i class="fas fa-meh mr-1"></i> Neutral
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center mb-4">
+                        <div class="flex text-yellow-400 mr-2">
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="far fa-star"></i>
+                            <i class="far fa-star"></i>
+                        </div>
+                        <div class="text-sm text-gray-500">via SMS • 3 days ago</div>
+                    </div>
+                    
+                    <div class="text-gray-700 mb-4">
+                        "The doctor was knowledgeable but seemed rushed. The diagnosis was accurate but I wish there was more discussion about treatment options. Facility was clean and modern."
+                    </div>
+                    
+                    <div class="flex justify-between items-center">
+                        <div class="text-xs bg-teal-100 text-teal-800 rounded-full px-2 py-1">
+                            <i class="fas fa-tag mr-1"></i> Treatment Options
+                        </div>
+                        <button class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">
+                            <i class="fas fa-reply mr-1"></i> Respond
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Response Rate Card -->
+        <div class="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl shadow-lg p-8 mb-8 relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mt-32 -mr-32"></div>
+            <div class="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full -mb-24 -ml-24"></div>
+            
+            <div class="relative z-10 text-white text-center max-w-3xl mx-auto">
+                <h3 class="text-2xl font-bold mb-4">Feedback Response Rate</h3>
+                <div class="text-5xl font-bold mb-6">87%</div>
+                <p class="text-indigo-100 mb-6">
+                    You're responding to patient feedback faster than 92% of similar practices. 
+                    Keep up the great work in showing patients their opinions matter!
+                </p>
+                <div class="bg-white/20 rounded-full h-3 mb-6 overflow-hidden">
+                    <div class="bg-white h-full rounded-full" style="width: 87%"></div>
+                </div>
+                <button class="inline-flex items-center bg-white text-indigo-600 font-medium px-6 py-3 rounded-lg hover:bg-indigo-50 transition">
+                    <i class="fas fa-chart-line mr-2"></i> View Response Analytics
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Initialize sentiment chart
+    const ctx = document.getElementById('sentimentChart').getContext('2d');
+    const sentimentChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+            datasets: [
+                {
+                    label: 'Positive',
+                    data: [12, 19, 15, 17, 22, 18, 25],
+                    borderColor: '#10B981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                },
+                {
+                    label: 'Neutral',
+                    data: [5, 7, 8, 6, 9, 5, 7],
+                    borderColor: '#FBBF24',
+                    backgroundColor: 'rgba(251, 191, 36, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                },
+                {
+                    label: 'Negative',
+                    data: [2, 3, 1, 4, 2, 3, 1],
+                    borderColor: '#EF4444',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
+    
+    // Make sentiment bubbles float at different rates
+    document.querySelectorAll('.sentiment-bubble').forEach((bubble, index) => {
+        bubble.style.animationDelay = `${index * 0.5}s`;
+    });
+    
+    // Add pulse animation to response rate card
+    const responseCard = document.querySelector('.bg-gradient-to-r');
+    responseCard.classList.add('pulse');
+</script>
+{% endblock %}

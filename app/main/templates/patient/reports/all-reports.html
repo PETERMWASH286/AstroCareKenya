@@ -1,0 +1,176 @@
+{% extends "patient-base.html" %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto">
+        <div class="mb-8 md:mb-10 text-center md:text-left">
+            <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white leading-tight">
+                <i class="fas fa-file-medical-alt text-indigo-600 dark:text-indigo-400 mr-3"></i> Your Consolidated Medical Reports
+            </h1>
+            <p class="mt-3 text-lg text-gray-600 dark:text-gray-300">
+                Access all your health records from every hospital in the AstroCare network, seamlessly organized in one place.
+            </p>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                    <label for="filter-type" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Filter by Type</label>
+                    <select id="filter-type" name="filter-type" class="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 sm:text-sm p-2">
+                        <option value="">All Types</option>
+                        <option value="Lab Result">Lab Results</option>
+                        <option value="Imaging Report">Imaging Reports</option>
+                        <option value="Consultation Summary">Consultation Summaries</option>
+                        <option value="Prescription">Prescriptions</option>
+                        <option value="Vaccination">Vaccinations</option>
+                        </select>
+                </div>
+                <div>
+                    <label for="filter-hospital" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Filter by Hospital</label>
+                    <select id="filter-hospital" name="filter-hospital" class="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 sm:text-sm p-2">
+                        <option value="">All Hospitals</option>
+                        {% for report in reports %}
+                            <option value="{{ report.hospital }}">{{ report.hospital }}</option>
+                        {% endfor %}
+                        </select>
+                </div>
+                <div>
+                    <label for="search-reports" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Search Reports</label>
+                    <div class="relative">
+                        <input type="text" id="search-reports" name="search-reports" placeholder="Search by description or doctor..." class="block w-full pl-10 pr-3 py-2 rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 sm:text-sm">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-search text-gray-400 dark:text-gray-500"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end">
+                <button id="clear-filters" class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out">
+                    <i class="fas fa-redo mr-2"></i> Clear Filters
+                </button>
+            </div>
+        </div>
+
+        {% if reports %}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
+            <div class="divide-y divide-gray-200 dark:divide-gray-700">
+                {% for report in reports %}
+                <div class="p-4 sm:p-6 flex flex-col md:flex-row items-start md:items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200 cursor-pointer">
+                    <div class="flex items-center mb-4 md:mb-0 w-full md:w-auto">
+                        <div class="flex-shrink-0 mr-4">
+                            {% if report.type == 'Lab Result' %}
+                                <div class="bg-blue-100 dark:bg-blue-800 p-3 rounded-full">
+                                    <i class="fas fa-flask text-blue-600 dark:text-blue-300 text-xl"></i>
+                                </div>
+                            {% elif report.type == 'Imaging Report' %}
+                                <div class="bg-purple-100 dark:bg-purple-800 p-3 rounded-full">
+                                    <i class="fas fa-x-ray text-purple-600 dark:text-purple-300 text-xl"></i>
+                                </div>
+                            {% elif report.type == 'Consultation Summary' %}
+                                <div class="bg-green-100 dark:bg-green-800 p-3 rounded-full">
+                                    <i class="fas fa-notes-medical text-green-600 dark:text-green-300 text-xl"></i>
+                                </div>
+                            {% elif report.type == 'Prescription' %}
+                                <div class="bg-orange-100 dark:bg-orange-800 p-3 rounded-full">
+                                    <i class="fas fa-prescription-bottle-alt text-orange-600 dark:text-orange-300 text-xl"></i>
+                                </div>
+                            {% else %}
+                                <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-full">
+                                    <i class="fas fa-file-medical text-gray-600 dark:text-gray-400 text-xl"></i>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="flex-grow">
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ report.description }}</h3>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                <span class="font-medium">{{ report.type }}</span> from <span class="text-indigo-600 dark:text-indigo-400 font-medium">{{ report.hospital }}</span>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="md:text-right mt-3 md:mt-0 flex flex-col items-start md:items-end w-full md:w-auto">
+                        <p class="text-sm font-medium text-gray-800 dark:text-gray-200">
+                            <i class="far fa-calendar-alt text-gray-500 dark:text-gray-400 mr-1"></i> {{ report.date.strftime('%b %d, %Y') }}
+                        </p>
+                        <a href=""
+                           class="mt-2 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200">
+                            <i class="fas fa-eye mr-2"></i> View Report
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% else %}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-8 text-center border border-dashed border-gray-300 dark:border-gray-600">
+            <i class="fas fa-folder-open text-indigo-400 text-6xl mb-4"></i>
+            <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">No Reports Found</h3>
+            <p class="text-gray-600 dark:text-gray-400 mb-4">It looks like you don't have any medical reports in your consolidated file yet.</p>
+            <p class="text-gray-600 dark:text-gray-400 mb-6">Reports typically appear here after your appointments or lab visits at any hospital in our network.</p>
+            <a href="{{ url_for('main_bp.patient_appointments_book') }}"
+               class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-full shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200">
+                <i class="fas fa-calendar-plus mr-2"></i> Book Your First Appointment
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+<script>
+    // Basic JavaScript for filtering (requires more robust backend/JS for full functionality)
+    document.addEventListener('DOMContentLoaded', function() {
+        const filterType = document.getElementById('filter-type');
+        const filterHospital = document.getElementById('filter-hospital');
+        const searchInput = document.getElementById('search-reports');
+        const clearFiltersBtn = document.getElementById('clear-filters');
+        const reportItems = document.querySelectorAll('.hover\\:bg-gray-50'); // Select all report cards
+
+        function applyFilters() {
+            const selectedType = filterType.value.toLowerCase();
+            const selectedHospital = filterHospital.value.toLowerCase();
+            const searchTerm = searchInput.value.toLowerCase();
+
+            reportItems.forEach(item => {
+                const type = item.querySelector('.font-medium').textContent.toLowerCase();
+                const hospital = item.querySelector('.text-indigo-600').textContent.toLowerCase();
+                const description = item.querySelector('h3').textContent.toLowerCase();
+
+                const matchesType = selectedType === '' || type.includes(selectedType);
+                const matchesHospital = selectedHospital === '' || hospital.includes(selectedHospital);
+                const matchesSearch = searchTerm === '' || description.includes(searchTerm);
+
+                if (matchesType && matchesHospital && matchesSearch) {
+                    item.style.display = 'flex'; // Show the item
+                } else {
+                    item.style.display = 'none'; // Hide the item
+                }
+            });
+        }
+
+        filterType.addEventListener('change', applyFilters);
+        filterHospital.addEventListener('change', applyFilters);
+        searchInput.addEventListener('input', applyFilters);
+
+        clearFiltersBtn.addEventListener('click', function() {
+            filterType.value = '';
+            filterHospital.value = '';
+            searchInput.value = '';
+            applyFilters();
+        });
+
+        // Initialize unique hospitals for the filter dropdown
+        const uniqueHospitals = new Set();
+        reportItems.forEach(item => {
+            const hospitalName = item.querySelector('.text-indigo-600').textContent;
+            uniqueHospitals.add(hospitalName);
+        });
+
+        const hospitalFilterOptions = Array.from(uniqueHospitals).sort();
+        filterHospital.innerHTML = '<option value="">All Hospitals</option>' + hospitalFilterOptions.map(h => `<option value="${h}">${h}</option>`).join('');
+
+        // Initial filter application
+        applyFilters();
+    });
+</script>
+{% endblock %}

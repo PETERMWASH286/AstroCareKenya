@@ -1,0 +1,409 @@
+{% extends "base.html" %} {% block content %}
+
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <!-- Header with Animated Background -->
+        <div class="relative mb-12">
+            <div class="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl shadow-2xl transform -skew-y-3"></div>
+            <div class="relative p-8 space-y-4 text-center rounded-2xl bg-white dark:bg-gray-800 shadow-xl">
+                <h1 class="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-500 bg-clip-text text-transparent">
+                    Edit Insurance Policy
+                </h1>
+                <p class="text-gray-500 dark:text-gray-400 text-lg">
+                    Update coverage parameters for {{ insurance.name }}
+                </p>
+            </div>
+        </div>
+
+        <!-- Smart Form Container -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 space-y-8">
+            <form action="{{ url_for('finance_web_bp.edit_insurance', insurance_id=insurance.id) }}" method="POST" class="space-y-8" id="insuranceForm">
+
+                <!-- Basic Information Section -->
+                <div class="space-y-6">
+                    <h3 class="text-xl font-semibold text-gray-800 dark:text-white border-l-4 border-blue-500 pl-4">
+                        <i class="fas fa-id-card mr-2 text-blue-500"></i> Basic Information
+                    </h3>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Provider Name -->
+                        <div class="form-group">
+                            <label class="form-label">Provider Name</label>
+                            <div class="input-group">
+                                <i class="fas fa-building"></i>
+                                <input type="text" name="name" required class="form-input" placeholder="Enter provider name" value="{{ insurance.name }}">
+                            </div>
+                        </div>
+
+                        <!-- Policy Number -->
+                        <div class="form-group">
+                            <label class="form-label">Policy Number</label>
+                            <div class="input-group">
+                                <i class="fas fa-hashtag"></i>
+                                <input type="text" name="policy_number" required class="form-input" placeholder="Unique policy identifier" value="{{ insurance.policy_number }}">
+                            </div>
+                        </div>
+
+                        <!-- Insurance Type -->
+                        <div class="form-group">
+                            <label class="form-label">Insurance Type</label>
+                            <div class="input-group">
+                                <i class="fas fa-shield-alt"></i>
+                                <select name="insurance_type" required class="form-input">
+                                    <option value="Health" {% if insurance.insurance_type == 'Health' %}selected{% endif %}>Health Insurance</option>
+                                    <option value="Auto" {% if insurance.insurance_type == 'Auto' %}selected{% endif %}>Vehicle Insurance</option>
+                                    <option value="Life" {% if insurance.insurance_type == 'Life' %}selected{% endif %}>Life Insurance</option>
+                                    <option value="Property" {% if insurance.insurance_type == 'Property' %}selected{% endif %}>Property Insurance</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Status Toggle -->
+                        <div class="form-group">
+                            <label class="form-label">Policy Status</label>
+                            <div class="input-group">
+                                <div class="toggle-switch">
+                                    <input type="checkbox" name="is_active" id="is_active" class="toggle-input" {% if insurance.is_active %}checked{% endif %}>
+                                    <label for="is_active" class="toggle-label"></label>
+                                </div>
+                                <span class="ml-3 text-sm text-gray-600 dark:text-gray-300">Active Policy</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Coverage Details Section -->
+                <div class="space-y-6">
+                    <h3 class="text-xl font-semibold text-gray-800 dark:text-white border-l-4 border-blue-500 pl-4">
+                        <i class="fas fa-coins mr-2 text-blue-500"></i> Coverage Details
+                    </h3>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Coverage Dates -->
+                        <div class="form-group">
+                            <label class="form-label">Coverage Period</label>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="input-group">
+                                    <i class="fas fa-calendar-start"></i>
+                                    <input type="date" name="coverage_start_date" required class="form-input" value="{{ insurance.coverage_start_date.strftime('%Y-%m-%d') }}">
+                                </div>
+                                <div class="input-group">
+                                    <i class="fas fa-calendar-end"></i>
+                                    <input type="date" name="coverage_end_date" class="form-input" value="{{ insurance.coverage_end_date.strftime('%Y-%m-%d') if insurance.coverage_end_date }}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Financial Limits -->
+                        <div class="form-group">
+                            <label class="form-label">Financial Parameters</label>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="input-group">
+                                    <i class="fas fa-wallet"></i>
+                                    <input type="number" name="max_coverage_amount" step="0.01" class="form-input" placeholder="Max Coverage" value="{{ insurance.max_coverage_amount }}">
+                                </div>
+                                <div class="input-group">
+                                    <i class="fas fa-hand-holding-usd"></i>
+                                    <input type="number" name="deductible" step="0.01" class="form-input" placeholder="Deductible" value="{{ insurance.deductible }}">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contact Information Section -->
+                <div class="space-y-6">
+                    <h3 class="text-xl font-semibold text-gray-800 dark:text-white border-l-4 border-blue-500 pl-4">
+                        <i class="fas fa-address-book mr-2 text-blue-500"></i> Contact Information
+                    </h3>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Contact Details -->
+                        <div class="form-group">
+                            <label class="form-label">Contact Number</label>
+                            <div class="input-group">
+                                <i class="fas fa-phone"></i>
+                                <input type="tel" name="contact_number" class="form-input" pattern="[0-9]{3}-[0-9]{3}-[0-9]{4}" placeholder="Format: 123-456-7890" value="{{ insurance.contact_number or '' }}">
+                            </div>
+                        </div>
+
+                        <!-- Email -->
+                        <div class="form-group">
+                            <label class="form-label">Email Address</label>
+                            <div class="input-group">
+                                <i class="fas fa-envelope"></i>
+                                <input type="email" name="email" class="form-input" placeholder="provider@example.com" value="{{ insurance.email or '' }}">
+                            </div>
+                        </div>
+
+                        <!-- Website -->
+                        <div class="form-group">
+                            <label class="form-label">Website</label>
+                            <div class="input-group">
+                                <i class="fas fa-globe"></i>
+                                <input type="url" name="website" class="form-input" placeholder="https://example.com" value="{{ insurance.website or '' }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Address Section -->
+                <div class="space-y-6">
+                    <h3 class="text-xl font-semibold text-gray-800 dark:text-white border-l-4 border-blue-500 pl-4">
+                        <i class="fas fa-map-marker-alt mr-2 text-blue-500"></i> Provider Address
+                    </h3>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Address Fields -->
+                        <div class="form-group">
+                            <label class="form-label">Street Address</label>
+                            <div class="input-group">
+                                <i class="fas fa-road"></i>
+                                <textarea name="address" rows="2" class="form-input" placeholder="Full street address">{{ insurance.address or '' }}</textarea>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-4">
+                            <div class="form-group">
+                                <label class="form-label">City</label>
+                                <div class="input-group">
+                                    <i class="fas fa-city"></i>
+                                    <input type="text" name="city" class="form-input" value="{{ insurance.city or '' }}">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">State</label>
+                                <div class="input-group">
+                                    <i class="fas fa-flag"></i>
+                                    <input type="text" name="state" class="form-input" value="{{ insurance.state or '' }}">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Country</label>
+                                <div class="input-group">
+                                    <i class="fas fa-globe-americas"></i>
+                                    <input type="text" name="country" class="form-input" value="{{ insurance.country or 'USA' }}">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="flex justify-between items-center pt-8 border-t dark:border-gray-700">
+                    <a href="{{ url_for('finance_web_bp.insurance') }}" class="text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white transition-colors">
+                        <i class="fas fa-arrow-left mr-2"></i> Back to Policies
+                    </a>
+                    <button type="submit" class="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-3 rounded-lg font-medium transition-all transform hover:scale-105 shadow-lg">
+                        <i class="fas fa-save mr-2"></i>
+                        Update Insurance Policy
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* --- Modern Form Styles --- */
+    
+    #insuranceForm {
+        background: linear-gradient(to right, #f9fafc, #edf1f9);
+        padding: 2rem;
+        border-radius: 1.5rem;
+        box-shadow: 0 0 30px rgba(0, 0, 0, 0.08);
+        font-family: 'Segoe UI', sans-serif;
+    }
+    /* Section Headers */
+    
+    #insuranceForm h3 {
+        background: linear-gradient(to right, #3b82f6, #6366f1);
+        color: white;
+        padding: 0.75rem 1rem;
+        border-radius: 0.75rem;
+        display: flex;
+        align-items: center;
+        font-size: 1.25rem;
+    }
+    /* Form Groups */
+    
+    .form-group {
+        position: relative;
+    }
+    
+    .form-label {
+        font-weight: 600;
+        display: block;
+        margin-bottom: 0.4rem;
+        color: #4b5563;
+    }
+    
+    .input-group {
+        display: flex;
+        align-items: center;
+        background: rgba(255, 255, 255, 0.9);
+        border: 2px solid #e5e7eb;
+        border-radius: 0.75rem;
+        padding: 0.6rem 0.8rem;
+        transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
+    }
+    
+    .input-group i {
+        color: #6366f1;
+        margin-right: 0.75rem;
+        font-size: 1rem;
+    }
+    /* Inputs */
+    
+    .form-input {
+        background: transparent;
+        border: none;
+        outline: none;
+        width: 100%;
+        font-size: 0.95rem;
+        padding: 0.4rem 0;
+        color: #111827;
+    }
+    
+    .form-input:focus {
+        outline: none;
+    }
+    
+    .input-group:focus-within {
+        border-color: #6366f1;
+        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+    }
+    /* Select dropdowns */
+    
+    select.form-input {
+        appearance: none;
+        background-image: url('data:image/svg+xml;charset=UTF-8,<svg fill="gray" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414L10 13.414l-4.707-4.707a1 1 0 010-1.414z"/></svg>');
+        background-repeat: no-repeat;
+        background-position: right 0.75rem center;
+        background-size: 1rem;
+        padding-right: 2rem;
+    }
+    /* Textarea */
+    
+    textarea.form-input {
+        resize: vertical;
+        min-height: 60px;
+    }
+    /* Toggle Switch */
+    
+    .toggle-switch {
+        position: relative;
+        width: 48px;
+        height: 24px;
+    }
+    
+    .toggle-input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    
+    .toggle-label {
+        position: absolute;
+        cursor: pointer;
+        background-color: #e5e7eb;
+        border-radius: 9999px;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        transition: background-color 0.3s;
+    }
+    
+    .toggle-label::before {
+        content: '';
+        position: absolute;
+        height: 18px;
+        width: 18px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        border-radius: 50%;
+        transition: transform 0.3s;
+    }
+    
+    .toggle-input:checked+.toggle-label {
+        background-color: #4f46e5;
+    }
+    
+    .toggle-input:checked+.toggle-label::before {
+        transform: translateX(24px);
+    }
+    /* Button Enhancements */
+    
+    button[type="submit"] {
+        border: none;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+    }
+    /* Link hover */
+    
+    a:hover {
+        text-decoration: underline;
+        color: #374151;
+    }
+    /* Responsive */
+    
+    @media screen and (max-width: 640px) {
+        #insuranceForm {
+            padding: 1rem;
+        }
+        #insuranceForm h3 {
+            font-size: 1.1rem;
+        }
+    }
+</style>
+
+
+<!-- Form Validation Script -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('insuranceForm');
+
+        // Phone Number Formatting
+        const phoneInput = document.querySelector('input[type="tel"]');
+        phoneInput.addEventListener('input', function(e) {
+            const x = e.target.value.replace(/\D/g, '').match(/(\d{0,3})(\d{0,3})(\d{0,4})/);
+            e.target.value = !x[2] ? x[1] : x[1] + '-' + x[2] + (x[3] ? '-' + x[3] : '');
+        });
+
+        // Form Submission Handling
+        form.addEventListener('submit', async(e) => {
+            e.preventDefault();
+
+            const submitButton = form.querySelector('button[type="submit"]');
+            submitButton.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Saving...`;
+            submitButton.disabled = true;
+
+            try {
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    body: new FormData(form),
+                });
+
+                if (response.ok) {
+                    window.location.href = "{{ url_for('finance_web_bp.insurance') }}";
+                } else {
+                    const error = await response.json();
+                    alert(error.message || 'Error updating policy');
+                }
+            } catch (error) {
+                console.error('Submission error:', error);
+                alert('Network error - please try again');
+            } finally {
+                submitButton.innerHTML = `<i class="fas fa-save mr-2"></i> Update Insurance Policy`;
+                submitButton.disabled = false;
+            }
+        });
+    });
+</script>
+
+{% endblock %}

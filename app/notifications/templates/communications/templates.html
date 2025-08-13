@@ -1,0 +1,1269 @@
+{% extends "base.html" %}
+{% block title %}Communication Templates | AstroCare{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-6">
+  <div class="max-w-7xl mx-auto">
+    <!-- Header with Search and Actions -->
+    <header class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div>
+        <h1 class="text-3xl md:text-4xl font-bold text-gray-900">Communication Templates</h1>
+        <p class="text-gray-600 mt-2">Manage SMS & email templates for patients and staff</p>
+      </div>
+      
+      <div class="flex items-center gap-3">
+        <div class="relative">
+          <input type="text" id="search-templates" placeholder="Search templates..." class="w-full md:w-64 px-4 py-2.5 border border-gray-200 rounded-lg bg-white shadow-sm focus:ring-2 focus:ring-indigo-200 focus:border-transparent">
+          <svg class="absolute right-3 top-3 h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+<!-- New Template Button -->
+<button onclick="openModal('newTemplateModal')"
+        class="hidden md:flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors">
+ <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+          </svg>
+  New Template
+</button>
+      </div>
+    </header>
+
+<!-- Stats Cards -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+  <!-- Total Templates -->
+  <div class="bg-white rounded-xl p-5 border shadow-sm">
+    <div class="flex justify-between">
+      <h3 class="text-sm text-gray-500">Total Templates</h3>
+      <!-- icon… -->
+    </div>
+    <p class="text-2xl font-bold mt-2">{{ stats.total }}</p>
+    <p class="text-xs text-gray-500 mt-1">
+      +{{ stats.new_since_week }} since last week
+    </p>
+  </div>
+
+  <!-- SMS Templates -->
+  <div class="bg-white rounded-xl p-5 border shadow-sm">
+    <div class="flex justify-between">
+      <h3 class="text-sm text-gray-500">SMS Templates</h3>
+      <!-- icon… -->
+    </div>
+    <p class="text-2xl font-bold mt-2">{{ stats.sms.count }}</p>
+    <p class="text-xs text-gray-500 mt-1">
+      Most used: {{ stats.sms.most_used }}
+    </p>
+  </div>
+
+  <!-- Email Templates -->
+  <div class="bg-white rounded-xl p-5 border shadow-sm">
+    <div class="flex justify-between">
+      <h3 class="text-sm text-gray-500">Email Templates</h3>
+      <!-- icon… -->
+    </div>
+    <p class="text-2xl font-bold mt-2">{{ stats.email.count }}</p>
+    <p class="text-xs text-gray-500 mt-1">
+      Most used: {{ stats.email.most_used }}
+    </p>
+  </div>
+
+  <!-- Active Templates -->
+  <div class="bg-white rounded-xl p-5 border shadow-sm">
+    <div class="flex justify-between">
+      <h3 class="text-sm text-gray-500">Active Templates</h3>
+      <!-- icon… -->
+    </div>
+    <p class="text-2xl font-bold mt-2">{{ stats.active.count }}</p>
+    <p class="text-xs text-gray-500 mt-1">
+      {{ stats.active.inactive }} templates inactive
+    </p>
+  </div>
+</div>
+
+
+    <div class="flex flex-col lg:flex-row gap-6">
+      <!-- Employee Templates Column -->
+      <div class="flex-1 bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+        <div class="p-6 border-b border-gray-100 bg-gradient-to-r from-indigo-50 to-white">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="p-2.5 bg-indigo-100 rounded-lg">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </div>
+            <h2 class="text-xl font-semibold text-gray-800">Employee Communications</h2>
+          </div>
+
+          <!-- Tabs -->
+          <div class="flex border-b border-gray-200 mb-6">
+            <button data-tab-target="emp-sms" class="tab-button active py-3 px-4 font-medium text-indigo-600 border-b-2 border-indigo-500 transition-colors flex items-center gap-1">
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+              </svg>
+              SMS Templates
+            </button>
+            <button data-tab-target="emp-email" class="tab-button py-3 px-4 font-medium text-gray-600 hover:text-indigo-600 transition-colors flex items-center gap-1">
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              Email Templates
+            </button>
+          </div>
+
+          <!-- SMS Templates -->
+          <div id="emp-sms" class="tab-content active">
+{% for template in employee_templates.sms %}
+<div class="template-container p-5 bg-gradient-to-r from-indigo-50/50 to-white rounded-xl border border-indigo-100 shadow-sm hover:shadow-md transition-shadow mb-6">
+    <div class="flex justify-between items-start">
+        <div>
+            <h3 class="font-medium text-gray-900 flex items-center gap-2">
+                {% if template.icon %}
+                <i class="fas {{ template.icon }} text-indigo-500"></i>
+                {% endif %}
+                {{ template.name }}
+                <span class="text-xs bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full">SMS</span>
+            </h3>
+            <div class="flex flex-wrap gap-1 mt-1">
+                <span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">Employee</span>
+                
+                <!-- Priority Badge -->
+                {% if template.priority == 'high' %}
+                <span class="text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded">High Priority</span>
+                {% elif template.priority == 'urgent' %}
+                <span class="text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded">Urgent Priority</span>
+                {% else %}
+                <span class="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">Normal Priority</span>
+                {% endif %}
+                
+                <!-- Variables Badges -->
+                {% for var in template.variables %}
+                <span class="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded">{{ var }}</span>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="openEditModal({{ template.id }})" class="text-indigo-600 hover:text-indigo-800 transition-colors p-1.5 hover:bg-indigo-50 rounded-lg">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+            </button>
+            <button onclick="openDeleteModal({{ template.id }})" class="text-rose-600 hover:text-rose-800 transition-colors p-1.5 hover:bg-rose-50 rounded-lg">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+            </button>
+        </div>
+    </div>
+    
+    <div class="mt-3 bg-white p-4 rounded-lg border border-gray-200">
+        <p class="text-gray-600 text-sm whitespace-pre-wrap">{{ template.content }}</p>
+    </div>
+    
+    <div class="mt-3 flex justify-between items-center text-xs text-gray-500">
+        <div>
+            <span>Created: {{ template.created_at }}</span>
+            <span class="ml-3">By: {{ template.created_by }}</span>
+        </div>
+        <div>
+            <span>{{ template.content|length }} characters</span>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+            <!-- New Template Form -->
+            <div class="pt-6 border-t border-gray-200 mt-8">
+              <h3 class="font-medium text-gray-900 mb-4 flex items-center gap-2">
+                <svg class="h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Create New SMS Template
+              </h3>
+<form method="POST" action="{{ url_for('comms_web_bp.message_templates') }}">
+    {{ form.hidden_tag() }}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+            {{ form.name.label(class="block text-sm font-medium text-gray-700 mb-1") }}
+            {{ form.name(class="w-full p-2 border rounded-md") }}
+            {% for error in form.name.errors %}
+                <p class="text-red-500 text-sm mt-1">{{ error }}</p>
+            {% endfor %}
+        </div>
+        
+        <div>
+            {{ form.category.label(class="block text-sm font-medium text-gray-700 mb-1") }}
+            {{ form.category(class="w-full p-2 border rounded-md") }}
+        </div>
+        
+        <div>
+            {{ form.template_type.label(class="block text-sm font-medium text-gray-700 mb-1") }}
+            {{ form.template_type(class="w-full p-2 border rounded-md") }}
+        </div>
+        
+        <div>
+            {{ form.priority.label(class="block text-sm font-medium text-gray-700 mb-1") }}
+            {{ form.priority(class="w-full p-2 border rounded-md") }}
+        </div>
+        
+        <div class="md:col-span-2">
+            {{ form.content.label(class="block text-sm font-medium text-gray-700 mb-1") }}
+            {{ form.content(class="w-full p-3 border rounded-md") }}
+            {% for error in form.content.errors %}
+                <p class="text-red-500 text-sm mt-1">{{ error }}</p>
+            {% endfor %}
+        </div>
+        
+        <div>
+            {{ form.variables.label(class="block text-sm font-medium text-gray-700 mb-1") }}
+            {{ form.variables(class="w-full p-2 border rounded-md") }}
+            <p class="text-xs text-gray-500 mt-1">Separate with commas (e.g., name, date, time)</p>
+        </div>
+        
+        <div>
+            {{ form.icon.label(class="block text-sm font-medium text-gray-700 mb-1") }}
+            {{ form.icon(class="w-full p-2 border rounded-md") }}
+        </div>
+        
+        <div class="flex items-center mt-4">
+            {{ form.is_active(class="h-4 w-4 text-blue-600") }}
+            {{ form.is_active.label(class="ml-2 text-sm text-gray-700") }}
+        </div>
+    </div>
+    
+    <div class="mt-6">
+        <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">
+            Save Template
+        </button>
+    </div>
+</form>
+            </div>
+          </div>
+
+          <!-- Email Templates -->
+          <div id="emp-email" class="tab-content hidden">
+{% for template in employee_templates.email %}
+<div class="template-container p-5 bg-gradient-to-r from-teal-50/50 to-white rounded-xl border border-teal-100 shadow-sm hover:shadow-md transition-shadow mb-6">
+    <div class="flex justify-between items-start">
+        <div>
+            <h3 class="font-medium text-gray-900 flex items-center gap-2">
+                {% if template.icon %}
+                <i class="fas {{ template.icon }} text-teal-500"></i>
+                {% endif %}
+                {{ template.name }}
+                <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">Email</span>
+            </h3>
+            <div class="flex flex-wrap gap-1 mt-1">
+                <span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">Employee</span>
+                
+                <!-- Priority Badge -->
+                {% if template.priority == 'high' %}
+                <span class="text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded">High Priority</span>
+                {% elif template.priority == 'urgent' %}
+                <span class="text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded">Urgent Priority</span>
+                {% else %}
+                <span class="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">Normal Priority</span>
+                {% endif %}
+                
+                <!-- Variables Badges -->
+                {% for var in template.variables %}
+                <span class="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded">{{ var }}</span>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="openEditModal({{ template.id }})" class="text-teal-600 hover:text-teal-800 transition-colors p-1.5 hover:bg-teal-50 rounded-lg">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+            </button>
+            <button onclick="openDeleteModal({{ template.id }})" class="text-rose-600 hover:text-rose-800 transition-colors p-1.5 hover:bg-rose-50 rounded-lg">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+            </button>
+        </div>
+    </div>
+    
+    <div class="mt-3 bg-white p-4 rounded-lg border border-gray-200 max-h-40 overflow-y-auto">
+        <div class="prose max-w-none text-sm">
+            {{ template.content|safe }}
+        </div>
+    </div>
+    
+    <div class="mt-3 flex justify-between items-center text-xs text-gray-500">
+        <div>
+            <span>Created: {{ template.created_at }}</span>
+            <span class="ml-3">By: {{ template.created_by }}</span>
+        </div>
+        <div>
+            <span>{{ template.content|length }} characters</span>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+            <!-- New Template Form -->
+            <div class="pt-6 border-t border-gray-200 mt-8">
+              <h3 class="font-medium text-gray-900 mb-4 flex items-center gap-2">
+                <svg class="h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Create New Email Template
+              </h3>
+<form method="POST" action="{{ url_for('comms_web_bp.message_templates') }}">
+    {{ form.hidden_tag() }}
+    <div class="space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                {{ form.name.label(class="block text-sm font-medium text-gray-700 mb-1") }}
+                {{ form.name(class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-transparent", placeholder="e.g., Welcome Email") }}
+                {% for error in form.name.errors %}
+                    <p class="text-red-500 text-sm mt-1">{{ error }}</p>
+                {% endfor %}
+            </div>
+            
+            <div>
+                {{ form.category.label(class="block text-sm font-medium text-gray-700 mb-1") }}
+                {{ form.category(class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-transparent") }}
+            </div>
+            
+            <div>
+                {{ form.template_type.label(class="block text-sm font-medium text-gray-700 mb-1") }}
+                {{ form.template_type(class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-transparent") }}
+            </div>
+            
+            <div>
+                {{ form.priority.label(class="block text-sm font-medium text-gray-700 mb-1") }}
+                {{ form.priority(class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-transparent") }}
+            </div>
+        </div>
+
+        <div>
+            {{ form.variables.label(class="block text-sm font-medium text-gray-700 mb-1") }}
+            {{ form.variables(class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-transparent", placeholder="e.g., name, date, time, doctor") }}
+            <p class="text-xs text-gray-500 mt-1">Separate variables with commas</p>
+        </div>
+        
+        <div>
+            {{ form.icon.label(class="block text-sm font-medium text-gray-700 mb-1") }}
+            {{ form.icon(class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-transparent") }}
+        </div>
+        
+        <div class="flex items-center">
+            {{ form.is_active(class="h-4 w-4 text-indigo-600 rounded focus:ring-indigo-500") }}
+            {{ form.is_active.label(class="ml-2 text-sm text-gray-700") }}
+        </div>
+        
+        <div>
+            {{ form.content.label(class="block text-sm font-medium text-gray-700 mb-1") }}
+            <div class="border border-gray-300 rounded-lg overflow-hidden">
+                <div class="bg-gray-800 text-gray-200 text-xs px-4 py-2 flex items-center justify-between">
+                    <div>Template Editor</div>
+                    <div class="flex gap-2">
+                        <button type="button" class="text-gray-400 hover:text-white" id="insert-variable">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                {{ form.content(class="w-full px-4 py-3 border-0 font-sans text-sm bg-gray-50 focus:ring-2 focus:ring-indigo-200 focus:border-transparent", rows="6", placeholder="Enter your content here...") }}
+            </div>
+            {% for error in form.content.errors %}
+                <p class="text-red-500 text-sm mt-1">{{ error }}</p>
+            {% endfor %}
+            <div class="flex justify-between mt-2 text-xs text-gray-500">
+                <span>Characters: <span id="character-count">0</span></span>
+                <span>SMS Parts: <span id="message-count">1</span></span>
+            </div>
+        </div>
+        
+        <div class="flex gap-3 pt-2">
+            <button type="submit" class="px-6 py-2.5 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors">
+                Save Template
+            </button>
+            <button type="button" class="px-6 py-2.5 border border-gray-300 font-medium rounded-lg hover:bg-gray-50 transition-colors" id="preview-btn">
+                Preview
+            </button>
+            <button type="button" class="px-6 py-2.5 border border-gray-300 font-medium rounded-lg hover:bg-gray-50 transition-colors" onclick="history.back()">
+                Cancel
+            </button>
+        </div>
+    </div>
+</form>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Patient Templates Column -->
+      <div class="flex-1 bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+        <div class="p-6 border-b border-gray-100 bg-gradient-to-r from-teal-50 to-white">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="p-2.5 bg-teal-100 rounded-lg">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+            </div>
+            <h2 class="text-xl font-semibold text-gray-800">Patient Communications</h2>
+          </div>
+
+          <!-- Tabs -->
+          <div class="flex border-b border-gray-200 mb-6">
+            <button data-tab-target="pat-sms" class="tab-button active py-3 px-4 font-medium text-teal-600 border-b-2 border-teal-500 transition-colors flex items-center gap-1">
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+              </svg>
+              SMS Templates
+            </button>
+            <button data-tab-target="pat-email" class="tab-button py-3 px-4 font-medium text-gray-600 hover:text-teal-600 transition-colors flex items-center gap-1">
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              Email Templates
+            </button>
+          </div>
+
+          <!-- SMS Templates -->
+          <div id="pat-sms" class="tab-content active">
+{% for template in patient_templates.sms %}
+<div class="template-container p-5 bg-gradient-to-r from-indigo-50/50 to-white rounded-xl border border-indigo-100 shadow-sm hover:shadow-md transition-shadow mb-6">
+    <div class="flex justify-between items-start">
+        <div>
+            <h3 class="font-medium text-gray-900 flex items-center gap-2">
+                {% if template.icon %}
+                <i class="fas {{ template.icon }} text-indigo-500"></i>
+                {% endif %}
+                {{ template.name }}
+                <span class="text-xs bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full">SMS</span>
+            </h3>
+            <div class="flex flex-wrap gap-1 mt-1">
+                <span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">Patient</span>
+                
+                <!-- Priority Badge -->
+                {% if template.priority == 'high' %}
+                <span class="text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded">High Priority</span>
+                {% elif template.priority == 'urgent' %}
+                <span class="text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded">Urgent Priority</span>
+                {% else %}
+                <span class="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">Normal Priority</span>
+                {% endif %}
+                
+                <!-- Variables Badges -->
+                {% for var in template.variables %}
+                <span class="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded">{{ var }}</span>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="openEditModal({{ template.id }})" class="text-indigo-600 hover:text-indigo-800 transition-colors p-1.5 hover:bg-indigo-50 rounded-lg">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+            </button>
+            <button onclick="openDeleteModal({{ template.id }})" class="text-rose-600 hover:text-rose-800 transition-colors p-1.5 hover:bg-rose-50 rounded-lg">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+            </button>
+        </div>
+    </div>
+    
+    <div class="mt-3 bg-white p-4 rounded-lg border border-gray-200">
+        <p class="text-gray-600 text-sm whitespace-pre-wrap">{{ template.content }}</p>
+    </div>
+    
+    <div class="mt-3 flex justify-between items-center text-xs text-gray-500">
+        <div>
+            <span>Created: {{ template.created_at }}</span>
+            <span class="ml-3">By: {{ template.created_by }}</span>
+        </div>
+        <div>
+            <span>{{ template.content|length }} characters</span>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+            <!-- New Template Form -->
+            <div class="pt-6 border-t border-gray-200 mt-8">
+              <h3 class="font-medium text-gray-900 mb-4 flex items-center gap-2">
+                <svg class="h-5 w-5 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Create New SMS Template
+              </h3>
+<form method="POST" action="{{ url_for('comms_web_bp.message_templates') }}">
+    {{ form.hidden_tag() }}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+            {{ form.name.label(class="block text-sm font-medium text-gray-700 mb-1") }}
+            {{ form.name(class="w-full p-2 border rounded-md") }}
+            {% for error in form.name.errors %}
+                <p class="text-red-500 text-sm mt-1">{{ error }}</p>
+            {% endfor %}
+        </div>
+        
+        <div>
+            {{ form.category.label(class="block text-sm font-medium text-gray-700 mb-1") }}
+            {{ form.category(class="w-full p-2 border rounded-md") }}
+        </div>
+        
+        <div>
+            {{ form.template_type.label(class="block text-sm font-medium text-gray-700 mb-1") }}
+            {{ form.template_type(class="w-full p-2 border rounded-md") }}
+        </div>
+        
+        <div>
+            {{ form.priority.label(class="block text-sm font-medium text-gray-700 mb-1") }}
+            {{ form.priority(class="w-full p-2 border rounded-md") }}
+        </div>
+        
+        <div class="md:col-span-2">
+            {{ form.content.label(class="block text-sm font-medium text-gray-700 mb-1") }}
+            {{ form.content(class="w-full p-3 border rounded-md") }}
+            {% for error in form.content.errors %}
+                <p class="text-red-500 text-sm mt-1">{{ error }}</p>
+            {% endfor %}
+        </div>
+        
+        <div>
+            {{ form.variables.label(class="block text-sm font-medium text-gray-700 mb-1") }}
+            {{ form.variables(class="w-full p-2 border rounded-md") }}
+            <p class="text-xs text-gray-500 mt-1">Separate with commas (e.g., name, date, time)</p>
+        </div>
+        
+        <div>
+            {{ form.icon.label(class="block text-sm font-medium text-gray-700 mb-1") }}
+            {{ form.icon(class="w-full p-2 border rounded-md") }}
+        </div>
+        
+        <div class="flex items-center mt-4">
+            {{ form.is_active(class="h-4 w-4 text-blue-600") }}
+            {{ form.is_active.label(class="ml-2 text-sm text-gray-700") }}
+        </div>
+    </div>
+    
+    <div class="mt-6">
+        <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">
+            Save Template
+        </button>
+    </div>
+</form>
+            </div>
+          </div>
+
+          <!-- Email Templates -->
+          <div id="pat-email" class="tab-content hidden">
+{% for template in patient_templates.email %}
+<div class="template-container p-5 bg-gradient-to-r from-teal-50/50 to-white rounded-xl border border-teal-100 shadow-sm hover:shadow-md transition-shadow mb-6">
+    <div class="flex justify-between items-start">
+        <div>
+            <h3 class="font-medium text-gray-900 flex items-center gap-2">
+                {% if template.icon %}
+                <i class="fas {{ template.icon }} text-teal-500"></i>
+                {% endif %}
+                {{ template.name }}
+                <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">Email</span>
+            </h3>
+            <div class="flex flex-wrap gap-1 mt-1">
+                <span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">Patient</span>
+                
+                <!-- Priority Badge -->
+                {% if template.priority == 'high' %}
+                <span class="text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded">High Priority</span>
+                {% elif template.priority == 'urgent' %}
+                <span class="text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded">Urgent Priority</span>
+                {% else %}
+                <span class="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">Normal Priority</span>
+                {% endif %}
+                
+                <!-- Variables Badges -->
+                {% for var in template.variables %}
+                <span class="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded">{{ var }}</span>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="openEditModal({{ template.id }})" class="text-teal-600 hover:text-teal-800 transition-colors p-1.5 hover:bg-teal-50 rounded-lg">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+            </button>
+            <button onclick="openDeleteModal({{ template.id }})" class="text-rose-600 hover:text-rose-800 transition-colors p-1.5 hover:bg-rose-50 rounded-lg">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+            </button>
+        </div>
+    </div>
+    
+    <div class="mt-3 bg-white p-4 rounded-lg border border-gray-200 max-h-40 overflow-y-auto">
+        <div class="prose max-w-none text-sm">
+            {{ template.content|safe }}
+        </div>
+    </div>
+    
+    <div class="mt-3 flex justify-between items-center text-xs text-gray-500">
+        <div>
+            <span>Created: {{ template.created_at }}</span>
+            <span class="ml-3">By: {{ template.created_by }}</span>
+        </div>
+        <div>
+            <span>{{ template.content|length }} characters</span>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+            <!-- New Template Form -->
+            <div class="pt-6 border-t border-gray-200 mt-8">
+              <h3 class="font-medium text-gray-900 mb-4 flex items-center gap-2">
+                <svg class="h-5 w-5 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Create New Email Template
+              </h3>
+<form method="POST" action="{{ url_for('comms_web_bp.message_templates') }}">
+    {{ form.hidden_tag() }}
+    <div class="space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                {{ form.name.label(class="block text-sm font-medium text-gray-700 mb-1") }}
+                {{ form.name(class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-transparent", placeholder="e.g., Welcome Email") }}
+                {% for error in form.name.errors %}
+                    <p class="text-red-500 text-sm mt-1">{{ error }}</p>
+                {% endfor %}
+            </div>
+            
+            <div>
+                {{ form.category.label(class="block text-sm font-medium text-gray-700 mb-1") }}
+                {{ form.category(class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-transparent") }}
+            </div>
+            
+            <div>
+                {{ form.template_type.label(class="block text-sm font-medium text-gray-700 mb-1") }}
+                {{ form.template_type(class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-transparent") }}
+            </div>
+            
+            <div>
+                {{ form.priority.label(class="block text-sm font-medium text-gray-700 mb-1") }}
+                {{ form.priority(class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-transparent") }}
+            </div>
+        </div>
+
+        <div>
+            {{ form.variables.label(class="block text-sm font-medium text-gray-700 mb-1") }}
+            {{ form.variables(class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-transparent", placeholder="e.g., name, date, time, doctor") }}
+            <p class="text-xs text-gray-500 mt-1">Separate variables with commas</p>
+        </div>
+        
+        <div>
+            {{ form.icon.label(class="block text-sm font-medium text-gray-700 mb-1") }}
+            {{ form.icon(class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-transparent") }}
+        </div>
+        
+        <div class="flex items-center">
+            {{ form.is_active(class="h-4 w-4 text-indigo-600 rounded focus:ring-indigo-500") }}
+            {{ form.is_active.label(class="ml-2 text-sm text-gray-700") }}
+        </div>
+        
+        <div>
+            {{ form.content.label(class="block text-sm font-medium text-gray-700 mb-1") }}
+            <div class="border border-gray-300 rounded-lg overflow-hidden">
+                <div class="bg-gray-800 text-gray-200 text-xs px-4 py-2 flex items-center justify-between">
+                    <div>Template Editor</div>
+                    <div class="flex gap-2">
+                        <button type="button" class="text-gray-400 hover:text-white" id="insert-variable">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                {{ form.content(class="w-full px-4 py-3 border-0 font-sans text-sm bg-gray-50 focus:ring-2 focus:ring-indigo-200 focus:border-transparent", rows="6", placeholder="Enter your content here...") }}
+            </div>
+            {% for error in form.content.errors %}
+                <p class="text-red-500 text-sm mt-1">{{ error }}</p>
+            {% endfor %}
+            <div class="flex justify-between mt-2 text-xs text-gray-500">
+                <span>Characters: <span id="character-count">0</span></span>
+                <span>SMS Parts: <span id="message-count">1</span></span>
+            </div>
+        </div>
+        
+        <div class="flex gap-3 pt-2">
+            <button type="submit" class="px-6 py-2.5 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors">
+                Save Template
+            </button>
+            <button type="button" class="px-6 py-2.5 border border-gray-300 font-medium rounded-lg hover:bg-gray-50 transition-colors" id="preview-btn">
+                Preview
+            </button>
+            <button type="button" class="px-6 py-2.5 border border-gray-300 font-medium rounded-lg hover:bg-gray-50 transition-colors" onclick="history.back()">
+                Cancel
+            </button>
+        </div>
+    </div>
+</form>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Template Modal -->
+<div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 hidden">
+  <div class="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+      <h2 class="text-xl font-bold text-gray-900">Edit Template</h2>
+      <button onclick="closeModal('editModal')" class="text-gray-400 hover:text-gray-500">
+        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+    <div class="p-6">
+      <form id="edit-template-form" method="POST" action="/communications/templates/update">
+        <input type="hidden" id="edit-template-id" name="id">
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Template Name</label>
+            <input type="text" id="edit-template-name" name="name" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-transparent">
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
+            <select id="edit-template-category" name="category" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-transparent">
+              <option value="employee">Employee</option>
+              <option value="patient">Patient</option>
+            </select>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Type</label>
+            <select id="edit-template-type" name="template_type" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-transparent">
+              <option value="sms">SMS</option>
+              <option value="email">Email</option>
+            </select>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+            <select id="edit-template-priority" name="priority" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-transparent">
+              <option value="normal">Normal</option>
+              <option value="high">High</option>
+              <option value="urgent">Urgent</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="mb-6">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Variables</label>
+          <input type="text" id="edit-template-variables" name="variables" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-transparent" placeholder="e.g., name, date, time">
+        </div>
+        
+        <div class="mb-6">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Icon</label>
+          <select id="edit-template-icon" name="icon" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-transparent">
+            <option value="">Select an icon</option>
+            <option value="fa-envelope">Envelope</option>
+            <option value="fa-comment">Comment</option>
+            <option value="fa-calendar">Calendar</option>
+            <option value="fa-bell">Bell</option>
+            <option value="fa-user-md">Doctor</option>
+            <option value="fa-stethoscope">Stethoscope</option>
+            <option value="fa-heartbeat">Heartbeat</option>
+            <option value="fa-pills">Pills</option>
+            <option value="fa-file-invoice">Invoice</option>
+            <option value="fa-credit-card">Credit Card</option>
+            <option value="fa-clock">Clock</option>
+            <option value="fa-map-marker">Map Marker</option>
+          </select>
+        </div>
+        
+        <div class="mb-6">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Content</label>
+          <div id="edit-sms-content" class="hidden">
+            <textarea rows="4" id="edit-sms-textarea" name="content" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-transparent"></textarea>
+            <div class="text-right text-sm text-gray-500 mt-1" id="sms-char-counter">0/160 characters</div>
+          </div>
+          <div id="edit-email-content" class="hidden">
+            <div class="border border-gray-300 rounded-lg overflow-hidden">
+              <div class="bg-gray-800 text-gray-200 text-xs px-4 py-2 flex items-center justify-between">
+                <div>HTML Editor</div>
+                <button type="button" class="text-gray-400 hover:text-white" id="edit-insert-variable">
+                  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                  </svg>
+                </button>
+              </div>
+              <textarea rows="8" id="edit-email-textarea" name="content" class="w-full px-4 py-3 border-0 font-mono text-sm bg-gray-50"></textarea>
+            </div>
+          </div>
+        </div>
+        
+        <div class="flex justify-end gap-3 pt-4">
+          <button type="button" class="px-6 py-2.5 border border-gray-300 font-medium rounded-lg hover:bg-gray-50 transition-colors" onclick="closeModal('editModal')">
+            Cancel
+          </button>
+          <button type="submit" class="px-6 py-2.5 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors">
+            Save Changes
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 hidden">
+  <div class="bg-white rounded-xl max-w-md w-full">
+    <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+      <h2 class="text-xl font-bold text-gray-900">Delete Template</h2>
+      <button onclick="closeModal('deleteModal')" class="text-gray-400 hover:text-gray-500">
+        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+    <div class="p-6">
+      <form id="delete-template-form" method="POST" action="/communications/templates/delete">
+        <input type="hidden" id="delete-template-id" name="id">
+        <p class="text-gray-600 mb-6">Are you sure you want to delete the template <span class="font-semibold" id="delete-template-name"></span>? This action cannot be undone.</p>
+        <div class="flex justify-end gap-3">
+          <button type="button" class="px-6 py-2.5 border border-gray-300 font-medium rounded-lg hover:bg-gray-50 transition-colors" onclick="closeModal('deleteModal')">
+            Cancel
+          </button>
+          <button type="submit" class="px-6 py-2.5 bg-rose-600 text-white font-medium rounded-lg hover:bg-rose-700 transition-colors">
+            Delete Template
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<!-- New Template Modal -->
+<div id="newTemplateModal"
+     class="fixed inset-0 bg-opacity-60 flex items-center justify-center p-4 hidden z-50">
+  <!-- Modal panel -->
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl h-full max-h-[90vh] overflow-y-auto relative">
+    
+    <!-- Close button -->
+    <button onclick="closeModal('newTemplateModal')"
+            class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-3xl leading-none">
+      &times;
+    </button>
+    
+    <!-- Header -->
+    <div class="flex items-center gap-3 px-6 py-4 border-b">
+      <svg class="h-6 w-6 text-indigo-600" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+      </svg>
+      <h2 class="text-2xl font-bold text-gray-800">Create New Template</h2>
+    </div>
+    
+    <!-- Form -->
+    <form method="POST" action="{{ url_for('comms_web_bp.message_templates') }}"
+          class="px-6 py-4 space-y-6">
+      {{ form.hidden_tag() }}
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Name -->
+        <div>
+          {{ form.name.label(class="block text-sm font-semibold text-gray-700 mb-1") }}
+          {{ form.name(class="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300") }}
+          {% for error in form.name.errors %}
+            <p class="text-red-500 text-xs mt-1">{{ error }}</p>
+          {% endfor %}
+        </div>
+        
+        <!-- Category -->
+        <div>
+          {{ form.category.label(class="block text-sm font-semibold text-gray-700 mb-1") }}
+          {{ form.category(class="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-300") }}
+        </div>
+        
+        <!-- Type -->
+        <div>
+          {{ form.template_type.label(class="block text-sm font-semibold text-gray-700 mb-1") }}
+          {{ form.template_type(class="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300") }}
+        </div>
+        
+        <!-- Priority -->
+        <div>
+          {{ form.priority.label(class="block text-sm font-semibold text-gray-700 mb-1") }}
+          {{ form.priority(class="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-300") }}
+        </div>
+      </div>
+      
+      <!-- Content -->
+      <div>
+        {{ form.content.label(class="block text-sm font-semibold text-gray-700 mb-1") }}
+        {{ form.content(class="w-full p-4 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300 h-32 resize-none") }}
+        {% for error in form.content.errors %}
+          <p class="text-red-500 text-xs mt-1">{{ error }}</p>
+        {% endfor %}
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Variables -->
+        <div>
+          {{ form.variables.label(class="block text-sm font-semibold text-gray-700 mb-1") }}
+          {{ form.variables(class="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-300") }}
+          <p class="text-xs text-gray-500 mt-1">e.g., <span class="italic">name, date, time</span></p>
+        </div>
+        
+        <!-- Icon -->
+        <div>
+          {{ form.icon.label(class="block text-sm font-semibold text-gray-700 mb-1") }}
+          {{ form.icon(class="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-300") }}
+        </div>
+      </div>
+      
+      <!-- Is Active -->
+      <div class="flex items-center gap-2">
+        {{ form.is_active(class="h-5 w-5 text-green-500") }}
+        {{ form.is_active.label(class="text-sm text-gray-700") }}
+      </div>
+      
+      <!-- Actions -->
+      <div class="flex justify-end gap-4 pt-4 border-t">
+        <button type="button"
+                onclick="closeModal('newTemplateModal')"
+                class="px-5 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-100 transition">
+          Cancel
+        </button>
+        <button type="submit"
+                class="px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+          Save Template
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  function openModal(id) {
+    const modal = document.getElementById(id);
+    if (modal) modal.classList.remove('hidden');
+  }
+
+  function closeModal(id) {
+    const modal = document.getElementById(id);
+    if (modal) modal.classList.add('hidden');
+  }
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add event listener for template type change
+    const templateTypeSelect = document.getElementById('edit-template-type');
+    if (templateTypeSelect) {
+        templateTypeSelect.addEventListener('change', function() {
+            if (this.value === 'sms') {
+                document.getElementById('edit-sms-content').classList.remove('hidden');
+                document.getElementById('edit-email-content').classList.add('hidden');
+            } else {
+                document.getElementById('edit-sms-content').classList.add('hidden');
+                document.getElementById('edit-email-content').classList.remove('hidden');
+            }
+        });
+    }
+    
+    // Character counter for SMS
+    const smsTextarea = document.getElementById('edit-sms-textarea');
+    if (smsTextarea) {
+        smsTextarea.addEventListener('input', function() {
+            const charCounter = document.getElementById('sms-char-counter');
+            charCounter.textContent = this.value.length + '/160 characters';
+        });
+    }
+    
+    // Variable insertion for email editor
+    const insertVarBtn = document.getElementById('edit-insert-variable');
+    if (insertVarBtn) {
+        insertVarBtn.addEventListener('click', function() {
+            const textarea = document.getElementById('edit-email-textarea');
+            const variable = prompt('Enter variable name (e.g., name, date):');
+            if (variable) {
+                const cursorPos = textarea.selectionStart;
+                const textBefore = textarea.value.substring(0, cursorPos);
+                const textAfter = textarea.value.substring(cursorPos);
+                textarea.value = textBefore + '{' + variable + '}' + textAfter;
+            }
+        });
+    }
+    
+    // Form submission handling
+    const editForm = document.getElementById('edit-template-form');
+    if (editForm) {
+        editForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            
+            try {
+                const response = await fetch(this.action, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    // Success handling
+                    closeModal('editModal');
+                    location.reload(); // Refresh the page to see changes
+                } else {
+                    alert('Failed to update template');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while updating the template');
+            }
+        });
+    }
+    
+    const deleteForm = document.getElementById('delete-template-form');
+    if (deleteForm) {
+        deleteForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            
+            try {
+                const response = await fetch(this.action, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    // Success handling
+                    closeModal('deleteModal');
+                    location.reload(); // Refresh the page to see changes
+                } else {
+                    alert('Failed to delete template');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while deleting the template');
+            }
+        });
+    }
+});
+</script>
+
+<script>
+  // Tab switching functionality
+  document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tab switching
+    const tabButtons = document.querySelectorAll('.tab-button');
+    
+    tabButtons.forEach(button => {
+      button.addEventListener('click', function() {
+        const targetId = this.getAttribute('data-tab-target');
+        
+        // Remove active state from all tabs in this section
+        const container = this.closest('.flex-1');
+        container.querySelectorAll('.tab-button').forEach(btn => {
+          btn.classList.remove('active', 'border-b-2', 'border-indigo-500', 'text-indigo-600', 'border-teal-500', 'text-teal-600');
+          btn.classList.add('text-gray-600');
+        });
+        
+        // Add active state to current button
+        if (container.querySelector('.bg-gradient-to-r.from-indigo-50')) {
+          this.classList.add('active', 'border-b-2', 'border-indigo-500', 'text-indigo-600');
+        } else {
+          this.classList.add('active', 'border-b-2', 'border-teal-500', 'text-teal-600');
+        }
+        this.classList.remove('text-gray-600');
+        
+        // Hide all tab content in this section
+        container.querySelectorAll('.tab-content').forEach(content => {
+          content.classList.add('hidden');
+          content.classList.remove('active');
+        });
+        
+        // Show target content
+        const targetContent = document.getElementById(targetId);
+        targetContent.classList.remove('hidden');
+        targetContent.classList.add('active');
+        
+        // Save to localStorage
+        localStorage.setItem(targetId, 'active');
+      });
+    });
+    
+    // Restore active tabs from localStorage - FIXED SECTION
+    document.querySelectorAll('.tab-content').forEach(tab => {
+      if (localStorage.getItem(tab.id)) {  // Fixed parentheses
+        tab.classList.remove('hidden');
+        tab.classList.add('active');
+      }
+    });
+    
+    // Character counters for SMS textareas
+    const contentTextareas = document.querySelectorAll('.content-textarea');
+    contentTextareas.forEach(textarea => {
+      const counter = textarea.parentElement.querySelector('.char-counter');
+      if (counter) {
+        textarea.addEventListener('input', function() {
+          counter.textContent = this.value.length + '/160 characters';
+        });
+      }
+    });
+    
+// Improved Search functionality
+const searchInput = document.getElementById('search-templates');
+if (searchInput) {
+  searchInput.addEventListener('input', function() {
+    const searchTerm = this.value.toLowerCase().trim();
+    
+    // Better selector to capture all templates
+    const templates = document.querySelectorAll('.template-container');
+    
+    templates.forEach(template => {
+      // Extract all relevant searchable data
+      const name = template.querySelector('h3').textContent.toLowerCase();
+      
+      // Handle both content types
+      const contentElement = template.querySelector('p, .prose');
+      const content = contentElement ? contentElement.textContent.toLowerCase() : '';
+      
+      // Get template type
+      const typeElement = template.querySelector('[class*="rounded-full"]');
+      const type = typeElement ? typeElement.textContent.toLowerCase() : '';
+      
+      // Get priority
+      const priorityElements = template.querySelectorAll('[class*="Priority"]');
+      let priority = '';
+      priorityElements.forEach(el => {
+        if (el.textContent.includes('Priority')) {
+          priority = el.textContent.toLowerCase();
+        }
+      });
+      
+      // Get variables
+      const variableElements = template.querySelectorAll('[class*="bg-purple-100"]');
+      let variables = '';
+      variableElements.forEach(el => {
+        variables += el.textContent.toLowerCase() + ' ';
+      });
+      
+      // Search in all relevant fields
+      if (searchTerm === '' || 
+          name.includes(searchTerm) || 
+          content.includes(searchTerm) || 
+          type.includes(searchTerm) || 
+          priority.includes(searchTerm) || 
+          variables.includes(searchTerm)) {
+        template.classList.remove('hidden');
+      } else {
+        template.classList.add('hidden');
+      }
+    });
+  });
+}
+  });
+  
+// Modal functions
+async function openEditModal(templateId) {
+    try {
+        // Fetch template data from backend
+        const response = await fetch(`/communications/templates/${templateId}`);
+        const template = await response.json();
+        
+        // Populate form with template data
+        document.getElementById('edit-template-id').value = template.id;
+        document.getElementById('edit-template-name').value = template.name;
+        document.getElementById('edit-template-category').value = template.category;
+        document.getElementById('edit-template-type').value = template.template_type;
+        document.getElementById('edit-template-priority').value = template.priority;
+        document.getElementById('edit-template-icon').value = template.icon;
+        document.getElementById('edit-template-variables').value = template.variables ? template.variables.join(', ') : '';
+        
+        // Set content based on type
+        if (template.template_type === 'sms') {
+            document.getElementById('edit-sms-textarea').value = template.content;
+            document.getElementById('sms-char-counter').textContent = 
+                template.content.length + '/160 characters';
+            document.getElementById('edit-sms-content').classList.remove('hidden');
+            document.getElementById('edit-email-content').classList.add('hidden');
+        } else {
+            document.getElementById('edit-email-textarea').value = template.content;
+            document.getElementById('edit-email-content').classList.remove('hidden');
+            document.getElementById('edit-sms-content').classList.add('hidden');
+        }
+        
+        // Show the modal
+        document.getElementById('editModal').classList.remove('hidden');
+    } catch (error) {
+        console.error('Error fetching template:', error);
+        alert('Failed to load template data');
+    }
+}
+
+function openDeleteModal(templateId, templateName) {
+    document.getElementById('delete-template-id').value = templateId;
+    document.getElementById('delete-template-name').textContent = templateName;
+    document.getElementById('deleteModal').classList.remove('hidden');
+}
+  
+  function closeModal(modalId) {
+    document.getElementById(modalId).classList.add('hidden');
+  }
+  
+  // Close modals when clicking outside
+  window.onclick = function(event) {
+    if (event.target.id === 'editModal') {
+      closeModal('editModal');
+    }
+    if (event.target.id === 'deleteModal') {
+      closeModal('deleteModal');
+    }
+  };
+</script>
+
+<style>
+  .tab-content {
+    display: none;
+  }
+  
+  .tab-content.active {
+    display: block;
+    animation: fadeIn 0.3s ease-in-out;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  .prose :where(pre):not(:where([class~="not-prose"] *)) {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    overflow-x: auto;
+  }
+  
+  .modal-content {
+    animation: modalFadeIn 0.3s;
+  }
+  
+  @keyframes modalFadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  
+  .template-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+  }
+  
+  .template-card {
+    transition: all 0.3s ease;
+  }
+</style>
+{% endblock %}

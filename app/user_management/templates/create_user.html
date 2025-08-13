@@ -1,0 +1,907 @@
+{% extends "base.html" %} {% block title %}User & Employee Management{% endblock %} {% block content %} {# Use a container that accounts for the fixed navbar and sidebar padding #} {# pt-8 for navbar height, px-4/6 for horizontal padding, pb-8 for bottom
+padding #} {# Increased max-w for a better layout with multiple sections side-by-side #}
+<div class="px-4 sm:px-6 lg:px-8 pb-8 max-w-7xl mx-auto"> {# Slightly increased max-width #} {# Page Header #}
+    <div class="mb-8">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 transition-colors duration-300 flex items-center">
+                <i class="fas fa-users-cog text-green-600 dark:text-green-400 mr-3"></i> User & Employee Management
+            </h1>
+
+            <div class="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                <a href="#manage-roles" class="inline-flex items-center justify-center px-4 py-2.5 text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 dark:bg-purple-800 dark:hover:bg-purple-700 dark:focus:ring-offset-gray-900 transition-transform transform hover:scale-[1.01]">
+                    <i class="fas fa-user-tag mr-2"></i> Manage Roles
+                </a>
+                <a href="#manage-privileges" class="inline-flex items-center justify-center px-4 py-2.5 text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-blue-800 dark:hover:bg-blue-700 dark:focus:ring-offset-gray-900 transition-transform transform hover:scale-[1.01]">
+                    <i class="fas fa-key mr-2"></i> Manage Privileges
+                </a>
+            </div>
+        </div>
+    </div>
+    <style>
+        /* Hide scrollbar for WebKit browsers */
+        
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        /* Hide scrollbar for Firefox */
+        
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            /* IE and Edge */
+            scrollbar-width: none;
+            /* Firefox */
+        }
+    </style>
+
+    <!-- Role Management Modal -->
+    <div id="roleModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800  dark:bg-gray-900 rounded-2xl w-full max-w-md p-6 shadow-xl transform transition-all">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-semibold text-gray-900 dark:text-gray-100" id="modalTitle">Manage Roles</h3>
+                <button onclick="closeModal('roleModal')" class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300">
+              <i class="fas fa-times"></i>
+            </button>
+            </div>
+
+            <!-- Role Form -->
+            <form id="roleForm" class="space-y-4">
+                <input type="hidden" id="roleId">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Role Name</label>
+                    <input type="text" id="roleName" required class="w-full px-4 py-2 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600
+                            focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all">
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button type="button" onclick="closeModal('roleModal')" class="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                Cancel
+              </button>
+                    <button type="submit" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                Save Role
+              </button>
+                </div>
+            </form>
+
+            <!-- Existing Roles List -->
+            <div class="mt-6 border-t border-gray-200 dark:border-gray-700 pt-4">
+                <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Existing Roles</h4>
+                <div id="rolesList" class="space-y-2 max-h-56 overflow-y-auto no-scrollbar">
+                    <!-- Dynamically inserted roles will scroll here -->
+                    <div class="flex items-center justify-between p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg">
+                        <span class="text-gray-900 dark:text-gray-100">Administrator</span>
+                        <div class="flex gap-2">
+                            <button onclick="editRole('1', 'Administrator')" class="text-blue-600 hover:text-blue-700 dark:text-blue-400">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                            <button onclick="deleteRole('1')" class="text-red-600 hover:text-red-700 dark:text-red-400">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                        </div>
+                    </div>
+                    <!-- More roles… -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        /* Hide scrollbar */
+        
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+
+    <div id="privilegeModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800  dark:bg-gray-900 dark:text-gray-300 rounded-2xl w-full max-w-lg p-6 shadow-xl transform transition-all">
+            <div class="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 pb-3 mb-4">
+                <h3 class="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center">
+                    <i class="fas fa-key text-blue-600 dark:text-blue-400 mr-2"></i> Manage Role Privileges
+                </h3>
+                <button onclick="closeModal('privilegeModal')" class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300">
+              <i class="fas fa-times"></i>
+            </button>
+            </div>
+
+            <!-- Scrollable Body -->
+            <div class="max-h-[70vh] overflow-y-auto no-scrollbar space-y-6">
+                <!-- Role Selection -->
+                <div>
+                    <label for="privileges_role_select" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Select Role
+              </label>
+                    <div class="relative">
+                        <select id="privileges_role_select" class="w-full px-4 py-3 rounded-lg bg-gray-100 dark:bg-gray-700 border
+                               border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-indigo-500
+                               focus:border-indigo-500 transition-all appearance-none pr-10">
+                  <option value="">-- Select Role --</option>
+                </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
+                            <i class="fas fa-chevron-down text-sm"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Privileges Checkbox List -->
+                <div>
+                    <h4 class="text-lg font-medium text-gray-800 dark:text-gray-200 mb-3 flex items-center">
+                        <i class="fas fa-lock-open text-teal-600 dark:text-teal-400 mr-2"></i> Assign Permissions
+                    </h4>
+                    <form id="privileges-form" class="space-y-4">
+                        <!-- injected here -->
+                    </form>
+                </div>
+            </div>
+
+            <div class="mt-4 flex justify-end">
+                <button onclick="closeModal('privilegeModal')" class="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg mr-2">
+              Cancel
+            </button>
+                <button id="savePrivilegesBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+              Save
+            </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        window.openModal = (modalId) => {
+            document.getElementById(modalId).classList.remove('hidden');
+        };
+        window.closeModal = (modalId) => {
+            document.getElementById(modalId).classList.add('hidden');
+        };
+        // Role Management Functions
+        function openRoleModal() {
+            document.getElementById('roleModal').classList.remove('hidden');
+            fetchRoles(); // Implement this to load existing roles
+        }
+
+        function editRole(id, name) {
+            document.getElementById('roleId').value = id;
+            document.getElementById('roleName').value = name;
+            document.getElementById('modalTitle').textContent = 'Edit Role';
+            openRoleModal();
+        }
+
+        function deleteRole(id) {
+            if (confirm('Are you sure you want to delete this role?')) {
+                // Implement delete API call
+                console.log('Deleting role:', id);
+            }
+        }
+
+        document.getElementById('roleForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = {
+                id: document.getElementById('roleId').value,
+                name: document.getElementById('roleName').value
+            };
+
+            // Implement save API call
+            console.log('Saving role:', formData);
+            closeModal('roleModal');
+        });
+
+        // Privilege Management Functions
+        function openPrivilegeModal() {
+            document.getElementById('privilegeModal').classList.remove('hidden');
+            fetchPrivileges(); // Implement this to load current privileges
+        }
+
+        function savePrivileges() {
+            const privileges = [];
+            document.querySelectorAll('#privilegeModal input:checked').forEach(checkbox => {
+                privileges.push(checkbox.value);
+            });
+
+            // Implement save API call
+            console.log('Saving privileges:', privileges);
+            closeModal('privilegeModal');
+        }
+
+        // General Modal Functions
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        // Event Listeners for your buttons
+        document.querySelector('a[href="#manage-roles"]').addEventListener('click', function(e) {
+            e.preventDefault();
+            openRoleModal();
+        });
+
+        document.querySelector('a[href="#manage-privileges"]').addEventListener('click', function(e) {
+            e.preventDefault();
+            openPrivilegeModal();
+        });
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+                    // — Helpers — 
+                    const api = (url, opts) =>
+                        fetch(url, Object.assign({
+                            headers: {
+                                'Content-Type': 'application/json'
+                            }
+                        }, opts))
+                        .then(r => r.ok ? r.json() : Promise.reject(r.statusText));
+
+                    // — Modal Openers — 
+                    document.querySelector('a[href="#manage-roles"]').addEventListener('click', e => {
+                        e.preventDefault();
+                        openModal('roleModal');
+                        fetchRoles();
+                    });
+                    document.querySelector('a[href="#manage-privileges"]').addEventListener('click', async e => {
+                        e.preventDefault();
+                        openModal('privilegeModal');
+                        await fetchPrivileges();
+                    });
+
+                    // Grab references
+                    const roleForm = document.getElementById('roleForm');
+                    const roleId = document.getElementById('roleId');
+                    const roleName = document.getElementById('roleName');
+                    const rolesList = document.getElementById('rolesList');
+
+                    // — Edit Role —
+                    window.editRole = (id, name) => {
+                        roleId.value = id;
+                        roleName.value = name;
+                        document.getElementById('modalTitle').textContent = 'Edit Role';
+                        openModal('roleModal');
+                    };
+
+                    // — Delete Role —
+                    window.deleteRole = async(id) => {
+                        if (!confirm('Are you sure you want to delete this role?')) return;
+                        try {
+                            await api(`/user-management/api/roles/${id}`, {
+                                method: 'DELETE'
+                            });
+                            showAlert('success', 'Role Deleted successfully!');
+
+                            fetchRoles();
+                        } catch (e) {
+                            alert('Failed to delete role: ' + e);
+                        }
+                    };
+
+                    // — ROLES MODAL —  
+                    async function fetchRoles() {
+                        const list = await api('/user-management/api/roles');
+                        const container = document.getElementById('rolesList');
+                        container.innerHTML = '';
+                        list.forEach(r => {
+                            const el = document.createElement('div');
+                            el.className = 'flex items-center justify-between p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg';
+                            el.innerHTML = `
+  <span class="text-gray-900 dark:text-gray-100">${r.name}</span>
+  <div class="flex gap-2">
+    <button onclick="editRole(${r.id}, '${r.name.replace(/'/g, "\\'")}')" class="text-blue-600 dark:text-blue-400">
+      <i class="fas fa-edit"></i>
+    </button>
+    <button onclick="deleteRole(${r.id})" class="text-red-600 dark:text-red-400">
+      <i class="fas fa-trash"></i>
+    </button>
+  </div>`;
+
+                            container.appendChild(el);
+                        });
+                    }
+                    window.fetchRoles = fetchRoles;
+
+                    // — Handle Role Form Submission —
+                    roleForm.addEventListener('submit', async e => {
+                        e.preventDefault();
+                        const data = {
+                            id: roleId.value || undefined,
+                            name: roleName.value.trim()
+                        };
+                        const method = data.id ? 'PUT' : 'POST';
+                        await api('/user-management/api/roles', {
+                            method,
+                            body: JSON.stringify(data)
+                        });
+                        showAlert('success', 'Data saved successfully!');
+
+                        closeModal('roleModal');
+                        // Reset title for next time
+                        document.getElementById('modalTitle').textContent = 'Manage Roles';
+                        roleForm.reset();
+                        fetchRoles();
+                    });
+
+                    // existing deleteRole, roleForm submit, etc...
+                    // (unchanged from your current code)
+
+                    // — PRIVILEGES MODAL —  
+                    const roleSelect = document.getElementById('privileges_role_select');
+                    const form = document.getElementById('privileges-form');
+                    const saveBtn = document.getElementById('savePrivilegesBtn');
+                    let allPrivileges = [];
+
+                    async function fetchPrivileges() {
+                        // 1) Get roles for the <select>
+                        const roles = await api('/user-management/api/roles');
+                        roleSelect.innerHTML = '<option value="">-- Select Role --</option>';
+                        roles.forEach(r => {
+                            roleSelect.insertAdjacentHTML('beforeend',
+                                `<option value="${r.id}">${r.name}</option>`);
+                        });
+                        // 2) Get all privileges
+                        allPrivileges = await api('/user-management/api/privileges');
+                        form.innerHTML = ''; // clear previous
+                    }
+                    async function populateRoleSelectDropdown() {
+                        const select = document.getElementById('new_user_role');
+                        if (!select) return;
+
+                        try {
+                            const roles = await api('/user-management/api/roles');
+                            select.innerHTML = '<option value="">-- Select Role --</option>';
+                            roles.forEach(role => {
+                                const option = document.createElement('option');
+                                option.value = role.id;
+                                option.textContent = role.name;
+                                select.appendChild(option);
+                            });
+                        } catch (err) {
+                            console.error('Failed to load roles for select:', err);
+                        }
+                    }
+                    populateRoleSelectDropdown();
+
+                    roleSelect.addEventListener('change', async() => {
+                                const roleId = roleSelect.value;
+                                form.innerHTML = '';
+                                if (!roleId) return;
+
+                                // fetch assigned
+                                const assigned = await api(`/user-management/api/roles/${roleId}/privileges`);
+
+                                // group by module
+                                const byModule = allPrivileges.reduce((acc, p) => {
+                                    (acc[p.module] = acc[p.module] || []).push(p);
+                                    return acc;
+                                }, {});
+
+                                // rebuild form
+                                form.innerHTML = Object.entries(byModule).map(([mod, list]) => `
+          <div>
+            <p class="font-semibold text-gray-700 dark:text-gray-300 mb-2">${mod}</p>
+            <div class="space-y-2 ml-4 border-l pl-4 border-gray-200 dark:border-gray-600">
+              ${list.map(p => `
+                <label class="flex items-center">
+                  <input
+                    type="checkbox"
+                    name="priv_ids"
+                    value="${p.id}"
+                    ${assigned.includes(p.id) ? 'checked' : ''}
+                    class="h-4 w-4 text-indigo-600 rounded dark:bg-gray-700"
+                  />
+                  <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                    ${p.name.replace(/_/g,' ')}
+                  </span>
+                </label>
+              `).join('')}
+            </div>
+          </div>
+        `).join('');
+      });
+    
+      saveBtn.addEventListener('click', async () => {
+        const roleId = roleSelect.value;
+        if (!roleId) return alert('Please select a role first.');
+    
+        const ids = Array.from(
+          form.querySelectorAll('input[name="priv_ids"]:checked')
+        ).map(cb => +cb.value);
+    
+        await api(
+          `/user-management/api/roles/${roleId}/privileges`,
+          { method: 'POST', body: JSON.stringify({ privilege_ids: ids }) }
+        );
+        showAlert('success', 'Data saved successfully!');
+
+        closeModal('privilegeModal');
+      });
+    });
+    </script>
+
+
+
+    {# Main Content Layout: Side-by-side on medium+ screens, stacked on small #}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8"> {# Used grid for side-by-side layout #} {# --- Column 1: Create New System User --- #}
+        <div class=" dark:bg-gray-900 rounded-lg p-8 shadow-xl border border-gray-200 dark:border-gray-700 h-full flex flex-col"> {# Added h-full and flex column for consistent height #}
+            <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-gray-100 border-b border-gray-200 dark:border-gray-700 pb-4">
+                <i class="fas fa-user-plus text-blue-600 dark:text-blue-400 mr-2"></i>Create New System User
+            </h2>
+
+            <form id="createUserForm" method="post" action="{{ url_for('user_management_web.handle_create_user') }}">
+                <div>
+                    <label for="new_user_full_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Full Name</label>
+                    <div class="relative">
+                        <input type="text" id="new_user_full_name" name="full_name" required class="w-full px-4 py-3 rounded-lg bg-gray-100 dark:bg-gray-700 border
+                                      border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-indigo-500
+                                      focus:border-indigo-500 transition-all placeholder-gray-400 dark:placeholder-gray-500">
+                        <i class="fas fa-user absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none"></i>
+                    </div>
+                </div>
+
+                {# Username #}
+                <div>
+                    <label for="new_user_username" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Username</label>
+                    <div class="relative">
+                        <input type="text" id="new_user_username" name="username" required class="w-full px-4 py-3 rounded-lg bg-gray-100 dark:bg-gray-700 border
+                                      border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-indigo-500
+                                      focus:border-indigo-500 transition-all placeholder-gray-400 dark:placeholder-gray-500">
+                        <i class="fas fa-id-card absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none"></i>
+                    </div>
+                </div>
+
+                {# Email #}
+                <div>
+                    <label for="new_user_email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email Address</label>
+                    <div class="relative">
+                        <input type="email" id="new_user_email" name="email" required class="w-full px-4 py-3 rounded-lg bg-gray-100 dark:bg-gray-700 border
+                                      border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-indigo-500
+                                      focus:border-indigo-500 transition-all placeholder-gray-400 dark:placeholder-gray-500">
+                        <i class="fas fa-envelope absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none"></i>
+                    </div>
+                </div>
+
+                {# Password #}
+                <div>
+                    <label for="new_user_password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Password</label>
+                    <div class="relative">
+                        <input type="password" id="new_user_password" name="password" required class="password-input w-full px-4 py-3 rounded-lg bg-gray-100 dark:bg-gray-700 border
+                                       border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-indigo-500
+                                       focus:border-indigo-500 transition-all placeholder-gray-400 dark:placeholder-gray-500"> {# Show/Hide Password Button - Linked to this specific input #}
+                        <button type="button" id="toggle-new-password" class="password-toggle-btn">
+                             <i class="fas fa-eye-slash"></i> {# Initial icon: hidden #}
+                         </button>
+                    </div>
+                </div>
+
+                {# Confirm Password #}
+                <div>
+                    <label for="new_user_confirm_password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Confirm Password</label>
+                    <div class="relative">
+                        <input type="password" id="new_user_confirm_password" name="confirm_password" required class="password-input w-full px-4 py-3 rounded-lg bg-gray-100 dark:bg-gray-700 border
+                                       border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-indigo-500
+                                       focus:border-indigo-500 transition-all placeholder-gray-400 dark:placeholder-gray-500"> {# Show/Hide Confirm Password Button - Linked to this specific input #}
+                        <button type="button" id="toggle-new-confirm-password" class="password-toggle-btn"> {# Unique ID #}
+                             <i class="fas fa-eye-slash"></i> {# Initial icon: hidden #}
+                         </button>
+                    </div>
+                </div>
+
+
+                <div>
+                    <label for="new_user_role" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Assign Role</label>
+                    <div class="relative">
+                        <select id="new_user_role" name="role_id" required class="w-full px-4 py-3 rounded-lg bg-gray-100 dark:bg-gray-700 border
+                                       border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-indigo-500
+                                       focus:border-indigo-500 transition-all appearance-none pr-10">
+                        <option value="">-- Select Role --</option>
+                      </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
+                            <i class="fas fa-chevron-down text-sm"></i>
+                        </div>
+                    </div>
+                </div>
+
+
+                {# Department Selection #}
+                <div>
+                    <label for="new_user_department" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Assign Department</label>
+                    <div class="relative">
+                        <select id="new_user_department" name="department_id" required class="w-full px-4 py-3 rounded-lg bg-gray-100 dark:bg-gray-700 border
+                               border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-indigo-500
+                               focus:border-indigo-500 transition-all appearance-none pr-10">
+                        <option value="">-- Select Department --</option>
+                        {% for dep in departments %}
+                          <option value="{{ dep.id }}">{{ dep.name }}</option>
+                        {% endfor %}
+                      </select>
+
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
+                            <i class="fas fa-chevron-down text-sm"></i>
+                        </div>
+                    </div>
+                </div>
+
+
+
+                {# Submit Button #}
+                <div class="mt-auto pt-4"> {# Pushes the button to the bottom #}
+                    <button type="submit" class="w-full py-3 px-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700
+                            hover:to-purple-700 text-white rounded-lg font-semibold transition-all transform
+                            hover:scale-[1.005] shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800">
+                         Create User Account
+                         <i class="fas fa-user-check ml-2"></i>
+                     </button>
+                </div>
+            </form>
+        </div>
+
+        {# --- Column 2: Update Employee Bio Data --- #}
+        <div class="dark:bg-gray-900 rounded-lg p-8 shadow-xl border border-gray-200 dark:border-gray-700 h-full flex flex-col"> {# Added h-full and flex column for consistent height #}
+            <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-gray-100 border-b border-gray-200 dark:border-gray-700 pb-4">
+                <i class="fas fa-address-card text-orange-600 dark:text-orange-400 mr-2"></i>Update Employee Bio Data
+            </h2>
+
+            <!-- Step 1: Select Employee -->
+            <div class="mb-6">
+                <label for="select_employee" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+      Select Employee to Update
+    </label>
+                <div class="relative">
+                    <select id="select_employee" name="employee_id" class="w-full px-4 py-3 rounded-lg bg-gray-100 dark:bg-gray-700 border
+                     border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-indigo-500
+                     focus:border-indigo-500 transition-all appearance-none pr-10">
+        <option value="">-- Select Employee --</option>
+        <!-- JS will inject here -->
+      </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
+                        <i class="fas fa-chevron-down text-sm"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hidden field to store selected ID (for form submission) -->
+            <input type="hidden" id="selected_employee_id" name="employee_id" value="">
+            <!-- include the <script> above right after this -->
+
+            {# Step 2: Bio Data Form (Appears/Editable after selecting employee) #} {# Wrap in a div you can hide/show with JS if needed #}
+            <div id="bio-data-form-container" class="flex-grow flex flex-col"> {# flex-grow and flex column to push button down #}
+                <form id="bioDataForm" method="POST" action="{{ url_for('user_management_web.save_employee_bio') }}" …>
+                    {# Add placeholder action #} {# Add a hidden input for employee ID once selected #}
+                    <input type="hidden" name="employee_id" value="" id="employee_id_hidden" readonly> {# Employee ID (Display/Read-only) #}
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Employee ID</label> {# This would typically be read-only after selection #}
+                        <input type="text" value="EMP-XXXX" readonly id="employee_id_display" {# Added ID for potential JS update #} class="w-full px-4 py-3 rounded-lg bg-gray-200 dark:bg-gray-700 border
+                                          border-gray-300 dark:border-gray-600 cursor-not-allowed text-gray-600 dark:text-gray-400">
+                    </div>
+
+                    {# Date of Birth #}
+                    <div>
+                        <label for="dob" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Date of Birth</label>
+                        <input type="date" id="dob" name="date_of_birth" class="w-full px-4 py-3 rounded-lg bg-gray-100 dark:bg-gray-700 border
+                                         border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-indigo-500
+                                         focus:border-indigo-500 transition-all placeholder-gray-400 dark:placeholder-gray-500">
+                    </div>
+
+                    {# Gender #}
+                    <div>
+                        <label for="gender" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Gender</label>
+                        <div class="relative">
+                            <select id="gender" name="gender" class="w-full px-4 py-3 rounded-lg bg-gray-100 dark:bg-gray-700 border
+                                              border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-indigo-500
+                                              focus:border-indigo-500 transition-all appearance-none pr-10">
+                                    <option value="">-- Select Gender --</option>
+                                    <option value="male">Male</option>
+                                    <option value="female">Female</option>
+                                    <option value="other">Other</option>
+                                </select> {# Custom arrow for select #}
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
+                                <i class="fas fa-chevron-down text-sm"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    {# Phone Number #}
+                    <div>
+                        <label for="phone" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Phone Number</label>
+                        <input type="tel" id="phone" name="phone_number" class="w-full px-4 py-3 rounded-lg bg-gray-100 dark:bg-gray-700 border
+                                         border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-indigo-500
+                                         focus:border-indigo-500 transition-all placeholder-gray-400 dark:placeholder-gray-500">
+                    </div>
+
+                    {# Address #}
+                    <div>
+                        <label for="address" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Address</label>
+                        <textarea id="address" name="address" rows="3" class="w-full px-4 py-3 rounded-lg bg-gray-100 dark:bg-gray-700 border
+                                            border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-indigo-500
+                                            focus:border-indigo-500 transition-all placeholder-gray-400 dark:placeholder-gray-500"></textarea>
+                    </div>
+
+                    {# Emergency Contact Name #}
+                    <div>
+                        <label for="emergency_contact_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Emergency Contact Name</label>
+                        <input type="text" id="emergency_contact_name" name="emergency_contact_name" class="w-full px-4 py-3 rounded-lg bg-gray-100 dark:bg-gray-700 border
+                                         border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-indigo-500
+                                         focus:border-indigo-500 transition-all placeholder-gray-400 dark:placeholder-gray-500">
+                    </div>
+
+                    {# Emergency Contact Phone #}
+                    <div>
+                        <label for="emergency_contact_phone" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Emergency Contact Phone</label>
+                        <input type="tel" id="emergency_contact_phone" name="emergency_contact_phone" class="w-full px-4 py-3 rounded-lg bg-gray-100 dark:bg-gray-700 border
+                                         border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-indigo-500
+                                         focus:border-indigo-500 transition-all placeholder-gray-400 dark:placeholder-gray-500">
+                    </div>
+
+                    {# Add more bio data fields as needed: Marital Status, Nationality, Blood Group, etc. #} {# Save Bio Data Button #}
+                    <div class="mt-auto pt-4"> {# Pushes the button to the bottom #}
+                        <button type="submit" class="w-full py-3 px-4 bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700
+                                 hover:to-teal-700 text-white rounded-lg font-semibold transition-all transform
+                                 hover:scale-[1.005] shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"> {# Green/Teal gradient #}
+                              Save Employee Bio Data
+                              <i class="fas fa-save ml-2"></i>
+                          </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+
+
+</div>
+{% endblock %} {# --- Add Page-Specific Scripts --- #} {% block scripts %} {{ super() }} {# Keep any scripts from the base template, like theme toggle #}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const apiJson = async(url) => {
+            const r = await fetch(url, {
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
+            if (!r.ok) throw new Error(await r.text());
+            return r.json();
+        };
+
+        // 1) Populate the dropdown
+        (async function loadEmployees() {
+            const select = document.getElementById('select_employee');
+            try {
+                const emps = await apiJson('/user-management/api/employees');
+                for (let e of emps) {
+                    const opt = document.createElement('option');
+                    opt.value = e.id;
+                    opt.textContent = e.full_name + (e.department ? ` (${e.department})` : '');
+                    select.appendChild(opt);
+                }
+            } catch (err) {
+                console.error('Failed to load employees:', err);
+            }
+        })();
+
+        // 2) Handle selection
+        const select = document.getElementById('select_employee');
+        const hiddenId = document.getElementById('selected_employee_id');
+        const displayId = document.getElementById('employee_id_display');
+        const bioContainer = document.getElementById('bio-data-form-container');
+        const bioForm = document.getElementById('bioDataForm');
+
+        select.addEventListener('change', async() => {
+            const empId = select.value;
+            hiddenId.value = empId;
+            displayId.value = empId ? empId : '';
+            bioForm.reset();
+
+            if (!empId) {
+                bioContainer.classList.add('hidden');
+                return;
+            }
+
+            try {
+                const bio = await apiJson(`/user-management/api/employees/${empId}`);
+
+                // Populate all form fields
+                document.getElementById('employee_id_display').value = bio.employee_id || empId;
+                document.getElementById('employee_id_hidden').value = bio.employee_id || empId;
+
+                document.getElementById('dob').value = bio.dob || '';
+                document.getElementById('gender').value = (bio.gender || '').toLowerCase();
+                document.getElementById('phone').value = bio.phone || '';
+                document.getElementById('address').value = bio.address || '';
+                document.getElementById('emergency_contact_name').value = bio.emergency_contact_name || '';
+                document.getElementById('emergency_contact_phone').value = bio.emergency_contact_phone || '';
+
+                // Optional: Show the form
+                bioContainer.classList.remove('hidden');
+
+            } catch (err) {
+                console.error('Failed to fetch bio data:', err);
+                bioContainer.classList.add('hidden');
+            }
+
+        });
+    });
+</script>
+
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // --- Password Toggle for NEW USER password field ---
+        const toggleNewPasswordButton = document.getElementById('toggle-new-password');
+        const newPasswordInput = document.getElementById('new_user_password');
+
+        if (toggleNewPasswordButton && newPasswordInput) {
+            toggleNewPasswordButton.addEventListener('click', function() {
+                const type = newPasswordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                newPasswordInput.setAttribute('type', type);
+
+                // Toggle the eye icon
+                const icon = this.querySelector('i');
+                icon.classList.toggle('fa-eye');
+                icon.classList.toggle('fa-eye-slash');
+
+                // Optional: Give feedback by focusing the input
+                newPasswordInput.focus();
+            });
+
+            // Improve visual feedback on focus/hover
+            newPasswordInput.addEventListener('focus', () => {
+                toggleNewPasswordButton.classList.add('text-indigo-600', 'dark:text-violet-400');
+            });
+            newPasswordInput.addEventListener('blur', () => {
+                if (!toggleNewPasswordButton.matches(':hover') && !toggleNewPasswordButton.matches(':focus-within')) {
+                    toggleNewPasswordButton.classList.remove('text-indigo-600', 'dark:text-violet-400');
+                }
+            });
+            toggleNewPasswordButton.addEventListener('mouseenter', () => {
+                toggleNewPasswordButton.classList.add('text-indigo-600', 'dark:text-violet-400');
+            });
+            toggleNewPasswordButton.addEventListener('mouseleave', () => {
+                if (!newPasswordInput.matches(':focus') && !toggleNewPasswordButton.matches(':focus-within')) {
+                    toggleNewPasswordButton.classList.remove('text-indigo-600', 'dark:text-violet-400');
+                }
+            });
+            toggleNewPasswordButton.addEventListener('focus', () => {
+                toggleNewPasswordButton.classList.add('text-indigo-600', 'dark:text-violet-400');
+            });
+            toggleNewPasswordButton.addEventListener('blur', () => {
+                if (!newPasswordInput.matches(':focus') && !toggleNewPasswordButton.matches(':hover')) {
+                    toggleNewPasswordButton.classList.remove('text-indigo-600', 'dark:text-violet-400');
+                }
+            });
+        }
+
+        // --- Password Toggle for NEW USER CONFIRM password field ---
+        const toggleNewConfirmPasswordButton = document.getElementById('toggle-new-confirm-password');
+        const newConfirmPasswordInput = document.getElementById('new_user_confirm_password');
+
+        if (toggleNewConfirmPasswordButton && newConfirmPasswordInput) {
+            toggleNewConfirmPasswordButton.addEventListener('click', function() {
+                const type = newConfirmPasswordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                newConfirmPasswordInput.setAttribute('type', type);
+
+                // Toggle the eye icon
+                const icon = this.querySelector('i');
+                icon.classList.toggle('fa-eye');
+                icon.classList.toggle('fa-eye-slash');
+
+                // Optional: Give feedback by focusing the input
+                newConfirmPasswordInput.focus();
+            });
+
+            // Improve visual feedback on focus/hover (Copying from login page logic)
+            newConfirmPasswordInput.addEventListener('focus', () => {
+                toggleNewConfirmPasswordButton.classList.add('text-indigo-600', 'dark:text-violet-400');
+            });
+            newConfirmPasswordInput.addEventListener('blur', () => {
+                if (!toggleNewConfirmPasswordButton.matches(':hover') && !toggleNewConfirmPasswordButton.matches(':focus-within')) {
+                    toggleNewConfirmPasswordButton.classList.remove('text-indigo-600', 'dark:text-violet-400');
+                }
+            });
+            toggleNewConfirmPasswordButton.addEventListener('mouseenter', () => {
+                toggleNewConfirmPasswordButton.classList.add('text-indigo-600', 'dark:text-violet-400');
+            });
+            toggleNewConfirmPasswordButton.addEventListener('mouseleave', () => {
+                if (!newConfirmPasswordInput.matches(':focus') && !toggleNewConfirmPasswordButton.matches(':focus-within')) {
+                    toggleNewConfirmPasswordButton.classList.remove('text-indigo-600', 'dark:text-violet-400');
+                }
+            });
+            toggleNewConfirmPasswordButton.addEventListener('focus', () => {
+                toggleNewConfirmPasswordButton.classList.add('text-indigo-600', 'dark:text-violet-400');
+            });
+            toggleNewConfirmPasswordButton.addEventListener('blur', () => {
+                if (!newConfirmPasswordInput.matches(':focus') && !toggleNewConfirmPasswordInput.matches(':hover')) {
+                    toggleNewConfirmPasswordButton.classList.remove('text-indigo-600', 'dark:text-violet-400');
+                }
+            });
+        }
+
+
+    });
+</script>
+{% endblock %} {# --- Add Page-Specific CSS (if needed, or add to base.html style block) --- #} {% block head %} {{ super() }} {# Keep head content from base.html (Tailwind, FontAwesome, base styles) #}
+<style>
+    /* --- Password Toggle Button (Copied from Login Page) --- */
+    
+    .password-toggle-btn {
+        position: absolute;
+        right: 0.75rem;
+        /* Tailwind 'right-3' */
+        top: 50%;
+        transform: translateY(-50%);
+        padding: 0.5rem;
+        /* Add some padding to make it clickable */
+        color: #9CA3AF;
+        /* Tailwind 'text-gray-400' */
+        cursor: pointer;
+        background: none;
+        border: none;
+        outline: none;
+        display: flex;
+        /* Center icon */
+        align-items: center;
+        /* Center icon */
+        justify-content: center;
+        /* Center icon */
+        z-index: 20;
+        /* Ensure it's above the input */
+        transition: color 0.2s ease;
+    }
+    
+    .password-toggle-btn:hover {
+        color: #6B7280;
+        /* Tailwind 'text-gray-500' */
+    }
+    /* Dark mode color */
+    
+    .dark .password-toggle-btn {
+        color: #9CA3AF;
+        /* Tailwind dark:text-gray-400 */
+    }
+    
+    .dark .password-toggle-btn:hover {
+        color: #D1D5DB;
+        /* Tailwind dark:text-gray-300 */
+    }
+    /* Ensure input has enough padding on the right */
+    
+    .password-input {
+        padding-right: 2.75rem !important;
+        /* px-4 (1rem) + padding for button (p-2 = 0.5rem) + button width approx (1.25rem) = ~2.75rem */
+    }
+    /* Custom focus color for password toggle icon */
+    
+    .password-input:focus+.password-toggle-btn i,
+    .password-toggle-btn:focus i,
+    .password-toggle-btn:hover i {
+        color: #6366F1;
+        /* Tailwind indigo-500 */
+    }
+    
+    .dark .password-input:focus+.password-toggle-btn i,
+    .dark .password-toggle-btn:focus i,
+    .dark .password-toggle-btn:hover i {
+        color: #A78BFA;
+        /* Tailwind violet-400 */
+    }
+    /* Style for Select dropdown custom arrow */
+    
+    select {
+        /* Add more padding to the right to make space for the custom arrow */
+        padding-right: 2.5rem !important;
+        /* Adjust as needed */
+        background-image: none !important;
+        /* Remove default arrow in some browsers */
+    }
+    /* Optional: Style for disabled/readonly inputs */
+    
+    input:disabled,
+    input[readonly] {
+        background-color: #E5E7EB;
+        /* Tailwind gray-200 */
+        cursor: not-allowed;
+    }
+    
+    .dark input:disabled,
+    .dark input[readonly] {
+        background-color: #4B5563;
+        /* Tailwind gray-600 */
+    }
+</style>
+{% endblock %}

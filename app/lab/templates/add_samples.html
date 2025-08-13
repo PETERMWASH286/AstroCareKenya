@@ -1,0 +1,483 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 py-8">
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="bg-white shadow-xl rounded-xl overflow-hidden border border-blue-100">
+      <div class="px-6 py-5 bg-gradient-to-r from-blue-600 to-indigo-700">
+        <h2 class="text-2xl font-bold text-white flex items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+          </svg>
+          Add Samples for Lab Test
+        </h2>
+        <p class="mt-1 text-blue-100">Register new samples for <span class="font-semibold">{{ test.service.name }}</span></p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 px-6 pt-6">
+        <div class="bg-blue-50 p-4 rounded-xl border border-blue-200">
+          <div class="flex items-center">
+            <div class="bg-blue-100 p-2 rounded-lg">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </div>
+            {# Conditional Patient Details based on Consultation or Visit #}
+            {% if test.consultation %}
+            <div class="ml-4">
+              <h3 class="text-sm font-medium text-blue-700">Patient (Consultation)</h3>
+              <p class="text-lg font-bold text-gray-900">{{ test.consultation.patient.full_name }}</p>
+              <p class="text-sm text-blue-600">{{ test.consultation.patient.reg_no }}</p>
+            </div>
+            {% elif test.visit %}
+            <div class="ml-4">
+              <h3 class="text-sm font-medium text-blue-700">Patient (Walk-in Visit)</h3>
+              <p class="text-lg font-bold text-gray-900">{{ test.visit.patient.full_name }}</p>
+              <p class="text-sm text-blue-600">{{ test.visit.patient.reg_no }}</p>
+            </div>
+            {% else %}
+            <div class="ml-4">
+              <h3 class="text-sm font-medium text-blue-700">Patient</h3>
+              <p class="text-lg font-bold text-gray-900">N/A</p>
+              <p class="text-sm text-blue-600">Patient details not available.</p>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200">
+          <div class="flex items-center">
+            <div class="bg-indigo-100 p-2 rounded-lg">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <div class="ml-4">
+              <h3 class="text-sm font-medium text-indigo-700">Test Details</h3>
+              <p class="text-lg font-bold text-gray-900">{{ test.service.name }}</p>
+              <p class="text-sm text-indigo-600">Status: <span class="font-medium">{{ test.status|capitalize }}</span></p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <form action="{{ url_for('lab_web.add_samples', test_id=test.id) }}" method="POST" class="px-6 py-8 space-y-8">
+
+        <div class="space-y-6">
+          <h3 class="text-xl font-bold text-gray-900 border-b border-gray-200 pb-2">Sample Information</h3>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <label for="sample_type" class="block text-sm font-medium text-gray-700 mb-1">Sample Type *</label>
+              <input type="text" name="sample_type" id="sample_type" required
+                     class="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                     placeholder="e.g., Blood, Urine, Tissue">
+            </div>
+
+            <div>
+              <label for="quantity" class="block text-sm font-medium text-gray-700 mb-1">Quantity *</label>
+              <input type="text" name="quantity" id="quantity" required
+                     class="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                     placeholder="e.g., 5ml, 2 tubes">
+            </div>
+
+            <div>
+              <label for="sample_condition" class="block text-sm font-medium text-gray-700 mb-1">Condition</label>
+              <input type="text" name="sample_condition" id="sample_condition"
+                     class="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                     placeholder="e.g., Fresh, Frozen">
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-6">
+          <h3 class="text-xl font-bold text-gray-900 border-b border-gray-200 pb-2">Collection Details</h3>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label for="collection_time" class="block text-sm font-medium text-gray-700 mb-1">Collection Date & Time *</label>
+              <input type="datetime-local" name="collection_time" id="collection_time" required
+                     class="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+            </div>
+
+            <div>
+              <label for="collected_by" class="block text-sm font-medium text-gray-700 mb-1">Collected By *</label>
+              <input type="text" name="collected_by" id="collected_by"
+                     class="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                     placeholder="Phlebotomist/Nurse name">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label for="collection_site" class="block text-sm font-medium text-gray-700 mb-1">Collection Site</label>
+              <input type="text" name="collection_site" id="collection_site"
+                     class="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                     placeholder="e.g., Main Lab, Clinic A">
+            </div>
+
+            <div>
+              <label for="collection_method" class="block text-sm font-medium text-gray-700 mb-1">Collection Method</label>
+              <input type="text" name="collection_method" id="collection_method"
+                     class="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                     placeholder="e.g., Venipuncture, Swab">
+            </div>
+          </div>
+        </div>
+
+        <div class="border-t border-gray-200 pt-6">
+          <h3 class="text-xl font-bold text-gray-900 border-b border-gray-200 pb-2">Reception Details</h3>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label for="received_date" class="block text-sm font-medium text-gray-700 mb-1">Received Date & Time</label>
+              <input type="datetime-local" name="received_date" id="received_date"
+                     class="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+            </div>
+
+            <div>
+              <label for="received_by" class="block text-sm font-medium text-gray-700 mb-1">Received By</label>
+              <input type="text" name="received_by" id="received_by"
+                     class="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                     placeholder="Lab technician name">
+            </div>
+
+            <div class="md:col-span-2 border border-gray-200 rounded-xl p-4 bg-gray-50">
+              <h4 class="text-md font-medium text-gray-700 mb-3 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Sample Origin
+              </h4>
+
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div class="bg-blue-50 p-2 rounded-lg">
+                  <label class="inline-flex items-center cursor-pointer">
+                    <input type="radio" name="source_type" value="ward" class="form-radio h-5 w-5 text-blue-600" checked>
+                    <span class="ml-2 text-gray-700 font-medium">From Ward</span>
+                  </label>
+                </div>
+                <div class="bg-green-50 p-2 rounded-lg">
+                  <label class="inline-flex items-center cursor-pointer">
+                    <input type="radio" name="source_type" value="opd" class="form-radio h-5 w-5 text-green-600">
+                    <span class="ml-2 text-gray-700 font-medium">From OPD</span>
+                  </label>
+                </div>
+                <div class="bg-purple-50 p-2 rounded-lg">
+                  <label class="inline-flex items-center cursor-pointer">
+                    <input type="radio" name="source_type" value="external" class="form-radio h-5 w-5 text-purple-600">
+                    <span class="ml-2 text-gray-700 font-medium">External Source</span>
+                  </label>
+                </div>
+              </div>
+
+              <div id="internal_source_fields">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label for="brought_by_employee" class="block text-sm font-medium text-gray-700 mb-1">Brought By (Employee)</label>
+                    <input type="text" name="brought_by_employee" id="brought_by_employee"
+                           class="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                           placeholder="Employee name">
+                  </div>
+
+                  <div id="ward_source_field">
+                    <label for="source_department" class="block text-sm font-medium text-gray-700 mb-1">Ward Location</label>
+                    <select name="source_department" id="source_department"
+                            class="w-full px-4 py-2.5 rounded-xl border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                      <option value="">Select ward</option>
+                      <option value="Ward A">Ward A</option>
+                      <option value="Ward B">Ward B</option>
+                      <option value="ICU">ICU</option>
+                      <option value="Maternity">Maternity</option>
+                      <option value="Pediatrics">Pediatrics</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+
+                  <div id="opd_source_field" class="hidden">
+                    <label for="opd_department" class="block text-sm font-medium text-gray-700 mb-1">OPD Department</label>
+                    <select name="opd_department" id="opd_department"
+                            class="w-full px-4 py-2.5 rounded-xl border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                      <option value="">Select OPD department</option>
+                      <option value="Emergency">Emergency</option>
+                      <option value="Oncology">Oncology</option>
+                      <option value="Cardiology">Cardiology</option>
+                      <option value="Orthopedics">Orthopedics</option>
+                      <option value="Neurology">Neurology</option>
+                      <option value="Dermatology">Dermatology</option>
+                      <option value="Ophthalmology">Ophthalmology</option>
+                      <option value="ENT">ENT</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div id="external_source_fields" class="hidden mt-4 space-y-4">
+                <div>
+                  <label for="external_source" class="block text-sm font-medium text-gray-700 mb-1">External Source</label>
+                  <input type="text" name="external_source" id="external_source"
+                         class="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                         placeholder="e.g., Clinic, Other Hospital">
+                </div>
+
+                <div>
+                  <label for="external_person" class="block text-sm font-medium text-gray-700 mb-1">Brought By (Person)</label>
+                  <input type="text" name="external_person" id="external_person"
+                         class="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                         placeholder="Name of person who brought sample">
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label for="transportation_mode" class="block text-sm font-medium text-gray-700 mb-1">Transportation Mode</label>
+              <select name="transportation_mode" id="transportation_mode"
+                      class="w-full px-4 py-2.5 rounded-xl border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                <option value="Hand-delivered">Hand-delivered</option>
+                <option value="Pneumatic Tube">Pneumatic Tube</option>
+                <option value="Courier">Courier Service</option>
+                <option value="Automated System">Automated System</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        ---
+
+        <div class="space-y-6 bg-red-50 p-6 rounded-xl border-red-200 border">
+          <h3 class="text-xl font-bold text-gray-900 border-b border-gray-200 pb-2 flex items-center text-red-700">
+            <i class="fas fa-clipboard-list-check mr-2"></i> Sample Verification Checklist *
+          </h3>
+          <p class="text-sm text-red-600 mb-4">All items must be checked for sample acceptance. Unchecked items will mark the sample as rejected.</p>
+
+          <div class="space-y-3">
+            <div class="flex items-start">
+              <input type="checkbox" id="checklist_enough_sample" name="checklist_enough_sample" class="mt-1 h-5 w-5 text-green-600 rounded border-gray-300 focus:ring-green-500">
+              <label for="checklist_enough_sample" class="ml-3 text-base text-gray-800 font-medium">
+                Sample is of sufficient quantity
+              </label>
+            </div>
+            <div class="flex items-start">
+              <input type="checkbox" id="checklist_correct_tube" name="checklist_correct_tube" class="mt-1 h-5 w-5 text-green-600 rounded border-gray-300 focus:ring-green-500">
+              <label for="checklist_correct_tube" class="ml-3 text-base text-gray-800 font-medium">
+                Correct test tube/container used for this test
+              </label>
+            </div>
+            <div class="flex items-start">
+              <input type="checkbox" id="checklist_valid_collection_time" name="checklist_valid_collection_time" class="mt-1 h-5 w-5 text-green-600 rounded border-gray-300 focus:ring-green-500">
+              <label for="checklist_valid_collection_time" class="ml-3 text-base text-gray-800 font-medium">
+                Collection time is within acceptable limits for the test (ask patient if needed)
+              </label>
+            </div>
+            <div class="flex items-start">
+              <input type="checkbox" id="checklist_labeling" name="checklist_labeling" class="mt-1 h-5 w-5 text-green-600 rounded border-gray-300 focus:ring-green-500">
+              <label for="checklist_labeling" class="ml-3 text-base text-gray-800 font-medium">
+                Sample is correctly labeled (Patient ID, Name, Date)
+              </label>
+            </div>
+            <div class="flex items-start">
+              <input type="checkbox" id="checklist_integrity" name="checklist_integrity" class="mt-1 h-5 w-5 text-green-600 rounded border-gray-300 focus:ring-green-500">
+              <label for="checklist_integrity" class="ml-3 text-base text-gray-800 font-medium">
+                Sample integrity is maintained (no hemolysis, clotting for plasma, etc.)
+              </label>
+            </div>
+          </div>
+
+          <input type="hidden" name="sample_status" id="sample_status" value="Accepted">
+
+          <div id="rejection_details" class="hidden mt-6 pt-4 border-t border-red-300 space-y-4">
+            <h4 class="text-lg font-bold text-red-800 flex items-center">
+              <i class="fas fa-exclamation-triangle mr-2"></i> Sample Rejection Details
+            </h4>
+            <div>
+              <label for="rejection_reason" class="block text-sm font-medium text-gray-700 mb-1">Reason for Rejection *</label>
+              <textarea name="rejection_reason" id="rejection_reason" rows="3"
+                        class="w-full px-4 py-2.5 rounded-xl border border-red-300 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition"
+                        placeholder="Specify why the sample was rejected (e.g., insufficient quantity, wrong tube, hemolyzed)."></textarea>
+            </div>
+            <div>
+              <label for="person_notified" class="block text-sm font-medium text-gray-700 mb-1">Person Notified *</label>
+              <input type="text" name="person_notified" id="person_notified"
+                     class="w-full px-4 py-2.5 rounded-xl border border-red-300 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition"
+                     placeholder="Name of person notified (e.g., Phlebotomist, Clinician).">
+            </div>
+            <div>
+              <label for="patient_advice" class="block text-sm font-medium text-gray-700 mb-1">Advice/Action for Patient *</label>
+              <textarea name="patient_advice" id="patient_advice" rows="3"
+                        class="w-full px-4 py-2.5 rounded-xl border border-red-300 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition"
+                        placeholder="Instructions given to the patient (e.g., re-collection required, new appointment)."></textarea>
+            </div>
+          </div>
+        </div>
+
+        ---
+
+        <div>
+          <label for="processing_notes" class="block text-sm font-medium text-gray-700 mb-1">Special Instructions</label>
+          <textarea id="processing_notes" name="processing_notes" rows="3"
+                    class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                    placeholder="Any special handling instructions or notes..."></textarea>
+        </div>
+
+        <div class="flex justify-end gap-4 pt-8 border-t border-gray-200">
+          <a href="{{ url_for('lab_web.list_lab_tests') }}" class="inline-flex items-center px-5 py-3 border border-gray-300 rounded-xl shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition">
+            Cancel
+          </a>
+          <button type="submit" class="inline-flex items-center px-5 py-3 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition transform hover:-translate-y-0.5">
+            <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+            </svg>
+            Save Sample
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Set default collection time to now
+    const now = new Date();
+    const localDateTime = new Date(now.getTime() - (now.getTimezoneOffset() * 60000))
+      .toISOString()
+      .slice(0, 16);
+
+    document.getElementById('collection_time').value = localDateTime;
+
+    // Set current user as received by
+    {% if current_user.is_authenticated %}
+    document.getElementById('received_by').value = "{{ current_user.full_name or current_user.username }}";
+    {% endif %}
+
+    // Modern input styling on focus
+    const inputs = document.querySelectorAll('input, textarea, select');
+    inputs.forEach(input => {
+      input.addEventListener('focus', function() {
+        // Removed parentElement class additions to avoid conflict with rejection styling
+        // You can re-add if you want a different focus style that doesn't conflict
+      });
+
+      input.addEventListener('blur', function() {
+        // Removed parentElement class removals
+      });
+    });
+
+    // Add subtle hover effects
+    const cards = document.querySelectorAll('.bg-blue-50, .bg-indigo-50');
+    cards.forEach(card => {
+      card.addEventListener('mouseenter', function() {
+        this.classList.add('shadow-md', 'transition', 'duration-300');
+      });
+
+      card.addEventListener('mouseleave', function() {
+        this.classList.remove('shadow-md');
+      });
+    });
+
+    // Source type toggle with enhanced functionality
+    const sourceTypeRadios = document.querySelectorAll('input[name="source_type"]');
+    const internalSourceFields = document.getElementById('internal_source_fields');
+    const externalSourceFields = document.getElementById('external_source_fields');
+    const wardSourceField = document.getElementById('ward_source_field');
+    const opdSourceField = document.getElementById('opd_source_field');
+
+    function updateSourceFields() {
+      const selectedType = document.querySelector('input[name="source_type"]:checked').value;
+
+      if (selectedType === 'external') {
+        internalSourceFields.classList.add('hidden');
+        externalSourceFields.classList.remove('hidden');
+      } else {
+        internalSourceFields.classList.remove('hidden');
+        externalSourceFields.classList.add('hidden');
+
+        if (selectedType === 'ward') {
+          wardSourceField.classList.remove('hidden');
+          opdSourceField.classList.add('hidden');
+        } else if (selectedType === 'opd') {
+          wardSourceField.classList.add('hidden');
+          opdSourceField.classList.remove('hidden');
+        }
+      }
+    }
+
+    sourceTypeRadios.forEach(radio => {
+      radio.addEventListener('change', updateSourceFields);
+    });
+
+    // Initialize source fields on page load
+    updateSourceFields();
+
+    // --- Sample Verification Checklist Logic ---
+    const checklistItems = document.querySelectorAll('#checklist_enough_sample, #checklist_correct_tube, #checklist_valid_collection_time, #checklist_labeling, #checklist_integrity');
+    const sampleStatusInput = document.getElementById('sample_status');
+    const rejectionDetailsDiv = document.getElementById('rejection_details');
+    const rejectionReason = document.getElementById('rejection_reason');
+    const personNotified = document.getElementById('person_notified');
+    const patientAdvice = document.getElementById('patient_advice');
+
+    function updateSampleStatus() {
+      let allChecked = true;
+      checklistItems.forEach(item => {
+        if (!item.checked) {
+          allChecked = false;
+        }
+      });
+
+      if (allChecked) {
+        sampleStatusInput.value = "Accepted";
+        rejectionDetailsDiv.classList.add('hidden');
+        // Remove 'required' attribute for rejection fields
+        rejectionReason.removeAttribute('required');
+        personNotified.removeAttribute('required');
+        patientAdvice.removeAttribute('required');
+      } else {
+        sampleStatusInput.value = "Rejected";
+        rejectionDetailsDiv.classList.remove('hidden');
+        // Add 'required' attribute for rejection fields
+        rejectionReason.setAttribute('required', 'required');
+        personNotified.setAttribute('required', 'required');
+        patientAdvice.setAttribute('required', 'required');
+      }
+    }
+
+    // Add event listeners to all checklist items
+    checklistItems.forEach(item => {
+      item.addEventListener('change', updateSampleStatus);
+    });
+
+    // Initial check on page load to set correct visibility and required status
+    updateSampleStatus();
+  });
+</script>
+
+<style>
+  input:focus, textarea:focus, select:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); /* Blue focus ring */
+  }
+
+  .rounded-xl {
+    border-radius: 16px;
+  }
+
+  .transition {
+    transition: all 0.3s ease;
+  }
+
+  /* Specific styling for required rejection fields when visible */
+  #rejection_details input:required:valid,
+  #rejection_details textarea:required:valid {
+      border-color: #d1d5db; /* Default gray for valid */
+      box-shadow: none;
+  }
+  #rejection_details input:required:invalid,
+  #rejection_details textarea:required:invalid {
+      border-color: #ef4444; /* Red border for invalid */
+      box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2); /* Red focus ring */
+  }
+</style>
+{% endblock %}

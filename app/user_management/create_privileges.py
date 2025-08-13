@@ -1,0 +1,173 @@
+# app/user_management/create_privileges.py
+
+from app.extensions import db
+from app.user_management.models import Privilege
+
+def create_initial_privileges(session):
+    """
+    Seed the privileges table with one entry per (action, module).
+    Idempotent: existing names are skipped.
+    """
+
+    # (name, module, description)
+    privileges = [
+        ('dashboard:view', 'Dashboard', 'View Dashboard overview'),
+        ('users:create', 'User Management', 'Create new user accounts'),
+        ('users:list', 'User Management', 'List all users'),
+        ('users:edit', 'User Management', 'Edit existing user accounts'),
+        ('patients:register', 'Patients', 'Register a new patient'),
+        ('patients:manage', 'Patients', 'View & edit patient records'),
+        ('patients:triage', 'Patients', 'Perform patient triage'),
+        ('consultations:queue', 'Consultations', 'Access consultation queue'),
+            # New diagnosis privilege added here
+    ('diagnosis:manage', 'Medical Services', 'Manage patient diagnoses'),
+        ('lab:orders', 'Lab Tests', 'View pending lab orders'),
+        ('lab:results', 'Lab Tests', 'View lab test results'),
+        ('lab:add_quick', 'Lab Tests', 'Add a quick lab test'),
+            ('lab_samples:manage', 'Laboratory', 'Manage sample collection, tracking and storage'),
+    ('blood_bank:manage', 'Laboratory', 'Manage blood inventory and transfusions'),
+    ('lab_inventory:view', 'Laboratory', 'View lab reagents and consumables'),
+    ('lab_equipment:maintain', 'Laboratory', 'Schedule equipment maintenance'),
+    ('lab_quality:control', 'Laboratory', 'Manage quality control procedures'),
+        ('lab_inventory:manage_consumables', 'Laboratory', 'Manage laboratory consumables and reagents'),
+    ('lab_inventory:request_stocks', 'Laboratory', 'Request new stocks for laboratory'),
+    ('lab_inventory:stock_flow', 'Laboratory', 'Monitor stock flow and usage in laboratory'),
+        ('radiology:requests', 'Radiology', 'View imaging requests (MedSvc)'),
+        ('radiology:scan_results', 'Radiology', 'View scan results (MedSvc)'),
+        ('radiology:archive', 'Radiology', 'View archived reports (MedSvc)'),
+        ('appointments:schedule', 'Appointments', 'Schedule a new appointment'),
+        ('appointments:manage', 'Appointments', 'Manage all appointments'),
+        ('appointments:my_schedule', 'Appointments', 'View my upcoming appointments'),
+        ('billing:create_invoice', 'Billing', 'Create a new invoice'),
+        ('billing:process_payment', 'Billing', 'Process payments'),
+        ('billing:transactions', 'Billing', 'View transaction history'),
+        ('pharmacy:dispense', 'Pharmacy', 'Dispense medication'),
+        ('pharmacy:inventory', 'Pharmacy', 'Manage pharmacy inventory'),
+        ('pharmacy:track_prescriptions', 'Pharmacy', 'Track prescriptions'),
+        ('pharmacy:stock_requests', 'Pharmacy', 'View & respond to stock requests'),
+        ('lab_tests:list', 'Laboratory', 'List all lab tests'),
+        ('lab_reports:generate', 'Laboratory', 'Generate lab reports'),
+        ('lab:test_types', 'Laboratory', 'Manage lab test types'),
+        ('lab:view_reports', 'Laboratory', 'View lab reports'),
+        ('radiology:imaging_requests', 'Radiology', 'View imaging requests'),
+        ('radiology:view_scans', 'Radiology', 'View scans'),
+        ('radiology:view_reports', 'Radiology', 'View radiology reports'),
+        ('hr:staff_add', 'Human Resources', 'Add New Staff'),
+        ('hr:staff_directory', 'Human Resources', 'View Staff Directory'),
+        ('hr:staff_profiles', 'Human Resources', 'View/Edit Staff Profiles'),
+        ('hr:attendance', 'Human Resources', 'Track Staff Attendance'),
+        ('hr:payroll:salary', 'Human Resources', 'Process Staff Salaries'),
+        ('hr:payroll:payslips', 'Human Resources', 'Generate/View Payslips'),
+        ('hr:payroll:reports', 'Human Resources', 'View Payroll Reports'),
+        ('hr:recruitment', 'Human Resources', 'Manage Recruitment'),
+        ('inventory:dashboard', 'Inventory', 'View Inventory Dashboard'),
+        ('inventory:manage_stock', 'Inventory', 'Manage Stock Levels'),
+        ('inventory:stock_requests', 'Inventory', 'View & Respond to Stock Requests'),
+        ('inventory:suppliers', 'Inventory', 'Manage Suppliers'),
+        ('inventory:purchase_orders', 'Inventory', 'Manage Purchase Orders'),
+        ('inventory:reports', 'Inventory', 'Generate Inventory Reports'),
+        ('finance:dashboard', 'Finance', 'View Financial Dashboard'),
+        ('finance:invoices', 'Finance', 'Manage Invoices & Receivables'),
+        ('finance:payments', 'Finance', 'Process Payments'),
+        ('finance:expenses', 'Finance', 'Track Expenses'),
+        ('finance:insurance', 'Finance', 'Manage Insurance Policies'),
+        ('finance:reports', 'Finance', 'Generate Financial Reports'),
+        ('reports:clinical', 'Reports', 'Access Clinical Reports'),
+        ('reports:financial', 'Reports', 'Access Financial Reports'),
+        ('reports:analytics', 'Reports', 'Access Analytics Dashboard'),
+        ('doctor_dashboard', 'Dashboard', 'Access Doctor Dashboard'),
+        ('nurse_dashboard', 'Dashboard', 'Access Nurse Dashboard'),
+        ('labtech_dashboard', 'Dashboard', 'Access Lab Technician Dashboard'),
+        ('radiology_dashboard', 'Dashboard', 'Access Radiology Dashboard'),
+        ('pharmacy_dashboard', 'Dashboard', 'Access Pharmacy Dashboard'),
+        ('registration_dashboard', 'Dashboard', 'Access Registration Dashboard'),
+        ('patient_dashboard', 'Dashboard', 'Access Patient Dashboard'),
+        ('reports:audit', 'Reports', 'Access Audit Logs'),
+        ('finance:services', 'Finance', 'Manage Financial Services'),
+        ('pharmacy:dispense_history', 'Pharmacy', 'View Dispense History'),
+        ('resource:policies', 'Resource Centre', 'Access System Policies'),
+        ('resource:documentation', 'Resource Centre', 'Access System Documentation'),
+        ('resource:support', 'Resource Centre', 'Access System Support Resources'),
+            ('resource:updates', 'Resource Centre', 'View system updates and changelogs'),
+    ('resource:manage', 'Resource Centre', 'Manage resource centre content'),
+        ('inventory:external_orders', 'Inventory', 'Manage External Orders'),
+        ('finance:manage_orders', 'Finance', 'Approve/Reject Purchase Requisitions'),
+        ('reports:mpesa', 'Reports', 'Access M-Pesa Transaction Logs'),
+        ('finance:cash_payments', 'Finance', 'Manage Cash Payments and Receipts'),
+        ('hr:payroll:periods', 'Human Resources', 'Manage Payroll Periods'),
+        ('hr:payroll:adjustments', 'Human Resources', 'Manage Payroll Adjustments'),
+        ('hr:payroll:loans', 'Human Resources', 'Manage Employee Loans'),
+        ('hr:payroll:settings', 'Human Resources', 'Configure Payroll Settings'),
+        ('hr:duty_rota', 'Human Resources', 'Manage Duty Rota Schedules'),
+            # NEW: Disciplinary Services privileges
+        ('hr:disciplinary:cases', 'Disciplinary Services', 'Manage disciplinary cases'),
+        ('hr:disciplinary:actions', 'Disciplinary Services', 'Manage disciplinary actions'),
+        ('hr:disciplinary:reports', 'Disciplinary Services', 'View disciplinary reports'),
+        ('hr:disciplinary:policies', 'Disciplinary Services', 'Manage disciplinary policies'),
+        ('hr:disciplinary:appeals', 'Disciplinary Services', 'Handle appeals process'),
+                # Asset Management
+        ('asset:manage', 'Asset Management', 'Manage hospital assets'),
+        ('asset:track', 'Asset Management', 'Track asset locations'),
+        ('asset:maintenance', 'Asset Management', 'Schedule asset maintenance'),
+        ('asset:reports', 'Asset Management', 'View asset reports'),
+        
+        # Board Module
+        ('board:dashboard', 'Board Module', 'Access board dashboard'),
+        ('board:financials', 'Board Module', 'View financial reports'),
+        ('board:performance', 'Board Module', 'View performance metrics'),
+        ('board:strategy', 'Board Module', 'Strategic planning'),
+        ('board:governance', 'Board Module', 'Governance and compliance'),
+        ('board:resources', 'Board Module', 'Access board resources'),
+
+        ('hospital:manage_profile', 'System Administration', 'Manage hospital profile settings'),
+        
+            # Communication Hub Privileges
+    ('comms:dashboard', 'Communication Hub', 'Access Engagement Dashboard'),
+    ('comms:sms_patients', 'Communication Hub', 'Send Bulk SMS to Patients'),
+    ('comms:sms_staff', 'Communication Hub', 'Send Bulk SMS to Staff'),
+    ('comms:email_bulk', 'Communication Hub', 'Send Bulk Email Campaigns'),
+    ('comms:templates', 'Communication Hub', 'Manage Message Templates'),
+    ('comms:reminders', 'Communication Hub', 'Manage Appointment Reminders'),
+    ('comms:notifications', 'Communication Hub', 'Configure System Notifications'),
+    ('comms:analytics', 'Communication Hub', 'View Delivery Analytics'),
+    ('comms:feedback', 'Communication Hub', 'Manage Feedback Collection'),
+            # Dental Clinic Privileges 🦷
+    ('dental:consultations', 'Dental Clinic', 'Access Dental Consultation module'),
+    ('dental:procedures', 'Dental Clinic', 'Manage Dental Procedures'),
+        # Optician Clinic Privileges 👓
+    ('optician:examinations', 'Optician Clinic', 'Perform Eye Examinations'),
+    ('optician:dispensing', 'Optician Clinic', 'Manage Glasses & Contact Lens Dispensing'),
+        ('consultations:manage_services', 'Service Management', 'Manage consultation service types and pricing'),
+
+    ]
+
+    for name, module, description in privileges:
+        existing = session.query(Privilege).filter_by(name=name).first()
+        if existing:
+            continue
+
+        priv = Privilege(
+            name=name,
+            module=module,
+            description=description
+        )
+        session.add(priv)
+
+    session.commit()
+    print(f"Seeded {len(privileges)} privileges.")
+
+  
+# If you’re wiring this up to Flask-CLI, you can do:
+# 
+# import click
+# from flask.cli import with_appcontext
+# 
+# @click.command('seed-privileges')
+# @with_appcontext
+# def seed_privileges_command():
+#     create_initial_privileges()
+#     click.echo('✅ Privileges seeded.')
+# 
+# Then in your app/__init__.py’s register_commands():
+# app.cli.add_command(seed_privileges_command)
+

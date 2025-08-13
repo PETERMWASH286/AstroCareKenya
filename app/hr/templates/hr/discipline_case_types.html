@@ -1,0 +1,339 @@
+{% extends "base.html" %}
+{% block title %}Manage Case Types{% endblock %}
+{% block head %}
+    {{ super() }}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Search functionality
+            const searchInput = document.getElementById('search-input');
+            const caseTypeCards = document.querySelectorAll('.case-type-card');
+            
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                
+                caseTypeCards.forEach(card => {
+                    const name = card.querySelector('.case-type-name').textContent.toLowerCase();
+                    const code = card.querySelector('.case-type-code').textContent.toLowerCase();
+                    const description = card.querySelector('.case-type-desc').textContent.toLowerCase();
+                    
+                    if (name.includes(searchTerm) || code.includes(searchTerm) || description.includes(searchTerm)) {
+                        card.classList.remove('hidden');
+                    } else {
+                        card.classList.add('hidden');
+                    }
+                });
+            });
+            
+            // Toggle view buttons
+            document.getElementById('grid-view').addEventListener('click', function() {
+                document.getElementById('case-types-grid').classList.remove('hidden');
+                document.getElementById('case-types-table').classList.add('hidden');
+                this.classList.add('bg-blue-100', 'text-blue-600');
+                document.getElementById('list-view').classList.remove('bg-blue-100', 'text-blue-600');
+            });
+            
+            document.getElementById('list-view').addEventListener('click', function() {
+                document.getElementById('case-types-table').classList.remove('hidden');
+                document.getElementById('case-types-grid').classList.add('hidden');
+                this.classList.add('bg-blue-100', 'text-blue-600');
+                document.getElementById('grid-view').classList.remove('bg-blue-100', 'text-blue-600');
+            });
+        });
+    </script>
+    <style>
+        .case-type-card {
+            transition: all 0.3s ease;
+        }
+        .case-type-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        .severity-minor { background-color: #f0fdf4; color: #16a34a; }
+        .severity-moderate { background-color: #fffbeb; color: #ca8a04; }
+        .severity-major { background-color: #ffedd5; color: #ea580c; }
+        .severity-severe { background-color: #fee2e2; color: #dc2626; }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Page Header -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+        <div class="flex items-center">
+            <div class="p-3 rounded-full bg-purple-100 text-purple-600 mr-4">
+                <i class="fas fa-folder-tree text-xl"></i>
+            </div>
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">Disciplinary Case Types</h1>
+                <p class="mt-2 text-gray-600">Manage categories and classifications for disciplinary cases</p>
+            </div>
+        </div>
+        <div class="mt-4 md:mt-0 flex space-x-3">
+            <a href="{{ url_for('hr_web.new_disciplinary_case_type') }}" 
+               class="inline-flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-md shadow-sm transition-colors duration-200">
+                <i class="fas fa-plus-circle mr-2"></i> New Case Type
+            </a>
+            <a href="{{ url_for('hr_web.disciplinary_cases') }}" 
+               class="inline-flex items-center px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-md shadow-sm transition-colors duration-200">
+                <i class="fas fa-arrow-left mr-2"></i> Back to Cases
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div class="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-purple-100 text-purple-600 mr-3">
+                    <i class="fas fa-folder"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-medium text-gray-900">Total Case Types</h3>
+                    <p class="text-2xl font-bold mt-1">{{ case_types|length }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-green-100 text-green-600 mr-3">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-medium text-gray-900">Active Types</h3>
+                    <p class="text-2xl font-bold mt-1">{{ case_types|length }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-3">
+                    <i class="fas fa-file-alt"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-medium text-gray-900">Cases Categorized</h3>
+<!-- Fixed code for total cases -->
+<p class="text-2xl font-bold mt-1">{{ case_types|map(attribute='cases')|map('length')|sum }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-yellow-100 text-yellow-600 mr-3">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-medium text-gray-900">Avg. Resolution</h3>
+<!-- Fixed average resolution calculation -->
+<p class="text-2xl font-bold mt-1">
+    {{ (case_types|map(attribute='resolution_days')|sum // case_types|length) if case_types else 0 }} days
+</p>                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="bg-white rounded-xl shadow-sm mb-6 p-5 border border-gray-100">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
+            <div class="flex-1 max-w-md">
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                        <i class="fas fa-search text-gray-400"></i>
+                    </div>
+                    <input type="text" id="search-input" 
+                           class="w-full pl-10 pr-3 py-2.5 rounded-lg border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:ring-opacity-50" 
+                           placeholder="Search case types...">
+                </div>
+            </div>
+            <div class="flex space-x-2">
+                <button id="grid-view" class="px-3 py-2 bg-blue-100 text-blue-600 rounded-md flex items-center">
+                    <i class="fas fa-th-large mr-1"></i> Grid
+                </button>
+                <button id="list-view" class="px-3 py-2 bg-gray-200 text-gray-700 rounded-md flex items-center">
+                    <i class="fas fa-list mr-1"></i> List
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grid View -->
+    <div id="case-types-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for case_type in case_types %}
+        <div class="case-type-card bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden fade-in">
+            <div class="p-6">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <div class="flex items-center">
+                            <div class="p-2 rounded-full bg-purple-100 text-purple-600 mr-3">
+                                <i class="fas fa-folder"></i>
+                            </div>
+                            <h3 class="case-type-name text-xl font-bold text-gray-900">{{ case_type.name }}</h3>
+                        </div>
+                        <div class="case-type-code mt-1 text-sm text-gray-500 font-mono">{{ case_type.code }}</div>
+                    </div>
+                    <span class="case-type-severity px-2.5 py-0.5 rounded-full text-xs font-medium severity-{{ case_type.default_severity|lower }}">
+                        {{ case_type.default_severity }}
+                    </span>
+                </div>
+                
+                <div class="case-type-desc mt-4 text-gray-600">
+                    {{ case_type.description|default('No description provided', true) }}
+                </div>
+                
+                <div class="mt-6 pt-4 border-t border-gray-100 flex justify-between items-center">
+                    <div class="text-sm text-gray-500">
+                        <div class="flex items-center">
+                            <i class="fas fa-clock mr-1"></i>
+                            <span>{{ case_type.resolution_days }} days resolution</span>
+                        </div>
+                        <div class="flex items-center mt-1">
+                            <i class="fas fa-file-alt mr-1"></i>
+                            <span>{{ case_type.cases|length }} cases</span>
+                        </div>
+                    </div>
+                    <div class="flex space-x-2">
+                        <a href="{{ url_for('hr_web.edit_disciplinary_case_type', type_id=case_type.id) }}" 
+                           class="p-2 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors duration-200"
+                           title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <button class="p-2 rounded-full bg-red-100 text-red-600 hover:bg-red-200 transition-colors duration-200"
+                                title="Delete">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="md:col-span-3 bg-white rounded-xl shadow-sm p-12 text-center border-2 border-dashed border-gray-200">
+            <div class="mx-auto w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                <i class="fas fa-folder-open text-gray-400 text-2xl"></i>
+            </div>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">No case types found</h3>
+            <p class="text-gray-500 mb-6">Create your first case type to categorize disciplinary cases</p>
+            <a href="{{ url_for('hr_web.new_disciplinary_case_type') }}" 
+               class="inline-flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-md shadow-sm">
+                <i class="fas fa-plus-circle mr-2"></i> Create Case Type
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Table View (Hidden by default) -->
+    <div id="case-types-table" class="hidden bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Code</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Severity</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Resolution Days</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cases</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Updated</th>
+                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for case_type in case_types %}
+                    <tr class="hover:bg-gray-50 transition-colors duration-150">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="p-2 rounded-full bg-purple-100 text-purple-600 mr-3">
+                                    <i class="fas fa-folder"></i>
+                                </div>
+                                <div>
+                                    <div class="font-medium text-gray-900">{{ case_type.name }}</div>
+                                    <div class="text-sm text-gray-500 truncate max-w-xs">{{ case_type.description|default('', true) }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-mono">
+                            {{ case_type.code }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-medium severity-{{ case_type.default_severity|lower }}">
+                                {{ case_type.default_severity }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ case_type.resolution_days }} days
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <div class="flex items-center">
+                                <span class="mr-2">{{ case_type.cases|length }}</span>
+                                <span class="h-2 w-2 rounded-full bg-blue-500"></span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ case_type.updated_at.strftime('%b %d, %Y') }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <div class="flex justify-end space-x-2">
+                                <a href="{{ url_for('hr_web.edit_disciplinary_case_type', type_id=case_type.id) }}" 
+                                   class="text-blue-600 hover:text-blue-900 transition-colors duration-200"
+                                   title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <button class="text-red-600 hover:text-red-900 transition-colors duration-200"
+                                        title="Delete">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="px-6 py-12 text-center">
+                            <div class="flex flex-col items-center justify-center">
+                                <div class="bg-gray-100 p-4 rounded-full mb-4">
+                                    <i class="fas fa-folder-open text-gray-400 text-2xl"></i>
+                                </div>
+                                <h3 class="text-lg font-medium text-gray-900 mb-1">No case types found</h3>
+                                <p class="text-gray-500 mb-4">Get started by creating a new case type</p>
+                                <a href="{{ url_for('hr_web.new_disciplinary_case_type') }}" 
+                                   class="inline-flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-md shadow-sm">
+                                    <i class="fas fa-plus-circle mr-2"></i> Create Case Type
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Usage Tips -->
+    <div class="mt-8 bg-purple-50 rounded-xl p-6 border border-purple-100">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <i class="fas fa-lightbulb text-purple-500 text-2xl mt-1"></i>
+            </div>
+            <div class="ml-4">
+                <h3 class="text-lg font-medium text-purple-800">Best Practices for Case Types</h3>
+                <div class="mt-2 text-purple-700">
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li>Create distinct categories that cover all potential disciplinary scenarios</li>
+                        <li>Set appropriate default severity levels for each case type</li>
+                        <li>Define realistic resolution timeframes based on complexity</li>
+                        <li>Use clear, concise descriptions for each type</li>
+                        <li>Regularly review and update types to reflect policy changes</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,257 @@
+{% extends "base.html" %} {% block content %}
+<div class="container mx-auto p-6 max-w-6xl">
+    <!-- Sticky Header (unchanged) -->
+    <div class="sticky top-0 backdrop-blur-sm bg-white/70 dark:bg-gray-800/70 z-20 py-6 px-8 mb-8 shadow-md border-b border-gray-200 dark:border-gray-700">
+        <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between space-y-4 lg:space-y-0">
+            <!-- Title + Icon -->
+            <div class="flex items-center space-x-3">
+                <div class="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl shadow-lg">
+                    <i class="fas fa-x-ray text-white text-2xl"></i>
+                </div>
+                <h1 class="text-3xl font-extrabold text-gray-900 dark:text-gray-100 leading-tight">
+                    <span class="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                Imaging Interpretation
+              </span>
+                    <span class="text-gray-400 dark:text-gray-500 font-medium ml-2">#{{ order.id }}</span>
+                </h1>
+            </div>
+
+            <!-- Metadata Badges -->
+            <div class="flex flex-wrap items-center gap-3">
+                <div class="inline-flex items-center px-4 py-2 bg-blue-50/60 dark:bg-blue-900/40 backdrop-blur rounded-full shadow-inner">
+                    <i class="fas fa-stethoscope text-blue-600 dark:text-blue-300 mr-2"></i>
+                    <span class="font-medium text-blue-700 dark:text-blue-200 text-sm">{{ order.service.name }}</span>
+                </div>
+                <div class="inline-flex items-center px-4 py-2 bg-purple-50/60 dark:bg-purple-900/40 backdrop-blur rounded-full shadow-inner">
+                    <i class="fas fa-id-card text-purple-600 dark:text-purple-300 mr-2"></i>
+                    <span class="font-medium text-purple-700 dark:text-purple-200 text-sm">{{ order.consultation.patient.reg_no }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Patient Summary -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Patient -->
+            <div>
+                <label class="block text-sm text-gray-500 dark:text-gray-400 mb-1">Patient</label>
+                <p class="font-medium text-gray-900 dark:text-white">
+                    {{ order.consultation.patient.full_name }}
+                </p>
+            </div>
+
+            <!-- Requested By -->
+            <div>
+                <label class="block text-sm text-gray-500 dark:text-gray-400 mb-1">Requested By</label>
+                <p class="font-medium flex items-center text-gray-900 dark:text-white">
+                    <i class="fas fa-user-md text-blue-500 mr-2"></i> Dr. {{ order.consultation.treated_by.full_name }}
+                </p>
+            </div>
+
+            <!-- Request Date -->
+            <div>
+                <label class="block text-sm text-gray-500 dark:text-gray-400 mb-1">Request Date</label>
+                <p class="font-medium text-gray-900 dark:text-white">
+                    {{ order.requested_at.strftime('%b %d, %Y %H:%M') }}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Two‑column layout -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Left: Consultation Details -->
+        <div class="space-y-6">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+                <h2 class="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center">
+                    <i class="fas fa-notes-medical text-teal-500 mr-2"></i> Consultation Details
+                </h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm text-gray-500 dark:text-gray-400 mb-1">History</label>
+                        <p class="text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-700 p-3 rounded-lg whitespace-pre-wrap">{{ order.consultation.history }}</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-500 dark:text-gray-400 mb-1">Examination</label>
+                        <p class="text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-700 p-3 rounded-lg whitespace-pre-wrap">{{ order.consultation.examination }}</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-500 dark:text-gray-400 mb-1">Treatment Plan</label>
+                        <p class="text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-700 p-3 rounded-lg whitespace-pre-wrap">{{ order.consultation.treatment_plan }}</p>
+                    </div>
+                    {% if order.consultation.notes %}
+                    <div>
+                        <label class="block text-sm text-gray-500 dark:text-gray-400 mb-1">Clinical Notes</label>
+                        <p class="text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-700 p-3 rounded-lg whitespace-pre-wrap">{{ order.consultation.notes }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Imaging form (spans two columns on lg) -->
+        <div class="lg:col-span-2 space-y-8">
+            <form method="POST" enctype="multipart/form-data" class="space-y-8">
+                <!-- Radiological Findings (unchanged) -->
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+                    <div class="border-b border-gray-100 dark:border-gray-700 pb-4 mb-6">
+                        <h2 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
+                            <i class="fas fa-search-medical text-blue-500 mr-3"></i> Radiological Findings
+                        </h2>
+                    </div>
+                    <div class="space-y-6">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+              Detailed Observations <span class="text-red-500">*</span>
+            </label>
+                        <textarea name="findings" rows="6" required class="w-full px-4 py-3 rounded-xl border-0 ring-2 ring-gray-200 dark:ring-gray-700 focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-900 font-mono text-sm" placeholder="Describe the imaging findings...">{{ order.results_data.findings if order.results_data }}</textarea>
+                    </div>
+                </div>
+
+                <!-- Clinical Interpretation (unchanged) -->
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+                    <div class="border-b border-gray-100 dark:border-gray-700 pb-4 mb-6">
+                        <h2 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
+                            <i class="fas fa-stethoscope text-purple-500 mr-3"></i> Clinical Interpretation
+                        </h2>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                Radiologist Impression <span class="text-red-500">*</span>
+              </label>
+                            <textarea name="impression" rows="4" required class="w-full px-4 py-3 rounded-xl border-0 ring-2 ring-gray-200 dark:ring-gray-700 focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-900">{{ order.results_data.impression if order.results_data }}</textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                Recommendations
+              </label>
+                            <textarea name="recommendations" rows="4" class="w-full px-4 py-3 rounded-xl border-0 ring-2 ring-gray-200 dark:ring-gray-700 focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-900">{{ order.results_data.recommendations if order.results_data }}</textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Image Management -->
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+                    <div class="border-b border-gray-100 dark:border-gray-700 pb-4 mb-6">
+                        <h2 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
+                            <i class="fas fa-images text-green-500 mr-3"></i> Image Management
+                        </h2>
+                    </div>
+
+                    <div class="space-y-6">
+                        <!-- Image Upload Dropzone -->
+                        <div class="border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl p-8 text-center">
+                            <div class="mb-4 text-gray-400 dark:text-gray-600 text-3xl">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                            </div>
+                            <p class="text-gray-600 dark:text-gray-400 mb-2">
+                                Drag & drop DICOM files or click to upload
+                            </p>
+                            <!-- Add name="file-upload" to the file input -->
+
+                            <input type="file" name="file-upload" id="file-upload" class="hidden" multiple accept=".dcm,image/*">
+                            <!-- Add name attribute to file input -->
+                            <button type="button" onclick="document.getElementById('file-upload').click()" class="px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg text-gray-600 dark:text-gray-300 transition-colors">
+                        Select Files
+                    </button>
+                        </div>
+
+                        <!-- Image Preview Grid -->
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-4" id="image-preview">
+                            <!-- Dynamic image previews will be inserted here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Report Finalization -->
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                        <div class="flex-1">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Final Notes
+                    </label>
+                            <textarea name="notes" rows="2" class="w-full px-4 py-3 rounded-xl border-0 ring-2 ring-gray-200 dark:ring-gray-700 focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-900" placeholder="Additional comments..."></textarea>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div class="flex items-center space-x-3">
+                                <div class="relative">
+                                    <input type="checkbox" name="complete" id="complete" class="sr-only peer" {% if order.status=='completed' %}checked{% endif %}>
+                                    <div class="w-11 h-6 bg-gray-200 dark:bg-gray-700 rounded-full peer-checked:bg-green-500 transition-colors">
+                                        <div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform peer-checked:translate-x-5"></div>
+                                    </div>
+                                </div>
+                                <label for="complete" class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Mark as Completed
+                        </label>
+                            </div>
+
+                            <div class="flex space-x-4">
+                                <button type="submit" class="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all">
+                            Save Report
+                        </button>
+                                <a href="{{ url_for('radiology_web.list_imaging_requests') }}" class="px-6 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 rounded-xl transition-colors">
+                            Cancel
+                        </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <script>
+            // Simple image preview handler
+            document.getElementById('file-upload').addEventListener('change', function(e) {
+                const preview = document.getElementById('image-preview');
+                preview.innerHTML = '';
+
+                Array.from(e.target.files).forEach(file => {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const div = document.createElement('div');
+                        div.className = 'relative group';
+                        div.innerHTML = `
+                <img src="${e.target.result}" class="rounded-lg object-cover h-32 w-full">
+                <div class="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+                    <button type="button" class="text-white hover:text-red-400">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            `;
+                        preview.appendChild(div);
+                    }
+                    reader.readAsDataURL(file);
+                });
+            });
+        </script>
+
+        <style>
+            .dot {
+                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            
+            textarea {
+                scrollbar-width: thin;
+                scrollbar-color: #3b82f6 #f1f5f9;
+            }
+            
+            .dark textarea {
+                scrollbar-color: #2563eb #1e293b;
+            }
+            
+            textarea::-webkit-scrollbar {
+                width: 8px;
+            }
+            
+            textarea::-webkit-scrollbar-thumb {
+                background-color: #3b82f6;
+                border-radius: 4px;
+            }
+            
+            .dark textarea::-webkit-scrollbar-thumb {
+                background-color: #2563eb;
+            }
+        </style>
+        {% endblock %}

@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>AstroCare Medical Report</title>
+    <style>
+         :root {
+            --primary-color: #1a365d;
+            --secondary-color: #2b6cb0;
+            --accent-color: #e53e3e;
+            --text-color: #2d3748;
+            --muted-text: #718096;
+        }
+        
+        @page {
+            size: A4;
+            margin: 3.5cm 2cm 2.5cm;
+            @top-center {
+                content: element(header);
+            }
+            @bottom-center {
+                content: element(footer);
+            }
+        }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            margin: 0;
+            padding-top: 40px;
+            counter-reset: page;
+        }
+        
+        .header {
+            position: running(header);
+            text-align: center;
+            border-bottom: 3px solid var(--primary-color);
+            padding: 1rem 0;
+            background: white;
+            width: 100%;
+            top: -2.5cm;
+        }
+        
+        .footer {
+            position: running(footer);
+            text-align: center;
+            font-size: 0.75em;
+            color: var(--muted-text);
+            padding: 1rem 0;
+            border-top: 1px solid #e2e8f0;
+            background: white;
+            width: 100%;
+            bottom: -2cm;
+        }
+        
+        .hospital-info {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 1.5rem;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .hospital-logo {
+            max-width: 100px;
+            height: auto;
+            filter: grayscale(100%);
+        }
+        
+        .watermark {
+            opacity: 0.08;
+            position: fixed;
+            bottom: 35%;
+            right: 10%;
+            font-size: 3em;
+            color: var(--accent-color);
+            transform: rotate(-30deg);
+            pointer-events: none;
+            font-weight: 700;
+        }
+        
+        .section-title {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--secondary-color);
+            padding-bottom: 0.5rem;
+            margin: 2rem 0 1.5rem;
+            font-weight: 600;
+        }
+        
+        .patient-info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+            background: #f8fafc;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        
+        .clinical-section {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+        
+        th {
+            background: var(--primary-color);
+            color: white;
+            padding: 0.75rem;
+            font-weight: 500;
+        }
+        
+        td {
+            padding: 0.75rem;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: 500;
+        }
+        
+        .badge.completed {
+            background: #dcfce7;
+            color: #166534;
+        }
+        
+        .badge.pending {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .signature-section {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 2px dashed #e2e8f0;
+        }
+        
+        .page-number::before {
+            content: counter(page);
+        }
+        
+        .page-count::before {
+            content: counter(pages);
+        }
+        
+        .diagnosis-box {
+            background: #f0f4ff;
+            padding: 1rem;
+            border-radius: 6px;
+            margin: 1rem 0;
+            font-weight: 500;
+            color: var(--primary-color);
+        }
+        
+        .treatment-plan pre {
+            white-space: pre-wrap;
+            font-family: inherit;
+            background: #f8fafc;
+            padding: 1rem;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+        }
+    </style>
+</head>
+
+<body>
+    <header class="header">
+        <div class="hospital-info">
+            <svg class="w-8 h-8 text-indigo-600 group-hover:rotate-12 transition-transform" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M16 28C22.6274 28 28 22.6274 28 16C28 9.37258 22.6274 4 16 4C9.37258 4 4 9.37258 4 16C4 22.6274 9.37258 28 16 28Z" fill="currentColor"/>
+                <path d="M20 12L16 8L12 12L16 16L20 12Z" fill="white"/>
+                <path d="M22 18L18 22L14 18L18 14L22 18Z" fill="white"/>
+            </svg>
+            <div>
+                <h1 style="margin:0;font-size:1.8em;color:var(--primary-color);">AstroCare Hospital</h1>
+                <p style="margin:0.4rem 0;font-size:0.85em;color:var(--muted-text);">
+                    123 Galaxy Way, Star City • Tel: (555) 123-4567<br> License: MH-54321/KMPDC • www.astrocarehosp.com
+                </p>
+            </div>
+        </div>
+    </header>
+
+    <footer class="footer">
+        <div style="display: flex; justify-content: space-between; align-items: center; max-width: 600px; margin: 0 auto;">
+            <span>Generated by AstroCare HMS</span>
+            <span>Page <span class="page-number"></span> of <span class="page-count"></span></span>
+            <span>{{ consultation.created_at.strftime('%d/%m/%Y %H:%M') }}</span>
+        </div>
+        <div style="margin-top:0.5rem;color:var(--accent-color);font-size:0.9em;letter-spacing:-0.3px;">
+            CONFIDENTIAL MEDICAL DOCUMENT - UNAUTHORIZED ACCESS PROHIBITED
+        </div>
+    </footer>
+
+    <div class="watermark">ASTROCARE HMS</div>
+
+    <div class="patient-info-grid">
+        <div>
+            <p><strong>Patient Name:</strong> {{ consultation.patient.full_name }}</p>
+            <p><strong>Registration No:</strong> {{ consultation.patient.reg_no }}</p>
+            <p><strong>Date of Birth:</strong> {{ consultation.patient.date_of_birth.strftime('%d/%m/%Y') }}</p>
+        </div>
+        <div>
+            <p><strong>Report Date:</strong> {{ consultation.created_at.strftime('%d/%m/%Y %H:%M') }}</p>
+            <p><strong>Attending Physician:</strong> Dr. {{ consultation.visit.attending_physician or "Not Specified" }}</p>
+            <p><strong>Visit ID:</strong> {{ consultation.visit.id }}</p>
+        </div>
+    </div>
+
+    <h2 class="section-title">Medical Summary</h2>
+    <div class="clinical-section">
+        <div class="diagnosis-box">
+            {{ consultation.diagnosis|default('No diagnosis recorded', true) }}
+        </div>
+
+        <h3 style="color:var(--primary-color);margin-bottom:0.5rem;">Treatment Plan</h3>
+        <div class="treatment-plan">
+            <pre>{{ consultation.treatment_plan }}</pre>
+        </div>
+    </div>
+
+    {% if consultation.medications %}
+    <h2 class="section-title">Prescribed Medications</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Medication</th>
+                <th>Dosage</th>
+                <th>Frequency</th>
+                <th>Duration</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for med in consultation.medications %}
+            <tr>
+                <td>{{ med.service.name }}</td>
+                <td>{{ med.dose }}</td>
+                <td>{{ med.frequency }}</td>
+                <td>{{ med.duration }} days</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %} {% if consultation.lab_tests %}
+    <h2 class="section-title">Laboratory Investigations</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Test</th>
+                <th>Status</th>
+                <th>Results</th>
+                <th>Notes</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for test in consultation.lab_tests %}
+            <tr>
+                <td>{{ test.service.name }}</td>
+                <td>
+                    <span class="badge {{ 'completed' if test.status == 'completed' else 'pending' }}">
+                        {{ test.status|upper }}
+                    </span>
+                </td>
+                <td>{{ test.results|default('Pending', true)|truncate(40) }}</td>
+                <td>{{ test.notes|default('', true)|truncate(40) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %} {% if consultation.radiology_orders %}
+    <h2 class="section-title">Radiology Reports</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Imaging Type</th>
+                <th>Status</th>
+                <th>Findings</th>
+                <th>Attachments</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for rad in consultation.radiology_orders %}
+            <tr>
+                <td>{{ rad.service.name }}</td>
+                <td>
+                    <span class="badge {{ 'completed' if rad.status == 'completed' else 'pending' }}">
+                        {{ rad.status|upper }}
+                    </span>
+                </td>
+                <td>{{ rad.results|default('Pending', true)|truncate(40) }}</td>
+                <td>
+                    {% if rad.images %} {{ rad.images|split(',')|length }} DICOM images {% else %} No attachments {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+
+    <div class="signature-section">
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 2rem;">
+            <div>
+                <p style="margin:0 0 0.5rem;font-weight:500;">Attending Physician:</p>
+                <p style="margin:0;border-bottom:1px solid #cbd5e0;padding-bottom:1.5rem;">
+                    Dr. ___________________________
+                </p>
+                <div style="margin-top:1rem;display: flex; gap: 1rem;">
+                    <div>
+                        <span style="font-size:0.9em;color:var(--muted-text);">Date:</span>
+                        <div style="border-bottom:1px solid #cbd5e0;width:100px;"></div>
+                    </div>
+                    <div>
+                        <span style="font-size:0.9em;color:var(--muted-text);">Stamp:</span>
+                        <div style="border-bottom:1px solid #cbd5e0;width:120px;"></div>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <p style="margin:0 0 0.5rem;font-weight:500;">Patient Acknowledgment:</p>
+                <p style="margin:0;border-bottom:1px solid #cbd5e0;padding-bottom:1.5rem;">
+                    ___________________________
+                </p>
+                <div style="margin-top:1rem;">
+                    <span style="font-size:0.9em;color:var(--muted-text);">Date:</span>
+                    <div style="border-bottom:1px solid #cbd5e0;width:100px;"></div>
+                </div>
+            </div>
+        </div>
+        <div style="margin-top:2rem;font-size:0.75em;color:var(--muted-text);text-align:center;">
+            This document is electronically signed and valid without physical signature per Kenya Medical Act 2021
+        </div>
+    </div>
+</body>
+
+</html>

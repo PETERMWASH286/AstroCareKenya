@@ -1,0 +1,267 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+        <!-- Card Header -->
+<div class="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-5">
+    <div class="flex flex-col md:flex-row md:items-center justify-between">
+        <!-- Left Section - Document Info -->
+        <div class="mb-4 md:mb-0">
+            <h2 class="text-2xl font-bold text-white">Upload Document</h2>
+            <p class="text-blue-100 mt-1">Add file to case #{{ case.case_number }}</p>
+            
+            <!-- Case Status & Severity -->
+            <div class="flex flex-wrap gap-2 mt-3">
+                <span class="px-3 py-1 bg-white/20 text-white rounded-full text-sm font-medium">
+                    {{ case.status.value }}
+                </span>
+                <span class="px-3 py-1 bg-white/20 text-white rounded-full text-sm font-medium">
+                    {{ case.severity.value }}
+                </span>
+                <span class="px-3 py-1 bg-white/20 text-white rounded-full text-sm font-medium">
+                    {{ case.case_type.name }}
+                </span>
+            </div>
+        </div>
+        
+        <!-- Middle Section - Employee Info -->
+        <div class="flex items-center bg-white/10 backdrop-blur-sm rounded-xl p-3 mb-4 md:mb-0">
+            <div class="flex-shrink-0">
+                {% if case.employee.profile_image %}
+                <img src="{{ case.employee.profile_image }}" 
+                     class="h-12 w-12 rounded-full object-cover border-2 border-white">
+                {% else %}
+                <div class="bg-gray-200 border-2 border-dashed rounded-xl w-12 h-12 flex items-center justify-center">
+                    <span class="text-gray-500 font-bold">{{ case.employee.full_name[0]|upper }}</span>
+                </div>
+                {% endif %}
+            </div>
+            <div class="ml-3">
+                <h3 class="text-sm font-semibold text-white">{{ case.employee.full_name }}</h3>
+                <div class="text-xs text-blue-100">
+                    {{ case.employee.department.name if case.employee.department else 'No Department' }}
+                </div>
+                <div class="text-xs text-blue-50 mt-1">
+                    Employee ID: {{ case.employee.id }}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Section - Case Details -->
+        <div class="bg-white/10 backdrop-blur-sm rounded-xl p-3">
+            <div class="flex flex-col">
+                <div class="flex items-center text-sm text-blue-50">
+                    <i class="fas fa-calendar-day mr-2"></i>
+                    <span>Incident: {{ case.incident_date.strftime('%b %d, %Y') }}</span>
+                </div>
+                <div class="flex items-center text-sm text-blue-50 mt-1">
+                    <i class="fas fa-flag mr-2"></i>
+                    <span>Reported: {{ case.date_reported.strftime('%b %d, %Y') }}</span>
+                </div>
+                <div class="flex items-center text-sm text-blue-50 mt-1">
+                    <i class="fas fa-user-circle mr-2"></i>
+                    <span>By: {{ case.reporter.full_name if case.reporter else 'System' }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Document Icon -->
+        <div class="hidden md:flex bg-white/20 p-3 rounded-full self-start">
+            <i class="fas fa-file-upload text-white text-xl"></i>
+        </div>
+    </div>
+    
+    <!-- Incident Preview -->
+    <div class="mt-4 pt-4 border-t border-blue-400/30">
+        <h4 class="text-sm font-semibold text-blue-100 flex items-center">
+            <i class="fas fa-exclamation-circle mr-2"></i>
+            Incident Description
+        </h4>
+        <p class="text-white text-sm mt-1 line-clamp-2">
+            {{ case.incident_description }}
+        </p>
+    </div>
+</div>
+
+        <!-- Card Body -->
+        <div class="px-6 py-8">
+            <form action="{{ url_for('hr_web.add_case_document', case_id=case.id) }}" 
+                  method="POST" 
+                  enctype="multipart/form-data"
+                  class="space-y-6">
+
+                <!-- Document Type -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                        <i class="fas fa-file-alt mr-2 text-blue-500"></i>
+                        Document Type
+                    </label>
+                    <select name="document_type" required
+                            class="mt-1 block w-full py-3 px-4 border border-gray-300 bg-white rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+                        <option value="">Select document type</option>
+                        <option value="Incident Report">Incident Report</option>
+                        <option value="Witness Statement">Witness Statement</option>
+                        <option value="Evidence">Evidence</option>
+                        <option value="Decision Letter">Decision Letter</option>
+                        <option value="Hearing Notice">Hearing Notice</option>
+                        <option value="Appeal Document">Appeal Document</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <!-- Title -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                        <i class="fas fa-heading mr-2 text-blue-500"></i>
+                        Document Title
+                    </label>
+                    <input type="text" name="title" placeholder="Enter descriptive title" required
+                           class="mt-1 block w-full py-3 px-4 border border-gray-300 bg-white rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all">
+                </div>
+
+                <!-- Description -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                        <i class="fas fa-align-left mr-2 text-blue-500"></i>
+                        Description (Optional)
+                    </label>
+                    <textarea name="description" rows="3" placeholder="Add any relevant details about this document"
+                              class="mt-1 block w-full py-3 px-4 border border-gray-300 bg-white rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"></textarea>
+                </div>
+
+                <!-- File Upload -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                        <i class="fas fa-paperclip mr-2 text-blue-500"></i>
+                        Select File
+                    </label>
+                    
+                    <!-- Drag & Drop Area -->
+                    <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed border-gray-300 rounded-2xl hover:border-blue-400 transition-colors"
+                         id="drop-area">
+                        <div class="space-y-1 text-center">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                            <div class="flex text-sm text-gray-600">
+                                <label for="file-upload" class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                                    <span>Upload a file</span>
+                                    <input id="file-upload" name="document" type="file" class="sr-only" required>
+                                </label>
+                                <p class="pl-1">or drag and drop</p>
+                            </div>
+                            <p class="text-xs text-gray-500">
+                                PDF, DOC, DOCX, XLS, XLSX, JPG, PNG up to 10MB
+                            </p>
+                            <p id="file-name" class="text-sm font-medium text-gray-900 mt-2"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Buttons -->
+                <div class="flex items-center justify-end space-x-4 pt-6">
+                    <a href="{{ url_for('hr_web.view_disciplinary_case', case_id=case.id) }}"
+                       class="flex items-center px-5 py-3 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 transition-colors duration-300">
+                        <i class="fas fa-times mr-2"></i> Cancel
+                    </a>
+                    <button type="submit"
+                            class="flex items-center px-5 py-3 bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-medium rounded-xl hover:from-blue-700 hover:to-indigo-800 transition-all duration-300 shadow-md hover:shadow-lg">
+                        <i class="fas fa-cloud-upload-alt mr-2"></i> Upload Document
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- File Upload Script -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const dropArea = document.getElementById('drop-area');
+        const fileInput = document.getElementById('file-upload');
+        const fileNameDisplay = document.getElementById('file-name');
+        
+        // Highlight drop area when file is dragged over
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, highlight, false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, unhighlight, false);
+        });
+        
+        function highlight(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            dropArea.classList.add('border-blue-500', 'bg-blue-50');
+        }
+        
+        function unhighlight(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            dropArea.classList.remove('border-blue-500', 'bg-blue-50');
+        }
+        
+        // Handle dropped files
+        dropArea.addEventListener('drop', handleDrop, false);
+        
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles(files);
+        }
+        
+        // Handle file input change
+        fileInput.addEventListener('change', function() {
+            handleFiles(this.files);
+        });
+        
+        function handleFiles(files) {
+            if (files.length > 0) {
+                const file = files[0];
+                fileNameDisplay.textContent = file.name;
+                
+                // Validate file type
+                const validTypes = [
+                    'application/pdf', 
+                    'application/msword',
+                    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                    'application/vnd.ms-excel',
+                    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    'image/jpeg',
+                    'image/png'
+                ];
+                
+                if (!validTypes.includes(file.type)) {
+                    fileNameDisplay.innerHTML = `<span class="text-red-600">Invalid file type: ${file.name}</span>`;
+                    fileInput.value = '';
+                }
+            }
+        }
+    });
+</script>
+
+<style>
+    /* Animation for file upload */
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.02); }
+        100% { transform: scale(1); }
+    }
+    
+    #drop-area:hover {
+        animation: pulse 2s infinite;
+    }
+    
+    /* Smooth transitions */
+    select, input, textarea, button {
+        transition: all 0.3s ease;
+    }
+    
+    /* Focus styles */
+    select:focus, input:focus, textarea:focus {
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+    }
+</style>
+{% endblock %}

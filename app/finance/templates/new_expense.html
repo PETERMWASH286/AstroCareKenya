@@ -1,0 +1,123 @@
+{% extends 'base.html' %} {% block title %}Create New Expense - HSM{% endblock %} {% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Create New Expense</h1>
+        <p class="mt-2 text-gray-600 dark:text-gray-400">Record a new expense for hospital operations</p>
+    </div>
+
+    <!-- Form -->
+    <form method="POST" class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Left Column -->
+            <div class="space-y-6">
+                <!-- Date -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Expense Date</label>
+                    <input type="date" name="expense_date" value="{{ current_date }}" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <!-- Description -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description</label>
+                    <textarea name="description" rows="3" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Describe the expense purpose" required></textarea>
+                </div>
+
+                <!-- Amount -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Amount (KES)</label>
+                    <input type="number" name="amount" step="0.01" min="0" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter amount" required>
+                </div>
+
+                <!-- Category -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Category</label>
+                    <select name="category_id" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        <option value="">Select Category</option>
+                        {% for cat in categories %}
+                        <option value="{{ cat.id }}">{{ cat.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <!-- Right Column -->
+            <div class="space-y-6">
+                <!-- Department -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Department</label>
+                    <select name="department_id" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        <option value="">Select Department</option>
+                        {% for dept in departments %}
+                        <option value="{{ dept.id }}">{{ dept.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Supplier -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Supplier (Optional)</label>
+                    <select name="supplier_id" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">No Supplier</option>
+                        {% for supplier in suppliers %}
+                        <option value="{{ supplier.id }}">{{ supplier.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Payment Method -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Payment Method</label>
+                    <select name="payment_method" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        <option value="">Select Payment Method</option>
+                        {% for method in payment_methods %}
+                        <option value="{{ method }}">{{ method }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Expense Type -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Expense Type</label>
+                    <select name="expense_type" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        <option value="">Select Type</option>
+                        {% for type in expense_types %}
+                        <option value="{{ type }}">{{ type|capitalize }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Priority -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Priority</label>
+                    <select name="priority" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        <option value="">Select Priority</option>
+                        {% for priority in priority_levels %}
+                        <option value="{{ priority }}">{{ priority|capitalize }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notes -->
+        <div class="mt-6">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Notes</label>
+            <textarea name="notes" rows="2" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Additional information about this expense"></textarea>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="mt-8 flex justify-end space-x-3">
+            <a href="{{ url_for('finance_web_bp.expenses') }}" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+                Cancel
+            </a>
+            <button type="submit" name="save_draft" value="true" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
+                Save Draft
+            </button>
+            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                Submit Expense
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,572 @@
+{% extends "base.html" %}
+{% block title %}Disciplinary Cases{% endblock %}
+{% block head %}
+    {{ super() }}
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.0/dist/cdn.min.js" defer></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('cases', () => ({
+                showFilters: false,
+                statusFilter: '',
+                severityFilter: '',
+                employeeFilter: '',
+                
+                toggleFilters() {
+                    this.showFilters = !this.showFilters;
+                },
+                
+                getFilteredUrl() {
+                    let params = new URLSearchParams();
+                    if (this.statusFilter) params.append('status', this.statusFilter);
+                    if (this.severityFilter) params.append('severity', this.severityFilter);
+                    if (this.employeeFilter) params.append('employee_id', this.employeeFilter);
+                    return '{{ url_for("hr_web.disciplinary_cases") }}?' + params.toString();
+                },
+                
+                getStatusColor(status) {
+                    const statusColors = {
+                        'Open': 'bg-blue-100 text-blue-800',
+                        'Under Investigation': 'bg-yellow-100 text-yellow-800',
+                        'Hearing Scheduled': 'bg-purple-100 text-purple-800',
+                        'Decision Pending': 'bg-orange-100 text-orange-800',
+                        'Closed': 'bg-green-100 text-green-800',
+                        'Appealed': 'bg-red-100 text-red-800',
+                        'Archived': 'bg-gray-100 text-gray-800'
+                    };
+                    return statusColors[status] || 'bg-gray-100 text-gray-800';
+                },
+                
+daysOpen(startDate) {
+    if (!startDate) return 0;
+    try {
+        const start = new Date(startDate);
+        const today = new Date();
+        const diffTime = Math.abs(today - start);
+        return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    } catch (e) {
+        console.error('Error calculating days open:', e);
+        return 0;
+    }
+},
+                getSeverityColor(severity) {
+                    const severityColors = {
+                        'Minor': 'bg-green-100 text-green-800',
+                        'Moderate': 'bg-yellow-100 text-yellow-800',
+                        'Major': 'bg-orange-100 text-orange-800',
+                        'Severe': 'bg-red-100 text-red-800'
+                    };
+                    return severityColors[severity] || 'bg-gray-100 text-gray-800';
+                }
+            }));
+        });
+    </script>
+    <style>
+        .fade-enter-active, .fade-leave-active {
+            transition: opacity 0.3s ease;
+        }
+        .fade-enter-from, .fade-leave-to {
+            opacity: 0;
+        }
+        .slide-enter-active, .slide-leave-active {
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+        .slide-enter-from, .slide-leave-to {
+            transform: translateY(-10px);
+            opacity: 0;
+        }
+        .animate-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .card-hover {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" x-data="cases">
+    <!-- Page Header -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Disciplinary Cases</h1>
+            <p class="mt-2 text-gray-600">Manage and review all disciplinary cases within the organization</p>
+        </div>
+        <div class="mt-4 md:mt-0">
+            <a href="{{ url_for('hr_web.new_disciplinary_case') }}" 
+               class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md shadow-sm transition-colors duration-200">
+                <i class="fas fa-plus-circle mr-2"></i> New Case
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+        <div class="bg-white rounded-xl shadow-sm p-2 border border-gray-100">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                    <i class="fas fa-folder-open text-lg"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-lg font-medium text-gray-900">Total Cases</h3>
+                    <p class="text-2xl font-bold mt-1">{{ cases.total }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-sm p-2 border border-gray-100">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">
+                    <i class="fas fa-search text-lg"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-lg font-medium text-gray-900">Under Investigation</h3>
+                    <p class="text-2xl font-bold mt-1">{{ cases.items|selectattr('status', 'equalto', 'Under Investigation')|list|length }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-sm p-2 border border-gray-100">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-red-100 text-red-600">
+                    <i class="fas fa-exclamation-triangle text-lg"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-lg font-medium text-gray-900">Severe Cases</h3>
+                    <p class="text-2xl font-bold mt-1">{{ cases.items|selectattr('severity', 'equalto', 'Severe')|list|length }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-sm p-2 border border-gray-100">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-green-100 text-green-600">
+                    <i class="fas fa-check-circle text-lg"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-lg font-medium text-gray-900">Closed Cases</h3>
+                    <p class="text-2xl font-bold mt-1">{{ cases.items|selectattr('status', 'equalto', 'Closed')|list|length }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+ <!-- Filter and Search Section -->
+<div class="bg-white rounded-2xl shadow-sm mb-6 border border-gray-100 overflow-hidden transition-all duration-300 hover:shadow-md">
+    <div class="px-5 py-4 sm:px-6 flex justify-between items-center bg-gradient-to-r from-gray-50 to-white">
+        <h3 class="text-xl font-semibold text-gray-800 tracking-tight">Case Management</h3>
+        <button @click="toggleFilters" class="flex items-center text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors group">
+            <div class="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center mr-2 group-hover:bg-blue-100 transition-colors">
+                <i class="fas fa-filter text-blue-500 text-sm"></i> 
+            </div>
+            <span class="font-medium" x-text="showFilters ? 'Hide Filters' : 'Show Filters'"></span>
+        </button>
+    </div>
+    
+    <div x-show="showFilters" x-collapse class="border-t border-gray-100 px-5 py-4 sm:px-6 bg-gray-50">
+        <form :action="getFilteredUrl()" method="GET" class="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div class="space-y-1">
+                <label class="block text-sm font-medium text-gray-600 tracking-wide">Status</label>
+                <div class="relative">
+                    <select x-model="statusFilter" name="status" class="w-full pl-3 pr-10 py-2.5 rounded-xl border-0 bg-white shadow-xs text-gray-700 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all appearance-none">
+                        <option value="">All Statuses</option>
+                        {% for status in statuses %}
+                            <option value="{{ status }}" {% if request.args.get('status') == status %}selected{% endif %}>{{ status }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
+                        <i class="fas fa-chevron-down text-xs"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="space-y-1">
+                <label class="block text-sm font-medium text-gray-600 tracking-wide">Severity</label>
+                <div class="relative">
+                    <select x-model="severityFilter" name="severity" class="w-full pl-3 pr-10 py-2.5 rounded-xl border-0 bg-white shadow-xs text-gray-700 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all appearance-none">
+                        <option value="">All Severities</option>
+                        {% for severity in severities %}
+                            <option value="{{ severity }}" {% if request.args.get('severity') == severity %}selected{% endif %}>{{ severity }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
+                        <i class="fas fa-chevron-down text-xs"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="space-y-1">
+                <label class="block text-sm font-medium text-gray-600 tracking-wide">Employee</label>
+                <div class="relative">
+                    <select x-model="employeeFilter" name="employee_id" class="w-full pl-3 pr-10 py-2.5 rounded-xl border-0 bg-white shadow-xs text-gray-700 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition-all appearance-none">
+                        <option value="">All Employees</option>
+                        {% for employee in employees %}
+                            <option value="{{ employee.id }}" {% if request.args.get('employee_id') == employee.id|string %}selected{% endif %}>{{ employee.full_name }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
+                        <i class="fas fa-chevron-down text-xs"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="md:col-span-3 flex justify-end space-x-3 pt-2">
+                <button type="submit" class="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-300 transform hover:-translate-y-0.5 shadow-md hover:shadow-lg focus:ring-2 focus:ring-blue-500/30 focus:outline-none">
+                    Apply Filters
+                </button>
+                <a href="{{ url_for('hr_web.disciplinary_cases') }}" class="px-5 py-2.5 bg-white text-gray-700 font-medium rounded-xl border border-gray-200 hover:bg-gray-50 transition-all duration-300 transform hover:-translate-y-0.5 shadow-xs hover:shadow focus:ring-2 focus:ring-gray-300/30">
+                    Clear Filters
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Cases Table -->
+<div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+<div class="overflow-x-auto custom-scrollbar">
+    <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Case #</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Incident Date</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Severity</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Days Open</th>
+                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for case in cases.items %}
+                <tr class="hover:bg-gray-50 transition-colors duration-150 card-hover">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="font-medium text-gray-900">{{ case.case_number }}</div>
+                        <div class="text-sm text-gray-500">{{ case.case_type.name }}</div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 h-10 w-10 bg-gray-200 rounded-full flex items-center justify-center">
+                                <span class="text-gray-600 font-medium">{{ case.employee.full_name|first|upper }}</span>
+                            </div>
+                            <div class="ml-4">
+                                <div class="text-sm font-medium text-gray-900">{{ case.employee.full_name }}</div>
+                                <div class="text-sm text-gray-500">{{ case.employee.department.name if case.employee.department else 'No Department' }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">{{ case.incident_date| datetime }}</div>
+                        <div class="text-sm text-gray-500">{{ case.date_reported| datetime }}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span :class="getSeverityColor('{{ case.severity }}')" class="px-2.5 py-0.5 rounded-full text-xs font-medium">
+                            {{ case.severity }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span :class="getStatusColor('{{ case.status }}')" class="px-2.5 py-0.5 rounded-full text-xs font-medium">
+                            {{ case.status }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {% set days_open = (today - case.date_reported).days %}
+                        <span class="{% if days_open > 30 %}text-red-600 font-medium{% elif days_open > 14 %}text-orange-600{% else %}text-gray-600{% endif %}">
+                            {{ days_open }} days
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div class="flex justify-end space-x-1">
+                            <!-- View Case Button -->
+                            <a href="{{ url_for('hr_web.view_disciplinary_case', case_id=case.id) }}" 
+                               class="action-btn text-blue-500 hover:text-blue-700 group"
+                               data-tippy-content="View Case Details">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            
+                            <!-- Edit Case Button -->
+                            <a href="{{ url_for('hr_web.edit_disciplinary_case', case_id=case.id) }}" 
+                               class="action-btn text-green-500 hover:text-green-700 group"
+                               data-tippy-content="Edit Case">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            
+                            <!-- Add Document Button -->
+                            <a href="{{ url_for('hr_web.add_case_document', case_id=case.id) }}" 
+                               class="action-btn text-purple-500 hover:text-purple-700 group"
+                               data-tippy-content="Add Documents">
+                                <i class="fas fa-file-medical"></i>
+                            </a>
+                            
+                            <!-- Change Status Button -->
+                            <a href="{{ url_for('hr_web.change_case_status', case_id=case.id) }}" 
+                               class="action-btn text-yellow-500 hover:text-yellow-700 group"
+                               data-tippy-content="Change Status">
+                                <i class="fas fa-exchange-alt"></i>
+                            </a>
+                            
+                            <!-- Investigations Button -->
+                            <a href="{{ url_for('hr_web.case_investigations', case_id=case.id) }}" 
+                               class="action-btn text-indigo-500 hover:text-indigo-700 group"
+                               data-tippy-content="Investigations">
+                                <i class="fas fa-search"></i>
+                            </a>
+                            
+                            <!-- Add Hearing Button -->
+                            <a href="{{ url_for('hr_web.schedule_hearing', case_id=case.id) }}" 
+                               class="action-btn text-red-500 hover:text-red-700 group"
+                               data-tippy-content="Schedule Hearing">
+                                <i class="fas fa-gavel"></i>
+                            </a>
+                            
+                            <!-- Add Action Button -->
+                            <a href="{{ url_for('hr_web.add_disciplinary_action', case_id=case.id) }}" 
+                               class="action-btn text-cyan-500 hover:text-cyan-700 group"
+                               data-tippy-content="Add Disciplinary Action">
+                                <i class="fas fa-hammer"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="px-6 py-8 text-center text-gray-500">
+                        <div class="flex flex-col items-center justify-center py-12">
+                            <div class="bg-gray-100 p-4 rounded-full mb-4">
+                                <i class="fas fa-folder-open text-gray-400 text-3xl"></i>
+                            </div>
+                            <h3 class="text-lg font-medium text-gray-900 mb-1">No disciplinary cases found</h3>
+                            <p class="text-gray-500 mb-4">Create a new case or adjust your filters</p>
+                            <a href="{{ url_for('hr_web.new_disciplinary_case') }}" 
+                               class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md shadow-sm">
+                                <i class="fas fa-plus-circle mr-2"></i> Create New Case
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Pagination -->
+    {% if cases.pages > 1 %}
+    <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+        <div class="flex-1 flex justify-between sm:hidden">
+            {% if cases.has_prev %}
+            <a href="{{ url_for('hr_web.disciplinary_cases', page=cases.prev_num, **request.args) }}" 
+               class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                Previous
+            </a>
+            {% endif %}
+            {% if cases.has_next %}
+            <a href="{{ url_for('hr_web.disciplinary_cases', page=cases.next_num, **request.args) }}" 
+               class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                Next
+            </a>
+            {% endif %}
+        </div>
+        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+            <div>
+                <p class="text-sm text-gray-700">
+                    Showing <span class="font-medium">{{ cases.first }}</span> to 
+                    <span class="font-medium">{{ cases.last }}</span> of 
+                    <span class="font-medium">{{ cases.total }}</span> results
+                </p>
+            </div>
+            <div>
+                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                    {% if cases.has_prev %}
+                    <a href="{{ url_for('hr_web.disciplinary_cases', page=cases.prev_num, **request.args) }}" 
+                       class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                        <span class="sr-only">Previous</span>
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                    {% endif %}
+                    
+                    {% for page_num in cases.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                        {% if page_num %}
+                            <a href="{{ url_for('hr_web.disciplinary_cases', page=page_num, **request.args) }}" 
+                               class="relative inline-flex items-center px-4 py-2 border text-sm font-medium 
+                                      {% if page_num == cases.page %} bg-blue-600 text-white border-blue-600
+                                      {% else %} bg-white border-gray-300 text-gray-500 hover:bg-gray-50 {% endif %}">
+                                {{ page_num }}
+                            </a>
+                        {% else %}
+                            <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                                ...
+                            </span>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if cases.has_next %}
+                    <a href="{{ url_for('hr_web.disciplinary_cases', page=cases.next_num, **request.args) }}" 
+                       class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                        <span class="sr-only">Next</span>
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                    {% endif %}
+                </nav>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Add Tippy.js for beautiful tooltips -->
+<script src="https://unpkg.com/@popperjs/core@2"></script>
+<script src="https://unpkg.com/tippy.js@6"></script>
+
+<style>
+    /* Action Button Styles */
+    .action-btn {
+        @apply w-8 h-8 flex items-center justify-center rounded-full transition-all duration-300;
+        background-color: rgba(249, 250, 251, 0.7);
+        backdrop-filter: blur(4px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.05);
+    }
+    
+    .action-btn:hover {
+        transform: translateY(-2px) scale(1.05);
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+    }
+    
+    /* Tippy Tooltip Styling */
+    .tippy-box {
+        @apply bg-gray-800 text-white text-xs font-medium py-1 px-2 rounded shadow-lg;
+    }
+    
+    .tippy-arrow {
+        @apply text-gray-800;
+    }
+    
+    .tippy-content {
+        @apply p-1;
+    }
+        .custom-scrollbar {
+        scrollbar-width: thin;
+        scrollbar-color: #c5c5c5 #f9fafb;
+        overflow-x: auto;
+        padding-bottom: 4px; /* Space for scrollbar */
+    }
+    
+    /* Chrome, Edge, Safari */
+    .custom-scrollbar::-webkit-scrollbar {
+        height: 10px;
+        background-color: #f9fafb;
+        border-radius: 6px;
+    }
+    
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background-color: #f9fafb;
+        border-radius: 6px;
+        margin: 0 24px;
+    }
+    
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background-color: #c5c5c5;
+        border-radius: 6px;
+        border: 2px solid #f9fafb;
+    }
+    
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background-color: #a0a0a0;
+    }
+    
+    /* Firefox */
+    .custom-scrollbar {
+        scrollbar-width: thin;
+        scrollbar-color: #c5c5c5 #f9fafb;
+    }
+</style>
+
+<script>
+    // Initialize tooltips
+    document.addEventListener('DOMContentLoaded', function() {
+        tippy('[data-tippy-content]', {
+            placement: 'bottom',
+            animation: 'scale',
+            arrow: true,
+            theme: 'translucent',
+            duration: [200, 150],
+            delay: [100, 0],
+        });
+    });
+</script>
+    
+    <!-- Quick Stats -->
+    <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Case Distribution</h3>
+            <div class="space-y-4">
+                {% for status in statuses %}
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <span class="text-sm font-medium text-gray-700">{{ status }}</span>
+                        <span class="text-sm text-gray-500">{{ cases.items|selectattr('status', 'equalto', status)|list|length }} cases</span>
+                    </div>
+<div class="w-full bg-gray-200 rounded-full h-2">
+    {% set count = cases.items|selectattr('status', 'equalto', status)|list|length %}
+    {% set percentage = (count / cases.total * 100) if cases.total > 0 else 0 %}
+    <div class="bg-blue-600 h-2 rounded-full" style="width: {{ percentage }}%"></div>
+</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Severity Overview</h3>
+            <div class="space-y-4">
+                {% for severity in severities %}
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <span class="text-sm font-medium text-gray-700">{{ severity }}</span>
+                        <span class="text-sm text-gray-500">{{ cases.items|selectattr('severity', 'equalto', severity)|list|length }} cases</span>
+                    </div>
+<!-- In the Severity Overview section -->
+<div class="w-full bg-gray-200 rounded-full h-2">
+    {% set count = cases.items|selectattr('severity', 'equalto', severity)|list|length %}
+    {% set percentage = (count / cases.total * 100) if cases.total > 0 else 0 %}
+    {% set color = 'bg-green-600' if severity == 'Minor' else 
+                   'bg-yellow-600' if severity == 'Moderate' else 
+                   'bg-orange-600' if severity == 'Major' else 'bg-red-600' %}
+    <div class="{{ color }} h-2 rounded-full" style="width: {{ percentage }}%"></div>
+</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Recent Activities</h3>
+            <div class="space-y-4">
+                {% for case in cases.items[:3] %}
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <div class="p-2 rounded-full bg-blue-100 text-blue-600">
+                            <i class="fas fa-file-alt"></i>
+                        </div>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm font-medium text-gray-900">{{ case.case_number }}</p>
+                        <p class="text-sm text-gray-500">Created on {{ case.date_reported| datetime }}</p>
+                        <p class="text-xs text-gray-400 mt-1">{{ case.incident_description|truncate(100) }}</p>
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-gray-500 text-center py-4">No recent activities</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

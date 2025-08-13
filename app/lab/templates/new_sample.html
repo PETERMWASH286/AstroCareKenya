@@ -1,0 +1,295 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-8">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+      <!-- Form Header -->
+      <div class="px-6 py-5 bg-gradient-to-r from-blue-600 to-indigo-700">
+        <h2 class="text-2xl font-bold text-white">Add New Laboratory Sample</h2>
+        <p class="mt-1 text-blue-100">Complete all fields to register a new sample</p>
+      </div>
+      
+      <!-- Sample Form -->
+      <form action="{{ url_for('lab_web.add_sample') }}" method="POST" class="px-6 py-8 space-y-6">
+        <!-- Sample ID -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="bg-blue-50 p-4 rounded-lg">
+            <label class="block text-sm font-medium text-blue-700">Sample ID</label>
+            <div class="mt-1">
+              <input type="text" name="sample_id" value="{{ sample_id }}" 
+                     class="block w-full bg-blue-100 border border-blue-300 rounded-md py-2 px-3 text-blue-800 font-bold"
+                     readonly>
+            </div>
+            <p class="mt-2 text-sm text-blue-600">Automatically generated sample identifier</p>
+          </div>
+          
+          <div>
+            <label for="status" class="block text-sm font-medium text-gray-700">Status</label>
+            <select id="status" name="status" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+              <option value="Collected" selected>Collected</option>
+              <option value="Received">Received</option>
+              <option value="Processing">Processing</option>
+              <option value="Analyzed">Analyzed</option>
+              <option value="Reported">Reported</option>
+              <option value="Archived">Archived</option>
+            </select>
+          </div>
+        </div>
+        
+        <!-- Patient and Test Selection -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label for="patient_id" class="block text-sm font-medium text-gray-700">Patient</label>
+            <select id="patient_id" name="patient_id" required class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+              <option value="" disabled selected>Select a patient</option>
+              {% for patient in patients %}
+              <option value="{{ patient.id }}">{{ patient.full_name }} ({{ patient.patient_id }})</option>
+              {% endfor %}
+            </select>
+          </div>
+          
+          <div>
+            <label for="test_id" class="block text-sm font-medium text-gray-700">Test</label>
+            <select id="test_id" name="test_id" required class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+              <option value="" disabled selected>Select a test</option>
+              {% for test in tests %}
+              <option value="{{ test.id }}">{{ test.service.name }} - {{ test.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        
+        <!-- Sample Details -->
+        <div class="border-t border-gray-200 pt-6">
+          <h3 class="text-lg font-medium text-gray-900 mb-4">Sample Details</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label for="sample_type" class="block text-sm font-medium text-gray-700">Sample Type</label>
+              <input type="text" name="sample_type" id="sample_type" required 
+                     class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+            </div>
+            
+            <div>
+              <label for="sample_quantity" class="block text-sm font-medium text-gray-700">Quantity</label>
+              <input type="text" name="sample_quantity" id="sample_quantity" 
+                     class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                     placeholder="e.g., 5ml, 2 tubes">
+            </div>
+            
+            <div>
+              <label for="sample_condition" class="block text-sm font-medium text-gray-700">Condition</label>
+              <input type="text" name="sample_condition" id="sample_condition" 
+                     class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                     placeholder="e.g., Fresh, Frozen">
+          </div>
+        </div>
+        
+        <!-- Collection Details -->
+        <div class="border-t border-gray-200 pt-6">
+          <h3 class="text-lg font-medium text-gray-900 mb-4">Collection Details</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label for="collection_date" class="block text-sm font-medium text-gray-700">Collection Date & Time</label>
+              <input type="datetime-local" name="collection_date" id="collection_date" required 
+                     class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+            </div>
+            
+            <div>
+              <label for="collected_by" class="block text-sm font-medium text-gray-700">Collected By</label>
+              <input type="text" name="collected_by" id="collected_by" 
+                     class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                     placeholder="Phlebotomist/Nurse name">
+            </div>
+            
+            <div>
+              <label for="collection_site" class="block text-sm font-medium text-gray-700">Collection Site</label>
+              <input type="text" name="collection_site" id="collection_site" 
+                     class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                     placeholder="e.g., Main Lab, Clinic A">
+            </div>
+            
+            <div>
+              <label for="collection_method" class="block text-sm font-medium text-gray-700">Collection Method</label>
+              <input type="text" name="collection_method" id="collection_method" 
+                     class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                     placeholder="e.g., Venipuncture, Swab">
+            </div>
+          </div>
+        </div>
+        
+        <!-- Reception Details -->
+        <div class="border-t border-gray-200 pt-6">
+          <h3 class="text-lg font-medium text-gray-900 mb-4">Reception Details</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label for="received_date" class="block text-sm font-medium text-gray-700">Received Date & Time</label>
+              <input type="datetime-local" name="received_date" id="received_date" 
+                     class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+            </div>
+            
+            <div>
+              <label for="received_by" class="block text-sm font-medium text-gray-700">Received By</label>
+              <input type="text" name="received_by" id="received_by" 
+                     class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                     placeholder="Lab technician name">
+            </div>
+            
+            <!-- Enhanced "Brought By" section -->
+            <div class="md:col-span-2 border border-gray-200 rounded-lg p-4 bg-gray-50">
+              <h4 class="text-md font-medium text-gray-700 mb-3">Sample Origin</h4>
+              
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div>
+                  <label class="inline-flex items-center">
+                    <input type="radio" name="source_type" value="ward" class="form-radio text-indigo-600" checked>
+                    <span class="ml-2">From Ward</span>
+                  </label>
+                </div>
+                <div>
+                  <label class="inline-flex items-center">
+                    <input type="radio" name="source_type" value="department" class="form-radio text-indigo-600">
+                    <span class="ml-2">From Department</span>
+                  </label>
+                </div>
+                <div>
+                  <label class="inline-flex items-center">
+                    <input type="radio" name="source_type" value="external" class="form-radio text-indigo-600">
+                    <span class="ml-2">External Source</span>
+                  </label>
+                </div>
+              </div>
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label for="brought_by_employee" class="block text-sm font-medium text-gray-700">Brought By (Employee)</label>
+                  <input type="text" name="brought_by_employee" id="brought_by_employee" 
+                         class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                         placeholder="Employee name">
+                </div>
+                
+                <div>
+                  <label for="source_department" class="block text-sm font-medium text-gray-700">Source Location</label>
+                  <div class="mt-1 relative">
+                    <select name="source_department" id="source_department" 
+                            class="block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                      <option value="">Select ward/department</option>
+                      <optgroup label="Wards">
+                        <option value="Ward A">Ward A</option>
+                        <option value="Ward B">Ward B</option>
+                        <option value="ICU">ICU</option>
+                        <option value="Maternity">Maternity</option>
+                        <option value="Pediatrics">Pediatrics</option>
+                      </optgroup>
+                      <optgroup label="Departments">
+                        <option value="Emergency">Emergency</option>
+                        <option value="Oncology">Oncology</option>
+                        <option value="Cardiology">Cardiology</option>
+                        <option value="Orthopedics">Orthopedics</option>
+                        <option value="Neurology">Neurology</option>
+                      </optgroup>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="mt-4" id="external_source_field" style="display: none;">
+                <label for="external_source" class="block text-sm font-medium text-gray-700">External Source</label>
+                <input type="text" name="external_source" id="external_source" 
+                       class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                       placeholder="e.g., Clinic, Other Hospital">
+              </div>
+            </div>
+            
+            <div>
+              <label for="transportation_mode" class="block text-sm font-medium text-gray-700">Transportation Mode</label>
+              <select name="transportation_mode" id="transportation_mode" 
+                      class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                <option value="Hand-delivered">Hand-delivered</option>
+                <option value="Pneumatic Tube">Pneumatic Tube</option>
+                <option value="Courier">Courier Service</option>
+                <option value="Automated System">Automated System</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Additional Notes -->
+        <div class="border-t border-gray-200 pt-6">
+          <label for="processing_notes" class="block text-sm font-medium text-gray-700">Processing Notes</label>
+          <textarea id="processing_notes" name="processing_notes" rows="3" 
+                    class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    placeholder="Any special handling instructions or notes..."></textarea>
+        </div>
+        
+        <!-- Form Actions -->
+        <div class="flex justify-end gap-3 pt-6 border-t border-gray-200">
+          <a href="{{ url_for('lab_web.manage_samples') }}" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+            Cancel
+          </a>
+          <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+            <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+            </svg>
+            Save Sample
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Set default datetime values
+  document.addEventListener('DOMContentLoaded', function() {
+    const now = new Date();
+    
+    // Format to YYYY-MM-DDTHH:MM (local time)
+    const formatDatetime = (date) => {
+      return new Date(date.getTime() - (date.getTimezoneOffset() * 60000))
+        .toISOString()
+        .slice(0, 16);
+    };
+    
+    // Set collection date to current time
+    document.getElementById('collection_date').value = formatDatetime(now);
+    
+    // Set received date to current time + 1 hour
+    const receivedDate = new Date(now);
+    receivedDate.setHours(receivedDate.getHours() + 1);
+    document.getElementById('received_date').value = formatDatetime(receivedDate);
+    
+    // Set current user as received by if available
+    {% if current_user.is_authenticated %}
+    document.getElementById('received_by').value = "{{ current_user.full_name or current_user.username }}";
+    {% endif %}
+    
+    // Source type toggle
+    const sourceTypeRadios = document.querySelectorAll('input[name="source_type"]');
+    const externalSourceField = document.getElementById('external_source_field');
+    
+    function updateSourceFields() {
+      const selectedType = document.querySelector('input[name="source_type"]:checked').value;
+      
+      if (selectedType === 'external') {
+        externalSourceField.style.display = 'block';
+        document.getElementById('source_department').disabled = true;
+        document.getElementById('brought_by_employee').disabled = true;
+      } else {
+        externalSourceField.style.display = 'none';
+        document.getElementById('source_department').disabled = false;
+        document.getElementById('brought_by_employee').disabled = false;
+      }
+    }
+    
+    sourceTypeRadios.forEach(radio => {
+      radio.addEventListener('change', updateSourceFields);
+    });
+    
+    // Initialize
+    updateSourceFields();
+  });
+</script>
+{% endblock %}

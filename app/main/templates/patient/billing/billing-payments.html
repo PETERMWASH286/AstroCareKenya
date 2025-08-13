@@ -1,0 +1,315 @@
+{% extends "patient-base.html" %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto">
+        <div class="mb-8 md:mb-10 text-center md:text-left">
+            <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white leading-tight">
+                <i class="fas fa-file-invoice-dollar text-green-600 dark:text-green-400 mr-3"></i> Billing & Payments
+            </h1>
+            <p class="mt-3 text-lg text-gray-600 dark:text-gray-300">
+                View your statements, track payments, and settle outstanding balances across all connected hospitals.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            {% set total_outstanding = records | selectattr('status', 'equalto', 'Outstanding') | map(attribute='amount') | sum %}
+            {% set total_paid = records | selectattr('status', 'equalto', 'Paid') | map(attribute='amount') | sum %}
+            {% set total_records = records | length %}
+
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-l-4 border-red-500 dark:border-red-600">
+                <p class="text-gray-500 dark:text-gray-400 text-sm mb-1">Total Outstanding</p>
+                <p class="text-3xl font-extrabold text-gray-900 dark:text-white">KES {{ "{:,.0f}".format(total_outstanding) }}</p>
+            </div>
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-l-4 border-green-500 dark:border-green-600">
+                <p class="text-gray-500 dark:text-gray-400 text-sm mb-1">Total Paid</p>
+                <p class="text-3xl font-extrabold text-gray-900 dark:text-white">KES {{ "{:,.0f}".format(total_paid) }}</p>
+            </div>
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border-l-4 border-indigo-500 dark:border-indigo-600">
+                <p class="text-gray-500 dark:text-gray-400 text-sm mb-1">Total Statements</p>
+                <p class="text-3xl font-extrabold text-gray-900 dark:text-white">{{ total_records }}</p>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+                <div>
+                    <label for="filter-status" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Filter by Status</label>
+                    <select id="filter-status" class="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-green-500 focus:ring-green-500 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 sm:text-sm p-2">
+                        <option value="all">All Statuses</option>
+                        <option value="outstanding">Outstanding</option>
+                        <option value="paid">Paid</option>
+                        <option value="overdue">Overdue</option>
+                        <option value="partial">Partial Payment</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="filter-hospital" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Filter by Hospital</label>
+                    <select id="filter-hospital" class="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-green-500 focus:ring-green-500 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 sm:text-sm p-2">
+                        <option value="all">All Hospitals</option>
+                        {% for hospital_name in records | map(attribute='hospital') | unique | sort %}
+                            <option value="{{ hospital_name | lower }}">{{ hospital_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="search-records" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Search Records</label>
+                    <div class="relative">
+                        <input type="text" id="search-records" placeholder="Search by service or hospital..." class="block w-full pl-10 pr-3 py-2 rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-green-500 focus:ring-green-500 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 sm:text-sm">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-search text-gray-400 dark:text-gray-500"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end">
+                <button id="clear-filters" class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition duration-150 ease-in-out">
+                    <i class="fas fa-redo mr-2"></i> Clear Filters
+                </button>
+            </div>
+        </div>
+
+        {% set current_date = datetime.now().date() %}
+
+        {% if records %}
+        <div id="billing-records-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 lg:hidden">
+            {% for record in records %}
+            {% set is_overdue = record.status == 'Outstanding' and record.date.date() < current_date %}
+            <div class="billing-card bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border-l-4
+                {% if record.status == 'Outstanding' and is_overdue %} border-red-500 dark:border-red-600
+                {% elif record.status == 'Outstanding' %} border-orange-500 dark:border-orange-600
+                {% elif record.status == 'Paid' %} border-green-500 dark:border-green-600
+                {% elif record.status == 'Partial' %} border-yellow-500 dark:border-yellow-600
+                {% else %} border-gray-400 dark:border-gray-500
+                {% endif %}
+                transform hover:scale-[1.02] hover:shadow-lg transition-all duration-300 ease-in-out"
+                data-status="{{ record.status | lower }}"
+                data-hospital="{{ record.hospital | lower }}"
+                data-service="{{ record.service | lower }}">
+                <div class="flex items-start justify-between mb-3">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">{{ record.service }}</h3>
+                    <span class="px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap
+                        {% if record.status == 'Outstanding' and is_overdue %} bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200
+                        {% elif record.status == 'Outstanding' %} bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200
+                        {% elif record.status == 'Paid' %} bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
+                        {% elif record.status == 'Partial' %} bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200
+                        {% else %} bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300
+                        {% endif %}">
+                        {% if is_overdue %} Overdue
+                        {% else %} {{ record.status }}
+                        {% endif %}
+                    </span>
+                </div>
+                <p class="text-gray-700 dark:text-gray-300 mb-2">
+                    <i class="fas fa-hospital-alt text-gray-500 dark:text-gray-400 mr-2"></i> {{ record.hospital }}
+                </p>
+                <p class="text-gray-700 dark:text-gray-300 mb-2">
+                    <i class="far fa-calendar-alt text-gray-500 dark:text-gray-400 mr-2"></i> {{ record.date.strftime('%b %d, %Y') }}
+                </p>
+                <p class="text-2xl font-extrabold text-gray-900 dark:text-white mt-4 mb-5">
+                    KES {{ "{:,.0f}".format(record.amount) }}
+                </p>
+                <div class="flex flex-col space-y-3">
+                    {% if record.status == 'Outstanding' %}
+                        <button onclick="makePayment({{ record.id }}, {{ record.amount }})"
+                                class="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200">
+                            <i class="fas fa-money-bill-wave mr-2"></i> Pay Now
+                        </button>
+                    {% elif record.status == 'Partial' %}
+                        <button onclick="makePayment({{ record.id }}, {{ record.amount }})"
+                                class="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
+                            <i class="fas fa-money-bill-alt mr-2"></i> Pay Remaining
+                        </button>
+                    {% else %}
+                        <button disabled class="w-full inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 cursor-not-allowed">
+                            <i class="fas fa-check-circle mr-2"></i> Payment Settled
+                        </button>
+                    {% endif %}
+                    <a href="#" onclick="viewStatement({{ record.id }})"
+                       class="w-full inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200">
+                        <i class="fas fa-eye mr-2"></i> View Details
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="hidden lg:block bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-700">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Date
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Service
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Hospital
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Amount (KES)
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Status
+                        </th>
+                        <th scope="col" class="relative px-6 py-3">
+                            <span class="sr-only">Actions</span>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody id="billing-table-body" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    {% for record in records %}
+                    {% set is_overdue = record.status == 'Outstanding' and record.date.date() < current_date %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150 billing-table-row"
+                        data-status="{{ record.status | lower }}"
+                        data-hospital="{{ record.hospital | lower }}"
+                        data-service="{{ record.service | lower }}">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
+                            {{ record.date.strftime('%b %d, %Y') }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-200">
+                            {{ record.service }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                            {{ record.hospital }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-base font-bold text-gray-900 dark:text-white">
+                            KES {{ "{:,.0f}".format(record.amount) }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-3 py-1 rounded-full text-xs font-semibold
+                                {% if record.status == 'Outstanding' and is_overdue %} bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200
+                                {% elif record.status == 'Outstanding' %} bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200
+                                {% elif record.status == 'Paid' %} bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
+                                {% elif record.status == 'Partial' %} bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200
+                                {% else %} bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300
+                                {% endif %}">
+                                {% if is_overdue %} Overdue
+                                {% else %} {{ record.status }}
+                                {% endif %}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <div class="flex justify-end space-x-2">
+                                {% if record.status == 'Outstanding' %}
+                                    <button onclick="makePayment({{ record.id }}, {{ record.amount }})"
+                                            class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200">
+                                        <i class="fas fa-money-bill-wave mr-1"></i> Pay Now
+                                    </button>
+                                {% elif record.status == 'Partial' %}
+                                    <button onclick="makePayment({{ record.id }}, {{ record.amount }})"
+                                            class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
+                                        <i class="fas fa-money-bill-alt mr-1"></i> Pay Remaining
+                                    </button>
+                                {% else %}
+                                    <button disabled class="inline-flex items-center px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-xs font-medium rounded-md text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 cursor-not-allowed">
+                                        <i class="fas fa-check-circle mr-1"></i> Settled
+                                    </button>
+                                {% endif %}
+                                <a href="#" onclick="viewStatement({{ record.id }})"
+                                   class="inline-flex items-center px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-xs font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200">
+                                    <i class="fas fa-eye mr-1"></i> Details
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-8 text-center border border-dashed border-gray-300 dark:border-gray-600">
+            <i class="fas fa-receipt text-green-400 text-6xl mb-4"></i>
+            <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">No Billing Records Yet!</h3>
+            <p class="text-gray-600 dark:text-gray-400 mb-4">It looks like you don't have any billing statements from connected hospitals at the moment.</p>
+            <p class="text-gray-600 dark:text-gray-400 mb-6">Your billing records will appear here after your consultations and services.</p>
+            <a href="{{ url_for('main_bp.patient_dashboard') }}"
+               class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-full shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200">
+                <i class="fas fa-home mr-2"></i> Go to Dashboard
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const filterStatus = document.getElementById('filter-status');
+        const filterHospital = document.getElementById('filter-hospital');
+        const searchInput = document.getElementById('search-records');
+        const clearFiltersBtn = document.getElementById('clear-filters');
+
+        const billingCards = document.querySelectorAll('.billing-card'); // For mobile/tablet view
+        const billingTableRows = document.querySelectorAll('.billing-table-row'); // For desktop view
+
+        function applyFilters() {
+            const selectedStatus = filterStatus.value.toLowerCase();
+            const selectedHospital = filterHospital.value.toLowerCase();
+            const searchTerm = searchInput.value.toLowerCase().trim();
+
+            // Filter for Card View (mobile/tablet)
+            billingCards.forEach(card => {
+                const cardStatus = card.dataset.status;
+                const cardHospital = card.dataset.hospital;
+                const cardService = card.dataset.service;
+
+                const matchesStatus = selectedStatus === 'all' || cardStatus === selectedStatus;
+                const matchesHospital = selectedHospital === 'all' || cardHospital.includes(selectedHospital);
+                const matchesSearch = searchTerm === '' || cardService.includes(searchTerm) || cardHospital.includes(searchTerm);
+
+                if (matchesStatus && matchesHospital && matchesSearch) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            // Filter for Table View (desktop)
+            billingTableRows.forEach(row => {
+                const rowStatus = row.dataset.status;
+                const rowHospital = row.dataset.hospital;
+                const rowService = row.dataset.service;
+
+                const matchesStatus = selectedStatus === 'all' || rowStatus === selectedStatus;
+                const matchesHospital = selectedHospital === 'all' || rowHospital.includes(selectedHospital);
+                const matchesSearch = searchTerm === '' || rowService.includes(searchTerm) || rowHospital.includes(searchTerm);
+
+                if (matchesStatus && matchesHospital && matchesSearch) {
+                    row.style.display = ''; // Use '' to revert to default table row display
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        filterStatus.addEventListener('change', applyFilters);
+        filterHospital.addEventListener('change', applyFilters);
+        searchInput.addEventListener('input', applyFilters);
+
+        clearFiltersBtn.addEventListener('click', function() {
+            filterStatus.value = 'all';
+            filterHospital.value = 'all';
+            searchInput.value = '';
+            applyFilters();
+        });
+
+        // Initial filter application
+        applyFilters();
+
+        // Placeholder for payment gateway interaction
+        window.makePayment = function(recordId, amount) {
+            alert(`Initiating payment for Bill ID: ${recordId} (Amount: KES ${amount.toLocaleString()}). This would redirect to a secure payment gateway.`);
+            // In a real application, this would redirect to a payment gateway (e.g., M-Pesa, Stripe, Pesapal)
+            // Example: window.location.href = `/payment/initiate?bill_id=${recordId}&amount=${amount}`;
+        };
+
+        // Placeholder for viewing detailed statement
+        window.viewStatement = function(recordId) {
+            alert(`Viewing detailed statement for Bill ID: ${recordId}. (This would open a modal or navigate to a dedicated statement page).`);
+        };
+    });
+</script>
+{% endblock %}

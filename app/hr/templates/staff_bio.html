@@ -1,0 +1,468 @@
+{% extends 'base.html' %} {% block content %}
+<div class="min-h-screen bg-gray-50 py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+                        Employee Bio Data
+                    </h1>
+                    <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                        Manage personal and professional information for {{ employee.full_name }}
+                    </p>
+                </div>
+                <div class="mt-4 flex md:mt-0">
+                    <a href="{{ url_for('hr_web.staff_profiles', user_id=employee.id) }}" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                     View Profile
+                 </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Card -->
+        <div class="bg-white shadow-xl rounded-lg overflow-hidden">
+            <form method="POST" class="divide-y divide-gray-200">
+                <!-- Personal Information Section -->
+                <div class="px-6 py-8">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-lg font-medium text-gray-900">Personal Information</h2>
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800">
+              Required
+            </span>
+                    </div>
+                    <p class="mt-1 text-sm text-gray-500">Basic personal details about the employee.</p>
+
+                    <div class="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+                        <div class="sm:col-span-3">
+                            <label for="gender" class="block text-sm font-medium text-gray-700">Gender</label>
+                            <select id="gender" name="gender" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                <option value="">Select gender</option>
+                <option value="Male" {% if bio and bio.gender == 'Male' %}selected{% endif %}>Male</option>
+                <option value="Female" {% if bio and bio.gender == 'Female' %}selected{% endif %}>Female</option>
+                <option value="Other" {% if bio and bio.gender == 'Other' %}selected{% endif %}>Other</option>
+              </select>
+                        </div>
+
+                        <div class="sm:col-span-3">
+                            <label for="dob" class="block text-sm font-medium text-gray-700">Date of Birth</label>
+                            <input type="date" id="dob" name="dob" value="{{ bio.dob if bio and bio.dob else '' }}" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        </div>
+
+                        <div class="sm:col-span-3">
+                            <label for="marital_status" class="block text-sm font-medium text-gray-700">Marital Status</label>
+                            <select id="marital_status" name="marital_status" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                <option value="">Select status</option>
+                <option value="Single" {% if bio and bio.marital_status == 'Single' %}selected{% endif %}>Single</option>
+                <option value="Married" {% if bio and bio.marital_status == 'Married' %}selected{% endif %}>Married</option>
+                <option value="Divorced" {% if bio and bio.marital_status == 'Divorced' %}selected{% endif %}>Divorced</option>
+                <option value="Widowed" {% if bio and bio.marital_status == 'Widowed' %}selected{% endif %}>Widowed</option>
+              </select>
+                        </div>
+
+                        <div class="sm:col-span-3">
+                            <label for="blood_type" class="block text-sm font-medium text-gray-700">Blood Type</label>
+                            <input type="text" id="blood_type" name="blood_type" value="{{ bio.blood_type if bio and bio.blood_type else '' }}" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        </div>
+
+                        <div class="sm:col-span-3">
+                            <label for="national_id" class="block text-sm font-medium text-gray-700">National ID</label>
+                            <input type="text" id="national_id" name="national_id" value="{{ bio.national_id if bio and bio.national_id else '' }}" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        </div>
+
+                        <div class="sm:col-span-3">
+                            <label for="passport_number" class="block text-sm font-medium text-gray-700">Passport Number</label>
+                            <input type="text" id="passport_number" name="passport_number" value="{{ bio.passport_number if bio and bio.passport_number else '' }}" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contact Information Section -->
+                <div class="px-6 py-8">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-lg font-medium text-gray-900">Contact Information</h2>
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800">
+              Required
+            </span>
+                    </div>
+                    <p class="mt-1 text-sm text-gray-500">Where to contact the employee.</p>
+
+                    <div class="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+                        <div class="sm:col-span-3">
+                            <label for="phone" class="block text-sm font-medium text-gray-700">Phone Number</label>
+                            <input type="tel" id="phone" name="phone" value="{{ bio.phone if bio and bio.phone else '' }}" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        </div>
+
+                        <div class="sm:col-span-3">
+                            <label for="nationality" class="block text-sm font-medium text-gray-700">Nationality</label>
+                            <input type="text" id="nationality" name="nationality" value="{{ bio.nationality if bio and bio.nationality else '' }}" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        </div>
+
+                        <div class="sm:col-span-6">
+                            <label for="address" class="block text-sm font-medium text-gray-700">Street Address</label>
+                            <input type="text" id="address" name="address" value="{{ bio.address if bio and bio.address else '' }}" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        </div>
+
+                        <div class="sm:col-span-3">
+                            <label for="city" class="block text-sm font-medium text-gray-700">City</label>
+                            <input type="text" id="city" name="city" value="{{ bio.city if bio and bio.city else '' }}" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        </div>
+
+                        <div class="sm:col-span-3">
+                            <label for="state" class="block text-sm font-medium text-gray-700">State/Province</label>
+                            <input type="text" id="state" name="state" value="{{ bio.state if bio and bio.state else '' }}" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        </div>
+
+                        <div class="sm:col-span-2">
+                            <label for="postal_code" class="block text-sm font-medium text-gray-700">Postal Code</label>
+                            <input type="text" id="postal_code" name="postal_code" value="{{ bio.postal_code if bio and bio.postal_code else '' }}" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        </div>
+
+                        <div class="sm:col-span-4">
+                            <label for="country" class="block text-sm font-medium text-gray-700">Country</label>
+                            <input type="text" id="country" name="country" value="{{ bio.country if bio and bio.country else '' }}" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Financial Information Section -->
+                <div class="px-6 py-8 bg-gray-50">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-lg font-medium text-gray-900">Financial Information</h2>
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800">
+              Confidential
+            </span>
+                    </div>
+                    <p class="mt-1 text-sm text-gray-500">Banking and tax information for payroll processing.</p>
+
+                    <div class="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+                        <div class="sm:col-span-3">
+                            <label for="bank_name" class="block text-sm font-medium text-gray-700">Bank Name</label>
+                            <input type="text" id="bank_name" name="bank_name" value="{{ bio.bank_name if bio and bio.bank_name else '' }}" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        </div>
+
+                        <div class="sm:col-span-3">
+                            <label for="bank_branch" class="block text-sm font-medium text-gray-700">Bank Branch</label>
+                            <input type="text" id="bank_branch" name="bank_branch" value="{{ bio.bank_branch if bio and bio.bank_branch else '' }}" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        </div>
+
+                        <div class="sm:col-span-3">
+                            <label for="bank_account_number" class="block text-sm font-medium text-gray-700">Account Number</label>
+                            <input type="text" id="bank_account_number" name="bank_account_number" value="{{ bio.bank_account_number if bio and bio.bank_account_number else '' }}" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        </div>
+
+                        <div class="sm:col-span-3">
+                            <label for="bank_routing_number" class="block text-sm font-medium text-gray-700">Routing Number</label>
+                            <input type="text" id="bank_routing_number" name="bank_routing_number" value="{{ bio.bank_routing_number if bio and bio.bank_routing_number else '' }}" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        </div>
+
+                        <div class="sm:col-span-3">
+                            <label for="tax_id" class="block text-sm font-medium text-gray-700">Tax ID</label>
+                            <input type="text" id="tax_id" name="tax_id" value="{{ bio.tax_id if bio and bio.tax_id else '' }}" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        </div>
+
+                        <div class="sm:col-span-3">
+                            <label for="social_security_number" class="block text-sm font-medium text-gray-700">Social Security #</label>
+                            <input type="text" id="social_security_number" name="social_security_number" value="{{ bio.social_security_number if bio and bio.social_security_number else '' }}" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Emergency Contact Section -->
+                <div class="px-6 py-8">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-lg font-medium text-gray-900">Emergency Contact</h2>
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800">
+              Required
+            </span>
+                    </div>
+                    <p class="mt-1 text-sm text-gray-500">Who to contact in case of emergency.</p>
+
+                    <div class="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+                        <div class="sm:col-span-3">
+                            <label for="emergency_contact_name" class="block text-sm font-medium text-gray-700">Full Name</label>
+                            <input type="text" id="emergency_contact_name" name="emergency_contact_name" value="{{ bio.emergency_contact_name if bio and bio.emergency_contact_name else '' }}" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        </div>
+
+                        <div class="sm:col-span-3">
+                            <label for="emergency_contact_relationship" class="block text-sm font-medium text-gray-700">Relationship</label>
+                            <input type="text" id="emergency_contact_relationship" name="emergency_contact_relationship" value="{{ bio.emergency_contact_relationship if bio and bio.emergency_contact_relationship else '' }}" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        </div>
+
+                        <div class="sm:col-span-3">
+                            <label for="emergency_contact_phone" class="block text-sm font-medium text-gray-700">Phone Number</label>
+                            <input type="tel" id="emergency_contact_phone" name="emergency_contact_phone" value="{{ bio.emergency_contact_phone if bio and bio.emergency_contact_phone else '' }}" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Medical Information Section -->
+                <div class="px-6 py-8 bg-gray-50">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-lg font-medium text-gray-900">Medical Information</h2>
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800">
+              Confidential
+            </span>
+                    </div>
+                    <p class="mt-1 text-sm text-gray-500">Health information for emergency situations.</p>
+
+                    <div class="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+                        <div class="sm:col-span-3">
+                            <label for="insurance_provider" class="block text-sm font-medium text-gray-700">Insurance Provider</label>
+                            <input type="text" id="insurance_provider" name="insurance_provider" value="{{ bio.insurance_provider if bio and bio.insurance_provider else '' }}" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        </div>
+
+                        <div class="sm:col-span-3">
+                            <label for="insurance_number" class="block text-sm font-medium text-gray-700">Insurance Number</label>
+                            <input type="text" id="insurance_number" name="insurance_number" value="{{ bio.insurance_number if bio and bio.insurance_number else '' }}" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        </div>
+
+                        <div class="sm:col-span-6">
+                            <label for="allergies" class="block text-sm font-medium text-gray-700">Allergies</label>
+                            <textarea id="allergies" name="allergies" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">{{ bio.allergies if bio and bio.allergies else '' }}</textarea>
+                        </div>
+
+                        <div class="sm:col-span-6">
+                            <label for="medical_conditions" class="block text-sm font-medium text-gray-700">Medical Conditions</label>
+                            <textarea id="medical_conditions" name="medical_conditions" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">{{ bio.medical_conditions if bio and bio.medical_conditions else '' }}</textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="px-6 py-5 bg-gray-50 flex justify-between">
+                    <a href="{{ url_for('hr_web.staff_directory') }}" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+            Cancel
+          </a>
+                    <button type="submit" class="inline-flex justify-center py-2 px-8 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+            Save Bio Data
+          </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Related Actions Card -->
+        <div class="mt-8 bg-white shadow rounded-lg overflow-hidden">
+            <div class="px-6 py-5 border-b border-gray-200">
+                <h3 class="text-base font-medium text-gray-900">Additional Actions</h3>
+                <p class="mt-1 text-sm text-gray-500">
+                    Status indicators show which sections have data
+                    <span class="inline-flex items-center ml-2 text-green-600">
+                <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                Complete
+            </span>
+                    <span class="inline-flex items-center ml-2 text-gray-400">
+                <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Pending
+            </span>
+                </p>
+            </div>
+            <div class="divide-y divide-gray-200">
+                <!-- Education -->
+                <div class="px-6 py-4">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 relative">
+                            <div class="bg-indigo-100 rounded-md p-3">
+                                <svg class="h-6 w-6 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                            </div>
+                            {% if status.has_education %}
+                            <div class="absolute -top-1 -right-1 bg-green-500 rounded-full p-1">
+                                <svg class="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                        </svg>
+                            </div>
+                            {% else %}
+                            <div class="absolute -top-1 -right-1 bg-gray-300 rounded-full p-1">
+                                <svg class="h-3 w-3 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="ml-4">
+                            <h4 class="text-sm font-medium text-gray-900">Education History</h4>
+                            <p class="mt-1 text-sm text-gray-500">Add academic qualifications and certifications</p>
+                        </div>
+                        <div class="ml-auto">
+                            <a href="{{ url_for('hr_web.manage_education', user_id=employee.id) }}" class="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Manage
+                    </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Relatives -->
+                <div class="px-6 py-4">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 relative">
+                            <div class="bg-indigo-100 rounded-md p-3">
+                                <svg class="h-6 w-6 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                            </div>
+                            {% if status.has_relatives %}
+                            <div class="absolute -top-1 -right-1 bg-green-500 rounded-full p-1">
+                                <svg class="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                        </svg>
+                            </div>
+                            {% else %}
+                            <div class="absolute -top-1 -right-1 bg-gray-300 rounded-full p-1">
+                                <svg class="h-3 w-3 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="ml-4">
+                            <h4 class="text-sm font-medium text-gray-900">Family & Relatives</h4>
+                            <p class="mt-1 text-sm text-gray-500">Manage family members and dependents</p>
+                        </div>
+                        <div class="ml-auto">
+                            <a href="{{ url_for('hr_web.manage_relatives', user_id=employee.id) }}" class="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Manage
+                    </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Work History -->
+                <div class="px-6 py-4">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 relative">
+                            <div class="bg-indigo-100 rounded-md p-3">
+                                <svg class="h-6 w-6 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                            </div>
+                            {% if status.has_work_history %}
+                            <div class="absolute -top-1 -right-1 bg-green-500 rounded-full p-1">
+                                <svg class="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                        </svg>
+                            </div>
+                            {% else %}
+                            <div class="absolute -top-1 -right-1 bg-gray-300 rounded-full p-1">
+                                <svg class="h-3 w-3 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="ml-4">
+                            <h4 class="text-sm font-medium text-gray-900">Work History</h4>
+                            <p class="mt-1 text-sm text-gray-500">Add previous employment information</p>
+                        </div>
+                        <div class="ml-auto">
+                            <a href="{{ url_for('hr_web.manage_work_history', user_id=employee.id) }}" class="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Manage
+                    </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Certifications -->
+                <div class="px-6 py-4">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 relative">
+                            <div class="bg-indigo-100 rounded-md p-3">
+                                <svg class="h-6 w-6 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                        </svg>
+                            </div>
+                            {% if status.has_certifications %}
+                            <div class="absolute -top-1 -right-1 bg-green-500 rounded-full p-1">
+                                <svg class="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                        </svg>
+                            </div>
+                            {% else %}
+                            <div class="absolute -top-1 -right-1 bg-gray-300 rounded-full p-1">
+                                <svg class="h-3 w-3 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="ml-4">
+                            <h4 class="text-sm font-medium text-gray-900">Certifications</h4>
+                            <p class="mt-1 text-sm text-gray-500">Manage professional certifications</p>
+                        </div>
+                        <div class="ml-auto">
+                            <a href="{{ url_for('hr_web.manage_certifications', user_id=employee.id) }}" class="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Manage
+                    </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Attachments -->
+                <div class="px-6 py-4">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 relative">
+                            <div class="bg-indigo-100 rounded-md p-3">
+                                <svg class="h-6 w-6 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                        </svg>
+                            </div>
+                            {% if status.has_attachments %}
+                            <div class="absolute -top-1 -right-1 bg-green-500 rounded-full p-1">
+                                <svg class="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                        </svg>
+                            </div>
+                            {% else %}
+                            <div class="absolute -top-1 -right-1 bg-gray-300 rounded-full p-1">
+                                <svg class="h-3 w-3 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="ml-4">
+                            <h4 class="text-sm font-medium text-gray-900">Document Attachments</h4>
+                            <p class="mt-1 text-sm text-gray-500">Upload and manage supporting documents</p>
+                        </div>
+                        <div class="ml-auto">
+                            <a href="{{ url_for('hr_web.manage_attachments', user_id=employee.id) }}" class="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Manage
+                    </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Flash Messages -->
+{% with messages = get_flashed_messages(with_categories=true) %} {% if messages %}
+<div id="flash-messages" class="fixed bottom-4 right-4 z-50 space-y-2">
+    {% for category, message in messages %}
+    <div class="bg-{% if category == 'success' %}green{% else %}red{% endif %}-500 text-white px-4 py-2 rounded-md shadow-lg flex items-start max-w-md">
+        <div class="flex-1">
+            <p class="text-sm font-medium">{{ message }}</p>
+        </div>
+        <button type="button" class="ml-4 flex-shrink-0 text-white hover:text-gray-200 focus:outline-none" onclick="this.parentElement.remove()">
+            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+            </svg>
+          </button>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+    // Auto-dismiss flash messages after 5 seconds
+    setTimeout(() => {
+        const flashMessages = document.getElementById('flash-messages');
+        if (flashMessages) flashMessages.remove();
+    }, 5000);
+</script>
+{% endif %} {% endwith %} {% endblock %}

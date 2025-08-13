@@ -1,0 +1,534 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-4 md:p-8">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+            <div>
+                <h1 class="text-3xl md:text-4xl font-bold text-gray-800">Payroll Periods</h1>
+                <p class="text-gray-600 mt-2">Manage your organization's payroll cycles and payment schedules</p>
+            </div>
+            <button id="createPeriodBtn" class="mt-4 md:mt-0 flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-md transition-all duration-300">
+                <i class="fas fa-plus"></i>
+                <span>Create New Period</span>
+            </button>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-indigo-500">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-gray-500 font-medium">Total Periods</h3>
+                    <i class="fas fa-calendar-alt text-indigo-500 text-xl"></i>
+                </div>
+                <p class="text-3xl font-bold mt-2">{{ periods|length }}</p>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-green-500">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-gray-500 font-medium">Open Periods</h3>
+                    <i class="fas fa-unlock text-green-500 text-xl"></i>
+                </div>
+                <p class="text-3xl font-bold mt-2">{{ periods|selectattr('is_closed', 'false')|list|length }}</p>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-amber-500">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-gray-500 font-medium">Closed Periods</h3>
+                    <i class="fas fa-lock text-amber-500 text-xl"></i>
+                </div>
+                <p class="text-3xl font-bold mt-2">{{ periods|selectattr('is_closed', 'true')|list|length }}</p>
+            </div>
+        </div>
+
+        <!-- Periods Table -->
+        <div class="bg-white rounded-xl shadow-md overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Period</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pay Date</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Frequency</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200" id="periodsTableBody">
+                        {% for period in periods %}
+                        <tr class="hover:bg-gray-50 transition-colors" data-id="{{ period.id }}">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900">#{{ period.id }}</div>
+                                <div class="text-sm text-gray-500">{{ period.start_date.strftime('%b %d, %Y') }} - {{ period.end_date.strftime('%b %d, %Y') }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900">{{ (period.end_date - period.start_date).days + 1 }} days</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <div class="flex items-center">
+                                    <i class="fas fa-calendar-check mr-2 text-indigo-500"></i> 
+                                    {{ period.pay_date.strftime('%b %d, %Y') }}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
+                  {% if period.frequency == 'Monthly' %}bg-blue-100 text-blue-800
+                  {% elif period.frequency == 'Bi-weekly' %}bg-purple-100 text-purple-800
+                  {% elif period.frequency == 'Weekly' %}bg-green-100 text-green-800
+                  {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                    {{ period.frequency }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
+                  {% if period.is_closed %}bg-red-100 text-red-800
+                  {% else %}bg-green-100 text-green-800{% endif %}">
+                                    {% if period.is_closed %}Closed{% else %}Open{% endif %}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <button class="edit-btn text-indigo-600 hover:text-indigo-900 mr-4" data-id="{{ period.id }}">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
+                                <button class="delete-btn text-red-600 hover:text-red-900" data-id="{{ period.id }}">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="px-6 py-4 text-center text-gray-500">
+                                <div class="flex flex-col items-center justify-center py-12">
+                                    <i class="fas fa-calendar-times text-4xl text-gray-300 mb-4"></i>
+                                    <p class="text-lg">No payroll periods found</p>
+                                    <p class="text-gray-500 mt-2">Create your first payroll period to get started</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        <div class="mt-6 flex justify-between items-center">
+            <div class="text-sm text-gray-700">
+                Showing <span class="font-medium">1</span> to <span class="font-medium">{{ periods|length }}</span> of <span class="font-medium">{{ periods|length }}</span> results
+            </div>
+            <div class="flex space-x-2">
+                <button class="px-4 py-2 bg-gray-200 rounded-md text-gray-700 disabled:opacity-50">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <button class="px-4 py-2 bg-indigo-600 text-white rounded-md">1</button>
+                <button class="px-4 py-2 bg-gray-200 rounded-md text-gray-700 disabled:opacity-50">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Period Modal -->
+    <div id="addModal" class="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md">
+            <div class="p-6 border-b border-gray-200">
+                <h2 class="text-2xl font-bold text-gray-800">Create Payroll Period</h2>
+                <p class="text-gray-600 mt-1">Define a new payroll cycle for your organization</p>
+            </div>
+            
+            <form id="addPeriodForm" class="p-6">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Period Dates</label>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs text-gray-500 mb-1">Start Date</label>
+                                <input 
+                                    type="date" 
+                                    name="start_date" 
+                                    required
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                >
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-500 mb-1">End Date</label>
+                                <input 
+                                    type="date" 
+                                    name="end_date" 
+                                    required
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                >
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Pay Date</label>
+                        <input 
+                            type="date" 
+                            name="pay_date" 
+                            required
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        >
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Frequency</label>
+                        <select 
+                            name="frequency" 
+                            required
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        >
+                            <option value="Monthly">Monthly</option>
+                            <option value="Bi-weekly">Bi-weekly</option>
+                            <option value="Weekly">Weekly</option>
+                            <option value="Daily">Daily</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="mt-8 flex justify-end space-x-3">
+                    <button 
+                        type="button" 
+                        id="cancelAddBtn"
+                        class="px-5 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                    >
+                        Cancel
+                    </button>
+                    <button 
+                        type="submit" 
+                        class="px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center"
+                    >
+                        <i class="fas fa-plus mr-2"></i>
+                        Create Period
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Period Modal -->
+    <div id="editModal" class="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md">
+            <div class="p-6 border-b border-gray-200">
+                <h2 class="text-2xl font-bold text-gray-800">Edit Payroll Period</h2>
+                <p class="text-gray-600 mt-1">Update details for this payroll cycle</p>
+            </div>
+            
+            <form id="editPeriodForm" class="p-6">
+                <input type="hidden" name="id" id="editPeriodId">
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Period Dates</label>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs text-gray-500 mb-1">Start Date</label>
+                                <input 
+                                    type="date" 
+                                    name="start_date" 
+                                    id="editStartDate"
+                                    required
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                >
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-500 mb-1">End Date</label>
+                                <input 
+                                    type="date" 
+                                    name="end_date" 
+                                    id="editEndDate"
+                                    required
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                >
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Pay Date</label>
+                        <input 
+                            type="date" 
+                            name="pay_date" 
+                            id="editPayDate"
+                            required
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        >
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Frequency</label>
+                        <select 
+                            name="frequency" 
+                            id="editFrequency"
+                            required
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        >
+                            <option value="Monthly">Monthly</option>
+                            <option value="Bi-weekly">Bi-weekly</option>
+                            <option value="Weekly">Weekly</option>
+                            <option value="Daily">Daily</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                        <div class="flex items-center mt-2">
+                            <input 
+                                type="checkbox" 
+                                name="is_closed" 
+                                id="editIsClosed"
+                                class="h-5 w-5 text-indigo-600 rounded focus:ring-indigo-500"
+                            >
+                            <label class="ml-3 text-gray-700">Mark as closed</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-8 flex justify-end space-x-3">
+                    <button 
+                        type="button" 
+                        id="cancelEditBtn"
+                        class="px-5 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                    >
+                        Cancel
+                    </button>
+                    <button 
+                        type="submit" 
+                        class="px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center"
+                    >
+                        <i class="fas fa-save mr-2"></i>
+                        Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md">
+            <div class="p-6 border-b border-gray-200">
+                <h2 class="text-2xl font-bold text-gray-800">Delete Payroll Period</h2>
+                <p class="text-gray-600 mt-1">Are you sure you want to delete this period?</p>
+            </div>
+            
+            <div class="p-6">
+                <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-exclamation-circle text-red-500 text-xl"></i>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-sm font-medium text-red-800">Warning</h3>
+                            <div class="mt-2 text-sm text-red-700">
+                                <p>Deleting a payroll period cannot be undone. Any associated payroll data will be permanently removed.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-4 flex justify-end space-x-3">
+                    <button 
+                        id="cancelDeleteBtn"
+                        class="px-5 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                    >
+                        Cancel
+                    </button>
+                    <button 
+                        id="confirmDeleteBtn"
+                        class="px-5 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center"
+                    >
+                        <i class="fas fa-trash mr-2"></i>
+                        Delete Period
+                    </button>
+                </div>
+                <input type="hidden" id="deletePeriodId">
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // DOM Elements
+    const createPeriodBtn = document.getElementById('createPeriodBtn');
+    const addModal = document.getElementById('addModal');
+    const editModal = document.getElementById('editModal');
+    const deleteModal = document.getElementById('deleteModal');
+    const cancelAddBtn = document.getElementById('cancelAddBtn');
+    const cancelEditBtn = document.getElementById('cancelEditBtn');
+    const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+    const addPeriodForm = document.getElementById('addPeriodForm');
+    const editPeriodForm = document.getElementById('editPeriodForm');
+    const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+    const deletePeriodId = document.getElementById('deletePeriodId');
+
+    // Event Listeners
+    createPeriodBtn.addEventListener('click', () => showModal(addModal));
+    cancelAddBtn.addEventListener('click', () => hideModal(addModal));
+    cancelEditBtn.addEventListener('click', () => hideModal(editModal));
+    cancelDeleteBtn.addEventListener('click', () => hideModal(deleteModal));
+    
+    // Add form submission
+    addPeriodForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await submitForm(addPeriodForm, "{{ url_for('hr_web.payroll_periods') }}", 'POST');
+    });
+    
+    // Edit form submission
+    editPeriodForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const periodId = document.getElementById('editPeriodId').value;
+        await submitForm(editPeriodForm, `/payroll/periods/${periodId}`, 'PUT');
+    });
+    
+    // Delete confirmation
+    confirmDeleteBtn.addEventListener('click', async () => {
+        const periodId = deletePeriodId.value;
+        await deleteResource(`/payroll/periods/${periodId}`);
+    });
+    
+    // Edit button handlers
+    document.querySelectorAll('.edit-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const periodId = this.getAttribute('data-id');
+            const row = this.closest('tr');
+            const period = {
+                id: periodId,
+                start_date: row.querySelector('td:nth-child(1) > div:nth-child(2)').textContent.split(' - ')[0].trim(),
+                end_date: row.querySelector('td:nth-child(1) > div:nth-child(2)').textContent.split(' - ')[1].trim(),
+                pay_date: row.querySelector('td:nth-child(3) > div').textContent.trim(),
+                frequency: row.querySelector('td:nth-child(4) > span').textContent.trim(),
+                is_closed: row.querySelector('td:nth-child(5) > span').textContent.trim() === 'Closed'
+            };
+            
+            openEditModal(period);
+        });
+    });
+    
+    // Delete button handlers
+    document.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const periodId = this.getAttribute('data-id');
+            deletePeriodId.value = periodId;
+            showModal(deleteModal);
+        });
+    });
+
+    // Modal functions
+    function showModal(modal) {
+        modal.classList.remove('hidden');
+        document.body.classList.add('overflow-hidden');
+    }
+
+    function hideModal(modal) {
+        modal.classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+    }
+
+    // Format date for input fields (YYYY-MM-DD)
+    function formatDateForInput(dateStr) {
+        const date = new Date(dateStr);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    // Open edit modal with data
+    function openEditModal(period) {
+        document.getElementById('editPeriodId').value = period.id;
+        document.getElementById('editStartDate').value = formatDateForInput(period.start_date);
+        document.getElementById('editEndDate').value = formatDateForInput(period.end_date);
+        document.getElementById('editPayDate').value = formatDateForInput(period.pay_date);
+        document.getElementById('editFrequency').value = period.frequency;
+        document.getElementById('editIsClosed').checked = period.is_closed;
+        
+        showModal(editModal);
+    }
+
+    // Submit form data
+    async function submitForm(form, url, method) {
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+        
+        try {
+            const response = await fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                // Reload page to see changes
+                location.reload();
+            } else {
+                alert(`Error: ${result.message}`);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('An error occurred while processing your request');
+        }
+    }
+
+    // Delete resource
+    async function deleteResource(url) {
+        try {
+            const response = await fetch(url, {
+                method: 'DELETE',
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                // Reload page to see updated list
+                location.reload();
+            } else {
+                alert(`Error: ${result.message}`);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('An error occurred while deleting the period');
+        }
+    }
+</script>
+
+<style>
+    /* Modal animations */
+    .modal-enter-active, .modal-leave-active {
+        transition: opacity 0.3s;
+    }
+    .modal-enter, .modal-leave-to {
+        opacity: 0;
+    }
+    
+    /* Smooth table row transitions */
+    tr {
+        transition: background-color 0.2s ease;
+    }
+    
+    /* Styling for empty state */
+    .empty-state {
+        opacity: 0.7;
+    }
+    
+    /* Hide modal initially */
+    .hidden {
+        display: none;
+    }
+    
+    /* Prevent scrolling when modal is open */
+    body.overflow-hidden {
+        overflow: hidden;
+    }
+</style>
+{% endblock %}

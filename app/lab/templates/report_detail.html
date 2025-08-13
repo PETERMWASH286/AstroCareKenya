@@ -1,0 +1,345 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block head_extra %}
+<style>
+    /* Ensure Inter font is loaded for both screen and print */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+    body {
+        font-family: 'Inter', sans-serif;
+    }
+
+    /* Specific adjustments for print output (PDF generation) */
+    @media print {
+        body {
+            /* These ensure a clean white background and exact color matching for print */
+            -webkit-print-color-adjust: exact !important;
+            color-adjust: exact !important;
+            background-color: #ffffff !important;
+            print-color-adjust: exact;
+            font-size: 9pt; /* Slightly smaller font for better fit on paper */
+            margin: 0; /* Remove default body margins */
+            padding: 0; /* Remove default body padding */
+        }
+
+        /* Hide elements that should not appear on the printed report */
+        .no-print {
+            display: none !important;
+        }
+
+        /* Adjust container for print - remove shadows, borders, and extra padding */
+        .report-card {
+            box-shadow: none !important;
+            border: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            width: 100% !important; /* Ensure it takes full width for print */
+            max-width: none !important; /* Remove max-width constraint */
+        }
+
+        /* Ensure all text is black on print for readability */
+        h1, h2, h3, h4, h5, h6, p, th, td, strong, div, span, a {
+            color: #000000 !important;
+        }
+
+        /* Force background for colored status badges to print */
+        .px-3.py-1.inline-flex {
+            background-color: transparent !important; /* Start with transparent */
+            /* Re-add specific colors if needed for visual distinction in print,
+               but black text on white is usually preferred for formal reports.
+               If you want colored backgrounds in print, uncomment and adjust: */
+            /*
+            &.bg-green-100 { background-color: #D1FAE5 !important; }
+            &.bg-yellow-100 { background-color: #FEF3C7 !important; }
+            &.bg-red-100 { background-color: #FEE2E2 !important; }
+            */
+            border: 1px solid currentColor !important; /* Add a subtle border */
+        }
+        .px-3.py-1.inline-flex.bg-green-100 { border-color: #10B981 !important; color: #10B981 !important; }
+        .px-3.py-1.inline-flex.bg-yellow-100 { border-color: #F59E0B !important; color: #F59E0B !important; }
+        .px-3.py-1.inline-flex.bg-red-100 { border-color: #EF4444 !important; color: #EF4444 !important; }
+        .px-3.py-1.inline-flex.bg-gray-100 { border-color: #6B7280 !important; color: #6B7280 !important; }
+
+
+        /* Print-specific header and footer styling */
+        @page {
+            /* Define page margins for print */
+            margin: 1.5cm 1.5cm 2.5cm 1.5cm; /* Top, Right, Bottom, Left */
+            @top-left {
+                content: element(header);
+            }
+            @bottom-left {
+                content: element(footer);
+            }
+            @bottom-right {
+                content: "Page " counter(page) " of " counter(pages);
+                font-family: 'Inter', sans-serif;
+                font-size: 8pt;
+                color: #555;
+            }
+        }
+
+        .header-print {
+            position: running(header);
+            padding-bottom: 0.5cm; /* Space below header */
+            border-bottom: 1px solid #ddd;
+            text-align: center;
+        }
+
+        .footer-print {
+            position: running(footer);
+            padding-top: 0.5cm; /* Space above footer */
+            border-top: 1px solid #ddd;
+            text-align: center;
+            font-size: 8pt;
+            color: #555;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+{# This header will only be visible when printed as PDF #}
+<div class="header-print no-screen">
+    <div class="flex items-center justify-center space-x-4">
+        {# You might place a hospital logo here #}
+        {# <img src="{{ url_for('static', filename='img/hospital_logo.png') }}" alt="Hospital Logo" class="h-10"> #}
+        <h3 class="text-xl font-bold text-gray-800">AstroCare Health System</h3>
+    </div>
+    <p class="text-sm text-gray-600">123 Health Drive, Nairobi, Kenya | Phone: +254 7XX XXX XXX | Email: info@astrocare.com</p>
+</div>
+
+<div class="report-card bg-white dark:bg-gray-800 p-8 md:p-10 shadow-xl rounded-xl border border-gray-200 dark:border-gray-700 relative">
+    
+    {# Back Button & Download PDF Button - Visible only on screen #}
+    <div class="no-print mb-6 flex justify-between items-center">
+        <a href="{{ url_for('lab_web.generate_lab_reports') }}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition ease-in-out duration-150">
+            <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M12.793 4.293a1 1 0 010 1.414L9.414 9H16a1 1 0 110 2H9.414l3.379 3.293a1 1 0 01-1.414 1.414l-5-5a1 1 0 010-1.414l5-5a1 1 0 011.414 0z" clip-rule="evenodd" />
+            </svg>
+            Back to Reports
+        </a>
+
+{# Add a Download PDF button #}
+{% set patient_name_for_filename = 'unknown_patient' %} {# Default fallback #}
+
+{# Determine patient name for the filename #}
+{% if test.consultation %}
+    {% set patient_name_for_filename = test.consultation.patient.full_name %}
+{% elif test.visit %}
+    {% set patient_name_for_filename = test.visit.patient.full_name %}
+{% endif %}
+
+<a href="{{ url_for('lab_web.view_lab_report', test_id=test.id, format='pdf') }}"
+   class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition ease-in-out duration-150"
+   download="lab_report_{{ patient_name_for_filename.replace(' ', '_') }}_{{ test.service.name.replace(' ', '_') }}_{{ test.id }}.pdf">
+    <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L10 11.586l1.293-1.293a1 1 0 111.414 1.414l-2 2a1 1 0 01-1.414 0l-2-2a1 1 0 010-1.414z" clip-rule="evenodd" />
+    </svg>
+    Download PDF
+</a>
+    </div>
+
+    <header class="text-center mb-8 border-b pb-6 border-blue-200 dark:border-blue-700">
+        <h1 class="text-4xl font-extrabold text-blue-700 dark:text-blue-300 mb-2">LAB TEST REPORT</h1>
+        <p class="text-gray-600 dark:text-gray-400 text-lg">AstroCare Health Management System</p>
+    </header>
+
+    <div class="mb-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="p-5 bg-gray-50 dark:bg-gray-700 rounded-lg shadow-inner">
+    <h2 class="text-2xl font-semibold mb-3 text-gray-800 dark:text-gray-200 border-b pb-2 border-gray-200 dark:border-gray-600">Patient Details:</h2>
+
+    {# Determine the correct patient object based on consultation or visit #}
+    {% set patient = None %}
+    {% set patient_type_label = '' %} {# To indicate if it's a walk-in or consultation #}
+
+    {% if test.consultation %}
+        {% set patient = test.consultation.patient %}
+        {% set patient_type_label = '(Consultation)' %}
+    {% elif test.visit %}
+        {% set patient = test.visit.patient %}
+        {% set patient_type_label = '(Walk-in Patient)' %}
+    {% endif %}
+
+    {% if patient %}
+        <p class="mb-1 text-gray-700 dark:text-gray-300">
+            <strong class="font-medium text-gray-800 dark:text-gray-200">Name:</strong> {{ patient.full_name }} {{ patient_type_label }}
+        </p>
+        <p class="mb-1 text-gray-700 dark:text-gray-300">
+            <strong class="font-medium text-gray-800 dark:text-gray-200">Patient Reg No:</strong> {{ patient.reg_no }}
+        </p>
+        <p class="mb-1 text-gray-700 dark:text-gray-300">
+            <strong class="font-medium text-gray-800 dark:text-gray-200">Age:</strong> {{ patient.age }} years
+        </p>
+        <p class="mb-1 text-gray-700 dark:text-gray-300">
+            <strong class="font-medium text-gray-800 dark:text-gray-200">Gender:</strong> {{ patient.gender|capitalize }}
+        </p>
+        <p class="text-gray-700 dark:text-gray-300">
+            <strong class="font-medium text-gray-800 dark:text-gray-200">Contact:</strong> {{ patient.phone }}
+        </p>
+    {% else %}
+        <p class="text-gray-700 dark:text-gray-300">
+            <strong class="font-medium text-gray-800 dark:text-gray-200">Patient Details:</strong> Not available or linked to test.
+        </p>
+    {% endif %}
+</div>
+        <div class="p-5 bg-gray-50 dark:bg-gray-700 rounded-lg shadow-inner">
+            <h2 class="text-2xl font-semibold mb-3 text-gray-800 dark:text-gray-200 border-b pb-2 border-gray-200 dark:border-gray-600">Test Details:</h2>
+            <p class="mb-1 text-gray-700 dark:text-gray-300"><strong class="font-medium text-gray-800 dark:text-gray-200">Test Name:</strong> {{ test.service.name }}</p>
+            <p class="mb-1 text-gray-700 dark:text-gray-300"><strong class="font-medium text-gray-800 dark:text-gray-200">Requested On:</strong> {{ test.requested_at.strftime('%Y-%m-%d %H:%M') }}</p>
+            <p class="mb-1 text-gray-700 dark:text-gray-300"><strong class="font-medium text-gray-800 dark:text-gray-200">Status:</strong> <span class="font-semibold text-{{ 'green-600' if test.status == 'verified' else 'orange-500' }}">{{ test.status|capitalize }}</span></p>
+            {% if test.completed_at %}
+                <p class="mb-1 text-gray-700 dark:text-gray-300"><strong class="font-medium text-gray-800 dark:text-gray-200">Completed On:</strong> {{ test.completed_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                {% if entered_by_technician %}
+                    <p class="text-gray-700 dark:text-gray-300"><strong class="font-medium text-gray-800 dark:text-gray-200">Technician:</strong> {{ entered_by_technician }}</p>
+                {% endif %}
+            {% endif %}
+            {% if test.verified_at %}
+                <p class="mb-1 text-gray-700 dark:text-gray-300"><strong class="font-medium text-gray-800 dark:text-gray-200">Verified On:</strong> {{ test.verified_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                {% if verified_by_person %}
+                    <p class="text-gray-700 dark:text-gray-300"><strong class="font-medium text-gray-800 dark:text-gray-200">Verified By:</strong> {{ verified_by_person }}</p>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+
+    <hr class="my-8 border-blue-200 dark:border-blue-700">
+
+    <h2 class="text-3xl font-bold mb-6 text-purple-700 dark:text-purple-300">Results Overview:</h2>
+    {% if test.results_detail %}
+        <div class="overflow-x-auto shadow-md rounded-lg">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gradient-to-r from-blue-500 to-indigo-500 dark:from-blue-700 dark:to-indigo-700 text-white">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">Parameter</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">Result</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">Unit</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">Normal Range</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    {% for result in test.results_detail %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-200">
+                            {{ result.parameter.parameter_name }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                            {% if result.numeric_value is not none %}
+                                {{ result.numeric_value }}
+                            {% elif result.categorical_value is not none %}
+                                {{ result.categorical_value }}
+                            {% elif result.text_value is not none %}
+                                {{ result.text_value }}
+                            {% else %}
+                                <span class="text-gray-400 italic">N/A</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                            {{ result.unit or result.parameter.unit or 'N/A' }}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                            {% set ranges = filtered_ranges.get(result.parameter.parameter_id) %}
+                            {% if ranges %}
+                                {% for r in ranges %}
+                                    <p>{{ r.normal_min }} - {{ r.normal_max }} {% if r.unit %}{{ r.unit }}{% endif %}</p>
+                                    {% if r.critical_min is not none and r.critical_max is not none %}
+                                        <p class="text-xs text-red-500">(Critical: {{ r.critical_min }} - {{ r.critical_max }})</p>
+                                    {% endif %}
+                                {% endfor %}
+                            {% else %}
+                                <span class="italic">Not defined</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            {# Logic to determine result status #}
+                            {% set result_status = "N/A" %}
+                            {% if result.numeric_value is not none and ranges %}
+                                {% set status_found = false %}
+                                {% for r in ranges %}
+                                    {% if not status_found %}
+                                        {% if r.critical_min is not none and r.critical_max is not none and (result.numeric_value < r.critical_min or result.numeric_value > r.critical_max) %}
+                                            {% set result_status = "Critical" %}
+                                            {% set status_found = true %}
+                                        {% elif r.normal_min is not none and r.normal_max is not none %}
+                                            {% if result.numeric_value < r.normal_min %}
+                                                {% set result_status = "Low" %}
+                                                {% set status_found = true %}
+                                            {% elif result.numeric_value > r.normal_max %}
+                                                {% set result_status = "High" %}
+                                                {% set status_found = true %}
+                                            {% else %}
+                                                {% set result_status = "Normal" %}
+                                                {% set status_found = true %}
+                                            {% endif %}
+                                        {% endif %}
+                                    {% endif %}
+                                {% endfor %}
+                            {% endif %}
+                            <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                {% if result_status == 'Normal' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
+                                {% elif result_status == 'High' or result_status == 'Low' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200
+                                {% elif result_status == 'Critical' %}bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200
+                                {% else %}bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300{% endif %}">
+                                {{ result_status }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="text-gray-500 dark:text-gray-400 italic text-center py-4 border rounded-md">No detailed results available for this test.</p>
+    {% endif %}
+
+    <hr class="my-8 border-blue-200 dark:border-blue-700">
+
+    <div class="mb-8 p-6 bg-blue-50 dark:bg-blue-950 rounded-lg shadow-sm">
+        <h2 class="text-2xl font-bold mb-4 text-blue-700 dark:text-blue-300 border-b pb-2 border-blue-200 dark:border-blue-700">Overall Interpretation:</h2>
+        <div class="prose dark:prose-invert max-w-none text-gray-700 dark:text-gray-300">
+            {% if test.interpretation %}
+                {{ test.interpretation|markdown }} {# Assuming you have a markdown filter #}
+            {% else %}
+                <p class="italic text-gray-500 dark:text-gray-400">No general interpretation provided for this test.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="mb-8 p-6 bg-indigo-50 dark:bg-indigo-950 rounded-lg shadow-sm">
+        <h2 class="text-2xl font-bold mb-4 text-indigo-700 dark:text-indigo-300 border-b pb-2 border-indigo-200 dark:border-indigo-700">Technician Notes:</h2>
+        <div class="text-gray-700 dark:text-gray-300">
+            {% if test.notes %}
+                <p>{{ test.notes }}</p>
+            {% else %}
+                <p class="italic text-gray-500 dark:text-gray-400">No technician notes available for this test.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <hr class="my-8 border-blue-200 dark:border-blue-700">
+
+    {# This is the signature area, moved to be part of the main content flow #}
+    <div class="flex flex-col sm:flex-row justify-between items-center mt-10 text-gray-700 dark:text-gray-300">
+        <div class="text-center sm:text-left mb-6 sm:mb-0">
+            {# This section can be removed if the footer_print handles all hospital info #}
+            <p class="font-bold text-lg mb-1">AstroCare Labs</p>
+            <p class="text-sm">123 Health Drive, Nairobi, Kenya</p>
+            <p class="text-sm">Phone: +254 7XX XXX XXX</p>
+            <p class="text-sm">Email: info@astrocare.com</p>
+        </div>
+        <div class="text-center sm:text-right">
+            <p class="font-semibold text-lg mb-4">__________________________</p>
+            <p class="text-md font-medium">Lab Director Signature</p>
+            <p class="text-md font-medium mt-4">Date: {{ current_datetime.strftime('%Y-%m-%d at %I:%M %p EAT') }}</p>
+        </div>
+    </div>
+</div>
+
+{# This footer will only be visible when printed as PDF #}
+<div class="footer-print no-screen">
+    <p>&copy; {{ current_datetime.year }} AstroCare Health System. All rights reserved.</p>
+</div>
+{% endblock %}

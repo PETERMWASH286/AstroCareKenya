@@ -1,0 +1,51 @@
+curl -X POST http://uzalendo.localhost:5000/patients/mpesa-callback \
+-H "Content-Type: application/json" \
+-d '{
+  "Body": {
+    "stkCallback": {
+      "MerchantRequestID": "29115-34620561-1",
+      "CheckoutRequestID": "ws_CO_1752586275196799397003",
+      "ResultCode": 0,
+      "ResultDesc": "The service request is processed successfully.",
+      "CallbackMetadata": {
+        "Item": [
+          {
+            "Name": "Amount",
+            "Value": 3900
+          },
+          {
+            "Name": "MpesaReceiptNumber",
+            "Value": "ABC123XYZ"
+          },
+          {
+            "Name": "TransactionDate",
+            "Value": 20250517032833
+          },
+          {
+            "Name": "PhoneNumber",
+            "Value": 254799397003
+          }
+        ]
+      }
+    }
+  }
+}'
+
+
+
+UPDATE medications
+SET 
+    is_paid = 1,
+    payment_status = 'paid'
+WHERE id IN (16, 17);
+
+
+chmod +x migrate_all.sh
+./migrate_all.sh
+
+
+
+curl -g -X POST "http://localhost:5000/patients/mpesa-callback" ^
+     -H "Content-Type: application/json" ^
+     -d @payload.json
+

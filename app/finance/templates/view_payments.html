@@ -1,0 +1,99 @@
+<!-- File: app/finance/templates/view_payments.html -->
+{% extends 'base.html' %} {% block title %}Payments for Invoice #{{ invoice.id }}{% endblock %} {% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">
+            Payments for Invoice #{{ invoice.id }}
+        </h1>
+        <a href="{{ url_for('finance_web_bp.invoices', invoice_id=invoice.id) }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded shadow hover:bg-indigo-700">
+      ← Back to Invoice
+    </a>
+    </div>
+
+    <!-- Invoice Summary -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white dark:bg-gray-800 p-6 rounded-lg shadow mb-6">
+        <div>
+            <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-2">Invoice Summary</h2>
+            <p><strong class="text-gray-600 dark:text-gray-300">Patient:</strong> {{ invoice.patient.full_name }}</p>
+            <p><strong class="text-gray-600 dark:text-gray-300">Issued:</strong> {{ invoice.issue_date.strftime('%d %b %Y') }}</p>
+            <p><strong class="text-gray-600 dark:text-gray-300">Due:</strong> {{ invoice.due_date.strftime('%d %b %Y') if invoice.due_date else 'N/A' }}</p>
+            <p><strong class="text-gray-600 dark:text-gray-300">Status:</strong>
+                <span class="inline-block px-2 py-1 rounded-full text-xs font-medium
+          {% if invoice.status == 'paid' %}
+            bg-green-100 text-green-800 dark:bg-green-200 dark:text-green-900
+          {% elif invoice.status == 'overdue' %}
+            bg-red-100 text-red-800 dark:bg-red-200 dark:text-red-900
+          {% else %}
+            bg-yellow-100 text-yellow-800 dark:bg-yellow-200 dark:text-yellow-900
+          {% endif %}">
+          {{ invoice.status|capitalize }}
+        </span>
+            </p>
+        </div>
+        <div>
+            <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-2">Financial Summary</h2>
+            <p><strong class="text-gray-600 dark:text-gray-300">Total Amount:</strong> KSh {{ '%.2f' % invoice.total_amount }}</p>
+            <p><strong class="text-gray-600 dark:text-gray-300">Amount Paid:</strong> KSh {{ '%.2f' % amount_paid }}</p>
+            <p><strong class="text-gray-600 dark:text-gray-300">Balance Due:</strong> KSh {{ '%.2f' % balance }}</p>
+        </div>
+    </div>
+
+    <!-- Payments Table -->
+    <div class="bg-white dark:bg-gray-800 shadow rounded-lg overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead class="bg-gray-100 dark:bg-gray-700">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Date</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Amount</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Method</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Reference</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Payer</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Status</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-100 dark:divide-gray-700">
+                {% for payment in payments %}
+                <tr>
+                    <td class="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
+                        {{ payment.payment_date.strftime('%d %b %Y') }}
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
+                        KSh {{ '%.2f' % payment.amount }}
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
+                        {{ payment.method|capitalize }}
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
+                        {{ payment.reference or '—' }}
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
+                        {{ payment.payer_name or '—' }}
+                    </td>
+                    <td class="px-6 py-4 text-sm">
+                        <span class="inline-block px-2 py-1 rounded-full text-xs font-medium
+              {% if payment.status == 'completed' %}
+                bg-green-100 text-green-800 dark:bg-green-200 dark:text-green-900
+              {% elif payment.status == 'pending' %}
+                bg-yellow-100 text-yellow-800 dark:bg-yellow-200 dark:text-yellow-900
+              {% elif payment.status == 'failed' %}
+                bg-red-100 text-red-800 dark:bg-red-200 dark:text-red-900
+              {% else %}
+                bg-gray-100 text-gray-800 dark:bg-gray-200 dark:text-gray-900
+              {% endif %}">
+              {{ payment.status|capitalize }}
+            </span>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                        No payments recorded for this invoice.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

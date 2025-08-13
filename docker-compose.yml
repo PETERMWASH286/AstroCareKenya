@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: . # Build from the current directory (where Dockerfile is)
+      dockerfile: Dockerfile
+    command: gunicorn --bind 0.0.0.0:5000 wsgi:app # Command to run the Flask app
+    volumes:
+      - .:/app # Mount the project directory (useful for development)
+      - /app/static # Anonymous volume for static files if collected
+    ports:
+      - "5000:5000" # Map host port 5000 to container port 5000
+    env_file:
+      - .env # Load environment variables from .env file
+    depends_on:
+      - db
+      - redis
+    # Optional: Restart policy
+    # restart: unless-stopped
+
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: celery -A celery_worker.celery_app worker -l info -P eventlet # Command to run the Celery worker (requires eventlet or gevent)
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - app # Depends on app to ensure config/code is ready
+      - redis
+    # restart: unless-stopped
+
+  db:
+    image: mysql:8.0 # Use MySQL 8.0 image
+    # You might need a different image/version based on your requirements
+    ports:
+      - "3306:3306" # Map host port 3306 to container port 3306 (for easy access from host tools)
+    environment:
+      MYSQL_ROOT_PASSWORD: your_root_password # Change this!
+      MYSQL_DATABASE: astrocare_db # Database name as used in DATABASE_URL
+      MYSQL_USER: your_db_user # Database user
+      MYSQL_PASSWORD: your_db_password # Database password
+      # Ensure these match the credentials in your .env file DATABASE_URL
+    volumes:
+      - db_data:/var/lib/mysql # Persistent volume for database data
+      # Optional: Mount initialization scripts
+      # - ./docker/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  redis:
+    image: redis:latest # Use the latest Redis image
+    ports:
+      - "6379:6379" # Map host port 6379 to container port 6379
+    volumes:
+      - redis_data:/data # Persistent volume for Redis data
+    # restart: unless-stopped
+
+# Define named volumes for persistence
+volumes:
+  db_data: # Volume for MySQL data
+  redis_data: # Volume for Redis data

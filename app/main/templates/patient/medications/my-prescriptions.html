@@ -1,0 +1,225 @@
+{% extends "patient-base.html" %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto">
+        <div class="mb-8 md:mb-10 text-center md:text-left">
+            <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white leading-tight">
+                <i class="fas fa-prescription-bottle-alt text-teal-600 dark:text-teal-400 mr-3"></i> My Prescriptions
+            </h1>
+            <p class="mt-3 text-lg text-gray-600 dark:text-gray-300">
+                Manage all your current and past medications from every connected hospital.
+            </p>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+                <div>
+                    <label for="filter-status" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Filter by Status</label>
+                    <select id="filter-status" name="filter-status" class="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-teal-500 focus:ring-teal-500 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 sm:text-sm p-2">
+                        <option value="all">All</option>
+                        <option value="active">Active</option>
+                        <option value="expiring_soon">Expiring Soon</option>
+                        <option value="low_refills">Low Refills</option>
+                        <option value="expired">Expired</option>
+                        <option value="no_refills">No Refills</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="filter-hospital" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Filter by Hospital</label>
+                    <select id="filter-hospital" name="filter-hospital" class="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-teal-500 focus:ring-teal-500 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 sm:text-sm p-2">
+                        <option value="all">All Hospitals</option>
+                        {% for hospital_name in prescriptions | map(attribute='hospital') | unique | sort %}
+                            <option value="{{ hospital_name }}">{{ hospital_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="search-medications" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Search Medications</label>
+                    <div class="relative">
+                        <input type="text" id="search-medications" name="search-medications" placeholder="Search by name, doctor, or hospital..." class="block w-full pl-10 pr-3 py-2 rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-teal-500 focus:ring-teal-500 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 sm:text-sm">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-search text-gray-400 dark:text-gray-500"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end">
+                <button id="clear-filters" class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition duration-150 ease-in-out">
+                    <i class="fas fa-redo mr-2"></i> Clear Filters
+                </button>
+            </div>
+        </div>
+
+        {% set current_date = datetime.now().date() %} {# Get current date for comparison #}
+
+        {% if prescriptions %}
+        <div id="prescription-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for prescription in prescriptions %}
+            {% set is_expired = prescription.expiry.date() < current_date %}
+            {% set is_expiring_soon = (prescription.expiry.date() >= current_date) and (prescription.expiry.date() <= (current_date + timedelta(days=30))) and not is_expired %}
+            {% set has_no_refills = prescription.refills_left == 0 %}
+            {% set is_low_refills = prescription.refills_left > 0 and prescription.refills_left <= 1 %} {# <=1 for 0 or 1 refills left #}
+            {% set is_active = not is_expired and not has_no_refills %}
+
+            <div class="prescription-item bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden transform hover:scale-[1.02] hover:shadow-lg transition-all duration-300 ease-in-out
+                {% if is_expired or has_no_refills %} opacity-70 border-l-4 border-red-500 dark:border-red-600
+                {% elif is_expiring_soon or is_low_refills %} border-l-4 border-orange-500 dark:border-orange-600
+                {% else %} border-l-4 border-teal-500 dark:border-teal-600
+                {% endif %}"
+                data-name="{{ prescription.name | lower }}"
+                data-doctor="{{ prescription.doctor | lower }}"
+                data-hospital="{{ prescription.hospital | lower }}"
+                data-status="{% if is_active %}active{% elif is_expiring_soon %}expiring_soon{% elif is_low_refills %}low_refills{% elif is_expired %}expired{% elif has_no_refills %}no_refills{% endif %}">
+
+                <div class="p-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-xl font-bold text-gray-900 dark:text-white flex-grow">{{ prescription.name }}</h3>
+                        <span class="px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap
+                            {% if is_expired or has_no_refills %} bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200
+                            {% elif is_expiring_soon %} bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200
+                            {% elif is_low_refills %} bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200
+                            {% else %} bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200
+                            {% endif %}">
+                            {% if is_expired %} Expired
+                            {% elif has_no_refills %} No Refills
+                            {% elif is_expiring_soon %} Expiring Soon
+                            {% elif is_low_refills %} Low Refills
+                            {% else %} Active
+                            {% endif %}
+                        </span>
+                    </div>
+
+                    <p class="text-gray-700 dark:text-gray-300 mb-2 text-base">
+                        <i class="fas fa-pills text-gray-500 dark:text-gray-400 mr-2"></i> {{ prescription.dosage }}
+                    </p>
+                    <p class="text-gray-600 dark:text-gray-400 text-sm mb-1">
+                        <i class="fas fa-user-md text-gray-500 dark:text-gray-400 mr-2"></i> Prescribed by Dr. {{ prescription.doctor }}
+                    </p>
+                    <p class="text-gray-600 dark:text-gray-400 text-sm mb-4">
+                        <i class="fas fa-hospital-alt text-gray-500 dark:text-gray-400 mr-2"></i> From: <span class="text-indigo-600 dark:text-indigo-400 font-medium">{{ prescription.hospital }}</span>
+                    </p>
+
+                    <div class="flex items-center justify-between mt-4 text-sm font-medium">
+                        <span class="flex items-center
+                            {% if has_no_refills %} text-red-600 dark:text-red-400
+                            {% elif is_low_refills %} text-orange-600 dark:text-orange-400
+                            {% else %} text-gray-700 dark:text-gray-300
+                            {% endif %}">
+                            <i class="fas fa-sync-alt mr-2"></i> Refills Left:
+                            <span class="font-bold text-lg ml-1">{{ prescription.refills_left }}</span>
+                        </span>
+                        <span class="flex items-center
+                            {% if is_expired %} text-red-600 dark:text-red-400
+                            {% elif is_expiring_soon %} text-orange-600 dark:text-orange-400
+                            {% else %} text-gray-700 dark:text-gray-300
+                            {% endif %}">
+                            <i class="fas fa-calendar-times mr-2"></i> Expiry:
+                            <span class="font-bold ml-1">{{ prescription.expiry.strftime('%b %d, %Y') }}</span>
+                        </span>
+                    </div>
+
+                    <div class="mt-6 flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3">
+                        {% if is_active %}
+                            <a href="#" onclick="requestRefill({{ prescription.id }})"
+                                class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-colors duration-200">
+                                <i class="fas fa-history mr-2"></i> Request Refill
+                            </a>
+                        {% else %}
+                             <button disabled class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 cursor-not-allowed">
+                                <i class="fas fa-ban mr-2"></i> Refill Not Available
+                            </button>
+                        {% endif %}
+                        <a href=""
+                           class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200">
+                            <i class="fas fa-info-circle mr-2"></i> View Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-8 text-center border border-dashed border-gray-300 dark:border-gray-600">
+            <i class="fas fa-prescription-bottle-alt text-teal-400 text-6xl mb-4"></i>
+            <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">No Prescriptions Found</h3>
+            <p class="text-gray-600 dark:text-gray-400 mb-4">It looks like you don't have any medical prescriptions recorded in AstroCare yet.</p>
+            <p class="text-gray-600 dark:text-gray-400 mb-6">Prescriptions are typically added after a doctor's consultation at a connected hospital.</p>
+            <a href="{{ url_for('main_bp.patient_dashboard') }}"
+               class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-full shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200">
+                <i class="fas fa-home mr-2"></i> Go to Dashboard
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha512-..." crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const filterStatus = document.getElementById('filter-status');
+        const filterHospital = document.getElementById('filter-hospital');
+        const searchInput = document.getElementById('search-medications');
+        const clearFiltersBtn = document.getElementById('clear-filters');
+        const prescriptionItems = document.querySelectorAll('.prescription-item'); // All prescription cards
+
+        function applyFilters() {
+            const selectedStatus = filterStatus.value.toLowerCase();
+            const selectedHospital = filterHospital.value.toLowerCase();
+            const searchTerm = searchInput.value.toLowerCase().trim();
+
+            prescriptionItems.forEach(item => {
+                const itemStatus = item.dataset.status; // Get status from data-attribute
+                const itemHospital = item.dataset.hospital;
+                const itemName = item.dataset.name;
+                const itemDoctor = item.dataset.doctor;
+
+                const matchesStatus = selectedStatus === 'all' || itemStatus === selectedStatus;
+                const matchesHospital = selectedHospital === 'all' || itemHospital.includes(selectedHospital);
+                const matchesSearch = searchTerm === '' ||
+                                      itemName.includes(searchTerm) ||
+                                      itemDoctor.includes(searchTerm) ||
+                                      itemHospital.includes(searchTerm);
+
+                if (matchesStatus && matchesHospital && matchesSearch) {
+                    item.style.display = 'block'; // Show the item
+                } else {
+                    item.style.display = 'none'; // Hide the item
+                }
+            });
+        }
+
+        filterStatus.addEventListener('change', applyFilters);
+        filterHospital.addEventListener('change', applyFilters);
+        searchInput.addEventListener('input', applyFilters);
+
+        clearFiltersBtn.addEventListener('click', function() {
+            filterStatus.value = 'all';
+            filterHospital.value = 'all';
+            searchInput.value = '';
+            applyFilters();
+        });
+
+        // Initialize unique hospitals for the filter dropdown if not already done by Jinja
+        // Jinja already does this for us, but for client-side dynamic lists, this pattern is useful:
+        /*
+        const uniqueHospitals = new Set();
+        prescriptionItems.forEach(item => {
+            const hospitalName = item.querySelector('.text-indigo-600').textContent; // Or use data-hospital
+            uniqueHospitals.add(hospitalName);
+        });
+        const hospitalFilterOptions = Array.from(uniqueHospitals).sort();
+        filterHospital.innerHTML = '<option value="all">All Hospitals</option>' + hospitalFilterOptions.map(h => `<option value="${h}">${h}</option>`).join('');
+        */
+
+        // Initial filter application
+        applyFilters();
+
+        // Placeholder for "Request Refill" function
+        window.requestRefill = function(prescriptionId) {
+            alert('Functionality to request refill for prescription ' + prescriptionId + ' would be implemented here (e.g., open a modal, redirect to refill form).');
+        };
+    });
+</script>
+{% endblock %}

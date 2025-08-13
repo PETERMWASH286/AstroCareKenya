@@ -1,0 +1,1014 @@
+{% extends "base.html" %} {% block content %}
+<div class="container mx-auto px-4">
+    <!-- Page Header -->
+<div class="mb-0 relative overflow-hidden">
+  <!-- Decorative background elements -->
+  <div class="absolute inset-0 z-0">
+    <div class="absolute top-0 right-0 w-72 h-72 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/3"></div>
+    <div class="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-r from-emerald-500/10 to-teal-500/10 rounded-full blur-3xl transform -translate-x-1/2 translate-y-1/3"></div>
+  </div>
+  
+  <div class="relative z-10">
+    <!-- Payment method badges -->
+
+    
+    <!-- Main header -->
+    <div class="text-center">
+      <h1 class="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-700 dark:from-blue-400 dark:to-indigo-500 mb-1">
+        Billing Management
+      </h1>
+      
+      <p class="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto mb-2">
+        Search patients and manage billing transactions with our comprehensive payment system
+      </p>
+      
+      <!-- Animated icons -->
+    <div class="flex justify-center gap-3 mb-2">
+      <span class="flex items-center gap-2 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 px-4 py-2 rounded-full border border-blue-200 dark:border-blue-700 shadow-sm">
+        <i class="fas fa-money-bill-wave text-green-500"></i>
+        <span class="text-blue-700 dark:text-blue-300 font-medium">Cash Payments</span>
+      </span>
+      <span class="flex items-center gap-2 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/30 dark:to-teal-800/30 px-4 py-2 rounded-full border border-emerald-200 dark:border-emerald-700 shadow-sm">
+        <i class="fas fa-file-contract text-blue-500"></i>
+        <span class="text-emerald-700 dark:text-emerald-300 font-medium">Insurance Payments</span>
+      </span>
+    </div>
+    </div>
+  </div>
+  
+<div class="mt-8 max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6 px-4">
+    <div class="bg-gradient-to-br from-red-500 to-red-600 dark:from-red-700 dark:to-red-800 p-6 rounded-2xl shadow-xl flex flex-col items-center justify-center transform hover:scale-105 transition-transform duration-300 ease-in-out cursor-pointer">
+        <div class="text-white text-3xl font-extrabold mb-1" id="totalUnpaidToday">KES 0</div>
+        <div class="text-red-100 text-sm font-medium">Unpaid Today</div>
+    </div>
+
+    <div class="bg-gradient-to-br from-orange-500 to-orange-600 dark:from-orange-700 dark:to-orange-800 p-6 rounded-2xl shadow-xl flex flex-col items-center justify-center transform hover:scale-105 transition-transform duration-300 ease-in-out cursor-pointer">
+        <div class="text-white text-3xl font-extrabold mb-1" id="totalUnpaidWeek">KES 0</div>
+        <div class="text-orange-100 text-sm font-medium">Unpaid This Week</div>
+    </div>
+
+    <div class="bg-gradient-to-br from-purple-500 to-purple-600 dark:from-purple-700 dark:to-purple-800 p-6 rounded-2xl shadow-xl flex flex-col items-center justify-center transform hover:scale-105 transition-transform duration-300 ease-in-out cursor-pointer">
+        <div class="text-white text-3xl font-extrabold mb-1" id="totalUnpaidMonth">KES 0</div>
+        <div class="text-purple-100 text-sm font-medium">Unpaid This Month</div>
+    </div>
+
+    <div class="bg-gradient-to-br from-indigo-500 to-blue-600 dark:from-indigo-700 dark:to-blue-800 p-6 rounded-2xl shadow-xl flex flex-col items-center justify-center transform hover:scale-105 transition-transform duration-300 ease-in-out cursor-pointer">
+        <div class="text-white text-3xl font-extrabold mb-1" id="totalUnpaidOverall">KES 0</div>
+        <div class="text-blue-100 text-sm font-medium">Total Outstanding</div>
+    </div>
+</div>
+</div>
+
+<style>
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-15px); }
+  100% { transform: translateY(0px); }
+}
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+</style>
+
+    <!-- Search Section 
+    <div class="mb-8 bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800  dark:bg-gray-900 dark:bg-gray-800 rounded-2xl shadow-xl p-6 backdrop-blur-lg bg-opacity-50">
+        <div class="relative">
+            <input type="text" id="patientSearch" class="w-full pl-14 pr-6 py-4 rounded-xl border-0 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-600 shadow-sm" placeholder="Search patient by Reg No, Phone, or Name...">
+            <div class="absolute left-4 top-4 text-gray-500 dark:text-gray-400">
+                <i class="fas fa-search fa-lg"></i>
+            </div>
+        </div>
+        <div id="searchResults" class="mt-2 hidden absolute w-full max-w-2xl bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800  dark:bg-gray-900 dark:bg-gray-800 shadow-2xl rounded-2xl z-10 overflow-hidden"></div>
+    </div>
+    Search & Table Container -->
+<div class="px-2 py-3 mt-8 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
+    <h2 class="text-3xl font-extrabold text-gray-900 dark:text-white mb-6 flex items-center">
+        <i class="fas fa-money-bill-wave-alt mr-3 text-red-500 text-2xl"></i> Outstanding Payments
+    </h2>
+
+    <div class="mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-center">
+        <div class="col-span-1 md:col-span-2 lg:col-span-1 relative">
+            <input type="text" id="searchInput" placeholder="Search by name, Reg No, or phone..."
+                   class="w-full pl-10 pr-4 py-2 rounded-full border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm transition-all duration-200">
+            <div class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500">
+                <i class="fas fa-search text-sm"></i>
+            </div>
+        </div>
+
+        <div class="col-span-1 lg:col-span-2 flex flex-col sm:flex-row gap-4">
+            <div class="relative w-full">
+                <input type="date" id="dateFrom"
+                       class="w-full pl-10 pr-4 py-2 rounded-full border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm transition-all duration-200 cursor-pointer">
+                <div class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500">
+                    <i class="fas fa-calendar-alt text-sm"></i>
+                </div>
+                <label for="dateFrom" class="absolute -top-2 left-6 text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 px-1 rounded">From</label>
+            </div>
+            <div class="relative w-full">
+                <input type="date" id="dateTo"
+                       class="w-full pl-10 pr-4 py-2 rounded-full border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm transition-all duration-200 cursor-pointer">
+                <div class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500">
+                    <i class="fas fa-calendar-alt text-sm"></i>
+                </div>
+                <label for="dateTo" class="absolute -top-2 left-6 text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 px-1 rounded">To</label>
+            </div>
+        </div>
+
+        <div class="col-span-1 lg:col-span-1">
+            <div class="flex bg-gray-50 dark:bg-gray-700 rounded-full border border-gray-300 dark:border-gray-600 overflow-hidden shadow-sm text-sm">
+                <button type="button" id="filterAll" class="flex-1 px-4 py-2 text-gray-700 dark:text-gray-300 font-medium rounded-full transition-colors duration-200 bg-blue-500 text-white dark:bg-blue-600">
+                    All
+                </button>
+                <button type="button" id="filterCash" class="flex-1 px-4 py-2 text-gray-700 dark:text-gray-300 font-medium rounded-full transition-colors duration-200 hover:bg-gray-100 dark:hover:bg-gray-600">
+                    Cash
+                </button>
+                <button type="button" id="filterInsurance" class="flex-1 px-4 py-2 text-gray-700 dark:text-gray-300 font-medium rounded-full transition-colors duration-200 hover:bg-gray-100 dark:hover:bg-gray-600">
+                    Insurance
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="overflow-x-auto shadow-xl rounded-xl">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
+            <thead class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
+                <tr>
+                    <th class="px-4 py-3 text-left font-semibold tracking-wider">Patient Name</th>
+                    <th class="px-4 py-3 text-left font-semibold tracking-wider">Phone</th>
+                    <th class="px-4 py-3 text-left font-semibold tracking-wider">Cover</th>
+                    <th class="px-4 py-3 text-left font-semibold tracking-wider">Unpaid Services</th>
+                    <th class="px-4 py-3 text-left font-semibold tracking-wider">Total (KES)</th>
+                    <th class="px-4 py-3 text-left font-semibold tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="unpaid-patients" class="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-800">
+                </tbody>
+        </table>
+    </div>
+<div id="unpaidServicesModal" class="fixed inset-0 z-50 hidden overflow-y-auto bg-gray-900 bg-opacity-60 dark:bg-gray-950/70 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-3xl mx-auto transform scale-90 opacity-0 transition-all duration-300 ease-out border border-gray-100 dark:border-gray-700
+                min-w-[320px] max-w-xl w-auto"> <div class="flex items-center justify-between px-7 py-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:bg-gray-700 dark:from-gray-700 dark:to-gray-700 rounded-t-2xl border-b border-gray-100 dark:border-gray-700">
+            <h3 class="text-2xl font-extrabold text-gray-900 dark:text-white flex items-center" id="modalPatientName">
+                <i data-feather="dollar-sign" class="w-7 h-7 inline-block mr-3 text-green-500"></i>
+                <span class="truncate">Unpaid Services for <span class="text-blue-700 dark:text-blue-400">[Patient Name]</span></span>
+            </h3>
+            <button type="button" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors duration-200 p-2 mlrounded-full hover:bg-gray-100 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" id="closeModalBtn" aria-label="Close modal">
+                <i data-feather="x" class="w-6 h-6"></i>
+            </button>
+        </div>
+
+        <div class="p-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
+            <div id="modalServicesContent">
+                <p class="text-gray-500 dark:text-gray-400 text-center py-10 text-lg">
+                    <i data-feather="loader" class="animate-spin w-6 h-6 inline-block mr-2 text-blue-500"></i>
+                    Loading services...
+                </p>
+            </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center px-7 py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-750 rounded-b-2xl">
+            <div class="flex items-center text-lg font-bold text-gray-900 dark:text-white mb-3 sm:mb-0">
+                Total Unpaid: <span id="modalTotalAmount" class="ml-2 text-green-600 dark:text-green-400 text-xl">KES 0.00</span>
+            </div>
+            <button type="button" class="bg-blue-600 hover:bg-blue-700 text-white px-7 py-3 rounded-xl transition-colors duration-200 text-base font-semibold shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800" id="modalDoneBtn">
+                Done
+            </button>
+        </div>
+    </div>
+</div>
+</div>
+
+    <!-- Heroicons CDN -->
+    <script src="https://unpkg.com/feather-icons"></script>
+
+    <script>
+document.addEventListener('DOMContentLoaded', () => {
+    let allPatients = [];
+    let currentFilters = {
+        searchQuery: '',
+        dateFrom: '',
+        dateTo: '',
+        paymentMethod: 'all'
+    };
+
+    // --- DOM Elements ---
+    const searchInput = document.getElementById('searchInput');
+    const dateFromInput = document.getElementById('dateFrom');
+    const dateToInput = document.getElementById('dateTo');
+    const filterAllBtn = document.getElementById('filterAll');
+    const filterCashBtn = document.getElementById('filterCash');
+    const filterInsuranceBtn = document.getElementById('filterInsurance');
+    const unpaidPatientsTbody = document.getElementById('unpaid-patients');
+
+    // Stats Bar Elements
+    const totalUnpaidTodayElement = document.getElementById('totalUnpaidToday');
+    const totalUnpaidWeekElement = document.getElementById('totalUnpaidWeek');
+    const totalUnpaidMonthElement = document.getElementById('totalUnpaidMonth');
+    const totalUnpaidOverallElement = document.getElementById('totalUnpaidOverall');
+
+    // MODAL Elements
+    const unpaidServicesModal = document.getElementById('unpaidServicesModal');
+    const modalPatientName = document.getElementById('modalPatientName');
+    const modalServicesContent = document.getElementById('modalServicesContent');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    const modalDoneBtn = document.getElementById('modalDoneBtn');
+    const modalTotalAmount = document.getElementById('modalTotalAmount'); // NEW: Reference for the total amount display
+
+
+    // Check if critical elements exist before adding listeners
+    if (!searchInput || !dateFromInput || !dateToInput || !filterAllBtn || !filterCashBtn || !filterInsuranceBtn || !unpaidPatientsTbody ||
+        !totalUnpaidTodayElement || !totalUnpaidWeekElement || !totalUnpaidMonthElement || !totalUnpaidOverallElement ||
+        !unpaidServicesModal || !modalPatientName || !modalServicesContent || !closeModalBtn || !modalDoneBtn || !modalTotalAmount) { // Updated check
+        console.error("One or more essential DOM elements for filtering, table, stats, or modal rendering are missing. Please check your HTML IDs.");
+        return;
+    }
+
+    // --- Helper for updating active button style ---
+    const updatePaymentFilterButtons = (activeButton) => {
+        [filterAllBtn, filterCashBtn, filterInsuranceBtn].forEach(btn => {
+            btn.classList.remove('bg-blue-500', 'text-white', 'dark:bg-blue-600');
+            btn.classList.add('hover:bg-gray-100', 'dark:hover:bg-gray-600');
+        });
+        activeButton.classList.add('bg-blue-500', 'text-white', 'dark:bg-blue-600');
+        activeButton.classList.remove('hover:bg-gray-100', 'dark:hover:bg-gray-600');
+    };
+
+    // --- Date Calculation Helpers ---
+    const getStartOfDay = (date) => {
+        const d = new Date(date);
+        d.setHours(0, 0, 0, 0);
+        return d;
+    };
+
+    const getEndOfDay = (date) => {
+        const d = new Date(date);
+        d.setHours(23, 59, 59, 999);
+        return d;
+    };
+
+    const getStartOfWeek = (date) => {
+        const d = new Date(date);
+        const day = d.getDay(); // Sunday - 0, Monday - 1, etc.
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Adjust to Monday of current week
+        d.setDate(diff);
+        return getStartOfDay(d);
+    };
+
+    const getStartOfMonth = (date) => {
+        const d = new Date(date);
+        d.setDate(1);
+        return getStartOfDay(d);
+    };
+
+    // --- Function to calculate and update stats ---
+    const updateStats = (patientsData) => {
+        const now = new Date();
+        const startOfToday = getStartOfDay(now);
+        const endOfToday = getEndOfDay(now);
+        const startOfWeek = getStartOfWeek(now);
+        const startOfMonth = getStartOfMonth(now);
+
+        let totalUnpaidToday = 0;
+        let totalUnpaidWeek = 0;
+        let totalUnpaidMonth = 0;
+        let totalUnpaidOverall = 0;
+
+        patientsData.forEach(patient => {
+            patient.unpaid_services.forEach(service => {
+                const serviceAmount = Number(service.amount);
+                if (isNaN(serviceAmount)) return;
+
+                const serviceDate = new Date(service.date);
+
+                totalUnpaidOverall += serviceAmount;
+
+                if (serviceDate >= startOfToday && serviceDate <= endOfToday) {
+                    totalUnpaidToday += serviceAmount;
+                }
+                if (serviceDate >= startOfWeek && serviceDate <= endOfToday) {
+                    totalUnpaidWeek += serviceAmount;
+                }
+                if (serviceDate >= startOfMonth && serviceDate <= endOfToday) {
+                    totalUnpaidMonth += serviceAmount;
+                }
+            });
+        });
+
+        totalUnpaidTodayElement.textContent = `KES ${totalUnpaidToday.toLocaleString('en-KE')}`;
+        totalUnpaidWeekElement.textContent = `KES ${totalUnpaidWeek.toLocaleString('en-KE')}`;
+        totalUnpaidMonthElement.textContent = `KES ${totalUnpaidMonth.toLocaleString('en-KE')}`;
+        totalUnpaidOverallElement.textContent = `KES ${totalUnpaidOverall.toLocaleString('en-KE')}`;
+    };
+
+    // --- Main Filtering Function ---
+    const applyFiltersAndRender = () => {
+        let filteredPatients = allPatients.filter(patient => {
+            const patientName = patient.full_name.toLowerCase();
+            const patientRegNo = patient.reg_no.toLowerCase();
+            const patientPhone = patient.phone.toLowerCase();
+
+            const matchesSearch = currentFilters.searchQuery === '' ||
+                                  patientName.includes(currentFilters.searchQuery) ||
+                                  patientRegNo.includes(currentFilters.searchQuery) ||
+                                  patientPhone.includes(currentFilters.searchQuery);
+            if (!matchesSearch) return false;
+
+            const fromDate = currentFilters.dateFrom ? getStartOfDay(new Date(currentFilters.dateFrom)) : null;
+            const toDate = currentFilters.dateTo ? getEndOfDay(new Date(currentFilters.dateTo)) : null;
+
+            let matchesDateRange = true;
+            if (fromDate || toDate) {
+                matchesDateRange = patient.unpaid_services.some(service => {
+                    const serviceDate = new Date(service.date);
+                    let isWithinRange = true;
+                    if (fromDate && serviceDate < fromDate) isWithinRange = false;
+                    if (toDate && serviceDate > toDate) isWithinRange = false;
+                    return isWithinRange;
+                });
+            }
+            if (!matchesDateRange) return false;
+
+            const matchesPaymentMethod = currentFilters.paymentMethod === 'all' ||
+                                         patient.payment_method === currentFilters.paymentMethod;
+            return matchesPaymentMethod;
+        });
+
+        filteredPatients = filteredPatients.filter(p => {
+            const total = p.unpaid_services.reduce((sum, s) => sum + Number(s.amount), 0);
+            p.calculated_total = total;
+            return total > 0 && p.unpaid_services.length > 0;
+        });
+
+        renderTable(filteredPatients);
+    };
+
+    // --- Data Fetching ---
+    const fetchPatients = () => {
+        fetch('/billing/api/patients-with-unpaid-services')
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                return res.json();
+            })
+            .then(data => {
+                allPatients = data;
+                updateStats(allPatients);
+                applyFiltersAndRender();
+            })
+            .catch(err => {
+                console.error('Error fetching unpaid services:', err);
+                unpaidPatientsTbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="text-center text-red-500 py-6">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>Error loading data. Please try again.
+                    </td>
+                </tr>`;
+                totalUnpaidTodayElement.textContent = `KES 0`;
+                totalUnpaidWeekElement.textContent = `KES 0`;
+                totalUnpaidMonthElement.textContent = `KES 0`;
+                totalUnpaidOverallElement.textContent = `KES 0`;
+            });
+    };
+
+    // --- Table Rendering Function ---
+    const renderTable = (patientsToRender) => {
+        unpaidPatientsTbody.innerHTML = '';
+
+        if (patientsToRender.length === 0) {
+            unpaidPatientsTbody.innerHTML = `
+            <tr>
+                <td colspan="6" class="text-center text-gray-500 py-6">
+                    <i class="fas fa-check-circle mr-2 text-green-500"></i>No outstanding payments matching your criteria.
+                </td>
+            </tr>`;
+            return;
+        }
+
+        patientsToRender.forEach(patient => {
+            const total = patient.calculated_total;
+
+            // --- Services Display in Table Cell ---
+            let servicesSummary = '';
+            if (patient.unpaid_services && patient.unpaid_services.length > 0) {
+                servicesSummary = `
+                    <span class="font-semibold text-blue-600 dark:text-blue-400">
+                        ${patient.unpaid_services.length} Service(s)
+                    </span>`;
+            } else {
+                servicesSummary = `<span class="text-gray-500 italic">No services</span>`;
+            }
+            // --- END Services Display ---
+
+            let coverBadge = '';
+            if (patient.payment_method === 'cash') {
+                coverBadge = `<span class="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded-full dark:bg-blue-900 dark:text-blue-200">Cash</span>`;
+            } else if (patient.payment_method === 'insurance' && patient.insurance_provider_name) {
+                coverBadge = `<span class="bg-purple-100 text-purple-800 text-xs font-semibold px-2.5 py-0.5 rounded-full dark:bg-purple-900 dark:text-purple-200">${patient.insurance_provider_name}</span>`;
+            } else if (patient.payment_method === 'insurance') {
+                coverBadge = `<span class="bg-purple-100 text-purple-800 text-xs font-semibold px-2.5 py-0.5 rounded-full dark:bg-purple-900 dark:text-purple-200">Insurance</span>`;
+            } else {
+                coverBadge = `<span class="bg-gray-100 text-gray-800 text-xs font-semibold px-2.5 py-0.5 rounded-full dark:bg-gray-700 dark:text-gray-300">Unknown</span>`;
+            }
+
+            let actionButton = '';
+            if (patient.payment_method === 'insurance') {
+                actionButton = `
+                <a href="/billing/patient/${patient.reg_no}/verify"
+                  class="verify-btn bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 text-xs rounded-full flex items-center gap-1 transition-colors duration-200">
+                  <i data-feather="shield" class="w-4 h-4"></i> Verify
+                </a>`;
+            } else {
+                actionButton = `
+                <a href="/billing/patient/${patient.reg_no}/pay"
+                  class="pay-btn bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 text-xs rounded-full flex items-center gap-1 transition-colors duration-200">
+                  <i data-feather="dollar-sign" class="w-4 h-4"></i> Pay
+                </a>`;
+            }
+
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-150 ease-in-out';
+            tr.innerHTML = `
+            <td class="px-4 py-4 font-medium text-gray-900 dark:text-white">
+                ${patient.full_name}
+                <span class="text-gray-400 dark:text-gray-500 text-xs block font-mono">(${patient.reg_no})</span>
+            </td>
+            <td class="px-4 py-4 text-gray-700 dark:text-gray-300">${patient.phone}</td>
+            <td class="px-4 py-4">${coverBadge}</td>
+            <td class="px-4 py-4">
+                <div class="unpaid-services-trigger inline-flex items-center gap-1 cursor-pointer"
+                     data-patient-reg-no="${patient.reg_no}"
+                     data-patient-name="${patient.full_name}">
+                    ${servicesSummary}
+                    <i data-feather="plus-circle" class="w-4 h-4 text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors duration-200"></i>
+                </div>
+            </td>
+            <td class="px-4 py-4 font-bold text-indigo-600 dark:text-indigo-400">KES ${total.toLocaleString('en-KE')}</td>
+            <td class="px-4 py-4">
+                <div class="flex gap-2">
+                    <a href="/billing/patient/${patient.reg_no}/details"
+                      class="view-btn bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 text-xs rounded-full flex items-center gap-1 transition-colors duration-200">
+                      <i data-feather="eye" class="w-4 h-4"></i> View
+                    </a>
+                    ${actionButton}
+                    <button data-id="${patient.reg_no}"
+                      class="delete-btn bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 text-xs rounded-full flex items-center gap-1 transition-colors duration-200">
+                      <i data-feather="trash-2" class="w-4 h-4"></i> Delete
+                    </button>
+                </div>
+            </td>`;
+
+            unpaidPatientsTbody.appendChild(tr);
+        });
+
+        feather.replace(); // Render Feather icons
+    };
+
+    // --- MODAL Functions (MODIFIED for total) ---
+    const openModal = (patientRegNo, patientName) => {
+        const patient = allPatients.find(p => p.reg_no === patientRegNo);
+
+        if (!patient) {
+            console.error('Patient not found for modal:', patientRegNo);
+            modalPatientName.innerHTML = `<i data-feather="alert-triangle" class="w-7 h-7 inline-block mr-3 text-red-500"></i> Error: Patient Not Found`;
+            modalServicesContent.innerHTML = `<p class="text-red-500 text-center py-4">Could not load patient details.</p>`;
+            modalTotalAmount.textContent = 'KES 0.00'; // Set total to 0 on error
+            unpaidServicesModal.classList.remove('hidden');
+            unpaidServicesModal.querySelector(':first-child').classList.remove('scale-90', 'opacity-0');
+            unpaidServicesModal.querySelector(':first-child').classList.add('scale-100', 'opacity-100');
+            document.body.classList.add('overflow-hidden');
+            feather.replace(); // Ensure icons in modal are rendered if any
+            return;
+        }
+
+        // Set modal title with patient name
+        modalPatientName.innerHTML = `<i data-feather="dollar-sign" class="w-7 h-7 inline-block mr-3 text-green-500"></i> <span class="truncate">Unpaid Services for <span class="text-blue-700 dark:text-blue-400">${patientName}</span></span>`;
+
+        let servicesHtml = '';
+        let currentModalTotal = 0; // Initialize total for this modal instance
+
+        if (patient.unpaid_services && patient.unpaid_services.length > 0) {
+            servicesHtml = patient.unpaid_services.map(s => {
+                const serviceDate = s.date ? new Date(s.date) : null;
+                const formattedDate = serviceDate && !isNaN(serviceDate.getTime()) ? serviceDate.toLocaleDateString('en-KE', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A';
+                const serviceAmount = Number(s.amount);
+                if (!isNaN(serviceAmount)) {
+                    currentModalTotal += serviceAmount; // Add to total
+                }
+
+                return `
+                    <div class="mb-4 pb-4 border-b border-gray-150 dark:border-gray-700 last:border-b-0 last:mb-0 last:pb-0">
+                        <p class="font-semibold text-xl text-gray-900 dark:text-white mb-1 leading-tight">${s.name} <span class="text-sm text-gray-500 dark:text-gray-400">(${s.type})</span></p>
+                        <p class="text-green-600 font-bold mb-1 text-lg">KES ${serviceAmount.toLocaleString('en-KE')}</p>
+                        <p class="text-gray-500 dark:text-gray-400 text-sm">Date: ${formattedDate} <span class="font-medium">[Source: ${s.source || 'N/A'}]</span></p>
+                    </div>`;
+            }).join('');
+        } else {
+            servicesHtml = `<div class="text-center text-gray-500 py-10 text-lg">No unpaid services recorded for this patient.</div>`;
+        }
+
+        modalServicesContent.innerHTML = servicesHtml;
+        modalTotalAmount.textContent = `KES ${currentModalTotal.toLocaleString('en-KE')}`; // Update the total amount in the footer
+
+        unpaidServicesModal.classList.remove('hidden'); // Show the modal overlay
+        unpaidServicesModal.querySelector(':first-child').classList.remove('scale-90', 'opacity-0'); // Animate modal content in
+        unpaidServicesModal.querySelector(':first-child').classList.add('scale-100', 'opacity-100');
+        document.body.classList.add('overflow-hidden'); // Prevent background scrolling
+        feather.replace(); // Ensure icons in modal are rendered
+    };
+
+    const closeModal = () => {
+        unpaidServicesModal.querySelector(':first-child').classList.remove('scale-100', 'opacity-100'); // Animate modal content out
+        unpaidServicesModal.querySelector(':first-child').classList.add('scale-90', 'opacity-0');
+        // Wait for animation to complete before hiding fully
+        setTimeout(() => {
+            unpaidServicesModal.classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
+        }, 300); // Match this timeout to your transition duration
+    };
+
+    // --- Event Listeners for Filters ---
+    searchInput.addEventListener('input', (e) => {
+        currentFilters.searchQuery = e.target.value.toLowerCase().trim();
+        applyFiltersAndRender();
+    });
+
+    dateFromInput.addEventListener('change', (e) => {
+        currentFilters.dateFrom = e.target.value;
+        applyFiltersAndRender();
+    });
+
+    dateToInput.addEventListener('change', (e) => {
+        currentFilters.dateTo = e.target.value;
+        applyFiltersAndRender();
+    });
+
+    filterAllBtn.addEventListener('click', () => {
+        currentFilters.paymentMethod = 'all';
+        updatePaymentFilterButtons(filterAllBtn);
+        applyFiltersAndRender();
+    });
+
+    filterCashBtn.addEventListener('click', () => {
+        currentFilters.paymentMethod = 'cash';
+        updatePaymentFilterButtons(filterCashBtn);
+        applyFiltersAndRender();
+    });
+
+    filterInsuranceBtn.addEventListener('click', () => {
+        currentFilters.paymentMethod = 'insurance';
+        updatePaymentFilterButtons(filterInsuranceBtn);
+        applyFiltersAndRender();
+    });
+
+    // --- Event Delegation for Table Clicks ---
+    unpaidPatientsTbody.addEventListener('click', e => {
+        const trigger = e.target.closest('.unpaid-services-trigger');
+        if (trigger) {
+            const patientRegNo = trigger.getAttribute('data-patient-reg-no');
+            const patientName = trigger.getAttribute('data-patient-name');
+            openModal(patientRegNo, patientName);
+            return;
+        }
+
+        const target = e.target.closest('a') || e.target.closest('button');
+        if (!target) return;
+
+        const reg_no = target.getAttribute('data-id');
+
+        if (target.classList.contains('delete-btn')) {
+            if (confirm('Are you sure you want to delete all unpaid services for this patient? This action cannot be undone.')) {
+                fetch(`/billing/api/delete-unpaid-services/${reg_no}`, {
+                        method: 'DELETE'
+                    })
+                    .then(res => {
+                        if (!res.ok) {
+                            return res.json().then(errData => { throw new Error(errData.message || 'Failed to delete services.'); });
+                        }
+                        return res.json();
+                    })
+                    .then(() => {
+                        alert('Unpaid services deleted successfully!');
+                        fetchPatients(); // Re-fetch to get the updated list
+                    })
+                    .catch(err => {
+                        console.error('Deletion error:', err);
+                        alert('Error deleting unpaid services: ' + err.message);
+                    });
+            }
+        }
+    });
+
+    // --- MODAL Event Listeners ---
+    closeModalBtn.addEventListener('click', closeModal);
+    modalDoneBtn.addEventListener('click', closeModal);
+    unpaidServicesModal.addEventListener('click', (e) => {
+        if (e.target === unpaidServicesModal) {
+            closeModal();
+        }
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !unpaidServicesModal.classList.contains('hidden')) {
+            closeModal();
+        }
+    });
+
+
+    // --- Initial Load ---
+    fetchPatients();
+    updatePaymentFilterButtons(filterAllBtn);
+});
+    </script>
+
+    <!-- Patient Details Card 
+    <div id="patientDetails" class="hidden mb-8 bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800  dark:bg-gray-900 dark:bg-gray-800 rounded-2xl shadow-xl p-8">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+            <div class="space-y-2">
+                <h2 class="text-3xl font-bold text-gray-800 dark:text-white">
+                    <span id="patientName"></span>
+                    <span class="block text-sm text-blue-500 dark:text-blue-400 mt-1">Reg No: <span id="patientRegNo"></span></span>
+                </h2>
+                <div class="grid grid-cols-2 gap-4 text-sm">
+                    <div class="flex items-center">
+                        <i class="fas fa-phone-alt mr-2 text-gray-500 dark:text-gray-400"></i>
+                        <span id="patientPhone" class="text-gray-600 dark:text-gray-300"></span>
+                    </div>
+                    <div class="flex items-center">
+                        <i class="fas fa-birthday-cake mr-2 text-gray-500 dark:text-gray-400"></i>
+                        <span id="patientAge" class="text-gray-600 dark:text-gray-300"></span>
+                    </div>
+                    <div class="flex items-center">
+                        <i class="fas fa-envelope mr-2 text-gray-500 dark:text-gray-400"></i>
+                        <span id="patientEmail" class="text-gray-600 dark:text-gray-300"></span>
+                    </div>
+                    <div class="flex items-center">
+                        <i class="fas fa-shield-alt mr-2 text-gray-500 dark:text-gray-400"></i>
+                        <span id="patientInsurance" class="text-gray-600 dark:text-gray-300">None</span>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gradient-to-br from-blue-500 to-blue-600 text-white px-6 py-4 rounded-xl shadow-lg min-w-[200px]">
+                <div class="text-sm font-semibold">Total Balance Due</div>
+                <div class="text-3xl font-bold mt-1" id="patientTotalDue">0</div>
+                <div class="text-xs opacity-90">Kenyan Shillings</div>
+            </div>
+        </div>
+
+        <div class="mt-8">
+            <h3 class="text-xl font-semibold mb-6 text-gray-700 dark:text-gray-300 flex items-center">
+                <i class="fas fa-file-invoice-dollar mr-2 text-blue-500"></i> Outstanding Services
+            </h3>
+            <div id="unpaidServices" class="space-y-4">
+            </div>
+        </div>
+    </div>
+
+    <div class="grid lg:grid-cols-2 gap-8">
+        <div class="bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800  dark:bg-gray-900 dark:bg-gray-800 rounded-2xl shadow-xl p-8">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+                <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300">
+                    <i class="fas fa-wallet mr-2 text-blue-500"></i>Payment Processing
+                </h2>
+                <div class="flex space-x-2 bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
+                    <button type="button" class="payment-method-tab px-4 py-2 rounded-lg transition-all" data-method="stk">
+                        <i class="fas fa-mobile-alt mr-2"></i>STK
+                    </button>
+                    <button type="button" class="payment-method-tab px-4 py-2 rounded-lg transition-all" data-method="paybill">
+                        <i class="fas fa-building mr-2"></i>Paybill
+                    </button>
+                </div>
+            </div>
+
+            <div id="stkForm" class="space-y-6">
+                <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-xl">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Mobile Payment</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <span class="text-gray-500 dark:text-gray-400">+254</span>
+                        </div>
+                        <input type="tel" id="stkPhone" name="stkPhone" required class="w-full pl-16 pr-4 py-3 rounded-lg border-0 bg-gray-50 dark:bg-gray-700 shadow-sm focus:ring-2 focus:ring-blue-500" placeholder="7XX XXX XXX" pattern="[0-9]{9}">
+                    </div>
+                </div>
+            </div>
+
+            <div id="paybillForm" class="space-y-6 hidden">
+                <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-xl">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Paybill Payment</label>
+                    <input type="text" id="paybillRef" name="paybillRef" class="w-full py-3 px-4 rounded-lg border-0 bg-white dark:bg-gray-600 shadow-sm focus:ring-2 focus:ring-blue-500" placeholder="Enter M-PESA transaction code">
+                </div>
+                <button type="button" id="verifyPaymentBtn" class="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold transition-all transform hover:scale-[1.02]">
+                    <i class="fas fa-check-circle mr-2"></i>Verify Payment
+                </button>
+            </div>
+
+            <div class="mt-8">
+                <button type="button" id="processPaymentBtn" class="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white py-4 px-8 rounded-xl font-semibold transition-all transform hover:scale-[1.02] shadow-lg">
+                    <i class="fas fa-credit-card mr-2"></i>Process Payment
+                </button>
+            </div>
+        </div>
+
+        <div class="bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800  dark:bg-gray-900 dark:bg-gray-800 rounded-2xl shadow-xl p-8 h-fit sticky top-8">
+            <h2 class="text-xl font-semibold mb-6 text-gray-700 dark:text-gray-300">
+                <i class="fas fa-receipt mr-2 text-blue-500"></i>Payment Breakdown
+            </h2>
+            <div class="space-y-4">
+                <div class="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700">
+                    <span class="text-gray-600 dark:text-gray-400">Subtotal:</span>
+                    <span id="subtotalAmount" class="font-medium">0 Ksh</span>
+                </div>
+                <div class="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700">
+                    <span class="text-gray-600 dark:text-gray-400">Tax (16%):</span>
+                    <span id="taxAmount" class="font-medium">0 Ksh</span>
+                </div>
+                <div class="flex justify-between items-center pt-4">
+                    <span class="text-lg font-bold text-gray-800 dark:text-white">Total:</span>
+                    <span id="totalAmount" class="text-2xl font-bold text-blue-600 dark:text-blue-400">0 Ksh</span>
+                </div>
+            </div>
+        </div>
+    </div>
+                <!-- STK Payment Form -->
+
+</div>
+
+<script>
+    // Updated JavaScript to handle new UI elements
+    document.addEventListener('DOMContentLoaded', () => {
+        const patientSearch = document.getElementById('patientSearch');
+        const searchResults = document.getElementById('searchResults');
+        const patientDetails = document.getElementById('patientDetails');
+        const unpaidServices = document.getElementById('unpaidServices');
+
+        // Patient Search Functionality
+        patientSearch.addEventListener('input', async(e) => {
+            const query = e.target.value.trim();
+            if (query.length < 3) return;
+
+            try {
+                // Implement actual API endpoint for patient search
+                const response = await fetch(`/billing/api/patients/search?q=${query}`);
+                const patients = await response.json();
+
+                searchResults.innerHTML = patients.map(patient => `
+                <div class="p-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-100 dark:border-gray-700" 
+                     data-id="${patient.id}"
+                     data-regno="${patient.reg_no}"
+                     data-name="${patient.full_name}"
+                     data-phone="${patient.phone}"
+                     data-insurance="${patient.insurance_provider}">
+                    <div class="font-medium">${patient.full_name}</div>
+                    <div class="text-sm text-gray-500">${patient.reg_no} • ${patient.phone}</div>
+                </div>
+            `).join('');
+
+                searchResults.classList.remove('hidden');
+            } catch (error) {
+                console.error('Search error:', error);
+            }
+        });
+
+        // Handle Patient Selection
+        searchResults.addEventListener('click', (e) => {
+            const patientCard = e.target.closest('[data-id]');
+            if (!patientCard) return;
+
+            const patientData = {
+                id: patientCard.dataset.id,
+                regNo: patientCard.dataset.regno,
+                name: patientCard.dataset.name,
+                phone: patientCard.dataset.phone,
+                insurance: patientCard.dataset.insurance
+            };
+
+            // Update patient details
+            document.getElementById('patientName').textContent = patientData.name;
+            document.getElementById('patientRegNo').textContent = patientData.regNo;
+            document.getElementById('patientPhone').textContent = patientData.phone;
+            document.getElementById('patientInsurance').textContent = patientData.insurance || 'None';
+            patientDetails.classList.remove('hidden');
+            searchResults.classList.add('hidden');
+
+            // Load unpaid services
+            loadUnpaidServices(patientData.id);
+        });
+
+        // Payment Method Tabs
+        document.querySelectorAll('.payment-method-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.payment-method-tab').forEach(t =>
+                    t.classList.remove('active', 'bg-blue-50', 'text-blue-600', 'dark:bg-gray-700', 'dark:text-blue-400')
+                );
+                tab.classList.add('active', 'bg-blue-50', 'text-blue-600', 'dark:bg-gray-700', 'dark:text-blue-400');
+
+                document.getElementById('stkForm').classList.toggle('hidden', tab.dataset.method !== 'stk');
+                document.getElementById('paybillForm').classList.toggle('hidden', tab.dataset.method !== 'paybill');
+            });
+        });
+
+        // Updated loadUnpaidServices function
+        async function loadUnpaidServices(patientId) {
+            try {
+                const response = await fetch(`/billing/api/patients/${patientId}/unpaid-services`);
+                const services = await response.json();
+
+                unpaidServices.innerHTML = services.map(service => `
+                                            <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+                        <div class="flex items-center space-x-4">
+                            <div class="p-2 rounded-lg ${getServiceIconColor(service.source)}">
+                                ${getServiceIcon(service.source)}
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-gray-800 dark:text-white">${service.name}</h4>
+                                <div class="text-sm text-gray-600 dark:text-gray-300">
+                                    <span class="capitalize">${service.source.replace('_', ' ')}</span> • 
+                                    ${service.date} • 
+                                    <span class="font-medium">${service.type}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-lg font-bold text-blue-600 dark:text-blue-400">
+                                ${service.amount.toLocaleString()} Ksh
+                            </div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400">
+                                ${service.status || 'Pending'}
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+
+                updateTotals(services);
+            } catch (error) {
+                console.error('Error loading services:', error);
+            }
+        }
+
+        function getServiceIcon(source) {
+            const icons = {
+                lab_test: 'fa-flask',
+                medication: 'fa-pills',
+                radiology: 'fa-x-ray',
+                transaction: 'fa-file-invoice'
+            };
+            return `<i class="fas ${icons[source]} fa-lg text-white"></i>`;
+        }
+
+        function getServiceIconColor(source) {
+            const colors = {
+                lab_test: 'bg-purple-500',
+                medication: 'bg-green-500',
+                radiology: 'bg-red-500',
+                transaction: 'bg-blue-500'
+            };
+            return colors[source];
+        }
+
+        function updateTotals(services) {
+            const subtotal = services.reduce((sum, service) => sum + service.amount, 0);
+            const tax = subtotal * 0.16;
+            const total = subtotal + tax;
+
+            document.getElementById('subtotalAmount').textContent = `${subtotal.toLocaleString()} Ksh`;
+            document.getElementById('taxAmount').textContent = `${tax.toLocaleString()} Ksh`;
+            document.getElementById('totalAmount').textContent = `${total.toLocaleString()} Ksh`;
+            document.getElementById('patientTotalDue').textContent = total.toLocaleString();
+        }
+        // ... [rest of existing JavaScript code] ...
+    });
+    // Track the current patient ID
+    let currentPatientId = null;
+
+    // Update patient selection to store the current patient ID
+    searchResults.addEventListener('click', (e) => {
+        const patientCard = e.target.closest('[data-id]');
+        if (!patientCard) return;
+
+        const patientData = {
+            id: patientCard.dataset.id,
+            // ... existing patient data ...
+        };
+
+        currentPatientId = patientData.id; // Store the current patient ID
+        // ... rest of your existing code ...
+    });
+
+    // Payment processing function
+    document.getElementById('processPaymentBtn').addEventListener('click', async() => {
+        if (!currentPatientId) {
+            alert('Please select a patient first');
+            return;
+        }
+
+        // Get payment method
+        const methodTab = document.querySelector('.payment-method-tab.active');
+        if (!methodTab) {
+            alert('Please select a payment method');
+            return;
+        }
+        const paymentMethod = methodTab.dataset.method;
+
+        // Validate payment details based on method
+        let paymentDetails = {};
+        if (paymentMethod === 'stk') {
+            const phoneInput = document.getElementById('stkPhone').value;
+            if (!phoneInput || phoneInput.length !== 9) {
+                alert('Please enter a valid 9-digit phone number (without country code)');
+                return;
+            }
+            paymentDetails = {
+                phone: `+254${phoneInput}`
+            };
+        } else if (paymentMethod === 'paybill') {
+            const reference = document.getElementById('paybillRef').value;
+            if (!reference) {
+                alert('Please enter a transaction reference');
+                return;
+            }
+            paymentDetails = {
+                account_ref: reference
+            };
+        }
+
+        // Get total amount (remove commas and currency text)
+        const totalAmount = parseFloat(
+            document.getElementById('totalAmount').textContent
+            .replace(' Ksh', '')
+            .replace(/,/g, '')
+        );
+
+        // Create payment data object
+        const paymentData = {
+            patient_id: currentPatientId,
+            amount: totalAmount,
+            payment_method: paymentMethod,
+            ...paymentDetails
+        };
+
+        try {
+            // Show loading state
+            const processBtn = document.getElementById('processPaymentBtn');
+            processBtn.disabled = true;
+            processBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
+
+            // Send payment request
+            const response = await fetch('/billing/payments/process', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(paymentData)
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                // Payment successful
+                alert(`Payment processed successfully! Transaction ID: ${result.transaction_id}`);
+
+                // Reset form and reload unpaid services
+                document.getElementById('stkPhone').value = '';
+                document.getElementById('paybillRef').value = '';
+                loadUnpaidServices(currentPatientId);
+            } else {
+                // Payment failed
+                throw new Error(result.error || 'Payment processing failed');
+            }
+        } catch (error) {
+            console.error('Payment error:', error);
+            alert(`Error processing payment: ${error.message}`);
+        } finally {
+            // Reset button state
+            const processBtn = document.getElementById('processPaymentBtn');
+            processBtn.disabled = false;
+            processBtn.innerHTML = '<i class="fas fa-credit-card mr-2"></i>Process Payment';
+        }
+    });
+</script>
+
+<style>
+    .payment-method-tab {
+        @apply text-gray-600 dark: text-gray-400 transition-colors;
+    }
+    
+    .payment-method-tab.active {
+        @apply bg-blue-500 text-white shadow-md;
+    }
+    
+    #searchResults::-webkit-scrollbar {
+        @apply w-2;
+    }
+    
+    #searchResults::-webkit-scrollbar-track {
+        @apply bg-gray-100 dark: bg-gray-700;
+    }
+    
+    #searchResults::-webkit-scrollbar-thumb {
+        @apply bg-gray-300 dark: bg-gray-600 rounded-full;
+    }
+    
+    .service-item {
+        @apply transform transition-transform hover: -translate-y-0.5;
+    }
+</style>
+{% endblock %}

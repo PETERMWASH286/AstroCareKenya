@@ -1,0 +1,253 @@
+{% extends "base.html" %} {% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header Section -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 space-y-4 md:space-y-0">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Radiology Imaging Reports</h1>
+            <p class="text-gray-600 dark:text-gray-400">Advanced diagnostic imaging results and analysis</p>
+        </div>
+        <div class="flex items-center space-x-3">
+            <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all 
+                         flex items-center space-x-2 shadow-lg hover:shadow-xl">
+                <i class="fas fa-file-export"></i>
+                <span>Export DICOM</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Advanced Filters -->
+    <div class="bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 dark:bg-gray-800 rounded-2xl p-4 mb-6 shadow-xl">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="relative">
+                <input type="text" class="w-full pl-10 pr-4 py-2 rounded-lg bg-gray-50 dark:bg-gray-700 border-0 
+                              focus:ring-2 focus:ring-blue-500 transition-all" placeholder="Search scans...">
+                <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+            </div>
+            <select class="bg-gray-50 dark:bg-gray-700 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500">
+                <option value="">All Modalities</option>
+                <option>MRI</option>
+                <option>CT Scan</option>
+                <option>X-Ray</option>
+                <option>Ultrasound</option>
+            </select>
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-2">
+                    <span class="text-gray-600 dark:text-gray-400 text-sm">Date Range:</span>
+                    <input type="date" class="bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-1.5 text-sm">
+                    <span class="text-gray-400">to</span>
+                    <input type="date" class="bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-1.5 text-sm">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scan Results Table -->
+    <div class="bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-900">
+                    <tr>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Patient
+                        </th>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Imaging Study
+                        </th>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Status
+                        </th>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Timeline
+                        </th>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Actions
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    {% for order in results %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">
+                        <!-- Patient Column -->
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 h-10 w-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-user-injured text-blue-500 dark:text-blue-300"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <div class="text-sm font-medium text-gray-900 dark:text-white">
+                                        {{ order.consultation.patient.full_name }}
+                                    </div>
+                                    <div class="text-sm text-gray-500 dark:text-gray-400">
+                                        {{ order.consultation.patient.reg_no }} • {{ order.consultation.patient.age }}y
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- Scan Details Column -->
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center space-x-3">
+                                <div class="p-2 bg-orange-100 dark:bg-orange-900 rounded-lg">
+                                    <i class="fas fa-x-ray text-orange-500 dark:text-orange-300 text-lg"></i>
+                                </div>
+                                <div>
+                                    <div class="text-sm font-medium text-gray-900 dark:text-white">
+                                        {{ order.service.name }}
+                                    </div>
+                                    <div class="text-sm text-gray-500 dark:text-gray-400">
+                                        {{ order.service.description|truncate(40) }}
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- Status Column -->
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                                {% if order.status == 'verified' %}
+                                    bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300
+                                {% elif order.status == 'completed' %}
+                                    bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300
+                                {% else %}
+                                    bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300
+                                {% endif %}">
+                                <i class="fas fa-circle text-[10px] mr-2
+                                    {% if order.status == 'verified' %}text-green-500
+                                    {% elif order.status == 'completed' %}text-blue-500
+                                    {% else %}text-gray-500{% endif %}"></i> {{ order.status|title }}
+                            </div>
+                        </td>
+
+                        <!-- Timeline Column -->
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900 dark:text-white">
+                                {% if order.completed_at %}
+                                <div class="flex items-center space-x-2">
+                                    <i class="fas fa-check-circle text-green-500"></i>
+                                    <span>Completed: {{ order.completed_at.strftime('%b %d, %Y %H:%M') }}</span>
+                                </div>
+                                {% else %}
+                                <div class="flex items-center space-x-2 text-yellow-600 dark:text-yellow-400">
+                                    <i class="fas fa-clock"></i>
+                                    <span>Pending Interpretation</span>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                {% if order.completed_at %} Turnaround: {{ (order.completed_at - order.requested_at)|duration }} {% else %} Waiting: {{ (datetime.utcnow() - order.requested_at)|duration }} {% endif %}
+                            </div>
+                        </td>
+
+                        <!-- Actions Column -->
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center space-x-4">
+                                <a href="{{ url_for('consultations_web.view_radiology_order', order_id=order.id) }}" class="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300" data-tippy-content="View full report">
+                                    <i class="fas fa-file-medical text-lg"></i>
+                                </a>
+
+                                {% if order.status == 'completed' %}
+                                <button class="text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300 verify-btn" data-order-id="{{ order.id }}" data-tippy-content="Verify this report">
+                                    <i class="fas fa-check-double text-lg"></i>
+                                </button> {% endif %}
+
+                                <div class="relative">
+                                    <button class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" data-tippy-content="More actions" id="dropdownButton-{{ order.id }}">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <div class="absolute right-0 mt-1 hidden w-48 bg-white dark:bg-gray-800 rounded-md shadow-xl py-1 border border-gray-200 dark:border-gray-700 z-50" id="dropdownMenu-{{ order.id }}">
+                                        <a href="#" class="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                            <i class="fas fa-download mr-3 text-gray-400"></i> Download DICOM
+                                        </a>
+                                        <a href="#" class="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                            <i class="fas fa-share-nodes mr-3 text-gray-400"></i> Share Report
+                                        </a>
+                                        <a href="#" class="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                            <i class="fas fa-archive mr-3 text-gray-400"></i> Archive
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Empty State -->
+    {% if not results %}
+    <div class="text-center py-12">
+        <div class="mb-4 text-gray-400 dark:text-gray-500 text-6xl">
+            <i class="fas fa-x-ray"></i>
+        </div>
+        <h3 class="text-xl font-medium text-gray-900 dark:text-white mb-2">No imaging reports found</h3>
+        <p class="text-gray-600 dark:text-gray-400">All requested radiology studies appear to be completed and verified</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Floating Action Button -->
+<button class="fixed bottom-8 right-8 w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-xl 
+            flex items-center justify-center transition-all hover:rotate-90">
+    <i class="fas fa-plus text-xl"></i>
+</button>
+
+<style>
+    .duration {
+        animation-duration: 300ms;
+    }
+    
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .animate-fadeIn {
+        animation: fadeIn 0.3s ease-out;
+    }
+</style>
+<script src="https://unpkg.com/@popperjs/core@2"></script>
+<script src="https://unpkg.com/tippy.js@6"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize Tippy
+        tippy('[data-tippy-content]', {
+            theme: 'light-border',
+            animation: 'fade',
+            placement: 'bottom'
+        });
+
+        // Verify button handler remains the same
+    });
+</script>
+
+<script>
+    document.querySelectorAll('[id^="dropdownButton-"]').forEach(button => {
+        button.addEventListener('click', function() {
+            const menuId = this.id.replace('Button', 'Menu');
+            const menu = document.getElementById(menuId);
+            menu.classList.toggle('hidden');
+            menu.classList.add('animate-fadeIn');
+        });
+    });
+
+    // Close dropdowns when clicking outside
+    window.addEventListener('click', function(e) {
+        if (!e.target.matches('[id^="dropdownButton-"]')) {
+            document.querySelectorAll('[id^="dropdownMenu-"]').forEach(menu => {
+                if (!menu.classList.contains('hidden')) {
+                    menu.classList.add('hidden');
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

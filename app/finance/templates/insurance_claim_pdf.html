@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <style>
+        @page {
+            margin: 1.5cm;
+            size: A4;
+            @top-center {
+                content: element(header);
+            }
+            @bottom-center {
+                content: element(footer);
+            }
+        }
+        
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        #header {
+            position: running(header);
+            text-align: center;
+            border-bottom: 2px solid #2c6fbb;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+        
+        #footer {
+            position: running(footer);
+            text-align: center;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+            font-size: 10px;
+            color: #777;
+        }
+        
+        .hospital-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+        
+        .hospital-logo {
+            max-height: 70px;
+            margin-right: 20px;
+        }
+        
+        .hospital-info {
+            text-align: center;
+        }
+        
+        .hospital-name {
+            font-size: 22px;
+            font-weight: bold;
+            color: #2c6fbb;
+            margin-bottom: 5px;
+        }
+        
+        .hospital-contact {
+            font-size: 12px;
+            color: #555;
+        }
+        
+        .invoice-section {
+            margin-bottom: 40px;
+            page-break-inside: avoid;
+        }
+        
+        .invoice-header {
+            background-color: #2c6fbb;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px 5px 0 0;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .patient-info {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border: 1px solid #dee2e6;
+            border-top: none;
+        }
+        
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        .items-table th {
+            background-color: #e9ecef;
+            text-align: left;
+            padding: 10px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .items-table td {
+            padding: 10px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .total-row {
+            font-weight: bold;
+            background-color: #f8f9fa;
+        }
+        
+        .insurance-info {
+            background-color: #e8f4ff;
+            padding: 15px;
+            border: 1px solid #cfe2ff;
+            border-radius: 0 0 5px 5px;
+            margin-bottom: 30px;
+        }
+        
+        .page-break {
+            page-break-before: always;
+        }
+        
+        .watermark {
+            position: absolute;
+            opacity: 0.1;
+            font-size: 80px;
+            transform: rotate(-45deg);
+            top: 40%;
+            left: 10%;
+            z-index: -1;
+        }
+        
+        .generated-date {
+            text-align: right;
+            font-size: 12px;
+            color: #777;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="header">
+        <div class="hospital-header">
+            <img src="{{ hospital.logo }}" class="hospital-logo" alt="Hospital Logo">
+            <div class="hospital-info">
+                <div class="hospital-name">{{ hospital.name }}</div>
+                <div class="hospital-contact">
+                    {{ hospital.address }} | {{ hospital.phone }} | {{ hospital.email }} | {{ hospital.website }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="footer">
+        Page <span class="page-number"></span> of <span class="page-count"></span> | {{ hospital.name }} | Confidential Medical Document
+    </div>
+
+    <div class="generated-date">
+        Generated on: {{ generated_date }}
+    </div>
+
+    <div class="watermark">ASTROCARE</div>
+
+    {% for invoice in invoices %}
+    <div class="invoice-section">
+        <div class="invoice-header">
+            <h2>INVOICE #{{ invoice.id }}</h2>
+            <div>
+                <strong>Date:</strong> {{ invoice.issue_date.strftime('%Y-%m-%d') }}<br>
+                <strong>Due Date:</strong> {{ invoice.due_date.strftime('%Y-%m-%d') if invoice.due_date else '–' }}
+            </div>
+        </div>
+
+        <div class="patient-info">
+            <h3>Patient Information</h3>
+            <p>
+                <strong>Name:</strong> {{ invoice.patient.full_name }}<br>
+                <strong>ID:</strong> {{ invoice.patient.id }}<br>
+                <strong>DOB:</strong> {{ invoice.patient.date_of_birth.strftime('%Y-%m-%d') }}
+            </p>
+        </div>
+
+        <h3>Services Rendered</h3>
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th>Service</th>
+                    <th>Description</th>
+                    <th>Quantity</th>
+                    <th>Unit Price (KES)</th>
+                    <th>Total (KES)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in invoice.items %}
+                <tr>
+                    <td>{{ item.service.name }}</td>
+                    <td>{{ item.service.description }}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td>{{ item.unit_price | format_currency }}</td>
+                    <td>{{ item.total_price | format_currency }}</td>
+                </tr>
+                {% endfor %}
+                <tr class="total-row">
+                    <td colspan="4" style="text-align: right;">TOTAL:</td>
+                    <td>{{ invoice.total_amount | format_currency }}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="insurance-info">
+            <h3>Insurance Information</h3>
+            <p>
+                <strong>Provider:</strong> {{ invoice.insurance.name }}<br>
+                <strong>Policy #:</strong> {{ invoice.insurance.policy_number }}<br>
+                <strong>Coverage:</strong> {{ invoice.insurance.coverage_start_date.strftime('%Y-%m-%d') }} to {% if invoice.insurance.coverage_end_date %} {{ invoice.insurance.coverage_end_date.strftime('%Y-%m-%d') }} {% else %} Present {% endif %}<br>
+                <strong>Status:</strong> {{ invoice.insurance.coverage_status }}
+            </p>
+        </div>
+    </div>
+
+    {% if not loop.last %}
+    <div class="page-break"></div>
+    {% endif %} {% endfor %}
+
+    <script>
+        // Add page numbering
+        document.addEventListener('DOMContentLoaded', function() {
+            const totalPages = document.querySelectorAll('.page-number').length;
+            document.querySelectorAll('.page-number').forEach((el, index) => {
+                el.textContent = (index + 1);
+            });
+            document.querySelectorAll('.page-count').forEach(el => {
+                el.textContent = totalPages;
+            });
+        });
+    </script>
+</body>
+
+</html>

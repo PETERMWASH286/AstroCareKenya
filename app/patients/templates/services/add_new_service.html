@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+
+{% block title %}Add New Service{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 px-4 py-12">
+    <div class="w-full max-w-3xl bg-white dark:bg-gray-800 rounded-2xl shadow-3xl p-10 transform transition duration-500 hover:shadow-4xl">
+
+        <div class="flex justify-between items-start mb-8 border-b-2 pb-4 border-gray-200 dark:border-gray-700">
+            <div>
+                <h1 class="text-4xl font-extrabold text-gray-900 dark:text-gray-100 tracking-tight">
+                    Add New Consultation Service
+                </h1>
+                <p class="mt-2 text-lg text-gray-600 dark:text-gray-400 max-w-xl">
+                    Create a new service by providing its name, description, and estimated duration.
+                </p>
+            </div>
+            <a href="{{ url_for('consultations_web.manage_consultation_services') }}" 
+               class="text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors duration-150" title="Back to Services">
+                <i class="fas fa-times text-2xl"></i>
+            </a>
+        </div>
+
+        <form method="POST" action="{{ url_for('consultations_web.add_new_service') }}" class="space-y-8">
+            <div class="relative">
+                <label for="name" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Service Name</label>
+                <div class="flex items-center bg-gray-50 dark:bg-gray-700 rounded-xl overflow-hidden shadow-inner-sm">
+                    <span class="p-4 bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400">
+                        <i class="fas fa-tag"></i>
+                    </span>
+                    <input type="text" id="name" name="name" required placeholder="e.g., General Practitioner Check-up"
+                           class="flex-1 w-full px-4 py-3 text-lg border-none focus:outline-none focus:ring-2 focus:ring-blue-500 bg-transparent
+                                  text-gray-900 dark:text-gray-100 transition duration-150 ease-in-out">
+                </div>
+            </div>
+
+            <div class="relative">
+                <label for="description" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Description</label>
+                <div class="flex items-center bg-gray-50 dark:bg-gray-700 rounded-xl overflow-hidden shadow-inner-sm">
+                    <span class="self-start p-4 bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400 mt-2">
+                        <i class="fas fa-file-alt"></i>
+                    </span>
+                    <textarea id="description" name="description" rows="5" placeholder="Provide a brief description of the service..."
+                              class="flex-1 w-full px-4 py-3 text-lg border-none focus:outline-none focus:ring-2 focus:ring-blue-500 bg-transparent
+                                     text-gray-900 dark:text-gray-100 transition duration-150 ease-in-out"></textarea>
+                </div>
+            </div>
+
+            <div class="relative">
+                <label for="duration" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Duration (minutes)</label>
+                <div class="flex items-center bg-gray-50 dark:bg-gray-700 rounded-xl overflow-hidden shadow-inner-sm">
+                    <span class="p-4 bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400">
+                        <i class="fas fa-clock"></i>
+                    </span>
+                    <input type="number" id="duration" name="duration" min="0" step="5" placeholder="e.g., 30"
+                           class="flex-1 w-full px-4 py-3 text-lg border-none focus:outline-none focus:ring-2 focus:ring-blue-500 bg-transparent
+                                  text-gray-900 dark:text-gray-100 transition duration-150 ease-in-out">
+                </div>
+            </div>
+
+            <input type="hidden" name="price" value="0.00">
+
+            <div class="flex justify-end space-x-4 pt-4">
+                <a href="{{ url_for('consultations_web.manage_consultation_services') }}" 
+                   class="px-8 py-3 rounded-lg font-semibold text-gray-700 dark:text-gray-200 border-2 border-gray-300 dark:border-gray-600 
+                          hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200">
+                    Cancel
+                </a>
+                <button type="submit" 
+                        class="px-8 py-3 bg-blue-600 text-white rounded-lg font-semibold shadow-xl hover:bg-blue-700 
+                               transition duration-300 ease-in-out transform hover:scale-105 flex items-center space-x-2">
+                    <i class="fas fa-save"></i>
+                    <span>Save Service</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,20 @@
+payroll_periods.html (Start here)
+→ Create payroll periods (monthly cycles)
+
+payroll_settings.html
+→ Configure earnings/deductions & statutory rates
+
+payroll_adjustments.html
+→ Add bonuses/penalties before processing
+
+process_payroll.html
+→ Run payroll calculation & generate payslips
+
+employees_payslips.html
+→ Review & manage payslips
+
+payslip_detail.html
+→ Mark individual payslips as paid
+
+payroll_reports.html
+→ Generate statutory reports

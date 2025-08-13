@@ -1,0 +1,203 @@
+{% extends "base.html" %} {% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <!-- Page Header + Search + New Patient -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+        <div>
+            <h1 class="text-3xl font-semibold text-gray-900 dark:text-white">Patient Registry</h1>
+            <p class="mt-1 text-gray-600 dark:text-gray-400">Manage all registered patients and their details</p>
+        </div>
+        <div class="flex items-center space-x-4">
+            <!-- Search Input -->
+            <div class="relative w-full max-w-md">
+                <input type="text" placeholder="Search by name, reg no, phone…" class="w-full pl-12 pr-4 py-3 bg-transparent border-b-2 border-gray-200 focus:border-indigo-500 focus:outline-none dark:border-gray-700 dark:text-white transition-all duration-300 rounded-lg"
+                />
+                <i class="fas fa-search absolute left-4 top-3.5 text-gray-400 dark:text-gray-500"></i>
+            </div>
+            <!-- Add New Patient Button -->
+            <a href="{{ url_for('patients_web.register_patient') }}" class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-3 rounded-lg shadow-md transition-all transform hover:scale-105" data-tippy-content="Register a new patient">
+                <i class="fas fa-user-plus mr-2"></i> New Patient
+            </a>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Total Patients -->
+        <div class="flex items-center p-5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow-lg transition-shadow">
+            <div class="w-12 h-12 flex-shrink-0 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
+                <i class="fas fa-users text-indigo-600 dark:text-indigo-300 text-xl"></i>
+            </div>
+            <div class="ml-4">
+                <p class="text-gray-600 dark:text-gray-400 text-sm">Total Patients</p>
+                <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ patients | length }}</p>
+            </div>
+        </div>
+        <!-- Patients with Insurance -->
+        <div class="flex items-center p-5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow-lg transition-shadow">
+            <div class="w-12 h-12 flex-shrink-0 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
+                <i class="fas fa-file-medical-alt text-green-600 dark:text-green-300 text-xl"></i>
+            </div>
+            <div class="ml-4">
+                <p class="text-gray-600 dark:text-gray-400 text-sm">With Insurance</p>
+                <p class="text-2xl font-semibold text-gray-900 dark:text-white">
+                    {{ patients | selectattr('insurance_provider') | select | list | length }}
+                </p>
+            </div>
+        </div>
+        <!-- Minors (Age < 18) -->
+        <div class="flex items-center p-5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow-lg transition-shadow">
+            <div class="w-12 h-12 flex-shrink-0 rounded-full bg-yellow-100 dark:bg-yellow-900 flex items-center justify-center">
+                <i class="fas fa-baby text-yellow-600 dark:text-yellow-300 text-xl"></i>
+            </div>
+            <div class="ml-4">
+                <p class="text-gray-600 dark:text-gray-400 text-sm">Minors (&lt;18)</p>
+                <p class="text-2xl font-semibold text-gray-900 dark:text-white">
+                    {{ patients | selectattr('age', 'lt', 18) | list | length }}
+                </p>
+            </div>
+        </div>
+        <!-- Seniors (Age ≥ 60) -->
+        <div class="flex items-center p-5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow-lg transition-shadow">
+            <div class="w-12 h-12 flex-shrink-0 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center">
+                <i class="fas fa-wheelchair text-red-600 dark:text-red-300 text-xl"></i>
+            </div>
+            <div class="ml-4">
+                <p class="text-gray-600 dark:text-gray-400 text-sm">Seniors (&ge;60)</p>
+                <p class="text-2xl font-semibold text-gray-900 dark:text-white">
+                    {{ patients | selectattr('age', 'ge', 60) | list | length }}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Patients Table -->
+    <div class="border rounded-2xl shadow-md overflow-x-auto dark:border-gray-800">
+        <table class="min-w-full">
+            <thead class="bg-gradient-to-r from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-800 border-b dark:border-gray-700">
+                <tr>
+                    <th class="px-6 py-4 text-left text-gray-500 dark:text-gray-400 font-medium">Reg No.</th>
+                    <th class="px-6 py-4 text-left text-gray-500 dark:text-gray-400 font-medium">Name</th>
+                    <th class="px-6 py-4 text-left text-gray-500 dark:text-gray-400 font-medium">Age</th>
+                    <th class="px-6 py-4 text-left text-gray-500 dark:text-gray-400 font-medium">Phone</th>
+                    <th class="px-6 py-4 text-left text-gray-500 dark:text-gray-400 font-medium">Next of Kin</th>
+                    <th class="px-6 py-4 text-left text-gray-500 dark:text-gray-400 font-medium">Insurance</th>
+                    <th class="px-6 py-4 text-left text-gray-500 dark:text-gray-400 font-medium">Registered</th>
+                    <th class="px-6 py-4"></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y dark:divide-gray-700">
+                {% for patient in patients %}
+                <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                    <!-- Reg No -->
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="text-gray-700 dark:text-gray-200 font-medium">{{ patient.reg_no }}</span>
+                    </td>
+                    <!-- Name -->
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 flex-shrink-0 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
+                                <i class="fas fa-user text-indigo-600 dark:text-indigo-300"></i>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-gray-800 dark:text-gray-100 font-medium">{{ patient.full_name }}</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">{{ patient.kin_relationship or '-' }}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <!-- Age -->
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="text-gray-700 dark:text-gray-200">{{ patient.age }}</span>
+                    </td>
+                    <!-- Phone -->
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <a href="tel:{{ patient.phone }}" class="text-blue-600 dark:text-blue-400 hover:underline" data-tippy-content="Call {{ patient.full_name }}">
+              {{ patient.phone }}
+            </a>
+                    </td>
+
+                    <!-- Next of Kin -->
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="space-y-1">
+                            <p class="text-gray-700 dark:text-gray-200">{{ patient.kin_name or '—' }}</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">{{ patient.kin_phone or '—' }}</p>
+                        </div>
+                    </td>
+                    <!-- Insurance -->
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        {% if patient.insurance_provider %}
+                        <span class="px-2 py-1 rounded-full bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300 text-xs font-semibold">
+                {{ patient.insurance_provider }}
+              </span> {% else %}
+                        <span class="px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs font-semibold">
+                None
+              </span> {% endif %}
+                    </td>
+                    <!-- Registered Date -->
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="text-gray-600 dark:text-gray-400 text-sm">
+              {{ patient.created_at.strftime('%b %d, %Y') }}
+            </span>
+                    </td>
+                    <!-- Actions -->
+                    <td class="px-6 py-4 whitespace-nowrap text-right">
+                        <div class="flex justify-end items-center space-x-2">
+                            <!-- View -->
+                            <a href="{{ url_for('patients_web.view_patient_details', patient_id=patient.id) }}" class="p-2 bg-indigo-100 dark:bg-indigo-800 rounded-lg hover:bg-indigo-200 dark:hover:bg-indigo-700 transition-colors" data-tippy-content="View Details">
+                                <i class="fas fa-eye text-indigo-600 dark:text-indigo-300"></i>
+                            </a>
+                            <!-- Edit -->
+                            <a href="{{ url_for('patients_web.edit_patient_details', patient_id=patient.id) }}" class="p-2 bg-yellow-100 dark:bg-yellow-800 rounded-lg hover:bg-yellow-200 dark:hover:bg-yellow-700 transition-colors" data-tippy-content="Edit Patient">
+                                <i class="fas fa-edit text-yellow-600 dark:text-yellow-300"></i>
+                            </a>
+                            <!-- Delete -->
+                            <button onclick="confirmDelete({{ patient.id }})" class="p-2 bg-red-100 dark:bg-red-800 rounded-lg hover:bg-red-200 dark:hover:bg-red-700 transition-colors" data-tippy-content="Delete Patient">
+                <i class="fas fa-trash-alt text-red-600 dark:text-red-300"></i>
+              </button>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>z
+                    <td colspan="9" class="px-6 py-12 text-center">
+                        <div class="text-gray-400 dark:text-gray-500">
+                            <i class="fas fa-user-injured fa-2x mb-4"></i>
+                            <p>No patients found</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Tippy.js Tooltips -->
+<link rel="stylesheet" href="https://unpkg.com/tippy.js@6/dist/tippy.css" />
+<script src="https://unpkg.com/@popperjs/core@2"></script>
+<script src="https://unpkg.com/tippy.js@6"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        tippy('[data-tippy-content]', {
+            theme: 'light-border',
+            delay: [100, 50],
+            animation: 'scale',
+            arrow: true
+        });
+    });
+
+    // Confirm delete
+    function confirmDelete(id) {
+        if (confirm('Are you sure you want to delete this patient?')) {
+            fetch(`/patients/${id}`, {
+                    method: 'DELETE',
+                    headers: {}
+                })
+                .then(res => {
+                    if (res.ok) window.location.reload();
+                    else alert('Failed to delete patient');
+                })
+                .catch(err => console.error(err));
+        }
+    }
+</script>
+{% endblock %}

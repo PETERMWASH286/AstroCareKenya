@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-4 sm:p-6 lg:p-8">
+  <div class="bg-white shadow-lg rounded-xl overflow-hidden mb-8">
+    <div class="p-6 sm:p-8">
+      <div class="md:flex md:items-center md:justify-between">
+        <div class="flex-1 min-w-0">
+          <h1 class="text-4xl font-extrabold text-gray-900 leading-tight">🔬 Lab Reports & Analytics</h1>
+          <p class="mt-3 text-lg text-gray-600">Comprehensive overview of completed lab tests with detailed insights and export options.</p>
+        </div>
+      </div>
+
+      <div class="mt-8 flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 items-end">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 flex-grow">
+          <div>
+            <label for="date_range" class="block text-sm font-semibold text-gray-700 mb-1">Date Range</label>
+            <select id="date_range" name="date_range"
+              class="block w-full px-3 py-2 text-base border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"
+              hx-get="{{ url_for('lab_web.generate_lab_reports') }}"
+              hx-trigger="change"
+              hx-include="#test_id"
+              hx-target="#reports-container"
+              hx-swap="outerHTML"
+            >
+              <option value="current_month" {% if date_filter == 'current_month' %}selected{% endif %}>Current Month</option>
+              <option value="today" {% if date_filter == 'today' %}selected{% endif %}>Today</option>
+              <option value="yesterday" {% if date_filter == 'yesterday' %}selected{% endif %}>Yesterday</option>
+              <option value="current_week" {% if date_filter == 'current_week' %}selected{% endif %}>Current Week</option>
+              <option value="last_week" {% if date_filter == 'last_week' %}selected{% endif %}>Last Week</option>
+              <option value="last_month" {% if date_filter == 'last_month' %}selected{% endif %}>Last Month</option>
+              <option value="current_year" {% if date_filter == 'current_year' %}selected{% endif %}>Current Year</option>
+              <option value="last_year" {% if date_filter == 'last_year' %}selected{% endif %}>Last Year</option>
+              <option value="all" {% if date_filter == 'all' %}selected{% endif %}>All Time</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="test_id" class="block text-sm font-semibold text-gray-700 mb-1">Specific Lab Test</label>
+            <select id="test_id" name="test_id"
+              class="block w-full px-3 py-2 text-base border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"
+              hx-get="{{ url_for('lab_web.generate_lab_reports') }}"
+              hx-trigger="change"
+              hx-include="#date_range"
+              hx-target="#reports-container"
+              hx-swap="outerHTML"
+            >
+              <option value="">All Lab Tests</option>
+              {% for test in all_lab_tests %}
+              <option value="{{ test.id }}" {% if test_id_filter == test.id %}selected{% endif %}>{{ test.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="flex space-x-3 w-full sm:w-auto mt-4 sm:mt-0">
+          <a href="{{ url_for('lab_web.generate_lab_reports', date_range=date_filter, test_id=test_id_filter, export='pdf') }}"
+             class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition ease-in-out duration-150">
+            <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M3 17a1 1 0 01-1-1V6a1 1 0 011-1h14a1 1 0 011 1v10a1 1 0 01-1 1H3zm1-9h12v7H4V8zm-2-2a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V6zm9 3a1 1 0 011 1v2a1 1 0 11-2 0v-2a1 1 0 011-1z" clip-rule="evenodd" />
+            </svg>
+            PDF
+          </a>
+          <a href="{{ url_for('lab_web.generate_lab_reports', date_range=date_filter, test_id=test_id_filter, export='csv') }}"
+             class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition ease-in-out duration-150">
+            <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M3 17a1 1 0 01-1-1V6a1 1 0 011-1h14a1 1 0 011 1v10a1 1 0 01-1 1H3zm1-9h12v7H4V8zm-2-2a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V6zm9 3a1 1 0 011 1v2a1 1 0 11-2 0v-2a1 1 0 011-1z" clip-rule="evenodd" />
+            </svg>
+            CSV
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="reports-container" class="space-y-8">
+    <div class="bg-white shadow-lg rounded-xl p-6 sm:p-8">
+      <h2 class="text-2xl font-bold text-gray-900 mb-6">📈 Growth Comparison</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {% for period, data in growth_data.items() %}
+        <div class="bg-blue-50 p-6 rounded-xl shadow-md border border-blue-100 flex flex-col justify-between h-full">
+          <div>
+            <p class="text-sm font-semibold text-blue-700 uppercase tracking-wide">{{ period.replace('_', ' ').title() }}</p>
+            <p class="mt-2 text-4xl font-extrabold text-gray-900">{{ data.current_count }} Tests</p>
+          </div>
+          <div class="flex items-baseline mt-4 text-sm">
+            {% if data.percentage_change >= 0 %}
+            <span class="text-green-600 font-bold flex items-center">
+              <svg class="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+              </svg>
+              {{ "%.1f" | format(data.percentage_change) }}%
+            </span>
+            {% else %}
+            <span class="text-red-600 font-bold flex items-center">
+              <svg class="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M14.707 10.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 12.586V5a1 1 0 112 0v7.586l2.293-2.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+              </svg>
+              {{ "%.1f" | format(data.percentage_change | abs) }}%
+            </span>
+            {% endif %}
+            <span class="ml-2 text-gray-600">vs {{ data.compare_count }} tests</span>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="bg-white shadow-lg rounded-xl overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-100">
+            <tr>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Test ID</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Patient Name</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Lab Test</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Completed At</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Done By</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            {% for report in reports.items %}
+            <tr class="hover:bg-gray-50 transition duration-150 ease-in-out">
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ report.id }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                {% if report.consultation and report.consultation.patient %}
+                <div class="font-medium text-gray-900">{{ report.consultation.patient.full_name }}</div>
+                <div class="text-xs text-gray-500">PID: {{ report.consultation.patient.patient_id }}</div>
+                {% else %}
+                <div class="text-sm text-gray-500">N/A</div>
+                {% endif %}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                {% if report.service %}
+                <span class="font-medium">{{ report.service.name }}</span>
+                {% else %}
+                <span class="text-sm text-gray-500">N/A</span>
+                {% endif %}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="px-2.5 py-0.5 inline-flex text-xs leading-5 font-bold rounded-full
+                  {% if report.status == 'completed' %}bg-green-100 text-green-800
+                  {% elif report.status == 'processing' %}bg-yellow-100 text-yellow-800
+                  {% elif report.status == 'requested' %}bg-blue-100 text-blue-800
+                  {% else %}bg-gray-100 text-gray-800{% endif %}">
+                  {{ report.status.title() }}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                {% if report.completed_at %}
+                {{ report.completed_at.strftime('%d %b %Y %H:%M') }}
+                {% else %}
+                N/A
+                {% endif %}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                {% if report.done_by %}
+                {{ report.done_by.full_name }}
+                {% else %}
+                <span class="text-sm text-gray-500">N/A</span>
+                {% endif %}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <a href="{{ url_for('lab_web.view_test_results', test_id=report.id) }}"
+                   class="inline-flex items-center p-2 rounded-full text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 transition ease-in-out duration-150" title="View Results">
+                  <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                    <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
+                  </svg>
+                  <span class="sr-only">View</span>
+                </a>
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="7" class="px-6 py-8 text-center text-lg text-gray-500">
+                <p>📭 No completed lab reports found for the selected filters.</p>
+                <p class="mt-2 text-sm">Try adjusting your date range or test filter.</p>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <nav class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6 rounded-b-xl">
+        <div class="flex-1 flex justify-between sm:hidden">
+          {% if reports.has_prev %}
+          <a href="{{ url_for('lab_web.generate_lab_reports', page=reports.prev_num, date_range=date_filter, test_id=test_id_filter) }}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Previous</a>
+          {% else %}
+          <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-400 bg-gray-50 cursor-not-allowed">Previous</span>
+          {% endif %}
+          {% if reports.has_next %}
+          <a href="{{ url_for('lab_web.generate_lab_reports', page=reports.next_num, date_range=date_filter, test_id=test_id_filter) }}" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Next</a>
+          {% else %}
+          <span class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-400 bg-gray-50 cursor-not-allowed">Next</span>
+          {% endif %}
+        </div>
+        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+          <div>
+            <p class="text-sm text-gray-700">
+              Showing <span class="font-bold text-blue-700">{{ reports.first }}</span> to <span class="font-bold text-blue-700">{{ reports.last }}</span> of
+              <span class="font-bold text-blue-700">{{ reports.total }}</span> results
+            </p>
+          </div>
+          <div>
+            <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+              {% if reports.has_prev %}
+              <a href="{{ url_for('lab_web.generate_lab_reports', page=reports.prev_num, date_range=date_filter, test_id=test_id_filter) }}" class="relative inline-flex items-center px-3 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                <span class="sr-only">Previous</span>
+                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                </svg>
+              </a>
+              {% endif %}
+
+              {% for page_num in reports.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=3) %}
+                {% if page_num %}
+                  <a href="{{ url_for('lab_web.generate_lab_reports', page=page_num, date_range=date_filter, test_id=test_id_filter) }}"
+                    class="{% if page_num == reports.page %}z-10 bg-blue-100 border-blue-500 text-blue-700 font-semibold{% else %}bg-white border-gray-300 text-gray-700 hover:bg-gray-50{% endif %} relative inline-flex items-center px-4 py-2 border text-sm font-medium transition duration-150 ease-in-out">
+                    {{ page_num }}
+                  </a>
+                {% else %}
+                  <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>
+                {% endif %}
+              {% endfor %}
+
+              {% if reports.has_next %}
+              <a href="{{ url_for('lab_web.generate_lab_reports', page=reports.next_num, date_range=date_filter, test_id=test_id_filter) }}" class="relative inline-flex items-center px-3 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                <span class="sr-only">Next</span>
+                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                </svg>
+              </a>
+              {% endif %}
+            </nav>
+          </div>
+        </div>
+      </nav>
+    </div>
+  </div>
+</div>
+
+{# If not in base.html, add it here: #}
+{# <script src="https://unpkg.com/htmx.org@1.9.12"></script> #}
+{% endblock %}

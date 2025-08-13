@@ -1,0 +1,315 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-4xl">
+    <!-- Header -->
+    <div class="mb-8 text-center">
+        <h1 class="text-2xl md:text-3xl font-bold text-gray-800">Add Disciplinary Action</h1>
+        <p class="text-gray-500 mt-2">Add a new disciplinary action for case #{{ case.case_number }}</p>
+    </div>
+
+    <!-- Case Summary Card -->
+    <div class="bg-white rounded-xl shadow-sm p-5 mb-8 border-l-4 border-indigo-500">
+        <div class="flex flex-wrap justify-between items-start">
+            <div>
+                <h2 class="font-semibold text-gray-900">{{ case.case_type.name }} - {{ case.case_number }}</h2>
+                <div class="flex flex-wrap items-center mt-2 gap-3">
+                    <div class="flex items-center text-sm text-gray-600">
+                        <i class="fas fa-user mr-2"></i>
+                        <span>{{ case.employee.full_name }}</span>
+                    </div>
+                    <div class="flex items-center text-sm text-gray-600">
+                        <i class="fas fa-calendar-day mr-2"></i>
+                        <span>{{ case.incident_date.strftime('%d %b, %Y') }}</span>
+                    </div>
+                    <div class="flex items-center">
+                        <span class="w-3 h-3 rounded-full inline-block mr-2
+                            {% if case.severity == 'Minor' %}bg-green-500
+                            {% elif case.severity == 'Moderate' %}bg-amber-500
+                            {% elif case.severity == 'Major' %}bg-orange-500
+                            {% else %}bg-red-500{% endif %}"></span>
+                        <span class="text-sm text-gray-600">{{ case.severity }}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-3 sm:mt-0">
+                <span class="px-3 py-1 rounded-full text-xs font-semibold
+                    {% if case.status == 'Open' %}bg-blue-100 text-blue-800
+                    {% elif case.status == 'Under Investigation' %}bg-amber-100 text-amber-800
+                    {% elif case.status == 'Hearing Scheduled' %}bg-purple-100 text-purple-800
+                    {% elif case.status == 'Closed' %}bg-emerald-100 text-emerald-800
+                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                    {{ case.status }}
+                </span>
+            </div>
+        </div>
+        <div class="mt-4">
+            <p class="text-sm text-gray-600"><span class="font-medium">Incident:</span> {{ case.incident_description|truncate(120) }}</p>
+        </div>
+    </div>
+
+    <!-- Action Form -->
+    <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+        <form method="POST" action="{{ url_for('hr_web.add_disciplinary_action', case_id=case.id) }}">
+            {{ form.hidden_tag() }}  <!-- ADDED CSRF TOKEN HERE -->
+            
+            <div class="p-5 md:p-8">
+                <!-- Action Type Header with Add Button -->
+                <div class="flex justify-between items-center mb-2">
+                    <label class="block text-sm font-medium text-gray-700">Action Type *</label>
+                    <button type="button" id="add-action-type-btn" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium flex items-center">
+                        <i class="fas fa-plus-circle mr-1"></i> Add New Type
+                    </button>
+                </div>
+                
+                <!-- Action Type Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        {% for action_type in action_types %}
+                        <div class="relative">
+                            <input class="sr-only peer" type="radio" name="action_type_id" id="type-{{ action_type.id }}" value="{{ action_type.id }}" required>
+                            <label for="type-{{ action_type.id }}" class="block p-4 border border-gray-300 rounded-lg cursor-pointer peer-checked:border-indigo-500 peer-checked:ring-2 peer-checked:ring-indigo-200 hover:bg-gray-50 transition-all duration-150">
+                                <div class="flex items-start">
+                                    <div class="flex-shrink-0 mt-0.5">
+                                        <span class="w-5 h-5 rounded-full border-2 border-gray-300 peer-checked:border-indigo-500 peer-checked:bg-indigo-500 flex items-center justify-center">
+                                            <svg class="w-3 h-3 text-white hidden peer-checked:block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                                            </svg>
+                                        </span>
+                                    </div>
+                                    <div class="ml-4">
+                                        <h3 class="text-sm font-medium text-gray-900">{{ action_type.name }}</h3>
+                                        <p class="mt-1 text-xs text-gray-500">{{ action_type.description|truncate(60) }}</p>
+                                        <div class="mt-2 flex items-center">
+                                            <span class="w-3 h-3 rounded-full inline-block mr-2
+                                                {% if action_type.severity_level == 'Minor' %}bg-green-500
+                                                {% elif action_type.severity_level == 'Moderate' %}bg-amber-500
+                                                {% elif action_type.severity_level == 'Major' %}bg-orange-500
+                                                {% else %}bg-red-500{% endif %}"></span>
+                                            <span class="text-xs text-gray-600">{{ action_type.severity_level }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- Dates -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <label for="effective_date" class="block text-sm font-medium text-gray-700 mb-2">Effective Date *</label>
+                        <div class="relative">
+                            <input type="date" id="effective_date" name="effective_date" required
+                                   class="w-full rounded-lg border-gray-300 py-2.5 px-4 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm">
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                <i class="fas fa-calendar text-gray-400"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="end_date" class="block text-sm font-medium text-gray-700 mb-2">End Date (Optional)</label>
+                        <div class="relative">
+                            <input type="date" id="end_date" name="end_date"
+                                   class="w-full rounded-lg border-gray-300 py-2.5 px-4 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm">
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                <i class="fas fa-calendar text-gray-400"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Description -->
+                <div class="mb-6">
+                    <label for="description" class="block text-sm font-medium text-gray-700 mb-2">Action Description *</label>
+                    <textarea id="description" name="description" rows="4" required
+                              class="w-full rounded-lg border-gray-300 py-2.5 px-4 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm"
+                              placeholder="Describe the disciplinary action..."></textarea>
+                </div>
+                
+                <!-- Outcome -->
+                <div class="mb-8">
+                    <label for="outcome" class="block text-sm font-medium text-gray-700 mb-2">Expected Outcome</label>
+                    <textarea id="outcome" name="outcome" rows="3"
+                              class="w-full rounded-lg border-gray-300 py-2.5 px-4 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm"
+                              placeholder="Describe the expected outcome of this action..."></textarea>
+                </div>
+                
+                <!-- Form Actions -->
+                <div class="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-gray-200">
+                    <a href="{{ url_for('hr_web.view_disciplinary_case', case_id=case.id) }}" 
+                       class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg text-sm font-medium text-center transition duration-200">
+                        Cancel
+                    </a>
+                    <button type="submit" 
+                            class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium flex items-center justify-center transition duration-200">
+                        <i class="fas fa-plus mr-2"></i> Add Action
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+<!-- Add Action Type Modal -->
+<div id="action-type-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-lg w-full max-w-md">
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold text-gray-900">Add New Action Type</h3>
+                <button type="button" id="close-modal" class="text-gray-400 hover:text-gray-500">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form id="new-action-type-form">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Name *</label>
+                    <input type="text" name="name" required
+                           class="w-full rounded-lg border-gray-300 py-2 px-4 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm">
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Code *</label>
+                    <input type="text" name="code" required
+                           class="w-full rounded-lg border-gray-300 py-2 px-4 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm">
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                    <textarea name="description" rows="3"
+                              class="w-full rounded-lg border-gray-300 py-2 px-4 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm"></textarea>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Severity Level *</label>
+                    <select name="severity_level" required
+                            class="w-full rounded-lg border-gray-300 py-2 px-4 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm">
+                        <option value="">Select Severity</option>
+                        <option value="Minor">Minor</option>
+                        <option value="Moderate">Moderate</option>
+                        <option value="Major">Major</option>
+                        <option value="Severe">Severe</option>
+                    </select>
+                </div>
+                
+                <div class="flex justify-end pt-4 border-t border-gray-200 mt-4">
+                    <button type="button" id="cancel-modal" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg text-sm font-medium mr-2">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium">
+                        Add Action Type
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Success Message -->
+<div id="success-message" class="fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg hidden z-50">
+    <i class="fas fa-check-circle mr-2"></i> Action type added successfully!
+</div>
+<style>
+    /* Custom radio button styling */
+    input[type="radio"]:checked + label {
+        border-color: #4f46e5;
+        box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+    }
+    
+    /* Form element styling */
+    input, textarea, select {
+        transition: all 0.2s ease;
+    }
+    
+    input:focus, textarea:focus, select:focus {
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+    }
+    
+    /* Date input styling */
+    input[type="date"]::-webkit-calendar-picker-indicator {
+        opacity: 0;
+        position: absolute;
+        right: 0;
+        width: 100%;
+        height: 100%;
+        cursor: pointer;
+    }
+</style>
+
+<script>
+    // Set default dates
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set effective date to today
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('effective_date').value = today;
+        
+        // Set min date for end date to today
+        document.getElementById('end_date').min = today;
+        
+        // Update min date for end date when effective date changes
+        document.getElementById('effective_date').addEventListener('change', function() {
+            document.getElementById('end_date').min = this.value;
+        });
+    });
+        // Modal functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        const modal = document.getElementById('action-type-modal');
+        const addBtn = document.getElementById('add-action-type-btn');
+        const closeBtn = document.getElementById('close-modal');
+        const cancelBtn = document.getElementById('cancel-modal');
+        const form = document.getElementById('new-action-type-form');
+        const successMessage = document.getElementById('success-message');
+        
+        // Open modal
+        addBtn.addEventListener('click', () => {
+            modal.classList.remove('hidden');
+        });
+        
+        // Close modal
+        [closeBtn, cancelBtn].forEach(btn => {
+            btn.addEventListener('click', () => {
+                modal.classList.add('hidden');
+            });
+        });
+        
+        // Handle form submission
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(form);
+            const payload = Object.fromEntries(formData.entries());
+            
+            try {
+                const response = await fetch('/hr/disciplinary/action-types/add', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Show success message
+                    successMessage.classList.remove('hidden');
+                    
+                    // Hide modal and reset form
+                    modal.classList.add('hidden');
+                    form.reset();
+                    
+                    // Reload page after 1.5 seconds to show new action type
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    alert(`Error: ${result.message}`);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+            }
+        });
+    });
+</script>
+{% endblock %}

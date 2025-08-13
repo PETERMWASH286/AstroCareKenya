@@ -1,0 +1,1476 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Modern user manual for AstroCare — the multi-hospital HMS">
+      
+      
+        <meta name="author" content="AstroCare Team">
+      
+      
+      
+        <link rel="prev" href="../reports/">
+      
+      
+        <link rel="next" href="../security/">
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.16">
+    
+    
+      
+        <title>Administration & Multi-Hospital - AstroCare User Guide</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.7e37652d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../css/custom.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#administration-multi-hospital-management-astrocare" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="AstroCare User Guide" class="md-header__button md-logo" aria-label="AstroCare User Guide" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            AstroCare User Guide
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Administration & Multi-Hospital
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="AstroCare User Guide" class="md-nav__button md-logo" aria-label="AstroCare User Guide" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    AstroCare User Guide
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Home
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Getting Started
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            Getting Started
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/access/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Access & Onboarding
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/navigation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Navigation & Productivity
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/checklist/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    First-Time Checklist
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Features
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Features
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../patients/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Patients
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../appointments/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Appointments
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_3" id="__nav_3_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Medical Services
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_3">
+            <span class="md-nav__icon md-icon"></span>
+            Medical Services
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../services/consultation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Consultation
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../services/special-clinics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Special Clinics
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../services/optician/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Optician Clinic
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../services/dental/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Dental Clinic
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../billing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Billing & Payments
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pharmacy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Pharmacy
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lab/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Laboratory
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../radiology/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Radiology
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../finance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Finance
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../inventory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Inventory & Supplies
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hr/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Human Resources (HR)
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reports/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Reports & Analytics
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Administration & Multi-Hospital
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    Administration & Multi-Hospital
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#hospital-admin-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      🏥 Hospital Admin Features
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🏥 Hospital Admin Features">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-facility-hospital-profile-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Facility &amp; Hospital Profile Management
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-reports-audit-logs" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Reports &amp; Audit Logs
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-board-member-communication-module" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Board Member &amp; Communication Module
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-notifications-alerts" class="md-nav__link">
+    <span class="md-ellipsis">
+      4. Notifications &amp; Alerts
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-system-maintenance-security" class="md-nav__link">
+    <span class="md-ellipsis">
+      5. System Maintenance &amp; Security
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#super-admin-features-multi-hospital-oversight" class="md-nav__link">
+    <span class="md-ellipsis">
+      🌐 Super Admin Features (Multi-Hospital Oversight)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🌐 Super Admin Features (Multi-Hospital Oversight)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-unified-dashboard" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Unified Dashboard
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-hospital-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Hospital Management
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-advanced-reporting" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Advanced Reporting
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-notifications-workflow-oversight" class="md-nav__link">
+    <span class="md-ellipsis">
+      4. Notifications &amp; Workflow Oversight
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#workflow-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      🛠 Workflow Examples
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#images-dashboards" class="md-nav__link">
+    <span class="md-ellipsis">
+      Images &amp; Dashboards
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#learn-more" class="md-nav__link">
+    <span class="md-ellipsis">
+      Learn More
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Security & Compliance
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Integrations
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Support
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Support
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../support/faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    FAQ
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../support/troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Troubleshooting
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../support/contact/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Contact
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#hospital-admin-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      🏥 Hospital Admin Features
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🏥 Hospital Admin Features">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-facility-hospital-profile-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Facility &amp; Hospital Profile Management
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-reports-audit-logs" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Reports &amp; Audit Logs
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-board-member-communication-module" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Board Member &amp; Communication Module
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-notifications-alerts" class="md-nav__link">
+    <span class="md-ellipsis">
+      4. Notifications &amp; Alerts
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-system-maintenance-security" class="md-nav__link">
+    <span class="md-ellipsis">
+      5. System Maintenance &amp; Security
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#super-admin-features-multi-hospital-oversight" class="md-nav__link">
+    <span class="md-ellipsis">
+      🌐 Super Admin Features (Multi-Hospital Oversight)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🌐 Super Admin Features (Multi-Hospital Oversight)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-unified-dashboard" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Unified Dashboard
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-hospital-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Hospital Management
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-advanced-reporting" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Advanced Reporting
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-notifications-workflow-oversight" class="md-nav__link">
+    <span class="md-ellipsis">
+      4. Notifications &amp; Workflow Oversight
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#workflow-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      🛠 Workflow Examples
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#images-dashboards" class="md-nav__link">
+    <span class="md-ellipsis">
+      Images &amp; Dashboards
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#learn-more" class="md-nav__link">
+    <span class="md-ellipsis">
+      Learn More
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="administration-multi-hospital-management-astrocare">Administration &amp; Multi-Hospital Management — AstroCare<a class="headerlink" href="#administration-multi-hospital-management-astrocare" title="Permanent link">&para;</a></h1>
+<p>AstroCare’s <strong>Administration Module</strong> provides a modern, centralized control center for hospital and system administrators. Whether you are managing a single hospital or multiple facilities as a Super Admin, this module ensures <strong>full oversight, operational control, and compliance</strong>.</p>
+<hr />
+<h2 id="hospital-admin-features">🏥 Hospital Admin Features<a class="headerlink" href="#hospital-admin-features" title="Permanent link">&para;</a></h2>
+<h3 id="1-facility-hospital-profile-management"><strong>1. Facility &amp; Hospital Profile Management</strong><a class="headerlink" href="#1-facility-hospital-profile-management" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Maintain comprehensive hospital profiles: name, address, contacts, branding, time zones, and service configurations.</li>
+<li>Update department details, services offered, and operational settings.</li>
+<li>Manage hospital resource centers (e.g., Pharmacy, Lab, Radiology, Medical Records) efficiently from one dashboard.</li>
+</ul>
+<h3 id="2-reports-audit-logs"><strong>2. Reports &amp; Audit Logs</strong><a class="headerlink" href="#2-reports-audit-logs" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Access real-time reports from all departments: Patients, Billing, Pharmacy, Laboratory, Radiology, HR, Finance, and Inventory.</li>
+<li>View detailed <strong>audit logs</strong> tracking all user actions for compliance and security reviews.</li>
+<li>Export reports for meetings, board reviews, or regulatory compliance.</li>
+</ul>
+<h3 id="3-board-member-communication-module"><strong>3. Board Member &amp; Communication Module</strong><a class="headerlink" href="#3-board-member-communication-module" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Create and manage <strong>board member profiles</strong>.</li>
+<li>Post announcements, circulars, and critical communications to staff or departments.</li>
+<li>Receive notifications when new posts are created, approved, or require review.</li>
+</ul>
+<h3 id="4-notifications-alerts"><strong>4. Notifications &amp; Alerts</strong><a class="headerlink" href="#4-notifications-alerts" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Stay informed with <strong>system notifications</strong> for key events:</li>
+<li>Critical lab results</li>
+<li>Payment or billing approvals</li>
+<li>Resource stock alerts</li>
+<li>Compliance checks and audit reminders</li>
+<li>Customize notification preferences per admin or role.</li>
+</ul>
+<h3 id="5-system-maintenance-security"><strong>5. System Maintenance &amp; Security</strong><a class="headerlink" href="#5-system-maintenance-security" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Perform <strong>system backups</strong> for disaster recovery.</li>
+<li>Monitor and manage resource centers, including storage, equipment, and critical assets.</li>
+<li>Implement role-based access and compliance checks in accordance with Health Act 2017 and Data Protection Act 2019.</li>
+</ul>
+<hr />
+<h2 id="super-admin-features-multi-hospital-oversight">🌐 Super Admin Features (Multi-Hospital Oversight)<a class="headerlink" href="#super-admin-features-multi-hospital-oversight" title="Permanent link">&para;</a></h2>
+<h3 id="1-unified-dashboard"><strong>1. Unified Dashboard</strong><a class="headerlink" href="#1-unified-dashboard" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Access <strong>all hospitals</strong> under a single super admin dashboard.</li>
+<li>View aggregated reports, analytics, and performance metrics across facilities.</li>
+<li>Manage inter-hospital communications and policies from one place.</li>
+</ul>
+<h3 id="2-hospital-management"><strong>2. Hospital Management</strong><a class="headerlink" href="#2-hospital-management" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Add new hospitals to the network with full setup guidance.</li>
+<li>Configure departments, resource centers, and payment integrations for each facility.</li>
+<li>Set super admin roles, delegate permissions, and manage hospital hierarchies.</li>
+</ul>
+<h3 id="3-advanced-reporting"><strong>3. Advanced Reporting</strong><a class="headerlink" href="#3-advanced-reporting" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Generate cross-hospital analytics: patient volumes, financial performance, service utilization, and staff efficiency.</li>
+<li>Track compliance, audit logs, and critical operational alerts for all managed hospitals.</li>
+</ul>
+<h3 id="4-notifications-workflow-oversight"><strong>4. Notifications &amp; Workflow Oversight</strong><a class="headerlink" href="#4-notifications-workflow-oversight" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Receive alerts for events across all hospitals:</li>
+<li>Service requests</li>
+<li>Resource shortages</li>
+<li>Critical incidents</li>
+<li>Policy approvals</li>
+<li>Streamline review and approval workflows to reduce delays.</li>
+</ul>
+<hr />
+<h2 id="workflow-examples">🛠 Workflow Examples<a class="headerlink" href="#workflow-examples" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>Adding a New Hospital</strong></li>
+<li>Navigate to <strong>Super Admin → Add Hospital</strong>.</li>
+<li>Fill in hospital details, configure departments, services, and branding.</li>
+<li>
+<p>Assign admin and board members to the facility.</p>
+</li>
+<li>
+<p><strong>Managing Reports</strong></p>
+</li>
+<li>Access <strong>Reports &amp; Analytics → Department Reports</strong>.</li>
+<li>Filter by hospital, department, or time range.</li>
+<li>
+<p>Export reports in PDF or Excel for board meetings.</p>
+</li>
+<li>
+<p><strong>Audit &amp; Compliance</strong></p>
+</li>
+<li>Review detailed user activity logs.</li>
+<li>
+<p>Ensure all sensitive actions are tracked for compliance purposes.</p>
+</li>
+<li>
+<p><strong>Resource Center Management</strong></p>
+</li>
+<li>Monitor stock, lab equipment, or radiology devices.</li>
+<li>Approve departmental requests for resources.</li>
+<li>Track maintenance schedules and asset utilization.</li>
+</ol>
+<hr />
+<h2 id="images-dashboards">Images &amp; Dashboards<a class="headerlink" href="#images-dashboards" title="Permanent link">&para;</a></h2>
+<ul>
+<li>
+<p><strong>Admin Dashboard</strong> — Unified view of reports, notifications, and resource centers.<br />
+<img alt="Admin Dashboard" src="https://example.com/images/admin-dashboard.png" /></p>
+</li>
+<li>
+<p><strong>Super Admin Multi-Hospital View</strong> — One dashboard to control multiple hospitals.<br />
+<img alt="Super Admin Dashboard" src="https://example.com/images/superadmin-dashboard.png" /></p>
+</li>
+<li>
+<p><strong>Audit Logs &amp; Reports</strong> — Track all activities for compliance and review.<br />
+<img alt="Audit Logs" src="https://example.com/images/audit-logs.png" /></p>
+</li>
+</ul>
+<hr />
+<h2 id="learn-more">Learn More<a class="headerlink" href="#learn-more" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../patients/">Patients &amp; Appointments</a> — Understand how departmental data integrates with admin dashboards.  </li>
+<li><a href="../finance/">Finance &amp; Billing</a> — Monitor financial performance across facilities.  </li>
+<li><a href="../inventory/">Inventory Management</a> — Track resources and supplies in each hospital.  </li>
+</ul>
+<hr />
+<p><em>AstroCare Administration empowers hospital leaders to maintain operational excellence, enforce compliance, and oversee multiple facilities from a single, intuitive platform.</em></p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "content.code.annotate", "header.autohide"], "search": "../../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.50899def.min.js"></script>
+      
+    
+  </body>
+</html>

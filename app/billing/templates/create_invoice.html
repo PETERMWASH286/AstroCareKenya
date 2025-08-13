@@ -1,0 +1,248 @@
+{% extends "base.html" %} {% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="dark:bg-gray-900 p-8 rounded-3xl shadow-2xl space-y-8 bg-gradient-to-br from-white/10 to-transparent backdrop-blur-lg">
+        <header class="flex items-center justify-between">
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+                <i class="fas fa-file-invoice-dollar text-blue-400 mr-3"></i>Create Invoice
+            </h1>
+            <div class="flex items-center space-x-4">
+                <div class="h-12 w-12 bg-blue-500/10 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-hand-holding-medical text-blue-400 text-xl"></i>
+                </div>
+            </div>
+        </header>
+
+        <!-- Patient Search Section -->
+        <div class="group relative">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 ml-1">Select Patient</label>
+            <div class="relative transition-all duration-300 hover:scale-[99.5%]">
+                <input type="text" id="patient-search" class="mt-1 w-full bg-gray-50/50 dark:bg-gray-800 border-2 border-gray-200/50 dark:border-gray-700 rounded-xl px-5 py-3.5 text-gray-900 dark:text-gray-100 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 placeholder-gray-400"
+                    placeholder="Search by name, reg no, or phone..." autocomplete="off" />
+                <i class="fas fa-search absolute right-5 top-5 text-gray-400 dark:text-gray-500"></i>
+            </div>
+            <ul id="patient-results" class="mt-2 absolute w-full z-50 max-h-72 overflow-y-auto bg-white dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 rounded-xl shadow-xl hidden transition-all origin-top"></ul>
+        </div>
+
+        <!-- Insurance & Patient Info Card -->
+        <div id="patient-details" class="hidden transform transition-all duration-300 opacity-0 scale-95">
+            <div class="bg-gradient-to-r from-blue-50/50 to-indigo-50/50 dark:from-gray-800 dark:to-gray-700 p-6 rounded-xl border-2 border-blue-100/50 dark:border-gray-700">
+                <div class="flex items-start justify-between">
+                    <div class="flex items-center space-x-4">
+                        <div class="h-14 w-14 bg-blue-400/10 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-shield-alt text-blue-400 text-2xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-semibold text-gray-900 dark:text-white" id="patient-name"></h3>
+                            <p class="text-sm text-blue-500 font-medium" id="insurance-provider"></p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm text-gray-600 dark:text-gray-300">Policy #: <span id="policy-number" class="font-medium"></span></p>
+                        <p class="text-sm text-gray-600 dark:text-gray-300">Coverage: <span id="coverage-status" class="font-medium"></span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Services Selection -->
+        <div class="space-y-6" id="services-section" style="display: none;">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Select Services</h3>
+            <div id="services-list" class="grid gap-4 max-h-96 overflow-y-auto p-2"></div>
+
+            <!-- Totals Calculation -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6">
+                <div class="space-y-4">
+                    <div class="flex justify-between">
+                        <span class="text-gray-700 dark:text-gray-300">Subtotal:</span>
+                        <span class="font-medium" id="subtotal">KES 0.00</span>
+                    </div>
+                    <div class="flex justify-between text-blue-500">
+                        <span>Insurance Coverage:</span>
+                        <span id="insurance-coverage">KES 0.00</span>
+                    </div>
+                    <div class="flex justify-between text-green-500">
+                        <span>Discounts:</span>
+                        <span id="discounts">KES 0.00</span>
+                    </div>
+                </div>
+                <div class="border-t-2 md:border-t-0 md:border-l-2 border-gray-200 dark:border-gray-700 pl-6">
+                    <div class="flex justify-between text-xl font-bold">
+                        <span class="text-gray-900 dark:text-white">Total Due:</span>
+                        <span class="text-blue-500" id="total-due">KES 0.00</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment Section -->
+        <div class="pt-8 space-y-6" id="payment-section" style="display: none;">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Payment Details</h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-4">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Payment Method</label>
+                    <select id="payment-method" class="w-full bg-gray-50/50 dark:bg-gray-800 border-2 border-gray-200/50 dark:border-gray-700 rounded-xl px-4 py-3.5 text-gray-900 dark:text-gray-100 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900">
+                        <option value="insurance">Insurance Claim</option>
+                        <option value="mpesa">M-Pesa</option>
+                        <option value="cash">Cash</option>
+                        <option value="card">Credit Card</option>
+                    </select>
+                </div>
+
+                <div class="space-y-4" id="mpesa-details" style="display: none;">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">M-Pesa Number</label>
+                    <input type="tel" class="w-full bg-gray-50/50 dark:bg-gray-800 border-2 border-gray-200/50 dark:border-gray-700 rounded-xl px-4 py-3.5 text-gray-900 dark:text-gray-100 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900"
+                        placeholder="07XX XXX XXX">
+                </div>
+            </div>
+
+            <div class="flex justify-end pt-6">
+                <button type="button" onclick="processPayment()" class="inline-flex items-center bg-blue-500 hover:bg-blue-600 text-white px-8 py-4 rounded-xl shadow-lg transition-all duration-300 transform hover:scale-[1.02] group">
+                    <i class="fas fa-credit-card mr-3 group-hover:rotate-12 transition-transform"></i>
+                    Process Payment
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let selectedPatient = null;
+    let selectedServices = new Map();
+
+    document.getElementById('payment-method').addEventListener('change', function() {
+        document.getElementById('mpesa-details').style.display =
+            this.value === 'mpesa' ? 'block' : 'none';
+    });
+
+    // Patient Search Logic
+    document.getElementById('patient-search').addEventListener('input', function(e) {
+        const q = e.target.value.trim();
+        if (q.length < 2) return;
+
+        fetch(`/billing/api/patients/search?q=${encodeURIComponent(q)}`)
+            .then(res => res.json())
+            .then(patients => {
+                const results = document.getElementById('patient-results');
+                results.innerHTML = patients.map(p => `
+                    <li class="px-5 py-3.5 hover:bg-blue-50/50 dark:hover:bg-gray-700 cursor-pointer flex justify-between items-center transition-colors"
+                        data-patient-id="${p.id}"
+                        data-insurance="${p.insurance_provider || 'None'}">
+                        <div>
+                            <div class="font-medium text-gray-900 dark:text-gray-100">${p.full_name}</div>
+                            <div class="text-sm text-blue-500">${p.reg_no}</div>
+                        </div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">${p.phone}</div>
+                    </li>
+                `).join('');
+                results.classList.remove('hidden');
+            });
+    });
+
+    // Patient Selection
+    document.getElementById('patient-results').addEventListener('click', async(e) => {
+        const li = e.target.closest('li');
+        if (!li) return;
+
+        selectedPatient = {
+            id: li.dataset.patientId,
+            name: li.querySelector('div > div:first-child').textContent,
+            insurance: li.dataset.insurance
+        };
+
+        // Show patient details
+        document.getElementById('patient-details').style.display = 'block';
+        document.getElementById('insurance-provider').textContent = selectedPatient.insurance;
+
+        // Load unpaid services
+        const services = await fetch(`/billing/api/patients/${selectedPatient.id}/unpaid-services`)
+            .then(res => res.json());
+
+        renderServices(services);
+        document.getElementById('services-section').style.display = 'block';
+        document.getElementById('payment-section').style.display = 'block';
+    });
+
+    function renderServices(services) {
+        const container = document.getElementById('services-list');
+        container.innerHTML = services.map(service => `
+            <div class="flex items-center justify-between p-4 bg-white dark:bg-gray-800 rounded-xl border-2 border-gray-100 dark:border-gray-700">
+                <div class="flex items-center space-x-4">
+                    <input type="checkbox" class="service-checkbox h-5 w-5 text-blue-500 rounded-lg" 
+                           data-price="${service.amount}" 
+                           value="${service.name}"
+                           onchange="updateTotals()">
+                    <div>
+                        <div class="font-medium text-gray-900 dark:text-white">${service.name}</div>
+                        <div class="text-sm text-gray-500">${service.type} • ${service.date}</div>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div class="font-medium">KES ${service.amount.toFixed(2)}</div>
+                    <div class="text-sm text-green-500">Covered: KES ${(service.amount * 0.8).toFixed(2)}</div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function updateTotals() {
+        let subtotal = 0;
+        document.querySelectorAll('.service-checkbox:checked').forEach(checkbox => {
+            subtotal += parseFloat(checkbox.dataset.price);
+        });
+
+        const insuranceCoverage = subtotal * 0.8; // Example 80% coverage
+        const totalDue = subtotal - insuranceCoverage;
+
+        document.getElementById('subtotal').textContent = `KES ${subtotal.toFixed(2)}`;
+        document.getElementById('insurance-coverage').textContent = `KES ${insuranceCoverage.toFixed(2)}`;
+        document.getElementById('total-due').textContent = `KES ${totalDue.toFixed(2)}`;
+    }
+
+    async function processPayment() {
+        const paymentMethod = document.getElementById('payment-method').value;
+        const services = Array.from(document.querySelectorAll('.service-checkbox:checked'))
+            .map(checkbox => checkbox.value);
+
+        const response = await fetch('/payments/process', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                patient_id: selectedPatient.id,
+                amount: parseFloat(document.getElementById('total-due').textContent.replace('KES ', '')),
+                payment_method: paymentMethod,
+                services: services
+            })
+        });
+
+        if (response.ok) {
+            alert('Payment processed successfully!');
+            window.location.reload();
+        } else {
+            alert('Error processing payment');
+        }
+    }
+</script>
+
+<style>
+    #services-list::-webkit-scrollbar {
+        width: 8px;
+    }
+    
+    #services-list::-webkit-scrollbar-track {
+        background: rgba(243, 244, 246, 0.5);
+        border-radius: 8px;
+    }
+    
+    #services-list::-webkit-scrollbar-thumb {
+        background: #3B82F6;
+        border-radius: 8px;
+    }
+    
+    .dark #services-list::-webkit-scrollbar-track {
+        background: rgba(31, 41, 55, 0.5);
+    }
+</style>
+{% endblock %}

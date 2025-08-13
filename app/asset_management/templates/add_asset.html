@@ -1,0 +1,340 @@
+{% extends "base.html" %} {% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8">
+    <div class="container mx-auto px-4 max-w-4xl">
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+            <!-- Header with gradient background -->
+            <div class="bg-gradient-to-r from-blue-500 to-indigo-600 p-6 text-white">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+                    <div>
+                        <h1 class="text-2xl md:text-3xl font-bold">Add New Asset</h1>
+                        <p class="mt-2 opacity-90">Fill in the details below to register a new asset</p>
+                    </div>
+                    <div class="mt-4 sm:mt-0">
+                        <a href="{{ url_for('asset_management.manage_assets') }}" class="inline-flex items-center px-4 py-2 bg-white/20 backdrop-blur-sm text-white rounded-full hover:bg-white/30 transition-all">
+                            <i class="fas fa-arrow-left mr-2"></i> Back to Assets
+                        </a>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress Steps -->
+            <div class="px-6 py-4 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <div class="flex flex-col items-center relative w-1/4">
+                        <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white z-10">
+                            <span>1</span>
+                        </div>
+                        <div class="text-xs mt-2 font-medium text-blue-600">Basic Info</div>
+                        <div class="absolute top-4 left-1/2 w-full h-0.5 bg-gray-300 -z-1"></div>
+                    </div>
+                    <div class="flex flex-col items-center relative w-1/4">
+                        <div class="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-500 z-10">
+                            <span>2</span>
+                        </div>
+                        <div class="text-xs mt-2 font-medium text-gray-500">Financial Details</div>
+                        <div class="absolute top-4 left-1/2 w-full h-0.5 bg-gray-300 -z-1"></div>
+                    </div>
+                    <div class="flex flex-col items-center relative w-1/4">
+                        <div class="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-500 z-10">
+                            <span>3</span>
+                        </div>
+                        <div class="text-xs mt-2 font-medium text-gray-500">Assignment</div>
+                        <div class="absolute top-4 left-1/2 w-full h-0.5 bg-gray-300 -z-1"></div>
+                    </div>
+                    <div class="flex flex-col items-center w-1/4">
+                        <div class="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-500">
+                            <span>4</span>
+                        </div>
+                        <div class="text-xs mt-2 font-medium text-gray-500">Review</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Section -->
+            <div class="p-6">
+                <form method="POST" action="{{ url_for('asset_management.add_asset') }}">
+                    <!-- Basic Information Section -->
+                    <div class="mb-10">
+                        <h2 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                            <i class="fas fa-info-circle text-blue-500 mr-2"></i> Basic Information
+                        </h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-gray-700 mb-2 font-medium">Asset Name*</label>
+                                <input type="text" name="name" required class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            </div>
+
+                            <!-- Category Field with Add Button -->
+                            <div>
+                                <div class="flex justify-between items-center mb-2">
+                                    <label class="block text-gray-700 font-medium">Category*</label>
+                                    <button type="button" onclick="openCategoryModal()" class="text-sm flex items-center text-blue-600 hover:text-blue-800 transition-colors">
+                                        <i class="fas fa-plus-circle mr-1"></i> Add New
+                                    </button>
+                                </div>
+                                <select name="category_id" required class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    <option value="" disabled selected>Select Category</option>
+                                    {% for category in categories %}
+                                    <option value="{{ category.id }}">{{ category.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-gray-700 mb-2 font-medium">Serial Number*</label>
+                                <input type="text" name="serial_number" required class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            </div>
+
+                            <div>
+                                <label class="block text-gray-700 mb-2 font-medium">Barcode</label>
+                                <input type="text" name="barcode" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            </div>
+
+                            <div>
+                                <label class="block text-gray-700 mb-2 font-medium">Description</label>
+                                <textarea name="description" rows="2" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+                            </div>
+
+                            <div>
+                                <label class="block text-gray-700 mb-2 font-medium">Location</label>
+                                <input type="text" name="location" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Financial Details Section -->
+                    <div class="mb-10">
+                        <h2 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                            <i class="fas fa-coins text-yellow-500 mr-2"></i> Financial Details
+                        </h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-gray-700 mb-2 font-medium">Purchase Price*</label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                                    <input type="number" step="0.01" name="purchase_price" required class="w-full pl-8 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-gray-700 mb-2 font-medium">Depreciation Rate (%)</label>
+                                <div class="relative">
+                                    <span class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500">%</span>
+                                    <input type="number" step="0.1" name="depreciation_rate" value="10.0" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-gray-700 mb-2 font-medium">Purchase Date</label>
+                                <input type="date" name="purchase_date" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            </div>
+
+                            <div>
+                                <label class="block text-gray-700 mb-2 font-medium">Warranty Expiry</label>
+                                <input type="date" name="warranty_expiry" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Assignment & Status Section -->
+                    <div class="mb-10">
+                        <h2 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                            <i class="fas fa-user-tag text-purple-500 mr-2"></i> Assignment & Status
+                        </h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-gray-700 mb-2 font-medium">Department*</label>
+                                <select name="department_id" required class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    <option value="" disabled selected>Select Department</option>
+                                    {% for department in departments %}
+                                    <option value="{{ department.id }}">{{ department.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-gray-700 mb-2 font-medium">Assigned To</label>
+                                <select name="assigned_to_id" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    <option value="">Not Assigned</option>
+                                    {% for user in users %}
+                                    <option value="{{ user.id }}">{{ user.full_name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-gray-700 mb-2 font-medium">Status*</label>
+                                <select name="status" required class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    {% for status in statuses %}
+                                    <option value="{{ status }}" {% if status == 'Operational' %}selected{% endif %}>{{ status }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-gray-700 mb-2 font-medium">Notes</label>
+                                <textarea name="notes" rows="2" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="flex flex-col sm:flex-row justify-between items-center gap-4 pt-6 border-t border-gray-200">
+                        <button type="reset" class="w-full sm:w-auto px-6 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors">
+                            <i class="fas fa-redo mr-2"></i> Reset Form
+                        </button>
+                        <button type="submit" class="w-full sm:w-auto px-8 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-medium rounded-xl hover:shadow-lg transition-all transform hover:-translate-y-1 flex items-center">
+                            <i class="fas fa-plus-circle mr-2"></i> Add Asset
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Tips Section -->
+        <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-blue-500">
+                <div class="flex items-start">
+                    <div class="p-3 bg-blue-100 rounded-full mr-4">
+                        <i class="fas fa-lightbulb text-blue-500 text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-gray-800 mb-2">Naming Tips</h3>
+                        <p class="text-gray-600 text-sm">Use consistent naming conventions for easier asset tracking and management.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-green-500">
+                <div class="flex items-start">
+                    <div class="p-3 bg-green-100 rounded-full mr-4">
+                        <i class="fas fa-tag text-green-500 text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-gray-800 mb-2">Barcode Best Practices</h3>
+                        <p class="text-gray-600 text-sm">Generate unique barcodes for physical assets to simplify inventory checks.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-purple-500">
+                <div class="flex items-start">
+                    <div class="p-3 bg-purple-100 rounded-full mr-4">
+                        <i class="fas fa-chart-line text-purple-500 text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-gray-800 mb-2">Depreciation Guidance</h3>
+                        <p class="text-gray-600 text-sm">Set appropriate depreciation rates based on asset category and expected lifespan.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Category Modal -->
+<div id="categoryModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 hidden">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+        <div class="bg-gradient-to-r from-blue-500 to-indigo-600 p-6 text-white">
+            <div class="flex justify-between items-center">
+                <h3 class="text-xl font-bold">Add New Category</h3>
+                <button onclick="closeCategoryModal()" class="text-white hover:text-gray-200">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="p-6">
+            <form id="categoryForm" method="POST" action="{{ url_for('asset_management.add_category') }}">
+                <div class="mb-6">
+                    <label class="block text-gray-700 mb-2 font-medium">Category Name*</label>
+                    <input type="text" name="name" required class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-gray-700 mb-2 font-medium">Description</label>
+                    <textarea name="description" rows="3" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-gray-700 mb-2 font-medium">Depreciation Period (Years)</label>
+                    <input type="number" name="depreciation_period" value="5" min="1" max="20" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+
+                <div class="flex justify-end gap-3 pt-4">
+                    <button type="button" onclick="closeCategoryModal()" class="px-6 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-medium rounded-xl hover:shadow-lg transition-all">
+                        Add Category
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript for Category Modal -->
+<script>
+    function openCategoryModal() {
+        document.getElementById('categoryModal').classList.remove('hidden');
+    }
+
+    function closeCategoryModal() {
+        document.getElementById('categoryModal').classList.add('hidden');
+    }
+
+    // Close modal if clicked outside
+    window.onclick = function(event) {
+        const modal = document.getElementById('categoryModal');
+        if (event.target === modal) {
+            closeCategoryModal();
+        }
+    }
+
+    // Handle form submission
+    document.getElementById('categoryForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const form = this;
+        const formData = new FormData(form);
+
+        fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Add the new category to the dropdown
+                    const categorySelect = document.querySelector('select[name="category_id"]');
+                    const newOption = document.createElement('option');
+                    newOption.value = data.category.id;
+                    newOption.textContent = data.category.name;
+                    categorySelect.appendChild(newOption);
+
+                    // Select the new category
+                    newOption.selected = true;
+
+                    // Show success message
+                    alert('Category added successfully!');
+
+                    // Close modal
+                    closeCategoryModal();
+
+                    // Reset form
+                    form.reset();
+                } else {
+                    alert('Error adding category: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+            });
+    });
+</script>
+{% endblock %}

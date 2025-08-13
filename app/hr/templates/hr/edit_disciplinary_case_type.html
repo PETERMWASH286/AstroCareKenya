@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="bg-white shadow rounded-lg p-6">
+        <h2 class="text-2xl font-bold mb-6">Edit Case Type</h2>
+        
+        <form method="POST" action="{{ url_for('hr_web.update_disciplinary_case_type', type_id=case_type.id) }}">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="name" class="block text-sm font-medium text-gray-700">Name</label>
+                    <input type="text" id="name" name="name" value="{{ case_type.name }}"
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" required>
+                </div>
+                
+                <div>
+                    <label for="code" class="block text-sm font-medium text-gray-700">Code</label>
+                    <input type="text" id="code" name="code" value="{{ case_type.code }}"
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" required>
+                </div>
+                
+                <div class="md:col-span-2">
+                    <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
+                    <textarea id="description" name="description" rows="3"
+                              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">{{ case_type.description }}</textarea>
+                </div>
+                
+                <div>
+                    <label for="default_severity" class="block text-sm font-medium text-gray-700">Default Severity</label>
+                    <select id="default_severity" name="default_severity"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" required>
+                        {% for severity in severities %}
+                            <option value="{{ severity }}" 
+                                {% if severity == case_type.default_severity %}selected{% endif %}>
+                                {{ severity }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div>
+                    <label for="resolution_days" class="block text-sm font-medium text-gray-700">Resolution Days</label>
+                    <input type="number" id="resolution_days" name="resolution_days" 
+                           value="{{ case_type.resolution_days }}"
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" required>
+                </div>
+            </div>
+            
+            <div class="mt-6 flex justify-end space-x-3">
+                <a href="{{ url_for('hr_web.disciplinary_case_types') }}"
+                   class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none">
+                    Cancel
+                </a>
+                <button type="submit"
+                        class="px-4 py-2 bg-blue-600 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-blue-700 focus:outline-none">
+                    Update Case Type
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

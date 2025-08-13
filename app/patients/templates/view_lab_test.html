@@ -1,0 +1,618 @@
+{% extends "base.html" %} {% block content %}
+<link rel="stylesheet" href="https://unpkg.com/tippy.js@6.3.7/dist/tippy.css">
+
+<div class="container mx-auto px-4 py-8">
+    <!-- Header Section -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 space-y-4 md:space-y-0">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                {{ lab_test.service.name }} Results
+                <span class="text-lg ml-2 font-normal text-gray-500 dark:text-gray-400">
+                    #{{ lab_test.id }}
+                </span>
+            </h1>
+            <div class="flex items-center space-x-4">
+                <span class="px-3 py-1 rounded-full 
+                    {% if lab_test.status == 'verified' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300
+                    {% elif lab_test.status == 'critical' %}bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300
+                    {% else %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300{% endif %}">
+                    {{ lab_test.status|title }}
+                </span>
+                <span class="text-gray-500 dark:text-gray-400 text-sm">
+                    Requested: {{ lab_test.requested_at.strftime('%b %d, %Y %H:%M') }}
+                </span> {% if lab_test.status == 'verified' %}
+                <span class="text-sm text-gray-500 dark:text-gray-400">
+                    Verified by Dr. {{ lab_test.doctor.full_name }} on 
+                    {{ lab_test.verified_at.strftime('%b %d, %Y %H:%M') }}
+                </span> {% endif %}
+            </div>
+        </div>
+        <div class="flex items-center space-x-4">
+            <a href="{{ url_for('consultations_web.lab_results') }}" class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100">
+            Back to List
+        </a>
+        </div>
+        <div class="flex items-center space-x-3">
+            <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all 
+                        flex items-center space-x-2 shadow-lg hover:shadow-xl" data-tippy-content="Download PDF Report">
+                <i class="fas fa-file-pdf"></i>
+                <span>Download</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Patient & Test Info Sidebar -->
+        <div class="lg:col-span-1 bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg">
+            <div class="space-y-6">
+                <!-- Enhanced Patient Card -->
+                <div class="bg-blue-50 dark:bg-blue-900 rounded-lg p-4">
+                    <h3 class="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-2">Patient Details</h3>
+                    <div class="space-y-2">
+                        <div class="flex items-center">
+                            <i class="fas fa-user-circle text-blue-500 dark:text-blue-300 mr-2"></i>
+                            <span class="font-medium text-gray-900 dark:text-white">
+                                {{ lab_test.consultation.patient.full_name }}
+                            </span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="col-span-2">
+                                <span class="text-sm text-gray-600 dark:text-gray-300">
+                                    <i class="fas fa-id-badge mr-2"></i>{{ lab_test.consultation.patient.reg_no }}
+                                </span>
+                            </div>
+                            <div>
+                                <i class="fas fa-birthday-cake mr-2"></i>{{ lab_test.consultation.patient.age }}y
+                            </div>
+                            <div>
+                                <i class="fas fa-venus-mars mr-2"></i>Male
+                            </div>
+                            <div class="col-span-2">
+                                <i class="fas fa-allergies mr-2"></i>Penicillin, NSAIDs
+                            </div>
+                            <div class="col-span-2">
+                                <i class="fas fa-prescription-bottle mr-2"></i>Current Meds: Metformin 500mg BD
+                            </div>
+                            <div class="col-span-2">
+                                <i class="fas fa-heartbeat mr-2"></i>Blood Type: O+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Clinical Context Card -->
+                <div class="bg-white/90 dark:bg-gray-900 backdrop-blur-sm rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-md">
+                    <div class="flex items-center mb-4">
+                        <div class="bg-purple-100 dark:bg-purple-800 p-3 rounded-full">
+                            <i class="fas fa-notes-medical text-2xl text-purple-600 dark:text-purple-300"></i>
+                        </div>
+                        <h3 class="ml-3 text-2xl font-semibold text-gray-900 dark:text-white">
+                            Clinical Context
+                        </h3>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-gray-700 dark:text-gray-300">
+                        <!-- History -->
+                        <div>
+                            <h4 class="font-medium text-gray-800 dark:text-gray-100 mb-1">🕑 Consultation Date</h4>
+                            <p>{{ lab_test.consultation.created_at.strftime('%b %d, %Y %I:%M %p') }}</p>
+                        </div>
+                        <div>
+                            <h4 class="font-medium text-gray-800 dark:text-gray-100 mb-1">👩‍⚕️ Treated By</h4>
+                            <p>{{ lab_test.consultation.treated_by.full_name or '—' }}</p>
+                        </div>
+                        <!-- Primary Diagnosis -->
+                        <div class="md:col-span-2">
+                            <h4 class="font-medium text-gray-800 dark:text-gray-100 mb-1">💡 Primary Diagnosis</h4>
+                            <p class="whitespace-pre-line">
+                                {{ lab_test.consultation.diagnosis or 'Not specified' }}
+                            </p>
+                        </div>
+                        <!-- Clinical History -->
+                        <div class="md:col-span-2">
+                            <h4 class="font-medium text-gray-800 dark:text-gray-100 mb-1">📖 Clinical History</h4>
+                            <p class="whitespace-pre-line">
+                                {{ lab_test.consultation.history }}
+                            </p>
+                        </div>
+                        <!-- Examination -->
+                        <div class="md:col-span-2">
+                            <h4 class="font-medium text-gray-800 dark:text-gray-100 mb-1">🔍 Examination Findings</h4>
+                            <p class="whitespace-pre-line">
+                                {{ lab_test.consultation.examination }}
+                            </p>
+                        </div>
+                        <!-- Treatment Plan -->
+                        <div class="md:col-span-2">
+                            <h4 class="font-medium text-gray-800 dark:text-gray-100 mb-1">📝 Treatment Plan</h4>
+                            <p class="whitespace-pre-line">
+                                {{ lab_test.consultation.treatment_plan }}
+                            </p>
+                        </div>
+                        <!-- Additional Notes -->
+                        {% if lab_test.consultation.notes %}
+                        <div class="md:col-span-2">
+                            <h4 class="font-medium text-gray-800 dark:text-gray-100 mb-1">🗒️ Additional Notes</h4>
+                            <p class="whitespace-pre-line">
+                                {{ lab_test.consultation.notes }}
+                            </p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+
+                <!-- Test Timeline -->
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">Test Timeline</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-center">
+                            <div class="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+                            <div class="text-sm">
+                                <div class="font-medium">Requested</div>
+                                <div class="text-gray-500 dark:text-gray-400 text-xs">
+                                    {{ lab_test.requested_at.strftime('%b %d, %Y %H:%M') }}
+                                </div>
+                            </div>
+                        </div>
+                        {% if lab_test.completed_at %}
+                        <div class="flex items-center">
+                            <div class="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                            <div class="text-sm">
+                                <div class="font-medium">Completed</div>
+                                <div class="text-gray-500 dark:text-gray-400 text-xs">
+                                    {{ lab_test.completed_at.strftime('%b %d, %Y %H:%M') }}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %} {% if lab_test.verified_at %}
+                        <div class="flex items-center">
+                            <div class="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
+                            <div class="text-sm">
+                                <div class="font-medium">Verified</div>
+                                <div class="text-gray-500 dark:text-gray-400 text-xs">
+                                    {{ lab_test.verified_at.strftime('%b %d, %Y %H:%M') }}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Results Area -->
+        <div class="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg">
+            <form method="POST" class="space-y-8">
+                <!-- Results Section -->
+                <div class="space-y-6">
+                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white border-b pb-2">Test Results</h2>
+
+                    <!-- Dynamic Results Fields -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {% for param, ref in reference_ranges.items() %}
+                        <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg relative">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                {{ param|title }}
+                                <span class="text-xs text-gray-500 ml-2">(Ref: {{ ref }})</span>
+                            </label>
+                            <input type="text" name="{{ param }}" value="{{ lab_test.results[param] if lab_test.results else '' }}" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-600
+                                   {% if lab_test.results[param]|default('') not in ref %}border-red-300 bg-red-50 dark:bg-red-900 dark:border-red-700{% endif %}" placeholder="Enter value"> {% if lab_test.results[param]|default('')
+                            not in ref %}
+                            <div class="absolute top-2 right-2 text-red-500">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Lab Technician Report -->
+                    <div class="bg-white dark:bg-gray-900 backdrop-blur-sm bg-opacity-80 dark:bg-opacity-80 border border-gray-200 dark:border-gray-700 rounded-2xl p-8 shadow-xl">
+                        <div class="flex items-center mb-6">
+                            <div class="bg-green-100 dark:bg-green-900/30 p-4 rounded-full">
+                                <i class="fas fa-flask text-3xl text-green-600 dark:text-green-300"></i>
+                            </div>
+                            <h3 class="ml-4 text-2xl font-bold text-gray-900 dark:text-white">
+                                Lab Technician Report
+                            </h3>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-gray-800 dark:text-gray-200">
+                            <!-- Observations -->
+
+                            <!-- Results -->
+                            <div>
+                                <h4 class="font-semibold mb-1">🔬 Results</h4>
+                                <p class="whitespace-pre-line bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-100 dark:border-gray-600">
+                                    {{ lab_test.results or '—' }}
+                                </p>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold mb-1">📝 Observations</h4>
+                                <p class="whitespace-pre-line bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-100 dark:border-gray-600">
+                                    {{ lab_test.notes or '—' }}
+                                </p>
+                            </div>
+
+
+                            <!-- Interpretation -->
+                            <div>
+                                <h4 class="font-semibold mb-1">💡 Interpretation</h4>
+                                <p class="whitespace-pre-line bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-100 dark:border-gray-600">
+                                    {{ lab_test.interpretation or '—' }}
+                                </p>
+                            </div>
+
+                            <!-- Done By -->
+                            <div>
+                                <h4 class="font-semibold mb-1">✅ Completed By</h4>
+                                <p class="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-100 dark:border-gray-600">
+                                    {{ lab_test.done_by.full_name if lab_test.done_by else '—' }}
+                                </p>
+                            </div>
+
+                            <!-- Timestamps & Payment -->
+                            <div class="col-span-1 md:col-span-2 lg:col-span-3">
+                                <h4 class="font-semibold mb-2">⏱️ Details & Payment</h4>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+                                    <div>
+                                        <span class="font-medium">Requested At:</span>
+                                        <p>{{ lab_test.requested_at.strftime('%b %d, %Y %I:%M %p') }}</p>
+                                    </div>
+                                    <div>
+                                        <span class="font-medium">Completed At:</span>
+                                        <p>{{ lab_test.completed_at.strftime('%b %d, %Y %I:%M %p') if lab_test.completed_at else '—' }}</p>
+                                    </div>
+                                    <div>
+                                        <span class="font-medium">Paid:</span>
+                                        <p>{{ 'Yes' if lab_test.is_paid else 'No' }}</p>
+                                    </div>
+                                    <div>
+                                        <span class="font-medium">Payment Status:</span>
+                                        <p>{{ lab_test.payment_status.capitalize() }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <!-- Doctor's Interpretation -->
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Doctor's Interpretation</h3>
+                        <textarea name="interpretation" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-600" rows="4" placeholder="Enter clinical interpretation…" {% if lab_test.status=='verified' %}readonly disabled{% endif %}>{{ lab_test.interpretation or '—' }}</textarea>
+                    </div>
+
+                    <!-- Additional Diagnosis -->
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Additional Diagnosis</h3>
+                        <textarea name="additional_diagnosis" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-600" rows="3" placeholder="Enter any secondary or differential diagnoses…" {% if lab_test.status=='verified' %}readonly disabled{% endif
+                            %}>{{ lab_test.consultation.diagnosis or 'Not specified' }}</textarea>
+                    </div>
+
+                    <!-- Follow‑Up Treatment Plan -->
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Follow‑Up Treatment Plan</h3>
+                        <textarea name="followup_treatment_plan" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-600" rows="3" placeholder="Outline any ongoing or next‑step treatments…" {% if lab_test.status=='verified' %}readonly disabled{% endif
+                            %}>{{ lab_test.consultation.treatment_plan }}</textarea>
+                    </div>
+
+                    <!-- Additional Notes -->
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Additional Notes</h3>
+                        <textarea name="additional_notes" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-600" rows="3" placeholder="Any extra observations or remarks…" {% if lab_test.status=='verified' %}readonly disabled{% endif %}>{{ lab_test.consultation.notes }}</textarea>
+                    </div>
+                    <!-- Prescription Section -->
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Prescription Orders</h3>
+                        <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                            <!-- Drug Entry Template -->
+                            <template id="drugTemplate">
+            <div class="drug-entry grid grid-cols-12 gap-4 items-center mb-4 group">
+                <div class="col-span-4">
+                    <select class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500"
+                            name="drug[]"
+                            onchange="updateDrugPrice(this)">
+                        <option value="">Select Medication</option>
+                        {% for med in medications %}
+                        <option value="{{ med.id }}" data-price="{{ med.price }}">
+                            {{ med.name }} ({{ med.dose_form }}) - Ksh {{ "%.2f"|format(med.price) }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <input type="hidden" name="drug_price[]">
+                </div>
+                
+                <div class="col-span-2">
+                    <input type="text" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"
+                           name="drug_dose[]" 
+                           placeholder="Dose (e.g., 500mg)"
+                           required>
+                </div>
+
+                <div class="col-span-2">
+                    <select class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"
+                            name="drug_frequency[]">
+                        <option value="OD">Once Daily</option>
+                        <option value="BD">Twice Daily</option>
+                        <option value="TDS">3 Times Daily</option>
+                        <option value="QID">4 Times Daily</option>
+                    </select>
+                </div>
+
+                <div class="col-span-2">
+                    <input type="number" 
+                           class="quantity-input w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"
+                           name="drug_quantity[]"
+                           min="1"
+                           value="1"
+                           oninput="calculateTotal()">
+                </div>
+
+                <div class="col-span-1 flex justify-end">
+                    <button type="button" 
+                            onclick="removeDrug(this)"
+                            class="text-red-500 hover:text-red-700 px-2 py-1 rounded-full 
+                                   opacity-50 hover:opacity-100 transition-opacity duration-200">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
+            </div>
+        </template>
+
+                            <!-- Drug Entries Container -->
+                            <div id="drugContainer" class="space-y-4">
+                                <!-- Existing Medications -->
+                                {% for med in lab_test.consultation.medications %}
+                                <div class="drug-entry grid grid-cols-12 gap-4 items-center mb-4 group">
+                                    <div class="col-span-4">
+                                        <select class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800" name="drug[]" disabled>
+<!-- To -->
+<option value="{{ med.service.id }}" selected>
+    {{ med.service.name }} - Ksh {{ "%.2f"|format(med.price|default(0)|float) }}
+</option>
+                    </select>
+                                    </div>
+                                    <div class="col-span-2">
+                                        <input type="text" class="w-full px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-600" value="{{ med.dose }}" disabled>
+                                    </div>
+                                    <div class="col-span-2">
+                                        <input type="text" class="w-full px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-600" value="{{ med.frequency }}" disabled>
+                                    </div>
+                                    <div class="col-span-2">
+                                        <input type="text" class="w-full px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-600" value="{{ med.quantity }}" disabled>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+
+                            <!-- Control Buttons -->
+                            <div class="flex justify-between items-center mt-6">
+                                <button type="button" onclick="addDrug()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all flex items-center space-x-2">
+                <i class="fas fa-plus-circle"></i>
+                <span>Add Medication</span>
+            </button>
+
+                                <!-- Total Price Display -->
+                                <div class="flex items-center space-x-4">
+                                    <div class="text-right">
+                                        <div class="text-sm text-gray-500 dark:text-gray-400">Estimated Total</div>
+                                        <!-- To this -->
+                                        <div id="totalCost" class="text-2xl font-bold text-green-600 dark:text-green-400">
+                                            {% set total_price = 0 %} {% for med in lab_test.consultation.medications %} {% set total_price = total_price + (med.price if med.price is not none else 0) %} {% endfor %} Ksh {{ "%.2f"|format(total_price) }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <script>
+                        // Dynamic Drug Management
+                        function addDrug() {
+                            const template = document.getElementById('drugTemplate');
+                            const clone = template.content.cloneNode(true);
+                            drugContainer.appendChild(clone);
+                            calculateTotal();
+                        }
+
+                        function removeDrug(button) {
+                            button.closest('.drug-entry').remove();
+                            calculateTotal();
+                        }
+
+                        function updateDrugPrice(select) {
+                            const selectedOption = select.selectedOptions[0];
+                            let price = 0;
+
+                            if (selectedOption && selectedOption.dataset.price) {
+                                price = selectedOption.dataset.price;
+                            }
+
+                            const priceInput = select.parentElement.querySelector('input[name="drug_price[]"]');
+                            if (priceInput) {
+                                priceInput.value = price;
+                            }
+
+                            calculateTotal();
+                        }
+
+
+                        function calculateTotal() {
+                            let total = 0;
+
+                            document.querySelectorAll('.drug-entry').forEach(entry => {
+                                const priceInput = entry.querySelector('input[name="drug_price[]"]');
+                                const quantityInput = entry.querySelector('input[name="drug_quantity[]"]');
+
+                                const price = priceInput ? parseFloat(priceInput.value) || 0 : 0;
+                                const quantity = quantityInput ? parseInt(quantityInput.value) || 1 : 1;
+
+                                total += price * quantity;
+                            });
+
+                            document.getElementById('totalCost').textContent =
+                                `Ksh ${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                        }
+
+                        // Initial calculation for existing medications
+                        document.addEventListener('DOMContentLoaded', calculateTotal);
+                    </script>
+
+                    <!-- Verification Section -->
+                    <div class="bg-blue-50 dark:bg-blue-900 p-4 rounded-lg">
+                        <h3 class="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-4">Verification</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Verifying Doctor</label>
+                                <select name="verified_by" class="w-full dark:bg-gray-800 dark:border-gray-600 rounded-lg p-2">
+                <option value="{{ current_user.id }}">Dr. {{ current_user.full_name }}</option>
+                <!-- Add other doctors if needed -->
+            </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Signature</label>
+                                <div class="signature-container relative border-2 border-dashed dark:border-gray-600 rounded-lg">
+                                    <canvas id="signatureCanvas" class="w-full h-32 bg-white dark:bg-gray-800 rounded-lg cursor-crosshair" style="touch-action: none"></canvas>
+                                    <button type="button" onclick="clearSignature()" class="absolute top-2 right-2 text-red-500 hover:text-red-700 bg-white dark:bg-gray-800 p-1 rounded-full">
+                    <i class="fas fa-undo-alt text-sm"></i>
+                </button>
+                                </div>
+                                <input type="hidden" name="signature_data" id="signatureData">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Include Signature Pad Library -->
+                    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
+
+                    <script>
+                        // Initialize Signature Pad
+                        let signaturePad = null;
+
+                        document.addEventListener('DOMContentLoaded', () => {
+                            const canvas = document.getElementById('signatureCanvas');
+                            canvas.width = canvas.offsetWidth;
+                            canvas.height = canvas.offsetHeight;
+
+                            signaturePad = new SignaturePad(canvas, {
+                                backgroundColor: 'rgb(255, 255, 255)', // White background for signature
+                                penColor: 'rgb(0, 0, 0)', // Black ink
+                                velocityFilterWeight: 0.7,
+                                minWidth: 1,
+                                maxWidth: 2,
+                                dotSize: 2
+                            });
+
+                            // Handle window resize
+                            window.addEventListener('resize', resizeCanvas);
+                        });
+
+                        function resizeCanvas() {
+                            const canvas = document.getElementById('signatureCanvas');
+                            const ratio = Math.max(window.devicePixelRatio || 1, 1);
+
+                            canvas.width = canvas.offsetWidth * ratio;
+                            canvas.height = canvas.offsetHeight * ratio;
+                            canvas.getContext('2d').scale(ratio, ratio);
+
+                            signaturePad.clear(); // Clear on resize to prevent artifacts
+                        }
+
+                        function clearSignature() {
+                            signaturePad.clear();
+                            document.getElementById('signatureData').value = '';
+                        }
+
+                        // Add before form submission
+                        document.getElementById('labTestForm')
+                            .addEventListener('submit', e => {
+                                if (signaturePad.isEmpty()) {
+                                    alert('Please provide a signature');
+                                    e.preventDefault();
+                                } else {
+                                    // Save signature as PNG
+                                    document.getElementById('signatureData').value = signaturePad.toDataURL();
+                                }
+                            });
+                    </script>
+
+                    <style>
+                        .signature-container canvas {
+                            border-radius: 0.5rem;
+                            border-color: #e5e7eb;
+                            /* gray-200 */
+                        }
+                        
+                        .dark .signature-container canvas {
+                            border-color: #4b5563;
+                            /* gray-600 */
+                        }
+                    </style>
+
+                    <!-- Action Bar -->
+                    <div class="flex justify-between items-center border-t pt-6 dark:border-gray-700">
+                        <div class="flex items-center space-x-3">
+
+
+                            <button type="button" onclick="document.querySelector('[name=status]').value = 'verified'; this.form.submit()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition-all">
+                            Save & Verify Results
+                        </button>
+
+                            <input type="hidden" name="status" value="completed">
+                        </div>
+
+                        <div class="flex items-center space-x-4">
+                            <a href="{{ url_for('consultations_web.lab_results') }}" class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100">
+                            Back to List
+                        </a>
+                        </div>
+                    </div>
+            </form>
+            </div>
+        </div>
+    </div>
+
+
+    <script src="https://unpkg.com/@popperjs/core@2"></script>
+    <script src="https://unpkg.com/tippy.js@6"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize tooltips
+            tippy('[data-tippy-content]', {
+                theme: 'light-border',
+                animation: 'fade',
+                placement: 'top'
+            });
+
+            // Auto-resize textareas
+            document.querySelectorAll('textarea').forEach(el => {
+                el.style.height = el.scrollHeight + 'px';
+                el.addEventListener('input', e => {
+                    e.target.style.height = 'auto';
+                    e.target.style.height = e.target.scrollHeight + 'px';
+                });
+            });
+        });
+    </script>
+
+    <style>
+        .result-card {
+            transition: all 0.2s ease;
+        }
+        
+        input:focus {
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+        }
+        
+        .dark input:focus {
+            box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.5);
+        }
+        
+        [data-tippy-root] {
+            font-size: 0.875rem;
+        }
+    </style>
+    {% endblock %}

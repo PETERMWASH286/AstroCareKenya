@@ -1,0 +1,640 @@
+{% extends "base.html" %}
+{% block title %}Patient SMS Broadcast - AstroCare Pro{% endblock %}
+
+{% block head %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-rc.0/css/select2.min.css" rel="stylesheet" />
+<!-- In your base.html head section -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-rc.0/css/select2.min.css" rel="stylesheet" />
+<style>
+.select2-container--default .select2-selection--single {
+    height: 48px;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+}
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 46px;
+}
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    line-height: 46px;
+}
+</style>
+<style>
+    /* * ASTROCARE BROADCAST STYLES
+     * Version: 2.0
+     * Author: 10x Developer
+     */
+
+    /* --- Animations & Transitions --- */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes slideInUp {
+        from { opacity: 0; transform: translateY(100px) scale(0.9); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .animate-card {
+        animation: fadeIn 0.5s ease-out forwards;
+        opacity: 0;
+    }
+    .card:nth-child(1) { animation-delay: 0.1s; }
+    .card:nth-child(2) { animation-delay: 0.2s; }
+    .card:nth-child(3) { animation-delay: 0.3s; }
+    
+    /* --- Form Components --- */
+    .character-count { transition: all 0.3s ease; }
+    .character-count.warning { color: #f59e0b; }
+    .character-count.danger { color: #ef4444; font-weight: bold; }
+    
+    .peer:checked ~ label {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+    }
+
+    /* --- Select2 Custom Theme --- */
+    .select2-container--default .select2-selection--multiple {
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+        padding: 0.25rem 0.5rem;
+        min-height: 44px;
+        transition: all 0.15s ease-in-out;
+    }
+    .select2-container--default.select2-container--focus .select2-selection--multiple {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+    }
+    .select2-container--default .select2-selection--multiple .select2-selection__choice {
+        background-color: #e0f2fe;
+        border: 1px solid #93c5fd;
+        color: #1e40af;
+        border-radius: 0.375rem;
+        padding: 0.25rem 0.5rem;
+        margin-top: 0.3rem;
+    }
+    .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+        color: #1e40af;
+        margin-left: 0.5rem;
+    }
+    .select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
+        color: #ef4444;
+    }
+
+    /* --- Toast Notifications --- */
+    .toast-notification {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        z-index: 100;
+        padding: 1rem 1.5rem;
+        border-radius: 0.5rem;
+        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+        display: flex;
+        align-items: center;
+        transform: translateY(200%);
+        transition: transform 0.4s ease-in-out;
+    }
+    .toast-notification.show {
+        transform: translateY(0);
+    }
+    .toast-notification.success {
+        background-color: #dcfce7; /* green-100 */
+        color: #166534; /* green-800 */
+    }
+    .toast-notification.error {
+        background-color: #fee2e2; /* red-100 */
+        color: #991b1b; /* red-800 */
+    }
+
+    /* --- Loading Spinner --- */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+        display: inline-block;
+        border: 2px solid currentColor;
+        border-right-color: transparent;
+        border-radius: 50%;
+        width: 1em;
+        height: 1em;
+        animation: spin 0.6s linear infinite;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 p-4 md:p-8">
+    <div id="sms-broadcast-form" class="max-w-6xl mx-auto">
+        
+        <div class="mb-8 text-center">
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-800">
+                <i class="fas fa-sms text-blue-500"></i> SMS Broadcast
+            </h1>
+            <p class="text-gray-600 mt-2 text-lg">A powerful tool to connect with your patients.</p>
+            <div class="mt-4 inline-block bg-blue-100 text-blue-800 rounded-full px-4 py-2 shadow-sm">
+                <i class="fas fa-coins text-blue-500 mr-2"></i>
+                <span>SMS credits: <span class="font-bold">1,248</span></span>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-xl shadow-lg p-6 md:p-8 animate-card">
+                    <form data-element="form">
+                        
+                        <div class="mb-8">
+                            <label class="block text-gray-800 text-base font-semibold mb-2" for="message">
+                                <i class="fas fa-pencil-alt text-gray-400 mr-2"></i> Compose Message
+                            </label>
+<div class="relative mb-3">
+    <select data-element="templateSelector" class="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+        <option value="">Start with a template...</option>
+        <!-- Dynamic options will be inserted here -->
+        <option value="custom">Start from scratch</option>
+    </select>
+</div>
+                            <textarea data-element="messageInput" id="message" name="message" rows="6" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" placeholder="Type or select a template to begin..."></textarea>
+                            <div class="flex justify-between mt-2 text-sm text-gray-600" aria-live="polite">
+                                <span>Characters: <span data-element="characterCount" class="character-count font-medium">0</span>/160</span>
+                                <span>Messages: <span data-element="messageCount" class="font-medium">1</span></span>
+                            </div>
+                        </div>
+
+                        <div class="mb-8">
+                            <label class="block text-gray-800 text-base font-semibold mb-2">
+                                <i class="fas fa-users text-gray-400 mr-2"></i> Choose Recipients
+                                <span class="ml-2 text-sm font-normal text-blue-600 bg-blue-50 rounded-full px-2 py-0.5" data-element="recipientCount">0 selected</span>
+                            </label>
+                            <div data-element="recipientTypeContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <input type="radio" name="recipient_type" id="group_selection" value="group" class="hidden peer" checked>
+                                    <label for="group_selection" class="flex items-center justify-center p-4 bg-white border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                                        <i class="fas fa-users-medical text-blue-500 mr-3 text-2xl"></i>
+                                        <span class="text-base font-medium text-gray-800">Patient Groups</span>
+                                    </label>
+                                </div>
+                                <div>
+                                    <input type="radio" name="recipient_type" id="individual_selection" value="individual" class="hidden peer">
+                                    <label for="individual_selection" class="flex items-center justify-center p-4 bg-white border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                                        <i class="fas fa-user-tag text-green-500 mr-3 text-2xl"></i>
+                                        <span class="text-base font-medium text-gray-800">Specific Patients</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div data-element="groupOptions">
+                                </div>
+
+                            <div data-element="individualOptions" class="hidden mt-4">
+                                <select data-element="patientSelect" class="w-full" multiple="multiple">
+                                    <option value="1001">Alice Smith (ID: 1001)</option>
+                                    <option value="1002">Bob Johnson (ID: 1002)</option>
+                                    <option value="1003">Charlie Brown (ID: 1003)</option>
+                                    <option value="1004">Diana Prince (ID: 1004)</option>
+                                    <option value="1005">Ethan Hunt (ID: 1005)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-8">
+                            <label class="block text-gray-800 text-base font-semibold mb-2">
+                                <i class="fas fa-clock text-gray-400 mr-2"></i> Schedule Delivery
+                            </label>
+                            <div class="flex flex-col sm:flex-row gap-4 p-4 bg-gray-50 border rounded-lg">
+                                <div class="flex-1">
+                                    <input data-element="scheduleDate" type="date" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                                </div>
+                                <div class="flex-1">
+                                    <input data-element="scheduleTime" type="time" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                                </div>
+                                <button type="button" data-element="clearScheduleBtn" class="px-4 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition">Clear</button>
+                            </div>
+                            <div class="mt-2 text-sm text-gray-500">
+                                Leave blank to send immediately. Current time: <span data-element="currentTime" class="font-medium"></span>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col sm:flex-row gap-4 mt-10 border-t pt-6">
+                            <button type="button" data-element="previewBtn" class="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold rounded-lg transition shadow-sm flex items-center justify-center">
+                                <i class="fas fa-eye mr-2"></i> Preview
+                            </button>
+                            <button type="submit" data-element="submitBtn" class="flex-1 px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition shadow-lg flex items-center justify-center disabled:bg-gray-400 disabled:cursor-not-allowed">
+                                <span data-element="submitBtnText"><i class="fas fa-paper-plane mr-2"></i> Send Message</span>
+                                <span data-element="submitBtnSpinner" class="hidden"><i class="spinner"></i> Processing...</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                <div data-element="previewCard" class="bg-white rounded-xl shadow-lg p-6 mt-8 hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-gray-800"><i class="fas fa-mobile-alt text-gray-500 mr-2"></i> Live Preview</h3>
+                        <button data-element="closePreviewBtn" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times fa-lg"></i></button>
+                    </div>
+                    <div class="bg-gray-200 p-4 rounded-2xl max-w-sm mx-auto">
+                        <div class="bg-white p-3 rounded-lg shadow-inner">
+                            <p class="font-bold text-blue-600">AstroCare Medical</p>
+                            <p data-element="previewContent" class="text-gray-800 break-words"></p>
+                            <p class="text-xs text-gray-400 text-right mt-2">Just now</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="animate-card" style="animation-delay: 0.2s;">
+                <div class="space-y-8">
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4"><i class="fas fa-ruler-vertical text-gray-500 mr-2"></i> Best Practices</h3>
+                        <ul class="space-y-4 text-gray-700">
+                            <li class="flex items-start"><i class="fas fa-ruler-horizontal text-blue-500 w-6 mt-1"></i><span><b>Be Concise:</b> Aim for under 160 characters.</span></li>
+                            <li class="flex items-start"><i class="fas fa-shield-alt text-green-500 w-6 mt-1"></i><span><b>Be Compliant:</b> Include opt-out info, like "Reply STOP to cancel".</span></li>
+                            <li class="flex items-start"><i class="fas fa-hourglass-half text-purple-500 w-6 mt-1"></i><span><b>Be Timely:</b> Avoid sending messages late at night or early in the morning.</span></li>
+                        </ul>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4"><i class="fas fa-history text-gray-500 mr-2"></i> Recent Activity</h3>
+                        <div class="space-y-3">
+                            <a href="#" class="flex items-center p-3 hover:bg-gray-50 rounded-lg transition-colors">
+                                <div class="w-10 h-10 rounded-full bg-blue-100 flex-shrink-0 flex items-center justify-center shadow-sm mr-4"><i class="fas fa-calendar-check text-blue-600"></i></div>
+                                <div>
+                                    <h4 class="font-semibold text-gray-800">Appointment Reminders</h4>
+                                    <p class="text-sm text-gray-600">Sent to 184 patients • Today 10:30 AM</p>
+                                </div>
+                            </a>
+                            <a href="#" class="flex items-center p-3 hover:bg-gray-50 rounded-lg transition-colors">
+                                <div class="w-10 h-10 rounded-full bg-green-100 flex-shrink-0 flex items-center justify-center shadow-sm mr-4"><i class="fas fa-syringe text-green-600"></i></div>
+                                <div>
+                                    <h4 class="font-semibold text-gray-800">Vaccination Update</h4>
+                                    <p class="text-sm text-gray-600">Sent to 2,340 patients • Yesterday 2:15 PM</p>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div data-element="toast" class="toast-notification" role="alert" aria-live="assertive" aria-atomic="true">
+        <i data-element="toastIcon" class="fas fa-lg mr-3"></i>
+        <span data-element="toastMessage"></span>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.1.0-rc.0/js/select2.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+        // --- CONFIGURATION & STATE ---
+    const SMSBroadcastManager = {
+        // --- STATE ---
+        state: {
+            message: '',
+            recipientType: 'group',
+            selectedGroup: 'all',
+            selectedIndividuals: [],
+            schedule: { date: '', time: '' },
+            isSubmitting: false,
+            isLoading: true,
+            patientGroups: {},
+            messageTemplates: {}
+        },
+        
+        // --- INITIALIZATION ---
+async init() {
+    this.cacheDOMElements();
+    this.initPlugins();
+    this.bindEvents();
+    
+    try {
+        // Fetch data from backend
+        await Promise.all([
+            this.fetchPatientGroups(),
+            this.fetchMessageTemplates()
+        ]);
+        
+        // Populate template selector after fetching
+        this.populateTemplateSelector();
+        
+        this.state.isLoading = false;
+        this.render();
+    } catch (error) {
+        console.error('Initialization failed:', error);
+        this.showToast('Failed to load required data', 'error');
+    }
+    
+    this.updateTime();
+    setInterval(() => this.updateTime(), 60000);
+},
+
+        async fetchPatientGroups() {
+            const response = await fetch('/communications/api/patient-groups');
+            const data = await response.json();
+            
+            if (data.error) throw new Error(data.error);
+            
+            // Add icons to groups
+            const groups = data.groups;
+            groups.all.icon = 'fa-users text-blue-500';
+            groups.appointments.icon = 'fa-calendar-alt text-green-500';
+            groups.new_patients.icon = 'fa-user-plus text-purple-500';
+            
+            this.state.patientGroups = groups;
+        },
+
+async fetchMessageTemplates() {
+    const response = await fetch('/communications/api/message-templates');
+    const data = await response.json();
+    
+    if (data.error) throw new Error(data.error);
+    
+    // Store both name and content
+    this.state.messageTemplates = data.templates;
+},
+
+        cacheDOMElements() {
+            const formRoot = document.getElementById('sms-broadcast-form');
+            this.elements = {
+                form: formRoot.querySelector('[data-element="form"]'),
+                messageInput: formRoot.querySelector('[data-element="messageInput"]'),
+                characterCount: formRoot.querySelector('[data-element="characterCount"]'),
+                messageCount: formRoot.querySelector('[data-element="messageCount"]'),
+                templateSelector: formRoot.querySelector('[data-element="templateSelector"]'),
+                recipientTypeContainer: formRoot.querySelector('[data-element="recipientTypeContainer"]'),
+                groupOptions: formRoot.querySelector('[data-element="groupOptions"]'),
+                individualOptions: formRoot.querySelector('[data-element="individualOptions"]'),
+                patientSelect: formRoot.querySelector('[data-element="patientSelect"]'),
+                scheduleDate: formRoot.querySelector('[data-element="scheduleDate"]'),
+                scheduleTime: formRoot.querySelector('[data-element="scheduleTime"]'),
+                clearScheduleBtn: formRoot.querySelector('[data-element="clearScheduleBtn"]'),
+                recipientCount: formRoot.querySelector('[data-element="recipientCount"]'),
+                currentTime: formRoot.querySelector('[data-element="currentTime"]'),
+                submitBtn: formRoot.querySelector('[data-element="submitBtn"]'),
+                submitBtnText: formRoot.querySelector('[data-element="submitBtnText"]'),
+                submitBtnSpinner: formRoot.querySelector('[data-element="submitBtnSpinner"]'),
+                previewBtn: formRoot.querySelector('[data-element="previewBtn"]'),
+                previewCard: formRoot.querySelector('[data-element="previewCard"]'),
+                previewContent: formRoot.querySelector('[data-element="previewContent"]'),
+                closePreviewBtn: formRoot.querySelector('[data-element="closePreviewBtn"]'),
+                toast: document.querySelector('[data-element="toast"]'),
+                toastIcon: document.querySelector('[data-element="toastIcon"]'),
+                toastMessage: document.querySelector('[data-element="toastMessage"]'),
+            };
+        },
+
+        initPlugins() {
+            $(this.elements.patientSelect).select2({
+                placeholder: "Search patients by name or ID...",
+                allowClear: true,
+            }).on('change', (e) => {
+                this.setState({ selectedIndividuals: $(e.target).val() });
+            });
+        },
+
+        // --- EVENT HANDLING ---
+        bindEvents() {
+            this.elements.messageInput.addEventListener('input', () => this.setState({ message: this.elements.messageInput.value }));
+            this.elements.templateSelector.addEventListener('change', (e) => this.handleTemplateChange(e.target.value));
+            this.elements.recipientTypeContainer.addEventListener('change', (e) => this.setState({ recipientType: e.target.value }));
+            this.elements.groupOptions.addEventListener('change', (e) => this.setState({ selectedGroup: e.target.value }));
+            this.elements.scheduleDate.addEventListener('input', (e) => this.setState({ schedule: { ...this.state.schedule, date: e.target.value } }));
+            this.elements.scheduleTime.addEventListener('input', (e) => this.setState({ schedule: { ...this.state.schedule, time: e.target.value } }));
+            this.elements.clearScheduleBtn.addEventListener('click', () => this.setState({ schedule: { date: '', time: '' } }));
+            this.elements.form.addEventListener('submit', (e) => this.handleFormSubmit(e));
+            this.elements.previewBtn.addEventListener('click', () => this.togglePreview(true));
+            this.elements.closePreviewBtn.addEventListener('click', () => this.togglePreview(false));
+        },
+
+handleTemplateChange(templateKey) {
+    if (templateKey === 'custom') {
+        this.setState({ message: '' });
+        this.elements.messageInput.focus();
+    } else if (this.state.messageTemplates[templateKey]) {
+        // Use the content from the template object
+        this.setState({ 
+            message: this.state.messageTemplates[templateKey].content 
+        });
+    }
+},
+
+        // In SMSBroadcastManager
+        async handleFormSubmit(e) {
+            e.preventDefault();
+            if (this.state.isSubmitting) return;
+
+            const validationError = this.validateForm();
+            if (validationError) {
+                this.showToast(validationError, 'error');
+                return;
+            }
+
+            this.setState({ isSubmitting: true });
+
+            try {
+                const response = await fetch('/communications/send-broadcast', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: this.state.message,
+                        recipient_type: this.state.recipientType,
+                        recipient_data: this.getRecipientData(),
+                        schedule: this.state.schedule
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    this.showToast('Broadcast scheduled successfully!', 'success');
+                    this.resetForm();
+                } else {
+                    throw new Error(result.error || 'Failed to send broadcast');
+                }
+            } catch (error) {
+                console.error('Submission error:', error);
+                this.showToast(error.message, 'error');
+            } finally {
+                this.setState({ isSubmitting: false });
+            }
+        },
+
+
+        
+        // --- STATE MANAGEMENT ---
+        setState(newState) {
+            this.state = { ...this.state, ...newState };
+            this.render();
+        },
+
+        // --- RENDERING & UI UPDATES ---
+        render() {
+            // Message & Character Count
+            const messageLength = this.state.message.length;
+            this.elements.messageInput.value = this.state.message;
+            this.elements.characterCount.textContent = messageLength;
+            this.elements.characterCount.classList.toggle('warning', messageLength > 140 && messageLength <= 155);
+            this.elements.characterCount.classList.toggle('danger', messageLength > 155);
+            this.elements.messageCount.textContent = Math.ceil(messageLength / 160) || 1;
+
+            // Recipient Selection UI
+            this.elements.groupOptions.classList.toggle('hidden', this.state.recipientType !== 'group');
+            this.elements.individualOptions.classList.toggle('hidden', this.state.recipientType !== 'individual');
+            this.renderGroupOptions();
+
+            // Recipient Count Badge
+            const count = this.getRecipientCount();
+            this.elements.recipientCount.textContent = `${count.toLocaleString()} selected`;
+            
+            // Schedule Inputs
+            this.elements.scheduleDate.value = this.state.schedule.date;
+            this.elements.scheduleTime.value = this.state.schedule.time;
+
+            // Dynamic Submit Button
+            const isScheduled = this.state.schedule.date && this.state.schedule.time;
+            if (isScheduled) {
+                const formattedDate = new Date(this.state.schedule.date + 'T' + this.state.schedule.time).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'});
+                this.elements.submitBtnText.innerHTML = `<i class="fas fa-calendar-check mr-2"></i> Schedule for ${formattedDate}`;
+            } else {
+                this.elements.submitBtnText.innerHTML = `<i class="fas fa-paper-plane mr-2"></i> Send to ${count.toLocaleString()} Recipients`;
+            }
+
+            // Button Loading State
+            this.elements.submitBtn.disabled = this.state.isSubmitting;
+            this.elements.submitBtnText.classList.toggle('hidden', this.state.isSubmitting);
+            this.elements.submitBtnSpinner.classList.toggle('hidden', !this.state.isSubmitting);
+        },
+
+renderGroupOptions() {
+    // Only render if we have groups data
+    if (!this.state.patientGroups || Object.keys(this.state.patientGroups).length === 0) {
+        this.elements.groupOptions.innerHTML = `<div class="text-center py-4 text-gray-500">Loading patient groups...</div>`;
+        return;
+    }
+    
+    const groups = this.state.patientGroups;
+    const html = Object.keys(groups).map(key => {
+        const group = groups[key];
+        const checked = this.state.selectedGroup === key ? 'checked' : '';
+        return `
+            <div class="flex-1">
+                <input type="radio" name="patient_group" id="group_${key}" value="${key}" class="hidden peer" ${checked}>
+                <label for="group_${key}" class="flex flex-col items-center text-center p-4 bg-white border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                    <i class="fas ${group.icon} mb-2 text-3xl"></i>
+                    <span class="text-sm font-semibold text-gray-800">${group.name}</span>
+                    <span class="text-xs text-gray-500">${group.count.toLocaleString()} recipients</span>
+                </label>
+            </div>
+        `;
+    }).join('');
+    this.elements.groupOptions.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-3 gap-3">${html}</div>`;
+},
+// Add this method to SMSBroadcastManager
+populateTemplateSelector() {
+    const selector = this.elements.templateSelector;
+    
+    // Clear existing options except the first and last
+    while (selector.options.length > 2) {
+        selector.remove(1);
+    }
+    
+    // Add dynamic options from backend
+    for (const [key, content] of Object.entries(this.state.messageTemplates)) {
+        const option = document.createElement('option');
+        option.value = key;
+        
+        // Format template name: "appointment_reminder" -> "Appointment Reminder"
+        const formattedName = key.split('_')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+            
+        option.textContent = formattedName;
+        selector.insertBefore(option, selector.lastElementChild);
+    }
+    
+    // Initialize Select2 plugin
+    $(selector).select2({
+        placeholder: "Select a template",
+        minimumResultsForSearch: 5
+    });
+},       
+        // --- UTILITIES & HELPERS ---
+        getRecipientData() {
+            if (this.state.recipientType === 'group') {
+                return { type: 'group', id: this.state.selectedGroup };
+            }
+            return { type: 'individual', ids: this.state.selectedIndividuals };
+        },
+        
+// --- UTILITIES & HELPERS ---
+getRecipientCount() {
+    if (this.state.recipientType === 'group') {
+        // Safely access the group count from backend data
+        const group = this.state.patientGroups[this.state.selectedGroup];
+        return group ? group.count : 0;
+    }
+    return this.state.selectedIndividuals.length;
+},
+        
+        validateForm() {
+            if (!this.state.message.trim()) return 'Message content cannot be empty.';
+            if (this.getRecipientCount() === 0) return 'Please select at least one recipient.';
+            return null;
+        },
+
+        updateTime() {
+            this.elements.currentTime.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        },
+
+        togglePreview(show) {
+            if (show) {
+                const previewMessage = this.state.message
+                    .replace(/\[.*?\]/g, '...') // Replace bracketed placeholders
+                    .replace(/\{\{(.*?)\}\}/g, (match, p1) => {
+                        return p1.includes('name') ? 'Alice' : '...';
+                    });
+                this.elements.previewContent.textContent = previewMessage || "Your message will appear here.";
+                this.elements.previewCard.classList.remove('hidden');
+                this.elements.previewCard.scrollIntoView({ behavior: 'smooth' });
+            } else {
+                this.elements.previewCard.classList.add('hidden');
+            }
+        },
+        
+        showToast(message, type = 'success') {
+            this.elements.toastMessage.textContent = message;
+            this.elements.toast.className = 'toast-notification'; // Reset classes
+            this.elements.toast.classList.add(type);
+            this.elements.toastIcon.className = 'fas fa-lg mr-3'; // Reset
+            this.elements.toastIcon.classList.add(type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle');
+            
+            this.elements.toast.classList.add('show');
+            setTimeout(() => {
+                this.elements.toast.classList.remove('show');
+            }, 4000);
+        },
+
+        resetForm() {
+            this.setState({
+                message: '',
+                recipientType: 'group',
+                selectedGroup: 'all',
+                selectedIndividuals: [],
+                schedule: { date: '', time: '' },
+                isSubmitting: false,
+            });
+            this.elements.templateSelector.value = '';
+            $(this.elements.patientSelect).val(null).trigger('change');
+            document.getElementById('group_selection').checked = true;
+            this.togglePreview(false);
+        }
+    };
+
+    SMSBroadcastManager.init();
+
+});
+</script>
+{% endblock %}

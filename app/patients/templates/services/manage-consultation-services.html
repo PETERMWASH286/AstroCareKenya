@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage Consultation Services{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-6 lg:p-12 animate-fade-in-up">
+
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 pb-4 border-b-2 border-gray-200 dark:border-gray-700">
+        <div>
+            <h1 class="text-3xl font-extrabold text-gray-800 dark:text-gray-100">
+                Manage Consultation Services
+            </h1>
+            <p class="mt-2 text-md text-gray-600 dark:text-gray-400">
+                Configure, update, and manage all available consultation services offered by the hospital.
+            </p>
+        </div>
+        <div class="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-4 w-full sm:w-auto mt-4 sm:mt-0">
+            <div class="relative w-full sm:w-64">
+                <input type="text" id="serviceSearch" placeholder="Search services..."
+                       class="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm 
+                              focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100
+                              transition duration-150 ease-in-out">
+                <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                    <i class="fas fa-search text-gray-400 dark:text-gray-500"></i>
+                </div>
+            </div>
+            <a href="{{ url_for('consultations_web.add_new_service') }}" 
+               class="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg shadow-lg hover:bg-blue-700 
+                      transition duration-300 ease-in-out transform hover:scale-105 flex items-center justify-center space-x-2">
+                <i class="fas fa-plus-circle"></i>
+                <span>Add New</span>
+            </a>
+        </div>
+    </div>
+
+    {% if services %}
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-3xl overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead class="bg-gray-50 dark:bg-gray-700">
+                <tr>
+                    <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        Service Name
+                    </th>
+                    <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        Description
+                    </th>
+                    <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        Price
+                    </th>
+                    <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        Duration
+                    </th>
+                    <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        Status
+                    </th>
+                    <th scope="col" class="px-6 py-4 text-right text-xs font-semibold text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        Actions
+                    </th>
+                </tr>
+            </thead>
+            <tbody id="servicesTableBody" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                {% for service in services %}
+                <tr class="service-row hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150 ease-in-out">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                        {{ service.name }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-normal text-sm text-gray-500 dark:text-gray-400 max-w-xs md:max-w-md">
+                        <p class="truncate">{{ service.description or '—' }}</p>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600 dark:text-green-400 font-bold">
+                        KSh {{ '{:,.2f}'.format(service.price) }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                        {{ service.duration or '—' }} mins
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        {% if service.is_active %}
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-700 dark:text-green-100">
+                                Active
+                            </span>
+                        {% else %}
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-200 text-gray-800 dark:bg-gray-600 dark:text-gray-200">
+                                Deactivated
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div class="flex justify-end items-center space-x-2">
+                            <a href="{{ url_for('consultations_web.toggle_service_status', service_id=service.id) }}"
+                               class="{% if service.is_active %} text-yellow-500 hover:text-yellow-700 dark:text-yellow-400 dark:hover:text-yellow-600 {% else %} text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-600 {% endif %} transition-colors duration-150"
+                               title="{% if service.is_active %}Deactivate Service{% else %}Activate Service{% endif %}">
+                                <i class="fas {% if service.is_active %}fa-ban{% else %}fa-check-circle{% endif %}"></i>
+                            </a>
+                            <a href="{{ url_for('consultations_web.manage_doctors', service_id=service.id) }}"
+                               class="text-teal-600 hover:text-teal-900 dark:text-teal-400 dark:hover:text-teal-600 transition-colors duration-150"
+                               title="Manage Doctors">
+                                <i class="fas fa-user-md"></i>
+                            </a>
+                            <a href="{{ url_for('consultations_web.edit_service', service_id=service.id) }}"
+                               class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-600 transition-colors duration-150"
+                               title="Edit Service">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <button type="button" 
+                                    onclick="confirmDelete('{{ url_for('consultations_web.delete_service', service_id=service.id) }}')"
+                                    class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-600 transition-colors duration-150"
+                                    title="Delete Service">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <div id="noResultsMessage" class="hidden text-center p-6 text-gray-500 dark:text-gray-400">
+            No services match your search query.
+        </div>
+    </div>
+    {% else %}
+    <div class="flex flex-col items-center justify-center p-12 bg-white dark:bg-gray-800 rounded-2xl shadow-3xl">
+        <i class="fas fa-info-circle text-7xl text-blue-400 mb-6 animate-pulse"></i>
+        <h3 class="text-2xl font-semibold text-gray-700 dark:text-gray-200 mb-3">No Consultation Services Found</h3>
+        <p class="text-gray-500 dark:text-gray-400 text-center mb-8 max-w-md">
+            It looks like there are no consultation services configured yet. Get started by adding your first service below.
+        </p>
+        <a href="{{ url_for('consultations_web.add_new_service') }}" 
+           class="px-8 py-3 bg-blue-600 text-white rounded-lg shadow-lg hover:bg-blue-700 
+                  transition duration-300 ease-in-out transform hover:scale-105 font-semibold">
+            Add Your First Service
+        </a>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function confirmDelete(deleteUrl) {
+        if (confirm("Are you sure you want to delete this service? This action cannot be undone.")) {
+            window.location.href = deleteUrl;
+        }
+    }
+
+    const searchInput = document.getElementById('serviceSearch');
+    const servicesTableBody = document.getElementById('servicesTableBody');
+    const noResultsMessage = document.getElementById('noResultsMessage');
+    
+    if (searchInput && servicesTableBody && noResultsMessage) {
+        const serviceRows = servicesTableBody.querySelectorAll('.service-row');
+
+        searchInput.addEventListener('input', function() {
+            const query = this.value.toLowerCase().trim();
+            let foundResults = false;
+
+            serviceRows.forEach(row => {
+                const rowText = row.textContent.toLowerCase();
+                if (rowText.includes(query)) {
+                    row.style.display = '';
+                    foundResults = true;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            if (foundResults) {
+                noResultsMessage.classList.add('hidden');
+            } else {
+                noResultsMessage.classList.remove('hidden');
+            }
+        });
+    }
+</script>
+{% endblock %}

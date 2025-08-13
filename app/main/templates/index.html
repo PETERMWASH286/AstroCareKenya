@@ -1,0 +1,1416 @@
+{% extends "main-base.html" %}
+
+{% block title %}AstroCare - Future of Healthcare Management{% endblock %}
+
+{% block head %}
+    {{ super() }}
+
+{% endblock %}
+
+{% block content %}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        /* Hero section specific styles for particle background */
+        #particles-js {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-color: transparent; /* Rely on parent for background */
+            background-image: url('');
+            background-repeat: no-repeat;
+            background-size: cover;
+            background-position: 50% 50%;
+            z-index: 0; /* Ensures particles are behind content */
+        }
+
+        /* Keyframe for subtle pulsations */
+        @keyframes pulseBorder {
+            0% {
+                box-shadow: 0 0 0 0 rgba(100, 100, 255, 0.4);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(100, 100, 255, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(100, 100, 255, 0);
+            }
+        }
+
+        /* Keyframes for reveal animations */
+        @keyframes fadeInScale {
+            from { opacity: 0; transform: scale(0.95) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .animate-fade-in-scale {
+            animation: fadeInScale 0.8s ease-out forwards;
+            opacity: 0;
+        }
+
+        @keyframes slideInLeft {
+            from { opacity: 0; transform: translateX(-50px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        .animate-slide-in-left {
+            animation: slideInLeft 0.8s ease-out forwards;
+            opacity: 0;
+        }
+
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(50px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        .animate-slide-in-right {
+            animation: slideInRight 0.8s ease-out forwards;
+            opacity: 0;
+        }
+
+        /* Existing fadeInUps and fadeIn animations (kept for consistency) */
+        @keyframes fadeInUps {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .animate-fade-in-up {
+            animation: fadeInUps 0.8s ease-out forwards;
+            opacity: 0; /* Start invisible */
+        }
+        .animate-delay-200 { animation-delay: 0.2s; }
+        .animate-delay-400 { animation-delay: 0.4s; }
+        .animate-delay-600 { animation-delay: 0.6s; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .animate-fade-in {
+            animation: fadeIn 1s ease-out forwards;
+            opacity: 0;
+        }
+
+        /* Specific animation for testimonial cards */
+        @keyframes popIn {
+            0% { opacity: 0; transform: scale(0.8); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        .animate-pop-in {
+            animation: popIn 0.6s ease-out forwards;
+            opacity: 0;
+        }
+
+        /* Testimonial carousel controls (basic styling) */
+        .testimonial-carousel-dot {
+            width: 10px;
+            height: 10px;
+            background-color: rgba(255,255,255,0.4);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .testimonial-carousel-dot.active {
+            background-color: white;
+        }
+        /* New Animations for content transition */
+@keyframes slideOutUp {
+    from { opacity: 1; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(-30px); }
+}
+
+@keyframes slideInDown {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-slide-out-up {
+    animation: slideOutUp 0.5s ease-out forwards;
+}
+
+.animate-slide-in-down {
+    animation: slideInDown 0.5s ease-in forwards;
+}
+
+    </style>
+<div class="mt-10">
+
+{# Hero Section - Dynamic Background, Engaging Headline #}
+{# Hero Section - Dynamic Background, Engaging Headline #}
+<section class="relative bg-white dark:bg-black text-gray-900 dark:text-white py-28 px-4 rounded-3xl shadow-2xl overflow-hidden transform transition-all duration-500 hover:scale-[1.005] cursor-pointer animate-fade-in-scale">
+    {# Particle.js container - will be filled by JS #}
+    <div id="particles-js" class="absolute inset-0 z-0"></div>
+
+    <div class="container mx-auto relative z-10 text-center">
+        {# Initial content rendered directly from Flask #}
+        <h1 id="hero-title" class="text-5xl md:text-6xl font-extrabold mb-8 leading-tight drop-shadow-lg">
+            {{ initial_hero_title | safe }}
+        </h1>
+        <p id="hero-subtitle" class="text-xl md:text-2xl mb-12 opacity-90 max-w-4xl mx-auto">
+            {{ initial_hero_subtitle | safe }}
+        </p>
+        <div class="flex flex-col sm:flex-row justify-center space-y-5 sm:space-y-0 sm:space-x-8">
+            <a href="{{ url_for('main_bp.register') }}" class="inline-block bg-accent hover:bg-amber-600 text-white font-bold py-4 px-10 rounded-full shadow-xl transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-amber-500">
+                Start Your Free Trial
+            </a>
+            <a href="{{ url_for('main_bp.about') }}" class="inline-block bg-transparent border-2 border-gray-900 dark:border-white hover:bg-gray-100 dark:hover:bg-white hover:text-primary dark:hover:text-black text-gray-900 dark:text-white font-bold py-4 px-10 rounded-full shadow-xl transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-gray-400 dark:focus:ring-white">
+                Discover AstroCare
+            </a>
+        </div>
+    </div>
+</section>
+
+{# Why Choose Us Section - Modern Grid, Value Proposition #}
+    <section class="container mx-auto px-4 py-16">
+        <h2 class="text-4xl md:text-5xl font-extrabold text-center text-gray-800 dark:text-gray-100 mb-16 leading-tight animate-fade-in">
+            Why Healthcare Professionals <span class="text-accent dark:text-amber-400">Choose AstroCare</span>
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 animate-slide-in-staggered">
+
+            {# Card 1: AI-Powered Efficiency #}
+            <div class="why-card bg-transparent rounded-2xl shadow-xl p-8 transform transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl flex flex-col items-center text-center animate-item">
+                <div class="why-card-icon-wrapper p-5 rounded-full border border-gray-200 dark:border-gray-700 text-red-600 dark:text-red-400 mb-6 transition-all duration-300">
+                    <i class="fas fa-hospital-user text-4xl"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-3">Unified Platform Management</h3>
+                <p class="text-base text-gray-600 dark:text-gray-300 leading-relaxed">
+                    Manage multiple hospital branches from one central, powerful platform.
+                </p>
+            </div>
+
+            {# Card 2: Unmatched Security #}
+            <div class="why-card bg-transparent rounded-2xl shadow-xl p-8 transform transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl flex flex-col items-center text-center animate-item">
+                <div class="why-card-icon-wrapper p-5 rounded-full border border-gray-200 dark:border-gray-700 text-green-600 dark:text-green-400 mb-6 transition-all duration-300">
+                    <i class="fas fa-shield-alt text-4xl"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-3">Unmatched Security</h3>
+                <p class="text-base text-gray-600 dark:text-gray-300 leading-relaxed">
+                    Protect patient data with industry-leading encryption and compliance.
+                </p>
+            </div>
+
+{# Card 3: Seamless Integration #}
+            <div class="why-card bg-transparent rounded-2xl shadow-xl p-8 transform transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl flex flex-col items-center text-center animate-item">
+                <div class="why-card-icon-wrapper p-5 rounded-full border border-gray-200 dark:border-gray-700 text-purple-600 dark:text-purple-400 mb-6 transition-all duration-300">
+                    <i class="fas fa-link text-4xl"></i> {# Changed icon here #}
+                </div>
+                <h3 class="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-3">Seamless Integration</h3>
+                <p class="text-base text-gray-600 dark:text-gray-300 leading-relaxed">
+                    Effortlessly connect with existing systems, labs, and pharmacies.
+                </p>
+            </div>
+
+            {# New Card 4: Unified Platform Management #}
+
+            <div class="why-card bg-transparent rounded-2xl shadow-xl p-8 transform transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl flex flex-col items-center text-center animate-item">
+                <div class="why-card-icon-wrapper p-5 rounded-full border border-gray-200 dark:border-gray-700 text-primary dark:text-blue-400 mb-6 transition-all duration-300">
+                    <i class="fas fa-robot text-4xl"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-3">AI-Powered Efficiency</h3>
+                <p class="text-base text-gray-600 dark:text-gray-300 leading-relaxed">
+                    Automate tasks, predict trends, and optimize workflows with intelligent AI.
+                </p>
+            </div>
+        </div>
+    </section>
+
+{# AstroCare In Action Section - Creative Image Showcase #}
+<section class="container mx-auto px-4 py-24 overflow-hidden">
+    <h2 class="text-4xl md:text-5xl font-extrabold text-center text-gray-800 dark:text-gray-100 mb-20 leading-tight animate-fade-in">
+        AstroCare <span class="text-accent dark:text-amber-400">In Action</span>
+    </h2>
+
+    <div class="relative flex justify-center items-center h-[500px] md:h-[600px] lg:h-[700px] bg-gradient-to-br from-primary/5 to-transparent rounded-3xl shadow-2xl overflow-hidden reveal-content border border-gray-100 dark:border-gray-700">
+
+        {# Device frame elements #}
+        <div class="absolute w-full h-full rounded-3xl border-8 border-gray-300 dark:border-gray-700 pointer-events-none transform scale-y-105 scale-x-102"></div>
+        <div class="absolute top-4 left-1/2 -translate-x-1/2 w-16 h-2 bg-gray-300 dark:bg-gray-700 rounded-full z-30"></div>
+
+        {# Floating background glow #}
+        <div class="absolute inset-0 bg-radial-gradient from-primary/10 via-transparent to-transparent opacity-70 z-0 animate-pulse-slow"></div>
+
+        {# Image 3 - Top-left corner #}
+        <img src="{{  system_images.registration_image }}" alt="AstroCare Analytics"
+            class="absolute w-[45%] md:w-[35%] lg:w-[30%] rounded-2xl z-20
+                   shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25),0_8px_16px_-8px_rgba(0,0,0,0.3)]
+                   border-2 border-white/50 dark:border-gray-800
+                   transform -rotate-[5deg] image-reveal-3 object-cover"
+            style="top: -8%; left: -9%;">
+
+{# Image 1 - Centered primary (largest) #}
+<img src="{{ system_images.dashboard_image }}" alt="AstroCare Dashboard"
+    class="absolute w-[85%] md:w-[70%] lg:w-[60%] rounded-2xl z-10
+           shadow-[0_60px_120px_-15px_rgba(0,0,0,0.45),0_0_80px_rgba(104,119,255,0.4)]
+           border-2 border-white/60 dark:border-gray-700
+           image-reveal-1 object-cover"
+    style="top: 50%; left: 50%; transform: translate(-50%, -50%);">
+
+        {# Image 2 - Bottom-right floating #}
+        <img src="{{ system_images.registration_image }}" alt="AstroCare Registration"
+            class="absolute w-[45%] md:w-[35%] lg:w-[30%] rounded-2xl z-20
+                   shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25),0_8px_16px_-8px_rgba(0,0,0,0.3)]
+                   border-2 border-white/50 dark:border-gray-800
+                   transform rotate-[7deg] image-reveal-2 object-cover"
+            style="top: 70%; left: 75%;">
+
+        {# Floating animation elements #}
+        <div class="absolute top-1/4 left-1/3 w-4 h-4 rounded-full bg-accent/20 z-0 animate-float-1"></div>
+        <div class="absolute top-3/4 left-2/3 w-3 h-3 rounded-full bg-accent/15 z-0 animate-float-2"></div>
+        <div class="absolute top-2/5 left-3/4 w-2 h-2 rounded-full bg-accent/10 z-0 animate-float-3"></div>
+    </div>
+</section>
+
+<style>
+    /* Custom shadow animations */
+    @keyframes floating {
+        0%, 100% { transform: translateY(0) rotate(0deg); }
+        50% { transform: translateY(-15px) rotate(1deg); }
+    }
+    
+    @keyframes pulse-slow {
+        0%, 100% { opacity: 0.7; }
+        50% { opacity: 0.4; }
+    }
+    
+    /* Animation delays */
+    .image-reveal-1 { animation-delay: 0.2s; }
+    .image-reveal-2 { animation-delay: 0.5s; }
+    .image-reveal-3 { animation-delay: 0.8s; }
+    
+    .animate-float-1 { animation: floating 8s ease-in-out infinite; }
+    .animate-float-2 { animation: floating 10s ease-in-out 1s infinite; }
+    .animate-float-3 { animation: floating 12s ease-in-out 2s infinite; }
+    .animate-pulse-slow { animation: pulse-slow 6s ease-in-out infinite; }
+</style>
+<section class="container mx-auto px-4 py-24 overflow-hidden relative">
+<h2 class="text-3xl sm:text-4xl md:text-5xl font-extrabold text-center text-gray-800 dark:text-gray-100 mb-24 lg:mb-16 leading-tight animate-fade-in">
+    AstroCare's <span class="text-accent dark:text-amber-400">All-in-One Hospital System</span>
+</h2>
+
+    <div class="flex flex-col lg:flex-row justify-center items-center gap-10 lg:gap-8 relative">
+        {# Feature Wheel Container #}
+        <div id="wheel-container" class="relative w-72 h-72 sm:w-80 sm:h-80 md:w-96 md:h-96 lg:w-[400px] lg:h-[400px] xl:w-[500px] xl:h-[500px]
+                    aspect-square flex items-center justify-center p-4 sm:p-6 lg:p-12
+                    bg-gradient-to-br from-primary/5 to-transparent rounded-full shadow-2xl border border-gray-100 dark:border-gray-700 animate-fade-in-scale">
+
+            {# Central Hub #}
+            <div class="absolute w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 bg-primary dark:bg-amber-400 rounded-full flex items-center justify-center
+                          text-white dark:text-gray-900 text-xl sm:text-2xl md:text-3xl font-bold z-20 shadow-xl border-4 border-white dark:border-gray-900 animate-pop-in">
+                HMS
+            </div>
+
+            {# The Rotating Wheel Itself #}
+            <div id="feature-wheel" class="absolute inset-0 transition-transform duration-500 ease-in-out">
+                {# Features are positioned dynamically using JS #}
+
+                <div class="feature-item absolute w-24 h-24 sm:w-28 sm:h-28 flex flex-col items-center justify-center text-center p-2 cursor-pointer
+                            bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700
+                            transition-all duration-300 hover:scale-105 hover:shadow-xl group"
+                     data-feature-id="patient-management">
+                    <i class="fas fa-user-injured text-2xl sm:text-3xl text-primary dark:text-amber-400 mb-1 sm:mb-2 group-hover:text-accent dark:group-hover:text-amber-300"></i>
+                    <h4 class="text-xs sm:text-sm font-semibold text-gray-800 dark:text-gray-100 leading-tight">Patient Management</h4>
+                </div>
+
+                <div class="feature-item absolute w-24 h-24 sm:w-28 sm:h-28 flex flex-col items-center justify-center text-center p-2 cursor-pointer
+                            bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700
+                            transition-all duration-300 hover:scale-105 hover:shadow-xl group"
+                     data-feature-id="appointment-scheduling">
+                    <i class="fas fa-calendar-alt text-2xl sm:text-3xl text-primary dark:text-amber-400 mb-1 sm:mb-2 group-hover:text-accent dark:group-hover:text-amber-300"></i>
+                    <h4 class="text-xs sm:text-sm font-semibold text-gray-800 dark:text-gray-100 leading-tight">Appointment Scheduling</h4>
+                </div>
+
+                <div class="feature-item absolute w-24 h-24 sm:w-28 sm:h-28 flex flex-col items-center justify-center text-center p-2 cursor-pointer
+                            bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700
+                            transition-all duration-300 hover:scale-105 hover:shadow-xl group"
+                     data-feature-id="ehr-emr">
+                    <i class="fas fa-notes-medical text-2xl sm:text-3xl text-primary dark:text-amber-400 mb-1 sm:mb-2 group-hover:text-accent dark:group-hover:text-amber-300"></i>
+                    <h4 class="text-xs sm:text-sm font-semibold text-gray-800 dark:text-gray-100 leading-tight">EHR/EMR Systems</h4>
+                </div>
+
+                <div class="feature-item absolute w-24 h-24 sm:w-28 sm:h-28 flex flex-col items-center justify-center text-center p-2 cursor-pointer
+                            bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700
+                            transition-all duration-300 hover:scale-105 hover:shadow-xl group"
+                     data-feature-id="billing-invoicing">
+                    <i class="fas fa-file-invoice-dollar text-2xl sm:text-3xl text-primary dark:text-amber-400 mb-1 sm:mb-2 group-hover:text-accent dark:group-hover:text-amber-300"></i>
+                    <h4 class="text-xs sm:text-sm font-semibold text-gray-800 dark:text-gray-100 leading-tight">Billing & Invoicing</h4>
+                </div>
+
+                <div class="feature-item absolute w-24 h-24 sm:w-28 sm:h-28 flex flex-col items-center justify-center text-center p-2 cursor-pointer
+                            bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700
+                            transition-all duration-300 hover:scale-105 hover:shadow-xl group"
+                     data-feature-id="pharmacy-inventory">
+                    <i class="fas fa-pills text-2xl sm:text-3xl text-primary dark:text-amber-400 mb-1 sm:mb-2 group-hover:text-accent dark:group-hover:text-amber-300"></i>
+                    <h4 class="text-xs sm:text-sm font-semibold text-gray-800 dark:text-gray-100 leading-tight">Pharmacy & Inventory</h4>
+                </div>
+
+                <div class="feature-item absolute w-24 h-24 sm:w-28 sm:h-28 flex flex-col items-center justify-center text-center p-2 cursor-pointer
+                            bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700
+                            transition-all duration-300 hover:scale-105 hover:shadow-xl group"
+                     data-feature-id="laboratory-diagnostics">
+                    <i class="fas fa-flask text-2xl sm:text-3xl text-primary dark:text-amber-400 mb-1 sm:mb-2 group-hover:text-accent dark:group-hover:text-amber-300"></i>
+                    <h4 class="text-xs sm:text-sm font-semibold text-gray-800 dark:text-gray-100 leading-tight">Lab & Diagnostics</h4>
+                </div>
+
+                <div class="feature-item absolute w-24 h-24 sm:w-28 sm:h-28 flex flex-col items-center justify-center text-center p-2 cursor-pointer
+                            bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700
+                            transition-all duration-300 hover:scale-105 hover:shadow-xl group"
+                     data-feature-id="reporting-analytics">
+                    <i class="fas fa-chart-line text-2xl sm:text-3xl text-primary dark:text-amber-400 mb-1 sm:mb-2 group-hover:text-accent dark:group-hover:text-amber-300"></i>
+                    <h4 class="text-xs sm:text-sm font-semibold text-gray-800 dark:text-gray-100 leading-tight">Reporting & Analytics</h4>
+                </div>
+
+            </div>{# /#feature-wheel #}
+
+            {# Navigation Arrows #}
+            <button id="prev-feature" class="absolute left-1 top-1/2 -translate-y-1/2 bg-primary dark:bg-amber-400 text-white dark:text-gray-900 p-2 sm:p-3 rounded-full shadow-lg z-30 transition-all duration-300 hover:scale-110 hover:shadow-xl">
+                <i class="fas fa-chevron-left text-lg sm:text-xl"></i>
+            </button>
+            <button id="next-feature" class="absolute right-1 top-1/2 -translate-y-1/2 bg-primary dark:bg-amber-400 text-white dark:text-gray-900 p-2 sm:p-3 rounded-full shadow-lg z-30 transition-all duration-300 hover:scale-110 hover:shadow-xl">
+                <i class="fas fa-chevron-right text-lg sm:text-xl"></i>
+            </button>
+        </div>{# /Feature Wheel Container #}
+
+        {# Feature Details Panel - Dynamically positioned. #}
+        <div id="feature-details-panel" class="
+             fixed inset-x-4 bottom-4 bg-gray-50 dark:bg-gray-800 rounded-3xl p-6 shadow-2xl
+             w-[calc(100%-2rem)] max-w-md mx-auto
+             flex flex-col justify-center items-center text-center
+             transition-all duration-500 ease-in-out opacity-0 translate-y-8 pointer-events-none z-50
+             data-[visible='true']:opacity-100 data-[visible='true']:translate-y-0 data-[visible='true']:pointer-events-auto
+             
+             lg:absolute lg:top-1/2 lg:left-full lg:ml-8 lg:-translate-y-1/2 lg:w-96 lg:max-w-none
+             lg:data-[visible='true']:translate-y-[-50%] lg:data-[visible='true']:translate-x-0
+             ">
+            <button id="close-details" class="absolute top-4 right-4 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-100 text-2xl">
+                <i class="fas fa-times-circle"></i>
+            </button>
+            <div id="details-icon" class="text-4xl sm:text-5xl text-primary dark:text-amber-400 mb-3 sm:mb-4">
+                <i class="fas fa-question-circle"></i>
+            </div>
+            <h3 id="details-title" class="text-xl sm:text-2xl font-bold text-gray-800 dark:text-gray-100 mb-1 sm:mb-2">Click a Feature</h3>
+            <p id="details-description" class="text-sm sm:text-md text-gray-600 dark:text-gray-300 leading-relaxed max-w-xs mx-auto">
+                Select any feature on the wheel to see its detailed description and benefits here.
+            </p>
+        </div>
+
+    </div>
+</section>
+
+<style>
+    /* Custom CSS for animations and radial positioning (Tailwind doesn't do radial positioning directly) */
+    @keyframes fade-in-scale {
+        from { opacity: 0; transform: scale(0.8); }
+        to { opacity: 1; transform: scale(1); }
+    }
+
+    @keyframes pop-in {
+        0% { transform: scale(0); opacity: 0; }
+        80% { transform: scale(1.1); opacity: 1; }
+        100% { transform: scale(1); opacity: 1; }
+    }
+
+    .animate-fade-in-scale { animation: fade-in-scale 1s ease-out forwards; }
+    .animate-pop-in { animation: pop-in 0.8s ease-out forwards 0.5s; } /* Delayed for appearance after wheel */
+
+    /* Ensure .feature-item positioning is handled by JS for precise radial layout */
+    .feature-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform-origin: center center; /* Important for scaling from its own center */
+        z-index: 10; /* Default z-index */
+    }
+
+    /* Active feature styling */
+    .feature-item.active {
+        box-shadow: 0 0 0 4px var(--color-accent, #f59e0b), 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        transform: scale(1.15) rotate(var(--item-inverse-rotation)); /* Keep upright, slightly larger */
+        z-index: 30; /* Bring active item to front */
+    }
+
+    /* Basic dark mode variables (if not using full Tailwind dark mode setup) */
+    :root {
+        --color-primary: #6877ff; /* AstroCare blue */
+        --color-accent: #f59e0b; /* Amber for highlight */
+    }
+
+    .dark {
+        --color-primary: #a78bfa; /* Dark mode blue */
+        --color-accent: #f59e0b; /* Amber for highlight */
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const wheelContainer = document.getElementById('wheel-container');
+        const featureWheel = document.getElementById('feature-wheel');
+        const featureItems = document.querySelectorAll('.feature-item');
+        const prevButton = document.getElementById('prev-feature');
+        const nextButton = document.getElementById('next-feature');
+        const detailsPanel = document.getElementById('feature-details-panel');
+        const closeDetailsButton = document.getElementById('close-details');
+        const detailsIcon = document.getElementById('details-icon');
+        const detailsTitle = document.getElementById('details-title');
+        const detailsDescription = document.getElementById('details-description');
+
+        const featuresData = {
+            'patient-management': {
+                icon: 'fas fa-user-injured',
+                title: 'Patient Management',
+                description: 'Maintain detailed patient records, manage admissions and discharges, and track comprehensive medical history with ease.'
+            },
+            'appointment-scheduling': {
+                icon: 'fas fa-calendar-alt',
+                title: 'Appointment Scheduling',
+                description: 'Streamline your booking process with intelligent scheduling, doctor availability management, and automated patient reminders.'
+            },
+            'ehr-emr': {
+                icon: 'fas fa-notes-medical',
+                title: 'EHR/EMR Systems',
+                description: 'Access and manage digital health records securely, including patient notes, prescriptions, and integration with medical imaging systems.'
+            },
+            'billing-invoicing': {
+                icon: 'fas fa-file-invoice-dollar',
+                title: 'Billing & Invoicing',
+                description: 'Automate billing cycles, handle insurance claims efficiently, and generate comprehensive financial reports for transparent operations.'
+            },
+            'pharmacy-inventory': {
+                icon: 'fas fa-pills',
+                title: 'Pharmacy & Inventory',
+                description: 'Optimize medication dispensing, monitor stock levels in real-time, and receive automated reorder alerts to prevent shortages.'
+            },
+            'laboratory-diagnostics': {
+                icon: 'fas fa-flask',
+                title: 'Laboratory & Diagnostics',
+                description: 'Streamline lab test ordering, track results seamlessly, and integrate with pathology systems for quick and accurate diagnostics.'
+            },
+            'reporting-analytics': {
+                icon: 'fas fa-chart-line',
+                title: 'Reporting & Analytics',
+                description: 'Gain actionable insights with customizable dashboards, performance reports, and data visualization tools for informed decision-making.'
+            }
+        };
+
+        let currentRotation = 0; // Tracks the rotation of the wheel in degrees
+        const anglePerFeature = 360 / featureItems.length;
+        let currentActiveItem = null; // To keep track of the currently selected feature item for styling
+
+        // Function to position items radially
+        function positionFeatures() {
+            const wheelRadius = featureWheel.offsetWidth / 2;
+            const itemComputedStyle = getComputedStyle(featureItems[0]);
+            const itemSize = parseFloat(itemComputedStyle.width);
+
+            const dynamicPadding = Math.min(30, wheelRadius * 0.1);
+            const distanceFromCenter = wheelRadius - (itemSize / 2) - dynamicPadding;
+
+            featureItems.forEach((item, index) => {
+                const angle = index * anglePerFeature;
+
+                const x = distanceFromCenter * Math.cos((angle - 90) * (Math.PI / 180));
+                const y = distanceFromCenter * Math.sin((angle - 90) * (Math.PI / 180));
+
+                item.style.left = `50%`;
+                item.style.top = `50%`;
+                item.style.transform = `translate(-50%, -50%) translate(${x}px, ${y}px) rotate(${angle}deg)`;
+
+                item.dataset.initialRotation = angle;
+            });
+        }
+
+        // Adjust item's rotation to always face upright relative to the viewport
+        function applyInverseRotation(wheelRot) {
+            featureItems.forEach(item => {
+                const initialRot = parseFloat(item.dataset.initialRotation || 0);
+                const inverseRotation = -wheelRot;
+                item.style.setProperty('--item-inverse-rotation', `${inverseRotation}deg`);
+                const currentTranslate = item.style.transform.split(') ').slice(0, 2).join(') ');
+                item.style.transform = `${currentTranslate}) rotate(${inverseRotation}deg)`;
+            });
+        }
+
+        // Function to rotate the wheel
+        function rotateWheel(direction) {
+            hideFeatureDetails(); // Hide details when rotating the wheel
+            if (direction === 'next') {
+                currentRotation -= anglePerFeature;
+            } else if (direction === 'prev') {
+                currentRotation += anglePerFeature;
+            }
+            featureWheel.style.transform = `rotate(${currentRotation}deg)`;
+            applyInverseRotation(currentRotation);
+            updateActiveFeatureHighlight();
+        }
+
+        // Function to highlight the feature closest to the top (or a specified target angle)
+        function updateActiveFeatureHighlight() {
+            let closestFeature = null;
+            let minDistance = Infinity;
+            const targetAngle = 0; // Top of the wheel (12 o'clock position)
+
+            const normalizedWheelRotation = (currentRotation % 360 + 360) % 360; // Normalize to 0-360 positive
+
+            featureItems.forEach(item => {
+                const initialAngle = parseFloat(item.dataset.initialRotation || 0);
+                const effectiveAngle = (initialAngle + normalizedWheelRotation + 360) % 360;
+
+                let angleDifference = Math.abs(effectiveAngle - targetAngle);
+                if (angleDifference > 180) {
+                    angleDifference = 360 - angleDifference;
+                }
+
+                if (angleDifference < minDistance) {
+                    minDistance = angleDifference;
+                    closestFeature = item;
+                }
+            });
+
+            featureItems.forEach(item => item.classList.remove('active'));
+            if (closestFeature) {
+                closestFeature.classList.add('active');
+                currentActiveItem = closestFeature;
+            }
+        }
+
+        // Function to display feature details
+        function displayFeatureDetails(featureId, clickedItem) {
+            const data = featuresData[featureId];
+            if (!data) return;
+
+            detailsIcon.innerHTML = `<i class="${data.icon}"></i>`;
+            detailsTitle.textContent = data.title;
+            detailsDescription.textContent = data.description;
+
+            if (currentActiveItem) {
+                currentActiveItem.classList.remove('active');
+            }
+            clickedItem.classList.add('active');
+            currentActiveItem = clickedItem;
+
+            // Use data-visible attribute for CSS to handle visibility and transitions
+            detailsPanel.setAttribute('data-visible', 'true');
+        }
+
+        function hideFeatureDetails() {
+            detailsPanel.setAttribute('data-visible', 'false');
+            if (currentActiveItem) {
+                currentActiveItem.classList.remove('active');
+                currentActiveItem = null;
+            }
+        }
+
+        // Event Listeners
+        prevButton.addEventListener('click', () => rotateWheel('prev'));
+        nextButton.addEventListener('click', () => rotateWheel('next'));
+        closeDetailsButton.addEventListener('click', hideFeatureDetails);
+
+        featureItems.forEach(item => {
+            item.addEventListener('click', () => {
+                displayFeatureDetails(item.dataset.featureId, item);
+            });
+        });
+
+        // Initial setup
+        positionFeatures();
+        updateActiveFeatureHighlight();
+    });
+</script>
+
+
+<section class="container mx-auto px-4 py-16 md:py-24 relative overflow-hidden reveal-on-scroll">
+    <h2 class="text-3xl sm:text-4xl md:text-5xl font-extrabold text-center text-gray-800 dark:text-gray-100 mb-12 md:mb-16 leading-tight animate-fade-in">
+        How AstroCare <span class="text-accent dark:text-amber-400">Streamlines Your Workflow</span>
+    </h2>
+
+    <div class="relative flex flex-col items-center">
+        {# Main Vertical Timeline Line - Only visible on desktop #}
+        <div class="absolute hidden md:block w-0.5 bg-gradient-to-b from-primary to-accent dark:from-amber-400 dark:to-purple-500 rounded-full timeline-main-line z-0 origin-top scale-y-0 transition-transform duration-700 ease-out"></div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-y-16 gap-x-12 w-full max-w-6xl">
+
+            {# Step 1: Patient Onboarding #}
+            <div class="flex flex-col md:flex-row items-center md:items-start text-center md:text-right md:pr-12 group step-item odd-item">
+                <div class="md:order-2 w-16 h-16 md:w-20 md:h-20 p-3 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 text-white dark:from-blue-700 dark:to-blue-900 shadow-xl mb-3 md:mb-0 md:ml-6 flex-shrink-0 flex items-center justify-center transition-all duration-500 ease-out transform group-hover:scale-110 group-hover:shadow-2xl icon-circle-animation">
+                    <i class="fas fa-user-plus text-2xl md:text-3xl"></i>
+                </div>
+                <div class="md:order-1 flex-grow card-content">
+                    <h3 class="text-lg md:text-xl font-bold text-gray-800 dark:text-gray-100 mb-1">1. Patient Onboarding & Schedule</h3>
+                    <p class="text-sm md:text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                        Effortless registration, real-time appointments, automated reminders.
+                    </p>
+                </div>
+            </div>
+
+            {# Step 2: Digital Consultations #}
+            <div class="flex flex-col md:flex-row items-center md:items-start text-center md:text-left md:pl-12 group step-item even-item">
+                <div class="w-16 h-16 md:w-20 md:h-20 p-3 rounded-full bg-gradient-to-br from-green-500 to-green-700 text-white dark:from-green-700 dark:to-green-900 shadow-xl mb-3 md:mb-0 md:mr-6 flex-shrink-0 flex items-center justify-center transition-all duration-500 ease-out transform group-hover:scale-110 group-hover:shadow-2xl icon-circle-animation">
+                    <i class="fas fa-stethoscope text-2xl md:text-3xl"></i>
+                </div>
+                <div class="flex-grow card-content">
+                    <h3 class="text-lg md:text-xl font-bold text-gray-800 dark:text-gray-100 mb-1">2. Digital Consultations & EHR</h3>
+                    <p class="text-sm md:text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                        Doctors access & update EHRs: vitals, diagnoses, prescriptions.
+                    </p>
+                </div>
+            </div>
+
+            {# Step 3: Integrated Diagnostics #}
+            <div class="flex flex-col md:flex-row items-center md:items-start text-center md:text-right md:pr-12 group step-item odd-item">
+                <div class="md:order-2 w-16 h-16 md:w-20 md:h-20 p-3 rounded-full bg-gradient-to-br from-purple-500 to-purple-700 text-white dark:from-purple-700 dark:to-purple-900 shadow-xl mb-3 md:mb-0 md:ml-6 flex-shrink-0 flex items-center justify-center transition-all duration-500 ease-out transform group-hover:scale-110 group-hover:shadow-2xl icon-circle-animation">
+                    <i class="fas fa-flask text-2xl md:text-3xl"></i>
+                </div>
+                <div class="md:order-1 flex-grow card-content">
+                    <h3 class="text-lg md:text-xl font-bold text-gray-800 dark:text-gray-100 mb-1">3. Integrated Diagnostics & Pharmacy</h3>
+                    <p class="text-sm md:text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                        Digital lab orders/results, e-prescriptions, inventory management.
+                    </p>
+                </div>
+            </div>
+
+            {# Step 4: Automated Billing #}
+            <div class="flex flex-col md:flex-row items-center md:items-start text-center md:text-left md:pl-12 group step-item even-item">
+                <div class="w-16 h-16 md:w-20 md:h-20 p-3 rounded-full bg-gradient-to-br from-orange-500 to-orange-700 text-white dark:from-orange-700 dark:to-orange-900 shadow-xl mb-3 md:mb-0 md:mr-6 flex-shrink-0 flex items-center justify-center transition-all duration-500 ease-out transform group-hover:scale-110 group-hover:shadow-2xl icon-circle-animation">
+                    <i class="fas fa-file-invoice-dollar text-2xl md:text-3xl"></i>
+                </div>
+                <div class="flex-grow card-content">
+                    <h3 class="text-lg md:text-xl font-bold text-gray-800 dark:text-gray-100 mb-1">4. Automated Billing & Insights</h3>
+                    <p class="text-sm md:text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                        Auto-generated invoices, insurance handling, financial reports.
+                    </p>
+                </div>
+            </div>
+
+{# Step 5: Patient Engagement #}
+            <div class="flex flex-col md:flex-row items-center md:items-start text-center md:text-right md:pr-12 group step-item odd-item">
+                <div class="md:order-2 w-16 h-16 md:w-20 md:h-20 p-3 rounded-full bg-gradient-to-br from-red-500 to-red-700 text-white dark:from-red-700 dark:to-red-900 shadow-xl mb-3 md:mb-0 md:ml-6 flex-shrink-0 flex items-center justify-center transition-all duration-500 ease-out transform group-hover:scale-110 group-hover:shadow-2xl icon-circle-animation">
+                    <i class="fas fa-handshake text-2xl md:text-3xl"></i> {# Changed icon to fa-handshake #}
+                </div>
+                <div class="md:order-1 flex-grow card-content">
+                    <h3 class="text-lg md:text-xl font-bold text-gray-800 dark:text-gray-100 mb-1">5. Ongoing Patient Engagement</h3>
+                    <p class="text-sm md:text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                        Easy follow-ups, telehealth, secure patient portal for results & communication.
+                    </p>
+                </div>
+            </div>
+
+            {# Step 6: Streamlined HR & Staff Management #}
+            <div class="flex flex-col md:flex-row items-center md:items-start text-center md:text-left md:pl-12 group step-item even-item">
+                <div class="w-16 h-16 md:w-20 md:h-20 p-3 rounded-full bg-gradient-to-br from-cyan-500 to-cyan-700 text-white dark:from-cyan-700 dark:to-cyan-900 shadow-xl mb-3 md:mb-0 md:mr-6 flex-shrink-0 flex items-center justify-center transition-all duration-500 ease-out transform group-hover:scale-110 group-hover:shadow-2xl icon-circle-animation">
+                    <i class="fas fa-users-cog text-2xl md:text-3xl"></i> {# Changed icon to fa-users-cog #}
+                </div>
+                <div class="flex-grow card-content">
+                    <h3 class="text-lg md:text-xl font-bold text-gray-800 dark:text-gray-100 mb-1">6. Streamlined HR & Staff Management</h3>
+                    <p class="text-sm md:text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                        Efficient staff scheduling, payroll integration, performance tracking.
+                    </p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<style>
+    /* Custom CSS for animations and improved styling */
+    @keyframes fade-in {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in { animation: fade-in 0.8s ease-out forwards; }
+
+    /* Custom reveal-on-scroll animations for individual step items */
+    .step-item {
+        opacity: 0;
+        transform: translateY(30px);
+        transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+        position: relative; /* Needed for pseudo-elements */
+    }
+    .step-item.is-visible {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    /* Horizontal connector line for desktop */
+    @media (min-width: 768px) {
+        .step-item::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 0; /* Starts hidden */
+            height: 2px;
+            background: theme('colors.gray.400');
+            transform: translateY(-50%);
+            z-index: 1; /* Above main line, below icon */
+            transition: width 0.7s ease-out, opacity 0.7s ease-out; /* Animation for the line growing */
+            opacity: 0; /* Start hidden */
+        }
+
+        /* Connector Circle (the "-|-" dot) */
+        .step-item::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 10px; /* Size of the dot */
+            height: 10px;
+            border-radius: 50%;
+            background: theme('colors.primary'); /* Primary color dot */
+            transform: translateY(-50%) scale(0); /* Start hidden and small */
+            z-index: 2; /* On top of lines */
+            transition: transform 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55), background 0.3s; /* Bounce effect */
+        }
+
+        /* Left-side items */
+        .step-item.odd-item::before {
+            right: calc(50% + 5px); /* Position to meet the center of the dot */
+            transform-origin: right; /* Grow from right to left */
+        }
+        .step-item.odd-item::after {
+            right: calc(50% - 5px); /* Position exactly on the main line */
+        }
+
+        /* Right-side items */
+        .step-item.even-item::before {
+            left: calc(50% + 5px); /* Position to meet the center of the dot */
+            transform-origin: left; /* Grow from left to right */
+        }
+        .step-item.even-item::after {
+            left: calc(50% - 5px); /* Position exactly on the main line */
+        }
+
+        /* Animate the horizontal line and dot when the step is visible */
+        .step-item.is-visible::before {
+            width: calc(50% - 3.5rem); /* Adjust length to reach icon. 3.5rem is approx half icon width + margin */
+            opacity: 1;
+        }
+        .step-item.is-visible::after {
+            transform: translateY(-50%) scale(1); /* Reveal and grow the dot */
+        }
+
+        .step-item:nth-child(odd).is-visible {
+            animation: slide-in-left 0.7s ease-out forwards;
+        }
+        .step-item:nth-child(even).is-visible {
+            animation: slide-in-right 0.7s ease-out forwards;
+        }
+        .step-item:nth-child(odd) {
+             opacity: 0;
+             transform: translateX(-50px);
+        }
+        .step-item:nth-child(even) {
+             opacity: 0;
+             transform: translateX(50px);
+        }
+    }
+
+    @keyframes slide-in-left {
+        from { opacity: 0; transform: translateX(-50px); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes slide-in-right {
+        from { opacity: 0; transform: translateX(50px); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+
+    /* Icon circle animation on hover */
+    .icon-circle-animation:hover {
+        transform: scale(1.15) rotate(5deg);
+    }
+
+    /* Main Timeline line initial state for animation */
+    .timeline-main-line {
+        height: calc(100% - 100px);
+        top: 50px;
+        left: 50%; /* Center the line */
+        transform: translateX(-50%) scaleY(0); /* Ensure centered and initially hidden */
+        transform-origin: top; /* Grow from top */
+    }
+
+    /* Animation for the main timeline line itself */
+    .timeline-main-line.is-visible {
+        transform: translateX(-50%) scaleY(1); /* Grow to full height */
+    }
+
+    /* Basic dark mode variables (if not using full Tailwind dark mode setup) */
+    :root {
+        --color-primary: #6877ff; /* AstroCare blue */
+        --color-accent: #f59e0b; /* Amber for highlight */
+    }
+
+    .dark {
+        --color-primary: #a78bfa; /* Dark mode blue */
+        --color-accent: #f59e0b; /* Amber for highlight */
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const stepItems = document.querySelectorAll('.step-item');
+        const timelineMainLine = document.querySelector('.timeline-main-line');
+        const gridContainer = document.querySelector('.grid');
+
+        // Observer for individual step animations, horizontal connectors, and dots
+        const stepObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('is-visible');
+                } else {
+                    // Optional: entry.target.classList.remove('is-visible'); // Uncomment to reset on scroll out
+                }
+            });
+        }, {
+            threshold: 0.1, // Trigger when 10% of the item is visible
+            rootMargin: '0px 0px -50px 0px' // Trigger slightly earlier for a smoother reveal
+        });
+
+        stepItems.forEach(item => {
+            stepObserver.observe(item);
+        });
+
+        // Observer for the main vertical timeline line animation
+        const timelineMainLineObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting && window.innerWidth >= 768) {
+                    timelineMainLine.classList.add('is-visible');
+                    timelineMainLineObserver.unobserve(entry.target); // Play once
+                }
+            });
+        }, {
+            threshold: 0.1,
+            rootMargin: '0px 0px -100px 0px'
+        });
+
+        if (timelineMainLine) {
+            timelineMainLineObserver.observe(gridContainer);
+        }
+
+        // Dynamic Main Timeline Line Height Adjustment
+        const adjustTimelineHeight = () => {
+            if (window.innerWidth >= 768 && timelineMainLine && gridContainer) {
+                const firstStepIcon = document.querySelector('.step-item:first-child .icon-circle-animation');
+                const lastStepIcon = document.querySelector('.step-item:last-child .icon-circle-animation');
+
+                if (firstStepIcon && lastStepIcon) {
+                    const firstTop = firstStepIcon.getBoundingClientRect().top + window.scrollY;
+                    const lastBottom = lastStepIcon.getBoundingClientRect().bottom + window.scrollY;
+                    const containerTop = gridContainer.getBoundingClientRect().top + window.scrollY;
+
+                    const startOffset = firstTop - containerTop + (firstStepIcon.offsetHeight / 2);
+                    const endOffset = lastBottom - containerTop - (lastStepIcon.offsetHeight / 2);
+
+                    timelineMainLine.style.top = `${startOffset}px`;
+                    timelineMainLine.style.height = `${endOffset - startOffset}px`;
+                }
+            } else if (timelineMainLine) {
+                timelineMainLine.style.height = '';
+                timelineMainLine.style.top = '';
+                timelineMainLine.classList.remove('is-visible');
+            }
+        };
+
+        adjustTimelineHeight();
+        window.addEventListener('resize', adjustTimelineHeight);
+    });
+</script>
+
+
+<section class="bg-transparent  py-20 md:py-28 relative overflow-hidden">
+
+    <div class="absolute inset-0 z-0">
+        <div class="block dark:hidden bg-[linear-gradient(to_right,#1e293b12_1px,transparent_1px),linear-gradient(to_bottom,#1e293b12_1px,transparent_1px)] bg-[size:36px_36px] [mask-image:radial-gradient(ellipse_50%_50%_at_50%_50%,#000_70%,transparent_100%)]"></div>
+        <div class="hidden dark:block bg-[linear-gradient(to_right,#ffffff12_1px,transparent_1px),linear-gradient(to_bottom,#ffffff12_1px,transparent_1px)] bg-[size:36px_36px] [mask-image:radial-gradient(ellipse_50%_50%_at_50%_50%,#000_70%,transparent_100%)]"></div>
+    </div>
+
+    <div class="container mx-auto px-4 relative z-10">
+        <h2 class="text-4xl md:text-5xl font-extrabold text-center text-gray-800 dark:text-gray-100 mb-12 md:mb-16 leading-tight animate-fade-in">
+            Voices of Our Impact
+            <span class="block text-xl md:text-2xl font-medium text-primary dark:text-amber-400 mt-2">Hear directly from our community</span>
+        </h2>
+
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12 lg:gap-8 [perspective:1000px]">
+
+            <div class="testimonial-card-transform">
+                <div class="testimonial-card-body group">
+                    <div class="absolute -inset-0.5 bg-gradient-to-r from-pink-600 to-purple-600 rounded-2xl blur opacity-0 group-hover:opacity-75 transition-opacity duration-500"></div>
+                    <div class="relative w-full h-full bg-white/80 dark:bg-slate-950/80 backdrop-blur-md rounded-2xl p-6 border border-slate-200 dark:border-slate-700 flex flex-col">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center space-x-3">
+                                <img src="https://images.unsplash.com/photo-1568602471122-7832951cc4c5?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=48&h=48&q=80" alt="Dr. Anya Sharma" class="w-12 h-12 rounded-full object-cover border-2 border-purple-500">
+                                <div>
+                                    <p class="font-bold text-slate-800 dark:text-slate-100">Dr. Anya Sharma</p>
+                                    <p class="text-sm text-slate-500 dark:text-slate-400">@DrAnyaMeds</p>
+                                </div>
+                            </div>
+                            <i class="fab fa-twitter text-sky-500 dark:text-sky-400 text-2xl"></i>
+                        </div>
+                        <p class="text-slate-600 dark:text-slate-300 leading-relaxed flex-grow">
+                            "AstroCareHQ made our patient scheduling effortless! The AI insights are a game-changer for clinic efficiency. Absolutely loving it!"
+                        </p>
+                        <div class="flex items-center justify-end text-slate-500 dark:text-slate-400 mt-4 space-x-4">
+                            <span class="flex items-center space-x-1.5 text-sm"><i class="fas fa-retweet text-lg text-green-500 dark:text-green-400"></i> <span>35</span></span>
+                            <span class="flex items-center space-x-1.5 text-sm"><i class="fas fa-heart text-lg text-red-500"></i> <span>156</span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="testimonial-card-transform lg:[transform:rotateY(0deg)_rotateX(5deg)] lg:hover:[transform:rotateY(0deg)_rotateX(0deg)_scale(1.05)_translateZ(40px)]">
+                 <div class="testimonial-card-body group">
+                    <div class="absolute -inset-0.5 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-2xl blur opacity-0 group-hover:opacity-75 transition-opacity duration-500"></div>
+                    <div class="relative w-full h-full bg-white/80 dark:bg-slate-950/80 backdrop-blur-md rounded-2xl p-6 border border-slate-200 dark:border-slate-700 flex flex-col">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center space-x-3">
+                                <img src="https://images.unsplash.com/photo-1568602471122-7832951cc4c5?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=48&h=48&q=80" alt="Mark Jenkins" class="w-12 h-12 rounded-full object-cover border-2 border-cyan-500">
+                                <div>
+                                    <p class="font-bold text-slate-800 dark:text-slate-100">Mark Jenkins</p>
+                                    <p class="text-sm text-slate-500 dark:text-slate-400">Horizon Labs</p>
+                                </div>
+                            </div>
+                            <i class="fab fa-linkedin text-blue-600 dark:text-blue-500 text-2xl"></i>
+                        </div>
+                        <p class="text-slate-600 dark:text-slate-300 leading-relaxed flex-grow">
+                            "AstroCare's diagnostics and pharmacy management streamlined our workflows, drastically reducing errors and speeding up patient care. Indispensable."
+                        </p>
+                         <div class="flex items-center justify-end text-slate-500 dark:text-slate-400 mt-4 space-x-4">
+                            <span class="flex items-center space-x-1.5 text-sm"><i class="far fa-thumbs-up text-lg text-blue-500 dark:text-blue-400"></i> <span>89</span></span>
+                            <span class="flex items-center space-x-1.5 text-sm"><i class="far fa-share-square text-lg"></i> <span>15</span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="testimonial-card-transform [transform:rotateY(10deg)_rotateX(5deg)] hover:[transform:rotateY(0)_rotateX(0)_scale(1.05)_translateZ(40px)]">
+                 <div class="testimonial-card-body group">
+                    <div class="absolute -inset-0.5 bg-gradient-to-r from-amber-500 to-orange-500 rounded-2xl blur opacity-0 group-hover:opacity-75 transition-opacity duration-500"></div>
+                    <div class="relative w-full h-full bg-white/80 dark:bg-slate-950/80 backdrop-blur-md rounded-2xl p-6 border border-slate-200 dark:border-slate-700 flex flex-col">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center space-x-3">
+                                <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=48&h=48" alt="Sarah Chen" class="w-12 h-12 rounded-full object-cover border-2 border-orange-500">
+                                <div>
+                                    <p class="font-bold text-slate-800 dark:text-slate-100">Sarah Chen</p>
+                                    <p class="text-sm text-slate-500 dark:text-slate-400">HealthWise Digest</p>
+                                </div>
+                            </div>
+                            <i class="fas fa-rss-square text-orange-500 dark:text-orange-400 text-2xl"></i>
+                        </div>
+                        <p class="text-slate-600 dark:text-slate-300 leading-relaxed flex-grow">
+                            "For practices like ours, AstroCare's automated billing is a lifesaver! We cut billing errors by 90%. Financial reporting is a breeze now."
+                        </p>
+                        <div class="flex items-center justify-end text-slate-500 dark:text-slate-400 mt-4 space-x-4">
+                            <span class="flex items-center space-x-1.5 text-sm"><i class="far fa-eye text-lg"></i> <span>2.1K</span></span>
+                            <span class="flex items-center space-x-1.5 text-sm"><i class="far fa-bookmark text-lg"></i> <span>48</span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<style>
+    .testimonial-card-transform {
+        transform-style: preserve-3d;
+        transform: rotateY(-10deg) rotateX(5deg);
+        transition: transform 0.5s ease-in-out;
+    }
+    .testimonial-card-transform:hover {
+        transform: rotateY(0deg) rotateX(0deg) scale(1.05) translateZ(40px);
+    }
+    .testimonial-card-body {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        transform-style: preserve-3d; /* Ensures children respect the 3D space */
+    }
+</style>
+
+{# AstroCare System Showcase - Two Key Interfaces #}
+<section class="relative py-24 overflow-hidden">
+    <!-- Background elements -->
+    <div class="absolute inset-0 z-0">
+        <div class="absolute top-1/3 left-[15%] w-80 h-80 bg-primary/10 rounded-full blur-[100px] animate-pulse-slow"></div>
+        <div class="absolute bottom-1/4 right-[15%] w-80 h-80 bg-accent/10 rounded-full blur-[100px] animate-pulse-slow"></div>
+    </div>
+
+    <div class="container mx-auto px-4 relative z-10">
+        <h2 class="text-4xl md:text-5xl font-extrabold text-center text-gray-800 dark:text-gray-100 mb-20 leading-tight">
+            AstroCare <span class="text-accent dark:text-amber-400">In Action</span>
+        </h2>
+
+        <div class="flex flex-col lg:flex-row items-stretch justify-center gap-8 lg:gap-12 max-w-6xl mx-auto">
+            <!-- Doctor's Dashboard -->
+            <div class="relative group flex-1 min-h-[400px]">
+                <div class="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent rounded-2xl transform rotate-[-4deg] transition-all duration-700 group-hover:rotate-0"></div>
+                <div class="relative overflow-hidden rounded-2xl h-full border border-white/20 shadow-[0_40px_80px_-15px_rgba(104,119,255,0.4)] group-hover:shadow-[0_60px_100px_-10px_rgba(104,119,255,0.6)] transition-all duration-500 bg-gray-50 dark:bg-gray-900">
+                    <div class="grid place-items-center h-full p-4">
+                        <img src="{{ system_images.doctor_dashboard }}" alt="Doctor's Dashboard" 
+                             class="max-h-full max-w-full object-scale-down transform group-hover:scale-[1.03] transition-transform duration-700">
+                    </div>
+                </div>
+                <div class="absolute bottom-6 left-6 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm px-4 py-3 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
+                    <h3 class="font-bold text-xl text-gray-800 dark:text-gray-100">Doctor's Dashboard</h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-300">Real-time patient monitoring & analytics</p>
+                </div>
+                <!-- Floating badge -->
+                <div class="absolute top-6 right-6 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm px-3 py-1.5 rounded-full text-xs font-medium text-primary dark:text-blue-400 shadow-md">
+                    <i class="fas fa-user-md mr-1"></i> Physician View
+                </div>
+            </div>
+
+            <!-- Modern Treatment Form -->
+            <div class="relative group flex-1 min-h-[400px] lg:mt-[-60px]">
+                <div class="absolute inset-0 bg-gradient-to-br from-teal-500/20 to-transparent rounded-2xl transform rotate-[5deg] transition-all duration-700 group-hover:rotate-0"></div>
+                <div class="relative overflow-hidden rounded-2xl h-full border border-white/20 shadow-[0_40px_80px_-15px_rgba(45,212,191,0.4)] group-hover:shadow-[0_60px_100px_-10px_rgba(45,212,191,0.6)] transition-all duration-500 bg-gray-50 dark:bg-gray-900">
+                    <div class="grid place-items-center h-full p-4">
+                        <img src="{{ system_images.treatment_form }}" alt="Treatment Form" 
+                             class="max-h-full max-w-full object-scale-down transform group-hover:scale-[1.03] transition-transform duration-700">
+                    </div>
+                </div>
+                <div class="absolute bottom-6 left-6 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm px-4 py-3 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
+                    <h3 class="font-bold text-xl text-gray-800 dark:text-gray-100">Treatment Form</h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-300">Streamlined patient care documentation</p>
+                </div>
+                <!-- Floating badge -->
+                <div class="absolute top-6 right-6 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm px-3 py-1.5 rounded-full text-xs font-medium text-teal-600 dark:text-teal-400 shadow-md">
+                    <i class="fas fa-file-medical mr-1"></i> Treatment Hub
+                </div>
+            </div>
+        </div>
+        
+    </div>
+</section>
+
+<style>
+    .animate-pulse-slow {
+        animation: pulse-slow 8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    
+    @keyframes pulse-slow {
+        0%, 100% { opacity: 0.8; transform: scale(1); }
+        50% { opacity: 0.4; transform: scale(1.05); }
+    }
+    
+    @keyframes pulse {
+        0%, 100% { opacity: 0.7; }
+        50% { opacity: 0.9; }
+    }
+    
+    .animate-pulse {
+        animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+</style>
+    {# Final Call to Action Section #}
+    <section class="container mx-auto px-4 text-center bg-white dark:bg-black text-gray-900 dark:text-white rounded-3xl p-16 shadow-2xl reveal-on-scroll animate-fade-in-scale">
+        <h2 class="text-4xl md:text-5xl font-extrabold mb-6 leading-tight drop-shadow-lg">
+            Ready to Revolutionize Your Practice?
+        </h2>
+        <p class="text-xl md:text-2xl mb-10 opacity-90 max-w-3xl mx-auto">
+            Join the future of healthcare management with AstroCare. Secure, efficient, and intelligent.
+        </p>
+        <a href="{{ url_for('main_bp.register') }}" class="inline-block bg-accent text-white dark:bg-accent dark:text-white font-bold py-4 px-12 rounded-full shadow-lg transition-all duration-300 transform hover:scale-105 hover:bg-amber-600 focus:outline-none focus:ring-4 focus:ring-amber-500">
+            Get Your Personalized Demo Today
+        </a>
+    </section>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+    
+    <script>
+        // Initialize particles.js for the hero section
+        // Note: For a pure white/black background, you might adjust particle colors
+        // or ensure they contrast well. Here, they remain white as they overlay.
+        particlesJS('particles-js', {
+            "particles": {
+                "number": {
+                    "value": 80,
+                    "density": {
+                        "enable": true,
+                        "value_area": 800
+                    }
+                },
+                "color": {
+                    // Adjust particle color for contrast against white/black background
+                    "value": "#cccccc" // Lighter gray for dark mode, subtle against white
+                },
+                "shape": {
+                    "type": "circle",
+                    "stroke": {
+                        "width": 0,
+                        "color": "#000000"
+                    },
+                    "polygon": {
+                        "nb_sides": 5
+                    },
+                    "image": {
+                        "src": "img/github.svg",
+                        "width": 100,
+                        "height": 100
+                    }
+                },
+                "opacity": {
+                    "value": 0.5,
+                    "random": false,
+                    "anim": {
+                        "enable": false,
+                        "speed": 1,
+                        "opacity_min": 0.1,
+                        "sync": false
+                    }
+                },
+                "size": {
+                    "value": 3,
+                    "random": true,
+                    "anim": {
+                        "enable": false,
+                        "speed": 40,
+                        "size_min": 0.1,
+                        "sync": false
+                    }
+                },
+                "line_linked": {
+                    "enable": true,
+                    "distance": 150,
+                    "color": "#bbbbbb", // Lighter gray for lines too
+                    "opacity": 0.4,
+                    "width": 1
+                },
+                "move": {
+                    "enable": true,
+                    "speed": 3,
+                    "direction": "none",
+                    "random": false,
+                    "straight": false,
+                    "out_mode": "out",
+                    "bounce": false,
+                    "attract": {
+                        "enable": false,
+                        "rotateX": 600,
+                        "rotateY": 1200
+                    }
+                }
+            },
+            "interactivity": {
+                "detect_on": "canvas",
+                "events": {
+                    "onhover": {
+                        "enable": true,
+                        "mode": "grab"
+                    },
+                    "onclick": {
+                        "enable": true,
+                        "mode": "push"
+                    },
+                    "resize": true
+                },
+                "modes": {
+                    "grab": {
+                        "distance": 140,
+                        "line_linked": {
+                            "opacity": 1
+                        }
+                    },
+                    "bubble": {
+                        "distance": 400,
+                        "size": 40,
+                        "duration": 2,
+                        "opacity": 8,
+                        "speed": 3
+                    },
+                    "repulse": {
+                        "distance": 200,
+                        "duration": 0.4
+                    },
+                    "push": {
+                        "particles_nb": 4
+                    },
+                    "remove": {
+                        "particles_nb": 2
+                    }
+                }
+            },
+            "retina_detect": true
+        });
+
+        // Intersection Observer for Scroll Animations
+        document.addEventListener('DOMContentLoaded', () => {
+            const sections = document.querySelectorAll('.reveal-on-scroll');
+
+            const observerOptions = {
+                root: null, /* viewport */
+                rootMargin: '0px',
+                threshold: 0.15 /* Trigger when 15% of the section is visible */
+            };
+
+            const observer = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.querySelectorAll('.animate-fade-in-up, .animate-fade-in, .animate-slide-in-left, .animate-slide-in-right, .animate-pop-in, .animate-fade-in-scale').forEach(el => {
+                            el.style.opacity = '1'; /* Make sure initial opacity is not 0 for elements already styled */
+                            if (el.classList.contains('animate-fade-in-up')) el.style.animationName = 'fadeInUps';
+                            if (el.classList.contains('animate-fade-in')) el.style.animationName = 'fadeIn';
+                            if (el.classList.contains('animate-slide-in-left')) el.style.animationName = 'slideInLeft';
+                            if (el.classList.contains('animate-slide-in-right')) el.style.animationName = 'slideInRight';
+                            if (el.classList.contains('animate-pop-in')) el.style.animationName = 'popIn';
+                             if (el.classList.contains('animate-fade-in-scale')) el.style.animationName = 'fadeInScale';
+
+                             // Ensure animation only runs once per element
+                            el.classList.remove('animate-fade-in-up', 'animate-fade-in', 'animate-slide-in-left', 'animate-slide-in-right', 'animate-pop-in', 'animate-fade-in-scale');
+                            el.style.animationFillMode = 'forwards'; // Keeps the end state of the animation
+                        });
+                        observer.unobserve(entry.target); // Stop observing once animated
+                    }
+                });
+            }, observerOptions);
+
+            sections.forEach(section => {
+                // Set initial opacity to 0 for all animate- classes within reveal-on-scroll sections
+                section.querySelectorAll('.animate-fade-in-up, .animate-fade-in, .animate-slide-in-left, .animate-slide-in-right, .animate-pop-in, .animate-fade-in-scale').forEach(el => {
+                    el.style.opacity = '0';
+                });
+                observer.observe(section);
+            });
+
+            // Testimonial Carousel Logic
+            const testimonialContainer = document.getElementById('testimonial-container');
+            const prevButton = document.getElementById('prev-testimonial');
+            const nextButton = document.getElementById('next-testimonial');
+            const testimonialDotsContainer = document.getElementById('testimonial-dots');
+            const testimonialCards = testimonialContainer.children;
+            let currentIndex = 0;
+            let cardWidth; // Declared here to be updated on resize
+
+            const updateCardWidth = () => {
+                cardWidth = testimonialCards[0] ? testimonialCards[0].offsetWidth : 0;
+            };
+            updateCardWidth(); // Initial set
+
+            // Calculate items per view for responsiveness
+            const getItemsPerView = () => {
+                if (window.innerWidth >= 1024) return 3; // lg
+                if (window.innerWidth >= 768) return 2; // md
+                return 1; // sm and below
+            };
+            let itemsPerView = getItemsPerView();
+
+            const updateCarousel = () => {
+                updateCardWidth(); // Recalculate card width
+                const offset = -currentIndex * (cardWidth); // No gap calculation needed if cards themselves manage gap
+                testimonialContainer.style.transform = `translateX(${offset}px)`;
+                updateDots();
+            };
+
+            const createDots = () => {
+                testimonialDotsContainer.innerHTML = '';
+                const totalPages = Math.ceil(testimonialCards.length / itemsPerView);
+                for (let i = 0; i < totalPages; i++) {
+                    const dot = document.createElement('span');
+                    dot.classList.add('testimonial-carousel-dot');
+                    if (i === 0) dot.classList.add('active');
+                    dot.addEventListener('click', () => {
+                        currentIndex = i * itemsPerView; // Jump to the start of the page
+                        updateCarousel();
+                    });
+                    testimonialDotsContainer.appendChild(dot);
+                }
+            };
+
+            const updateDots = () => {
+                Array.from(testimonialDotsContainer.children).forEach((dot, index) => {
+                    if (index * itemsPerView <= currentIndex && currentIndex < (index + 1) * itemsPerView) {
+                        dot.classList.add('active');
+                    } else {
+                        dot.classList.remove('active');
+                    }
+                });
+            };
+
+            prevButton.addEventListener('click', () => {
+                currentIndex -= itemsPerView;
+                if (currentIndex < 0) {
+                    currentIndex = 0; // Or loop to end: currentIndex = testimonialCards.length - itemsPerView;
+                }
+                updateCarousel();
+            });
+
+            nextButton.addEventListener('click', () => {
+                currentIndex += itemsPerView;
+                const maxIndex = testimonialCards.length - itemsPerView;
+                if (currentIndex > maxIndex) {
+                    currentIndex = maxIndex; // Or loop to start: currentIndex = 0;
+                }
+                updateCarousel();
+            });
+
+            // Initial setup and responsive adjustments
+            window.addEventListener('resize', () => {
+                itemsPerView = getItemsPerView();
+                createDots();
+                updateCarousel(); // Recalculate position on resize
+            });
+
+            createDots(); // Create dots on initial load
+            updateCarousel(); // Set initial position
+
+            // Auto-advance carousel (optional, uncomment to enable)
+            // setInterval(() => {
+            //     currentIndex += itemsPerView;
+            //     const maxIndex = testimonialCards.length - itemsPerView;
+            //     if (currentIndex > maxIndex) {
+            //         currentIndex = 0;
+            //     }
+            //     updateCarousel();
+            // }, 5000); // Change slide every 5 seconds
+        });
+        // Dynamic Hero Content Rotator
+        // Hero Content Polling from Backend
+        document.addEventListener('DOMContentLoaded', () => {
+            const heroTitle = document.getElementById('hero-title');
+            const heroSubtitle = document.getElementById('hero-subtitle');
+
+            const fetchAndDisplayHeroContent = () => {
+                fetch('/get_next_hero_content')
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        // Update content directly, no animations
+                        heroTitle.textContent = data.title;
+                        heroSubtitle.textContent = data.subtitle;
+                    })
+                    .catch(error => {
+                        console.error('Error fetching hero content:', error);
+                    });
+            };
+
+            // Set up polling every minute (60,000 milliseconds)
+            setInterval(fetchAndDisplayHeroContent, 60000);
+
+            // Fetch initial content once the DOM is ready (though it's already rendered by Flask)
+            // This is primarily to ensure the polling starts correctly and catches any server-side
+            // timer updates immediately after page load.
+            fetchAndDisplayHeroContent();
+        });
+    </script>
+{% endblock %}

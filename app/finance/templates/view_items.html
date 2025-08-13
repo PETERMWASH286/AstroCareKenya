@@ -1,0 +1,110 @@
+{% extends 'base.html' %} {% block title %}Invoice Details{% endblock %} {% block content %}
+<div class="max-w-7xl mx-auto p-4 space-y-6">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between bg-gradient-to-r from-indigo-600 to-purple-600 p-4 rounded-xl shadow text-white">
+        <h1 class="text-xl md:text-2xl font-bold">🧾 Invoice Details</h1>
+        <a href="{{ url_for('finance_web_bp.invoices', invoice_id=invoice.id) }}" class="text-xs md:text-sm bg-white text-indigo-700 font-semibold px-3 py-1.5 rounded hover:bg-gray-100 transition-all shadow-sm">
+      ← Back to Invoice
+    </a>
+    </div>
+
+    <!-- Info Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+        <div class="bg-white/90 backdrop-blur-md p-4 rounded-lg shadow border">
+            <h2 class="text-base font-semibold text-gray-700 mb-2">👤 Patient Info</h2>
+            <div class="space-y-1 text-gray-600">
+                <p><strong>Name:</strong> {{ invoice.patient.full_name }}</p>
+                <p><strong>Gender:</strong> {{ invoice.patient.gender }}</p>
+                <p><strong>DOB:</strong> {{ invoice.patient.date_of_birth.strftime('%d %b %Y') }}</p>
+                <p><strong>Phone:</strong> {{ invoice.patient.phone }}</p>
+            </div>
+        </div>
+
+        <div class="bg-white/90 backdrop-blur-md p-4 rounded-lg shadow border">
+            <h2 class="text-base font-semibold text-gray-700 mb-2">📋 Invoice Info</h2>
+            <div class="space-y-1 text-gray-600">
+                <p><strong>ID:</strong> {{ invoice.id }}</p>
+                <p><strong>Issued:</strong> {{ invoice.issue_date.strftime('%d %b %Y') }}</p>
+                <p><strong>Due:</strong> {{ invoice.due_date.strftime('%d %b %Y') if invoice.due_date else 'N/A' }}</p>
+                <p><strong>Status:</strong>
+                    <span class="inline-block text-xs px-2 py-0.5 rounded-full 
+            {% if invoice.status == 'paid' %}
+              bg-green-100 text-green-700
+            {% elif invoice.status == 'overdue' %}
+              bg-red-100 text-red-700
+            {% else %}
+              bg-yellow-100 text-yellow-700
+            {% endif %}">
+            {{ invoice.status|capitalize }}
+          </span>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Insurance Info -->
+    {% if invoice.insurance %}
+    <div class="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-lg shadow text-sm">
+        <h2 class="font-semibold text-blue-800 mb-2">💳 Insurance Coverage</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 text-gray-700">
+            <p><strong>Provider:</strong> {{ invoice.insurance.name }}</p>
+            <p><strong>Policy No.:</strong> {{ invoice.insurance.policy_number }}</p>
+            <p><strong>Type:</strong> {{ invoice.insurance.insurance_type }}</p>
+            <p><strong>Status:</strong> {{ invoice.insurance.coverage_status }}</p>
+            <p class="col-span-2"><strong>Coverage:</strong> {{ invoice.insurance.coverage_start_date }} - {{ invoice.insurance.coverage_end_date or 'Ongoing' }}</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Items Table -->
+    <div class="overflow-auto bg-white rounded-lg shadow border text-sm">
+        <table class="min-w-full text-left divide-y divide-gray-200">
+            <thead class="bg-gray-50 text-gray-600 text-xs uppercase">
+                <tr>
+                    <th class="px-4 py-2">Service</th>
+                    <th class="px-4 py-2">Category</th>
+                    <th class="px-4 py-2 text-right">Qty</th>
+                    <th class="px-4 py-2 text-right">Unit Price</th>
+                    <th class="px-4 py-2 text-right">Total</th>
+                    <th class="px-4 py-2 text-right">Coverage</th>
+                    <th class="px-4 py-2 text-right">Patient Pays</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 text-gray-700">
+                {% for item in invoice.items %} {% set coverage = item.coverage_percentage or 0 %} {% set covered_amt = (item.total_price * coverage / 100) if item.is_insured else 0 %} {% set patient_amt = item.total_price - covered_amt %}
+                <tr class="hover:bg-gray-50 transition-all">
+                    <td class="px-4 py-2">{{ item.service.name }}</td>
+                    <td class="px-4 py-2 text-gray-500">{{ item.service.category }}</td>
+                    <td class="px-4 py-2 text-right">{{ item.quantity }}</td>
+                    <td class="px-4 py-2 text-right">KSh {{ '%.2f' % item.unit_price }}</td>
+                    <td class="px-4 py-2 text-right">KSh {{ '%.2f' % item.total_price }}</td>
+                    <td class="px-4 py-2 text-right">
+                        {% if item.is_insured %}
+                        <span class="text-green-600">{{ coverage }}% (KSh {{ '%.2f' % covered_amt }})</span> {% else %}
+                        <span class="text-red-500">Not Covered</span> {% endif %}
+                    </td>
+                    <td class="px-4 py-2 text-right font-semibold">KSh {{ '%.2f' % patient_amt }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Summary Section -->
+    {% set payments_sum = invoice.payments | sum(attribute='amount') %} {% set insurance_total = invoice.items | sum(attribute='copay_amount') %} {% set patient_total = invoice.total_amount - insurance_total %}
+    <div class="sticky bottom-4 flex justify-end">
+        <div class="w-full md:w-1/2 bg-white/90 backdrop-blur-md p-4 rounded-lg shadow border text-sm space-y-1 text-gray-700">
+            <p>Subtotal: <span class="font-bold text-gray-900">KSh {{ '%.2f' % invoice.total_amount }}</span></p>
+            {% if invoice.insurance %}
+            <p>Insurance Covered: <span class="font-bold text-green-700">KSh {{ '%.2f' % insurance_total }}</span></p>
+            {% endif %}
+            <p>Patient Pays: <span class="font-bold text-red-600">KSh {{ '%.2f' % patient_total }}</span></p>
+            <p>Paid: <span class="font-bold text-indigo-600">KSh {{ '%.2f' % payments_sum }}</span></p>
+            <p class="pt-2 text-base text-gray-800">Balance:
+                <span class="font-bold text-gray-900">KSh {{ '%.2f' % (invoice.total_amount - payments_sum) }}</span>
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,141 @@
+{% extends "base.html" %} {% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <!-- Header + Breadcrumb -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-3xl font-semibold text-gray-900 dark:text-white">Lab Orders</h1>
+            <p class="text-gray-600 dark:text-gray-400 mt-1">All requested lab tests awaiting processing</p>
+        </div>
+        <a href="{{ url_for('consultations_web.consultation_queue') }}" class="inline-flex items-center px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-all" data-tippy-content="Back to Consultation Queue">
+            <i class="fas fa-arrow-left mr-2"></i> Back to Queue
+        </a>
+    </div>
+
+    <!-- Pending Orders Table -->
+    <div class="border rounded-2xl shadow-md overflow-x-auto dark:border-gray-800">
+        <table class="min-w-full">
+            <thead class="bg-gradient-to-r from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-800 border-b dark:border-gray-700">
+                <tr>
+                    <th class="px-6 py-4 text-left text-gray-500 dark:text-gray-400 font-medium">Order ID</th>
+                    <th class="px-6 py-4 text-left text-gray-500 dark:text-gray-400 font-medium">Patient</th>
+                    <th class="px-6 py-4 text-left text-gray-500 dark:text-gray-400 font-medium">Service</th>
+                    <th class="px-6 py-4 text-left text-gray-500 dark:text-gray-400 font-medium">Requested At</th>
+                    <th class="px-6 py-4 text-left text-gray-500 dark:text-gray-400 font-medium">Status</th>
+                    <th class="px-6 py-4"></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y dark:divide-gray-700">
+                {% for order in lab_orders %}
+                <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                    <!-- Order ID -->
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="text-gray-700 dark:text-gray-200 font-medium">{{ order.id }}</span>
+                    </td>
+
+                    <!-- Patient Name / Reg No -->
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 flex-shrink-0 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
+                                <i class="fas fa-user text-indigo-600 dark:text-indigo-300 text-sm"></i>
+                            </div>
+                            <div>
+                                <p class="text-gray-800 dark:text-gray-100 font-medium">
+                                    {{ order.consultation.patient.full_name }}
+                                </p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">
+                                    {{ order.consultation.patient.reg_no }}
+                                </p>
+                            </div>
+                        </div>
+                    </td>
+
+                    <!-- Service Name -->
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="text-gray-700 dark:text-gray-200">{{ order.service.name }}</span>
+                    </td>
+
+                    <!-- Requested At -->
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="text-gray-600 dark:text-gray-400 text-sm">
+              {{ order.requested_at.strftime('%b %d, %Y %I:%M %p') }}
+            </span>
+                    </td>
+
+                    <!-- Status Badge -->
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 py-1 rounded-full
+              {% if order.status == 'requested' %}
+                bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300
+              {% elif order.status == 'completed' %}
+                bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300
+              {% elif order.status == 'verified' %}
+                bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300
+              {% else %}
+                bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300
+              {% endif %}
+              text-xs font-semibold">
+              {{ order.status|capitalize }}
+            </span>
+                    </td>
+
+                    <!-- Actions -->
+                    <td class="px-6 py-4 whitespace-nowrap text-right">
+                        <div class="flex justify-end items-center space-x-2">
+                            <!-- View/Edit Order -->
+                            <a href="{{ url_for('consultations_web.view_lab_test', test_id=order.id) }}" class="p-2 bg-indigo-100 dark:bg-indigo-800 rounded-lg hover:bg-indigo-200 dark:hover:bg-indigo-700 transition-colors" data-tippy-content="View / Update Order">
+                                <i class="fas fa-eye text-indigo-600 dark:text-indigo-300"></i>
+                            </a>
+                            <!-- Mark Completed (AJAX or Form) -->
+                            <button onclick="markCompleted({{ order.id }})" class="p-2 bg-green-100 dark:bg-green-800 rounded-lg hover:bg-green-200 dark:hover:bg-green-700 transition-colors" data-tippy-content="Mark as Completed">
+                <i class="fas fa-check-circle text-green-600 dark:text-green-300"></i>
+              </button>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="px-6 py-12 text-center">
+                        <div class="text-gray-400 dark:text-gray-500">
+                            <i class="fas fa-vial fa-2x mb-4"></i>
+                            <p>No pending lab orders</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Tippy.js Tooltips -->
+<link rel="stylesheet" href="https://unpkg.com/tippy.js@6/dist/tippy.css" />
+<script src="https://unpkg.com/@popperjs/core@2"></script>
+<script src="https://unpkg.com/tippy.js@6"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        tippy('[data-tippy-content]', {
+            theme: 'light-border',
+            delay: [100, 50],
+            animation: 'scale',
+            arrow: true
+        });
+    });
+
+    function markCompleted(orderId) {
+        fetch(`/patients/lab-tests/${orderId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    status: 'completed'
+                })
+            })
+            .then(res => {
+                if (res.ok) location.reload();
+                else alert('Failed to mark as completed');
+            })
+            .catch(err => console.error(err));
+    }
+</script>
+{% endblock %}

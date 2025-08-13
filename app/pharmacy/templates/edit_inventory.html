@@ -1,0 +1,166 @@
+{% extends "base.html" %} {% block content %}
+<div class="container mx-auto p-6 lg:p-8">
+    <div class="max-w-4xl mx-auto">
+        <!-- Header Section -->
+        <div class="mb-8">
+            <h2 class="text-3xl font-bold text-gray-800 dark:text-white mb-2">Edit Medication</h2>
+            <p class="text-gray-600 dark:text-gray-300">Manage inventory details for {{ item.name }}</p>
+        </div>
+
+        <!-- Status Badges -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+            <div class="bg-blue-100 dark:bg-blue-900 p-3 rounded-lg">
+                <p class="text-xs text-blue-600 dark:text-blue-300 mb-1">Current Stock</p>
+                <p class="text-xl font-bold text-blue-700 dark:text-blue-200">{{ item.quantity_in_stock }}</p>
+            </div>
+            <div class="bg-orange-100 dark:bg-orange-900 p-3 rounded-lg">
+                <p class="text-xs text-orange-600 dark:text-orange-300 mb-1">Minimum Level</p>
+                <p class="text-xl font-bold text-orange-700 dark:text-orange-200">{{ item.min_stock_level }}</p>
+            </div>
+            <div class="bg-purple-100 dark:bg-purple-900 p-3 rounded-lg">
+                <p class="text-xs text-purple-600 dark:text-purple-300 mb-1">Reorder Quantity</p>
+                <p class="text-xl font-bold text-purple-700 dark:text-purple-200">{{ item.reorder_quantity }}</p>
+            </div>
+            <div class="bg-rose-100 dark:bg-rose-900 p-3 rounded-lg">
+                <p class="text-xs text-rose-600 dark:text-rose-300 mb-1">Expiration Status</p>
+                <p class="text-xl font-bold text-rose-700 dark:text-rose-200">{{ item.expiration_status }}</p>
+            </div>
+        </div>
+
+        <form method="POST" class="space-y-8 bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800  dark:bg-gray-900 dark:bg-gray-800 rounded-2xl p-6 shadow-xl border border-gray-100 dark:border-gray-700">
+            <!-- Medication Details Section -->
+            <div class="space-y-6">
+                <div class="border-b border-gray-200 dark:border-gray-700 pb-4">
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 15h-3.56l-3.7-3.7A4.98 4.98 0 0010 10a5 5 0 10-5-5c.75 0 1.45.17 2.1.47L7.13 5H2.17C2.06 5.48 2 5.98 2 6.5A4.5 4.5 0 006.5 11c.52 0 1.02-.06 1.5-.17V20l2.25-2.25L13 20v-8.5a4.5 4.5 0 004.5-4.5c0-.52-.06-1.02-.17-1.5H15z"/>
+                        </svg> Basic Information
+                    </h3>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Medication Name *</label>
+                        <input name="name" type="text" value="{{ item.name }}" class="w-full px-4 py-2.5 rounded-lg border-0 ring-1 ring-gray-200 dark:ring-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400"
+                            required>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">NDC Number</label>
+                        <input name="ndc" type="text" value="{{ item.ndc }}" class="w-full px-4 py-2.5 rounded-lg border-0 ring-1 ring-gray-200 dark:ring-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Dosage Form</label>
+                        <select name="dosage_form" class="w-full px-4 py-2.5 rounded-lg border-0 ring-1 ring-gray-200 dark:ring-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white">
+                            <option value="Tablet" {% if item.dosage_form == 'Tablet' %}selected{% endif %}>Tablet</option>
+                            <option value="Capsule" {% if item.dosage_form == 'Capsule' %}selected{% endif %}>Capsule</option>
+                            <option value="Liquid" {% if item.dosage_form == 'Liquid' %}selected{% endif %}>Liquid</option>
+                            <option value="Injection" {% if item.dosage_form == 'Injection' %}selected{% endif %}>Injection</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Strength</label>
+                        <input name="strength" type="text" value="{{ item.strength }}" class="w-full px-4 py-2.5 rounded-lg border-0 ring-1 ring-gray-200 dark:ring-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description</label>
+                    <textarea name="description" rows="3" class="w-full px-4 py-2.5 rounded-lg border-0 ring-1 ring-gray-200 dark:ring-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400">{{ item.description }}</textarea>
+                </div>
+            </div>
+
+            <!-- Inventory Management Section -->
+            <div class="space-y-6">
+                <div class="border-b border-gray-200 dark:border-gray-700 pb-4">
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/>
+                        </svg> Inventory Management
+                    </h3>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Quantity in Stock</label>
+                        <input name="quantity_in_stock" type="number" min="0" value="{{ item.quantity_in_stock }}" class="w-full px-4 py-2.5 rounded-lg border-0 ring-1 ring-gray-200 dark:ring-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Min Stock Level</label>
+                        <input name="min_stock_level" type="number" min="0" value="{{ item.min_stock_level }}" class="w-full px-4 py-2.5 rounded-lg border-0 ring-1 ring-gray-200 dark:ring-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Reorder Quantity</label>
+                        <input name="reorder_quantity" type="number" min="0" value="{{ item.reorder_quantity }}" class="w-full px-4 py-2.5 rounded-lg border-0 ring-1 ring-gray-200 dark:ring-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Quantity per Unit</label>
+                        <input name="quantity_per_unit" type="number" min="0" value="{{ item.quantity_per_unit }}" class="w-full px-4 py-2.5 rounded-lg border-0 ring-1 ring-gray-200 dark:ring-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Storage Conditions</label>
+                        <select name="storage_conditions" class="w-full px-4 py-2.5 rounded-lg border-0 ring-1 ring-gray-200 dark:ring-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white">
+                            <option value="Room Temperature" {% if item.storage_conditions == 'Room Temperature' %}selected{% endif %}>Room Temperature</option>
+                            <option value="Refrigerated" {% if item.storage_conditions == 'Refrigerated' %}selected{% endif %}>Refrigerated</option>
+                            <option value="Frozen" {% if item.storage_conditions == 'Frozen' %}selected{% endif %}>Frozen</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Additional Information Section -->
+            <div class="space-y-6">
+                <div class="border-b border-gray-200 dark:border-gray-700 pb-4">
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-purple-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M6.672 1.911a1 1 0 10-1.932.518l.259.966a1 1 0 001.932-.518l-.26-.966zM2.429 4.74a1 1 0 10-.517 1.932l.966.259a1 1 0 00.517-1.932l-.966-.26zm8.814-.569a1 1 0 00-1.415-1.414l-.707.707a1 1 0 101.415 1.415l.707-.708zm-7.071 7.072l.707-.707A1 1 0 003.465 9.12l-.708.707a1 1 0 001.415 1.415zm3.2-5.171a1 1 0 00-1.3 1.3l4 10a1 1 0 001.823.075l1.38-2.759 3.018 3.02a1 1 0 001.414-1.415l-3.019-3.02 2.76-1.379a1 1 0 00-.076-1.822l-10-4z" clip-rule="evenodd"/>
+                        </svg> Additional Information
+                    </h3>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Expiration Date</label>
+                        <input name="expiration_date" type="date" value="{{ item.expiration_date or '' }}" class="w-full px-4 py-2.5 rounded-lg border-0 ring-1 ring-gray-200 dark:ring-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Lot Number</label>
+                        <input name="lot_number" type="text" value="{{ item.lot_number }}" class="w-full px-4 py-2.5 rounded-lg border-0 ring-1 ring-gray-200 dark:ring-gray-700 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white">
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-4">
+                    <div class="relative flex items-start">
+                        <div class="flex items-center h-5">
+                            <input id="requires_prescription" name="requires_prescription" type="checkbox" class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:bg-gray-700 dark:border-gray-600" {% if item.requires_prescription %}checked{%
+                                endif %}>
+                        </div>
+                        <div class="ml-3 text-sm">
+                            <label for="requires_prescription" class="font-medium text-gray-700 dark:text-gray-300">Requires Prescription</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="flex justify-end space-x-4 pt-8 border-t border-gray-200 dark:border-gray-700">
+                <a href="{{ url_for('pharmacy_web.manage_inventory') }}" class="px-6 py-2.5 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    Cancel
+                </a>
+                <button type="submit" class="px-6 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl shadow-md transition-all transform hover:scale-[1.02]">
+                    Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,411 @@
+<!-- app/notifications/templates/communications/dashboard.html -->
+{% extends "base.html" %}
+{% block title %}Engagement Dashboard - AstroCare{% endblock %}
+
+{% block head %}
+<style>
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-card {
+        animation: fadeIn 0.5s ease-out forwards;
+        opacity: 0;
+    }
+    .card:nth-child(1) { animation-delay: 0.1s; }
+    .card:nth-child(2) { animation-delay: 0.2s; }
+    .card:nth-child(3) { animation-delay: 0.3s; }
+    .card:nth-child(4) { animation-delay: 0.4s; }
+    .card:nth-child(5) { animation-delay: 0.5s; }
+    .progress-ring__circle {
+        transition: stroke-dashoffset 0.5s ease;
+        transform: rotate(-90deg);
+        transform-origin: 50% 50%;
+    }
+    .chart-bar {
+        transition: height 0.8s ease-out;
+    }
+    .glow-hover:hover {
+        box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.3), 0 8px 10px -6px rgba(59, 130, 246, 0.3);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-4 md:p-6">
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex flex-col md:flex-row md:items-center justify-between">
+            <div>
+                <h1 class="text-3xl md:text-4xl font-bold text-gray-800">Engagement Dashboard</h1>
+                <p class="text-gray-600 mt-2">Monitor and analyze communication performance</p>
+            </div>
+            <div class="mt-4 md:mt-0">
+                <div class="flex space-x-3">
+                    <button class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        New Campaign
+                    </button>
+                    <button class="border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg transition flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                        Reports
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-6 flex overflow-x-auto scrollbar-hide space-x-4 pb-2">
+            <a href="#" class="px-4 py-2 bg-indigo-600 text-white rounded-full font-medium text-sm whitespace-nowrap">Dashboard</a>
+            <a href="#" class="px-4 py-2 bg-white text-gray-700 hover:bg-gray-100 rounded-full font-medium text-sm whitespace-nowrap">SMS Campaigns</a>
+            <a href="#" class="px-4 py-2 bg-white text-gray-700 hover:bg-gray-100 rounded-full font-medium text-sm whitespace-nowrap">Email Campaigns</a>
+            <a href="#" class="px-4 py-2 bg-white text-gray-700 hover:bg-gray-100 rounded-full font-medium text-sm whitespace-nowrap">Reminders</a>
+            <a href="#" class="px-4 py-2 bg-white text-gray-700 hover:bg-gray-100 rounded-full font-medium text-sm whitespace-nowrap">Templates</a>
+            <a href="#" class="px-4 py-2 bg-white text-gray-700 hover:bg-gray-100 rounded-full font-medium text-sm whitespace-nowrap">Analytics</a>
+        </div>
+    </div>
+
+    <!-- Metrics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+        <!-- SMS Sent -->
+        <div class="animate-card card bg-white rounded-xl shadow-md p-6 glow-hover transition-all duration-300">
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="text-gray-500 text-sm font-medium">SMS Sent</p>
+                    <h3 class="text-2xl font-bold text-gray-800 mt-1">{{ metrics.sms_sent }}</h3>
+                </div>
+                <div class="p-3 bg-blue-100 rounded-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                    </svg>
+                </div>
+            </div>
+            <div class="mt-4">
+                <div class="flex items-center text-sm text-green-500 font-medium">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                    </svg>
+                    12.4% increase
+                </div>
+            </div>
+        </div>
+
+        <!-- Email Sent -->
+        <div class="animate-card card bg-white rounded-xl shadow-md p-6 glow-hover transition-all duration-300">
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="text-gray-500 text-sm font-medium">Email Sent</p>
+                    <h3 class="text-2xl font-bold text-gray-800 mt-1">{{ metrics.email_sent }}</h3>
+                </div>
+                <div class="p-3 bg-indigo-100 rounded-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                </div>
+            </div>
+            <div class="mt-4">
+                <div class="flex items-center text-sm text-green-500 font-medium">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                    </svg>
+                    8.7% increase
+                </div>
+            </div>
+        </div>
+
+        <!-- Delivery Rate -->
+        <div class="animate-card card bg-white rounded-xl shadow-md p-6 glow-hover transition-all duration-300">
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="text-gray-500 text-sm font-medium">Delivery Rate</p>
+                    <h3 class="text-2xl font-bold text-gray-800 mt-1">{{ metrics.delivery_rate }}%</h3>
+                </div>
+                <div class="p-3 bg-green-100 rounded-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+            </div>
+            <div class="mt-4">
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div class="bg-green-600 h-2 rounded-full" style="width: {{ metrics.delivery_rate }}%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Open Rate -->
+        <div class="animate-card card bg-white rounded-xl shadow-md p-6 glow-hover transition-all duration-300">
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="text-gray-500 text-sm font-medium">Open Rate</p>
+                    <h3 class="text-2xl font-bold text-gray-800 mt-1">{{ metrics.open_rate }}%</h3>
+                </div>
+                <div class="p-3 bg-amber-100 rounded-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                    </svg>
+                </div>
+            </div>
+            <div class="mt-4">
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div class="bg-amber-500 h-2 rounded-full" style="width: {{ metrics.open_rate }}%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Feedback Responses -->
+        <div class="animate-card card bg-white rounded-xl shadow-md p-6 glow-hover transition-all duration-300">
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="text-gray-500 text-sm font-medium">Feedback Responses</p>
+                    <h3 class="text-2xl font-bold text-gray-800 mt-1">{{ metrics.feedback_responses }}</h3>
+                </div>
+                <div class="p-3 bg-purple-100 rounded-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
+                    </svg>
+                </div>
+            </div>
+            <div class="mt-4">
+                <div class="flex items-center text-sm text-green-500 font-medium">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                    </svg>
+                    22.3% increase
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts and Activity Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Communication Stats -->
+        <div class="lg:col-span-2 bg-white rounded-xl shadow-md p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-gray-800">Communication Performance</h2>
+                <div class="flex space-x-2">
+                    <button class="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-lg text-sm font-medium">Weekly</button>
+                    <button class="px-3 py-1 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium">Monthly</button>
+                    <button class="px-3 py-1 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium">Quarterly</button>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-3 gap-4 mb-6">
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <p class="text-sm text-gray-600">Avg. Delivery Rate</p>
+                    <p class="text-xl font-bold text-gray-800">92.4%</p>
+                </div>
+                <div class="bg-indigo-50 p-4 rounded-lg">
+                    <p class="text-sm text-gray-600">Avg. Open Rate</p>
+                    <p class="text-xl font-bold text-gray-800">78.2%</p>
+                </div>
+                <div class="bg-green-50 p-4 rounded-lg">
+                    <p class="text-sm text-gray-600">Response Time</p>
+                    <p class="text-xl font-bold text-gray-800">2.4h</p>
+                </div>
+            </div>
+            
+            <!-- Chart -->
+            <div class="h-64">
+                <div class="flex items-end justify-between h-48">
+                    {% set chart_data = [65, 59, 80, 81, 76, 55, 92] %}
+                    {% for i in range(7) %}
+                    <div class="flex flex-col items-center">
+                        <div class="chart-bar bg-gradient-to-t from-indigo-500 to-indigo-300 w-8 rounded-t-md mb-2" style="height: {{ chart_data[i] }}%;"></div>
+                        <span class="text-xs text-gray-500">{{ ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][i] }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Activity -->
+        <div class="bg-white rounded-xl shadow-md p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-gray-800">Recent Activity</h2>
+                <button class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">View All</button>
+            </div>
+            
+            <div class="space-y-4">
+                {% for activity in recent_activity %}
+                <div class="flex items-start p-3 hover:bg-gray-50 rounded-lg transition">
+                    <div class="mr-3 mt-1">
+                        {% if activity.type == 'SMS' %}
+                        <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                            </svg>
+                        </div>
+                        {% elif activity.type == 'Email' %}
+                        <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        {% else %}
+                        <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-medium text-gray-800">{{ activity.type }} to {{ activity.target }}</h3>
+                        <p class="text-sm text-gray-600">{{ activity.count }} recipients • {{ activity.date }}</p>
+                    </div>
+                    <div>
+                        {% if activity.status == 'Delivered' %}
+                        <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">Delivered</span>
+                        {% elif activity.status == 'Sent' %}
+                        <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">Sent</span>
+                        {% else %}
+                        <span class="px-2 py-1 bg-amber-100 text-amber-800 text-xs rounded-full">Processed</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Campaign Status -->
+    <div class="mt-6 bg-white rounded-xl shadow-md p-6">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-bold text-gray-800">Active Campaigns</h2>
+            <button class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">View All</button>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Campaign Card 1 -->
+            <div class="border border-gray-200 rounded-lg p-4 hover:border-indigo-300 transition">
+                <div class="flex justify-between items-start mb-3">
+                    <div>
+                        <h3 class="font-bold text-gray-800">Appointment Reminders</h3>
+                        <p class="text-sm text-gray-600">Patient notifications</p>
+                    </div>
+                    <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">Active</span>
+                </div>
+                <div class="mb-3">
+                    <div class="flex justify-between text-xs text-gray-500 mb-1">
+                        <span>Progress</span>
+                        <span>72%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="bg-green-600 h-2 rounded-full" style="width: 72%"></div>
+                    </div>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-600">2,340 sent</span>
+                    <span class="font-medium">3,250 total</span>
+                </div>
+            </div>
+            
+            <!-- Campaign Card 2 -->
+            <div class="border border-gray-200 rounded-lg p-4 hover:border-indigo-300 transition">
+                <div class="flex justify-between items-start mb-3">
+                    <div>
+                        <h3 class="font-bold text-gray-800">Health Tips</h3>
+                        <p class="text-sm text-gray-600">Monthly newsletter</p>
+                    </div>
+                    <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">Draft</span>
+                </div>
+                <div class="mb-3">
+                    <div class="flex justify-between text-xs text-gray-500 mb-1">
+                        <span>Progress</span>
+                        <span>28%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="bg-blue-600 h-2 rounded-full" style="width: 28%"></div>
+                    </div>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-600">Recipients</span>
+                    <span class="font-medium">8,420</span>
+                </div>
+            </div>
+            
+            <!-- Campaign Card 3 -->
+            <div class="border border-gray-200 rounded-lg p-4 hover:border-indigo-300 transition">
+                <div class="flex justify-between items-start mb-3">
+                    <div>
+                        <h3 class="font-bold text-gray-800">Staff Alerts</h3>
+                        <p class="text-sm text-gray-600">Schedule updates</p>
+                    </div>
+                    <span class="px-2 py-1 bg-amber-100 text-amber-800 text-xs rounded-full">Pending</span>
+                </div>
+                <div class="mb-3">
+                    <div class="flex justify-between text-xs text-gray-500 mb-1">
+                        <span>Progress</span>
+                        <span>45%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="bg-amber-500 h-2 rounded-full" style="width: 45%"></div>
+                    </div>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-600">Recipients</span>
+                    <span class="font-medium">120</span>
+                </div>
+            </div>
+            
+            <!-- Campaign Card 4 -->
+            <div class="border border-gray-200 rounded-lg p-4 hover:border-indigo-300 transition">
+                <div class="flex justify-between items-start mb-3">
+                    <div>
+                        <h3 class="font-bold text-gray-800">Feedback Request</h3>
+                        <p class="text-sm text-gray-600">Service evaluation</p>
+                    </div>
+                    <span class="px-2 py-1 bg-indigo-100 text-indigo-800 text-xs rounded-full">Scheduled</span>
+                </div>
+                <div class="mb-3">
+                    <div class="flex justify-between text-xs text-gray-500 mb-1">
+                        <span>Progress</span>
+                        <span>0%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="bg-indigo-600 h-2 rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-600">Starts</span>
+                    <span class="font-medium">Jul 15</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Initialize animations when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        // Animate chart bars
+        const bars = document.querySelectorAll('.chart-bar');
+        bars.forEach(bar => {
+            const height = bar.style.height;
+            bar.style.height = '0%';
+            setTimeout(() => {
+                bar.style.height = height;
+            }, 300);
+        });
+        
+        // Add hover effects to cards
+        const cards = document.querySelectorAll('.card');
+        cards.forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                card.classList.add('shadow-lg');
+                card.classList.remove('shadow-md');
+            });
+            card.addEventListener('mouseleave', () => {
+                card.classList.remove('shadow-lg');
+                card.classList.add('shadow-md');
+            });
+        });
+    });
+</script>
+{% endblock %}

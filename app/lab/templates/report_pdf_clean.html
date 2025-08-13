@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab Report - {{ test.service.name }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #4361ee;
+            --secondary: #3a0ca3;
+            --accent: #7209b7;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --success: #4cc9f0;
+            --warning: #f72585;
+            --danger: #e63946;
+        }
+        
+        body {
+            font-family: 'Manrope', 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #ffffff;
+            color: #000000;
+            -webkit-print-color-adjust: exact;
+            color-adjust: exact;
+        }
+        
+        .report-card {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 15mm auto;
+            padding: 20mm;
+            background: linear-gradient(to bottom, #ffffff, #f8f9ff);
+            font-size: 10pt;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            opacity: 0.03;
+            font-size: 120px;
+            font-weight: 900;
+            color: var(--secondary);
+            white-space: nowrap;
+            z-index: -1;
+        }
+        
+        .header-gradient {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+        }
+        
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.75rem;
+        }
+        
+        .status-verified {
+            background-color: rgba(76, 201, 240, 0.15);
+            color: #4cc9f0;
+        }
+        
+        .status-pending {
+            background-color: rgba(247, 37, 133, 0.15);
+            color: #f72585;
+        }
+        
+        .data-card {
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+        
+        .data-card:hover {
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+            transform: translateY(-2px);
+        }
+        
+        .table-header {
+            background: linear-gradient(to right, var(--primary), var(--accent));
+        }
+        
+        .table-row:nth-child(even) {
+            background-color: #f9fafc;
+        }
+        
+        .result-normal {
+            background-color: rgba(76, 201, 240, 0.15);
+            color: #4cc9f0;
+        }
+        
+        .result-low, .result-high {
+            background-color: rgba(247, 37, 133, 0.15);
+            color: #f72585;
+        }
+        
+        .result-critical {
+            background-color: rgba(230, 57, 70, 0.15);
+            color: #e63946;
+        }
+        
+        .interpretation-card {
+            border-left: 4px solid var(--primary);
+            background: linear-gradient(to right, #f0f4ff, #ffffff);
+        }
+        
+        .notes-card {
+            border-left: 4px solid var(--accent);
+            background: linear-gradient(to right, #f9f0ff, #ffffff);
+        }
+        
+        .signature-line {
+            border-top: 1px solid #cbd5e1;
+            width: 250px;
+            display: block;
+            margin-top: 30px;
+        }
+        
+        .footer {
+            background: linear-gradient(to right, var(--secondary), var(--dark));
+            color: white;
+            border-radius: 0 0 12px 12px;
+        }
+        
+        .lab-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+            margin-right: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="report-card">
+        <!-- Watermark -->
+        <div class="watermark">ASTROCARE LABS</div>
+        
+        <!-- Header -->
+        <div class="mb-8 pb-6 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <div class="lab-icon">
+                        <i class="fas fa-flask text-2xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-800">ASTROCARE LABORATORIES</h1>
+                        <p class="text-sm text-gray-600 mt-1">Precision Diagnostics for Better Healthcare</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div class="text-sm text-gray-700 bg-gray-50 rounded-lg py-2 px-4 inline-block">
+                        <p><i class="fas fa-map-marker-alt mr-2 text-blue-500"></i> 123 Health Drive, Nairobi, Kenya</p>
+                        <p><i class="fas fa-phone-alt mr-2 text-blue-500"></i> +254 7XX XXX XXX</p>
+                        <p><i class="fas fa-envelope mr-2 text-blue-500"></i> info@astrocare.com</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Report Title -->
+        <header class="text-center mb-10">
+            <div class="inline-block px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full mb-4">
+                <span class="text-white text-sm font-bold tracking-wider">LAB REPORT</span>
+            </div>
+            <h1 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-800 mb-2">Diagnostic Analysis Report</h1>
+            <p class="text-gray-600 text-lg">Comprehensive results for informed clinical decisions</p>
+        </header>
+
+        <!-- Patient & Test Details -->
+        <div class="mb-10 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Patient Card -->
+            <div class="data-card p-6 bg-white">
+                <div class="flex items-center mb-4">
+                    <i class="fas fa-user-injured text-2xl text-blue-500 mr-3"></i>
+                    <h2 class="text-xl font-bold text-gray-800">Patient Details</h2>
+                </div>
+                
+<div class="grid grid-cols-2 gap-4">
+    {# Determine the patient object to use #}
+    {% set patient = None %}
+    {% set patient_type_indicator = '' %} {# Optional: to show if it's a walk-in or consultation #}
+
+    {% if test.consultation %}
+        {% set patient = test.consultation.patient %}
+        {% set patient_type_indicator = ' (Consultation)' %}
+    {% elif test.visit %}
+        {% set patient = test.visit.patient %}
+        {% set patient_type_indicator = ' (Walk-in)' %}
+    {% endif %}
+
+    {% if patient %}
+        <div>
+            <p class="text-sm text-gray-500 mb-1">Full Name</p>
+            <p class="font-medium text-gray-800">{{ patient.full_name }}{{ patient_type_indicator }}</p>
+        </div>
+        <div>
+            <p class="text-sm text-gray-500 mb-1">Registration No</p>
+            <p class="font-medium text-gray-800">{{ patient.reg_no }}</p>
+        </div>
+        <div>
+            <p class="text-sm text-gray-500 mb-1">Age & Gender</p>
+            <p class="font-medium text-gray-800">{{ patient.age }} years, {{ patient.gender|capitalize }}</p>
+        </div>
+        <div>
+            <p class="text-sm text-gray-500 mb-1">Contact</p>
+            <p class="font-medium text-gray-800">{{ patient.phone }}</p>
+        </div>
+    {% else %}
+        <div class="col-span-2 text-center text-gray-600">
+            <p>Patient details are not available for this test.</p>
+            <p class="text-xs text-gray-500">Test not linked to a consultation or walk-in visit record.</p>
+        </div>
+    {% endif %}
+</div>
+            </div>
+            
+            <!-- Test Card -->
+            <div class="data-card p-6 bg-white">
+                <div class="flex items-center mb-4">
+                    <i class="fas fa-vial text-2xl text-purple-500 mr-3"></i>
+                    <h2 class="text-xl font-bold text-gray-800">Test Information</h2>
+                </div>
+                
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-sm text-gray-500 mb-1">Test Name</p>
+                            <p class="font-medium text-gray-800">{{ test.service.name }}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500 mb-1">Status</p>
+                            {% if test.status == 'verified' %}
+                                <span class="status-badge status-verified">
+                                    <i class="fas fa-check-circle mr-1"></i> Verified
+                                </span>
+                            {% else %}
+                                <span class="status-badge status-pending">
+                                    <i class="fas fa-clock mr-1"></i> Pending
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-sm text-gray-500 mb-1">Requested On</p>
+                            <p class="font-medium text-gray-800">{{ test.requested_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500 mb-1">Completed On</p>
+                            {% if test.completed_at %}
+                                <p class="font-medium text-gray-800">{{ test.completed_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                            {% else %}
+                                <p class="font-medium text-gray-500 italic">Not completed</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">Technician</p>
+                        {% if entered_by_technician %}
+                            <p class="font-medium text-gray-800">{{ entered_by_technician }}</p>
+                        {% else %}
+                            <p class="font-medium text-gray-500 italic">Not assigned</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="mb-10">
+            <div class="flex items-center mb-6">
+                <i class="fas fa-chart-line text-2xl text-blue-500 mr-3"></i>
+                <h2 class="text-2xl font-bold text-gray-800">Test Results</h2>
+            </div>
+            
+            {% if test.results_detail %}
+                <div class="overflow-x-auto border border-gray-200 rounded-xl shadow-sm">
+                    <table class="min-w-full">
+                        <thead>
+                            <tr class="table-header text-white">
+                                <th class="px-6 py-4 text-left font-semibold uppercase tracking-wider">Parameter</th>
+                                <th class="px-6 py-4 text-left font-semibold uppercase tracking-wider">Result</th>
+                                <th class="px-6 py-4 text-left font-semibold uppercase tracking-wider">Unit</th>
+                                <th class="px-6 py-4 text-left font-semibold uppercase tracking-wider">Reference Range</th>
+                                <th class="px-6 py-4 text-left font-semibold uppercase tracking-wider">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for result in test.results_detail %}
+                            <tr class="table-row border-b border-gray-100">
+                                <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
+                                    {{ result.parameter.parameter_name }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap font-bold text-gray-800">
+                                    {% if result.numeric_value is not none %}
+                                        {{ result.numeric_value }}
+                                    {% elif result.categorical_value is not none %}
+                                        {{ result.categorical_value }}
+                                    {% elif result.text_value is not none %}
+                                        {{ result.text_value }}
+                                    {% else %}
+                                        <span class="text-gray-400 italic">N/A</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-gray-600">
+                                    {{ result.unit or result.parameter.unit or 'N/A' }}
+                                </td>
+                                <td class="px-6 py-4 text-gray-600">
+                                    {% set ranges = filtered_ranges.get(result.parameter.parameter_id) %}
+                                    {% if ranges %}
+                                        {% for r in ranges %}
+                                            <p class="font-medium">{{ r.normal_min }} - {{ r.normal_max }}</p>
+                                            {% if r.critical_min is not none and r.critical_max is not none %}
+                                                <p class="text-xs text-red-600 font-medium">Critical: {{ r.critical_min }} - {{ r.critical_max }}</p>
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% else %}
+                                        <span class="italic text-gray-500">Not defined</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    {% set result_status = "N/A" %}
+                                    {% if result.numeric_value is not none and ranges %}
+                                        {% set status_found = false %}
+                                        {% for r in ranges %}
+                                            {% if not status_found %}
+                                                {% if r.critical_min is not none and r.critical_max is not none and (result.numeric_value < r.critical_min or result.numeric_value > r.critical_max) %}
+                                                    {% set result_status = "Critical" %}
+                                                    {% set status_found = true %}
+                                                {% elif r.normal_min is not none and r.normal_max is not none %}
+                                                    {% if result.numeric_value < r.normal_min %}
+                                                        {% set result_status = "Low" %}
+                                                        {% set status_found = true %}
+                                                    {% elif result.numeric_value > r.normal_max %}
+                                                        {% set result_status = "High" %}
+                                                        {% set status_found = true %}
+                                                    {% else %}
+                                                        {% set result_status = "Normal" %}
+                                                        {% set status_found = true %}
+                                                    {% endif %}
+                                                {% endif %}
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% endif %}
+                                    
+                                    <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                        {% if result_status == 'Normal' %}result-normal
+                                        {% elif result_status == 'High' or result_status == 'Low' %}result-low
+                                        {% elif result_status == 'Critical' %}result-critical
+                                        {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                        {% if result_status == 'Normal' %}
+                                            <i class="fas fa-check-circle mr-1"></i>
+                                        {% elif result_status == 'High' or result_status == 'Low' %}
+                                            <i class="fas fa-exclamation-triangle mr-1"></i>
+                                        {% elif result_status == 'Critical' %}
+                                            <i class="fas fa-times-circle mr-1"></i>
+                                        {% else %}
+                                            <i class="fas fa-minus mr-1"></i>
+                                        {% endif %}
+                                        {{ result_status }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
+                    <i class="fas fa-exclamation-triangle text-3xl text-yellow-500 mb-3"></i>
+                    <p class="text-gray-700 font-medium">No detailed results available for this test</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Interpretation & Notes -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
+            <!-- Interpretation -->
+            <div class="interpretation-card p-6 rounded-xl">
+                <div class="flex items-center mb-4">
+                    <i class="fas fa-stethoscope text-2xl text-blue-500 mr-3"></i>
+                    <h2 class="text-xl font-bold text-gray-800">Clinical Interpretation</h2>
+                </div>
+                
+                <div class="prose max-w-none text-gray-700">
+                    {% if test.interpretation %}
+                        <div class="bg-white p-4 rounded-lg border border-blue-100">
+                            {{ test.interpretation|markdown }}
+                        </div>
+                    {% else %}
+                        <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 text-center">
+                            <i class="fas fa-comment-medical text-3xl text-gray-400 mb-3"></i>
+                            <p class="text-gray-600 italic">No clinical interpretation provided</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Notes -->
+            <div class="notes-card p-6 rounded-xl">
+                <div class="flex items-center mb-4">
+                    <i class="fas fa-clipboard-list text-2xl text-purple-500 mr-3"></i>
+                    <h2 class="text-xl font-bold text-gray-800">Technician Notes</h2>
+                </div>
+                
+                <div class="text-gray-700">
+                    {% if test.notes %}
+                        <div class="bg-white p-4 rounded-lg border border-purple-100">
+                            <p>{{ test.notes }}</p>
+                        </div>
+                    {% else %}
+                        <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 text-center">
+                            <i class="fas fa-notes-medical text-3xl text-gray-400 mb-3"></i>
+                            <p class="text-gray-600 italic">No technician notes available</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Signature & Footer -->
+        <div class="mt-12">
+            <div class="flex justify-between items-start">
+                <div class="text-center">
+                    <p class="font-semibold text-gray-700 mb-1">Lab Director</p>
+                    <span class="signature-line"></span>
+                    <p class="text-sm text-gray-600 mt-2">Dr. Jane Smith, MD</p>
+                </div>
+                
+                <div class="text-center">
+                    <p class="font-semibold text-gray-700 mb-1">Verification</p>
+                    <span class="signature-line"></span>
+                    {% if verified_by_person %}
+                        <p class="text-sm text-gray-600 mt-2">{{ verified_by_person }}</p>
+                    {% else %}
+                        <p class="text-sm text-gray-600 mt-2 italic">Not verified</p>
+                    {% endif %}
+                </div>
+                
+                <div class="text-center">
+                    <p class="font-semibold text-gray-700 mb-1">Report Date</p>
+                    <span class="signature-line"></span>
+                    <p class="text-sm text-gray-600 mt-2">{{ current_datetime.strftime('%Y-%m-%d at %I:%M %p EAT') }}</p>
+                </div>
+            </div>
+            
+            <div class="footer p-4 mt-8 text-center">
+                <p class="text-xs text-white opacity-80">
+                    <i class="fas fa-shield-alt mr-1"></i> 
+                    This report was electronically generated by AstroCare Health Management System - 
+                    Report ID: {{ test.id }} | Printed on: {{ current_datetime.strftime('%Y-%m-%d %H:%M') }}
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,355 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Case Header -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-800">Case #{{ case.case_number }}</h1>
+            <div class="flex items-center mt-2">
+                <span class="px-3 py-1 text-sm font-medium rounded-full 
+                    {% if case.status == 'Closed' %}bg-green-100 text-green-800
+                    {% elif case.status == 'Open' %}bg-blue-100 text-blue-800
+                    {% elif case.status == 'Appealed' %}bg-purple-100 text-purple-800
+                    {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                    {{ case.status }}
+                </span>
+                <span class="ml-3 px-3 py-1 text-sm font-medium rounded-full
+                    {% if case.severity == 'Minor' %}bg-gray-100 text-gray-800
+                    {% elif case.severity == 'Moderate' %}bg-blue-100 text-blue-800
+                    {% elif case.severity == 'Major' %}bg-yellow-100 text-yellow-800
+                    {% else %}bg-red-100 text-red-800{% endif %}">
+                    {{ case.severity }} Severity
+                </span>
+            </div>
+        </div>
+        <div class="mt-4 md:mt-0">
+            <a href="#" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition flex items-center">
+                <i class="fas fa-edit mr-2"></i> Edit Case
+            </a>
+        </div>
+    </div>
+
+    <!-- Case Overview -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <!-- Primary Info -->
+        <div class="bg-white rounded-xl shadow-sm p-6 col-span-2">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">Case Overview</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Employee</h3>
+                    <p class="mt-1 text-lg font-medium text-gray-900">{{ case.employee.full_name }}</p>
+                    <p class="text-gray-600"> • {{ case.employee.department.name }}</p>
+                </div>
+                
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Reporter</h3>
+                    <p class="mt-1 text-lg font-medium text-gray-900">{{ case.reporter.full_name }}</p>
+                    <p class="text-gray-600">{{ case.employee.department.name }}</p>
+                </div>
+                
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Incident Date</h3>
+                    <p class="mt-1 text-lg font-medium text-gray-900">{{ case.incident_date.strftime('%B %d, %Y') }}</p>
+                    <p class="text-gray-600">{{ (date.today() - case.incident_date).days }} days ago</p>
+                </div>
+                
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Reported Date</h3>
+                    <p class="mt-1 text-lg font-medium text-gray-900">{{ case.date_reported.strftime('%B %d, %Y') }}</p>
+                    <p class="text-gray-600">{{ (date.today() - case.date_reported).days }} days ago</p>
+                </div>
+                
+                <div class="md:col-span-2">
+                    <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Case Type</h3>
+                    <div class="mt-1 flex items-center">
+                        <div class="bg-gray-100 p-3 rounded-lg mr-4">
+                            <i class="fas fa-folder-open text-blue-500 text-xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-lg font-medium text-gray-900">{{ case.case_type.name }}</p>
+                            <p class="text-gray-600">Default Resolution: {{ case.case_type.resolution_days }} days</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Timeline -->
+        <div class="bg-white rounded-xl shadow-sm p-6">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">Case Timeline</h2>
+            
+            <div class="flow-root">
+                <ul role="list" class="-mb-8">
+                    <li>
+                        <div class="relative pb-8">
+                            <span class="absolute top-5 left-5 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
+                            <div class="relative flex items-start space-x-3">
+                                <div class="relative">
+                                    <div class="h-10 w-10 bg-blue-500 rounded-full flex items-center justify-center ring-8 ring-white">
+                                        <i class="fas fa-flag text-white"></i>
+                                    </div>
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <div>
+                                        <div class="text-sm">
+                                            <p class="font-medium text-gray-900">Case Reported</p>
+                                        </div>
+                                        <p class="mt-0.5 text-sm text-gray-500">By {{ case.reporter.full_name }}</p>
+                                    </div>
+                                    <div class="mt-2 text-sm text-gray-700">
+                                        <p>Case #{{ case.case_number }} was opened</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+
+                    <li>
+                        <div class="relative pb-8">
+                            <span class="absolute top-5 left-5 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
+                            <div class="relative flex items-start space-x-3">
+                                <div class="relative">
+                                    <div class="h-10 w-10 bg-yellow-500 rounded-full flex items-center justify-center ring-8 ring-white">
+                                        <i class="fas fa-search text-white"></i>
+                                    </div>
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <div>
+                                        <div class="text-sm">
+                                            <p class="font-medium text-gray-900">Investigation Started</p>
+                                        </div>
+                                        <p class="mt-0.5 text-sm text-gray-500">By HR Department</p>
+                                    </div>
+                                    <div class="mt-2 text-sm text-gray-700">
+                                        <p>Initial evidence gathering and interviews</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+
+                    <li>
+                        <div class="relative pb-8">
+                            <div class="relative flex items-start space-x-3">
+                                <div class="relative">
+                                    <div class="h-10 w-10 bg-purple-500 rounded-full flex items-center justify-center ring-8 ring-white">
+                                        <i class="fas fa-gavel text-white"></i>
+                                    </div>
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <div>
+                                        <div class="text-sm">
+                                            <p class="font-medium text-gray-900">Hearing Scheduled</p>
+                                        </div>
+                                        <p class="mt-0.5 text-sm text-gray-500">Upcoming on Jun 15, 2023</p>
+                                    </div>
+                                    <div class="mt-2 text-sm text-gray-700">
+                                        <p>Disciplinary committee hearing scheduled</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Details Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Incident Details -->
+        <div class="bg-white rounded-xl shadow-sm p-6">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">Incident Details</h2>
+            
+            <div class="space-y-4">
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Description</h3>
+                    <p class="mt-1 text-gray-700 whitespace-pre-line">{{ case.incident_description }}</p>
+                </div>
+                
+                <div>
+                    <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wider">Notes</h3>
+                    <p class="mt-1 text-gray-700">
+                        {{ case.notes or 'No additional notes provided' }}
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Related Actions -->
+        <div class="bg-white rounded-xl shadow-sm p-6">
+            <div class="flex justify-between items-start mb-4">
+                <h2 class="text-xl font-bold text-gray-800">Related Actions</h2>
+                <button class="text-blue-600 hover:text-blue-800">
+                    <i class="fas fa-plus"></i> Add Action
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                {% if case.actions %}
+                    {% for action in case.actions %}
+                    <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition">
+                        <div class="flex justify-between">
+                            <h3 class="font-medium text-gray-900">{{ action.action_type.name }}</h3>
+                            <span class="px-2 py-1 text-xs rounded-full 
+                                {% if action.status == 'Active' %}bg-blue-100 text-blue-800
+                                {% elif action.status == 'Completed' %}bg-green-100 text-green-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ action.status }}
+                            </span>
+                        </div>
+                        <p class="text-sm text-gray-600 mt-1">Assigned by: {{ action.assigned_by.full_name }}</p>
+                        <div class="flex justify-between mt-2 text-sm">
+                            <span>Start: {{ action.effective_date.strftime('%b %d, %Y') }}</span>
+                            <span>End: {{ action.end_date.strftime('%b %d, %Y') if action.end_date else 'Ongoing' }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-8">
+                        <div class="mx-auto h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center">
+                            <i class="fas fa-exclamation-circle text-gray-400"></i>
+                        </div>
+                        <h3 class="mt-2 text-sm font-medium text-gray-900">No actions taken</h3>
+                        <p class="mt-1 text-sm text-gray-500">Add a disciplinary action for this case.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Documents & Evidence -->
+        <div class="bg-white rounded-xl shadow-sm p-6">
+            <div class="flex justify-between items-start mb-4">
+                <h2 class="text-xl font-bold text-gray-800">Documents & Evidence</h2>
+                <button class="text-blue-600 hover:text-blue-800">
+                    <i class="fas fa-plus"></i> Add Document
+                </button>
+            </div>
+            
+            <div class="space-y-3">
+                {% if case.documents %}
+                    {% for doc in case.documents %}
+                    <div class="flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-file-pdf text-blue-600"></i>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-900 truncate">{{ doc.title }}</p>
+                                <p class="text-sm text-gray-500">{{ doc.document_type }}</p>
+                            </div>
+                        </div>
+                        <button class="ml-4 bg-gray-100 hover:bg-gray-200 rounded-md p-2">
+                            <i class="fas fa-download text-gray-600"></i>
+                        </button>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-8">
+                        <div class="mx-auto h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center">
+                            <i class="fas fa-file-alt text-gray-400"></i>
+                        </div>
+                        <h3 class="mt-2 text-sm font-medium text-gray-900">No documents</h3>
+                        <p class="mt-1 text-sm text-gray-500">Upload evidence or supporting documents.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+<!-- Insert this section above the Case Activity section -->
+{% if case.investigations %}
+<!-- Investigations Section -->
+<div class="bg-white rounded-xl shadow-sm p-6 mt-6">
+    <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-bold text-gray-800">Case Investigations</h2>
+        <a href="{{ url_for('hr_web.case_investigations', case_id=case.id) }}" 
+           class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition flex items-center">
+            <i class="fas fa-plus mr-2"></i> Add Investigation
+        </a>
+    </div>
+    
+    <div class="space-y-6">
+        {% for inv in case.investigations %}
+        <div class="border border-gray-200 rounded-xl p-5 hover:shadow-md transition-shadow">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h3 class="font-medium text-gray-900">{{ inv.title }}</h3>
+                    <div class="flex items-center mt-2 text-sm text-gray-500">
+                        <i class="fas fa-user mr-2"></i>
+                        <span>{{ inv.investigator.full_name }}</span>
+                        <span class="mx-2">•</span>
+                        <i class="fas fa-calendar-day mr-2"></i>
+                        <span>{{ inv.start_date.strftime('%b %d, %Y') }}</span>
+                    </div>
+                </div>
+                <span class="px-3 py-1 text-xs rounded-full 
+                      {% if inv.status == 'Active' %}bg-yellow-100 text-yellow-800
+                      {% elif inv.status == 'Completed' %}bg-green-100 text-green-800
+                      {% else %}bg-gray-100 text-gray-800{% endif %}">
+                    {{ inv.status }}
+                </span>
+            </div>
+            
+            <div class="mt-4">
+                <h4 class="text-sm font-medium text-gray-700 mb-2">Findings</h4>
+                <p class="text-gray-700 whitespace-pre-line">{{ inv.findings }}</p>
+            </div>
+            
+            {% if inv.evidence %}
+            <div class="mt-4">
+                <h4 class="text-sm font-medium text-gray-700 mb-2">Evidence</h4>
+                <div class="flex flex-wrap gap-2">
+                    {% for evidence in inv.evidence %}
+                    <a href="#" class="flex items-center text-blue-600 hover:text-blue-800">
+                        <i class="fas fa-file-pdf mr-1"></i>
+                        <span class="text-sm">{{ evidence.title }}</span>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <div class="mt-4 flex justify-end space-x-2">
+                <a href="{{ url_for('hr_web.edit_investigation', investigation_id=inv.id) }}"
+                   class="text-blue-600 hover:text-blue-800 flex items-center text-sm">
+                    <i class="fas fa-edit mr-1"></i> Edit
+                </a>
+                <a href="{{ url_for('hr_web.delete_investigation', investigation_id=inv.id) }}"
+                   class="text-red-600 hover:text-red-800 flex items-center text-sm ml-3">
+                    <i class="fas fa-trash mr-1"></i> Delete
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+
+
+    <!-- Action Buttons -->
+    <div class="mt-8 flex justify-between">
+        <div>
+            <button class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition flex items-center">
+                <i class="fas fa-print mr-2"></i> Print Case
+            </button>
+        </div>
+        <div class="flex space-x-3">
+            <button class="px-4 py-2 bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition flex items-center">
+                <i class="fas fa-times-circle mr-2"></i> Close Case
+            </button>
+            <button class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition flex items-center">
+                <i class="fas fa-check-circle mr-2"></i> Resolve Case
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+    .shadow-sm {
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+</style>
+{% endblock %}

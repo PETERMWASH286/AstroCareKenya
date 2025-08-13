@@ -1,0 +1,158 @@
+{% extends "base.html" %} {% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header with Gradient Background -->
+    <div class="bg-gradient-to-r from-blue-600 to-purple-700 rounded-xl p-6 shadow-lg mb-8">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-white">Edit Stock Request #{{ request.id|string|truncate(8, True, '')|upper }}</h1>
+                <p class="text-blue-100 mt-1">Modify pending medical supply request</p>
+            </div>
+            <a href="{{ url_for('pharmacy_web.stock_requests') }}" class="flex items-center text-white hover:text-blue-200 transition-colors">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 15l-3-3m0 0l3-3m-3 3h8M3 12a9 9 0 1118 0 9 9 0 01-18 0z"/>
+                </svg> Back to Requests
+            </a>
+        </div>
+    </div>
+
+    <!-- Edit Form Container -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <form method="POST" class="space-y-8">
+            <!-- Stock Item Details Card -->
+            <div class="bg-gray-50 p-6 rounded-lg border border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Item Details</h3>
+                <div class="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                        <span class="text-gray-600">Item Name:</span>
+                        <span class="font-medium block mt-1">{{ request.stock.name }}</span>
+                    </div>
+                    <div>
+                        <span class="text-gray-600">SKU:</span>
+                        <span class="font-medium block mt-1">{{ request.stock.sku }}</span>
+                    </div>
+                    <div>
+                        <span class="text-gray-600">Batch Number:</span>
+                        <span class="font-medium block mt-1">{{ request.batch_number }}</span>
+                    </div>
+                    <div>
+                        <span class="text-gray-600">Expiration Date:</span>
+                        <span class="font-medium block mt-1">{{ request.expiration_date.strftime('%d/%m/%Y') }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Editable Fields -->
+            <div class="space-y-6">
+                <!-- Quantity & Priority -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Quantity Requested</label>
+                        <div class="relative">
+                            <input type="number" name="quantity_requested" value="{{ request.quantity_requested }}" min="1" max="{{ request.stock.current_stock }}" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500" required>
+                            <span class="absolute right-4 top-3.5 text-gray-500">units</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Priority Level</label>
+                        <div class="relative">
+                            <select name="priority" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500">
+                                {% for priority in ['routine', 'urgent', 'emergency'] %}
+                                <option value="{{ priority }}" {% if priority == request.priority %}selected{% endif %}>
+                                    {{ priority|title }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <div class="absolute inset-y-0 right-3 top-3 flex items-center pointer-events-none">
+                                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dates & Location -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Required By Date</label>
+                        <input type="date" name="required_by_date" value="{{ request.required_by_date.strftime('%Y-%m-%d') if request.required_by_date else '' }}" min="{{ min_date }}" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Storage Location</label>
+                        <input type="text" name="location" value="{{ request.location }}" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                </div>
+
+                <!-- Notes -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Additional Notes</label>
+                    <textarea name="notes" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 h-32" placeholder="Add any special instructions or comments">{{ request.notes or '' }}</textarea>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="border-t pt-6">
+                <div class="flex justify-end gap-4">
+                    <button type="reset" class="px-6 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                        Reset Changes
+                    </button>
+                    <button type="submit" class="bg-gradient-to-r from-blue-600 to-blue-800 text-white px-6 py-2.5 rounded-lg font-medium hover:from-blue-700 hover:to-blue-900 transition-all flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Update Request
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Error Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %} {% if messages %}
+    <div class="mt-6 space-y-2">
+        {% for category, message in messages %}
+        <div class="p-4 rounded-lg {% if category == 'error' %}bg-red-50 text-red-700{% else %}bg-green-50 text-green-700{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %} {% endwith %}
+</div>
+
+<!-- Date Input Enhancement -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set minimum date for required by date
+        const dateInputs = document.querySelectorAll('input[type="date"]');
+        const today = new Date().toISOString().split('T')[0];
+
+        dateInputs.forEach(input => {
+            if (!input.value) input.value = today;
+            input.min = input.min || today;
+        });
+
+        // Add clear button functionality
+        document.querySelectorAll('[data-clear-date]').forEach(button => {
+            button.addEventListener('click', () => {
+                const target = document.querySelector(button.dataset.clearDate);
+                if (target) target.value = '';
+            });
+        });
+    });
+</script>
+
+<style>
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+    
+    input[type="date"]::-webkit-calendar-picker-indicator {
+        background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' class='w-5 h-5' fill='none' viewBox='0 0 24 24' stroke='%234b5563'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'/%3E%3C/svg%3E") center/contain no-repeat;
+        padding-left: 100%;
+        opacity: 0.5;
+    }
+</style>
+{% endblock %}

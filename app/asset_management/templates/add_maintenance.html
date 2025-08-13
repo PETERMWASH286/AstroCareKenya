@@ -1,0 +1,343 @@
+{% extends "base.html" %} {% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8">
+    <div class="container mx-auto px-4 max-w-4xl">
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+            <!-- Header with gradient background -->
+            <div class="bg-gradient-to-r from-blue-500 to-indigo-600 p-6 text-white">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+                    <div>
+                        <h1 class="text-2xl md:text-3xl font-bold">Record Maintenance</h1>
+                        <p class="mt-2 opacity-90">Document maintenance activities for your assets</p>
+                    </div>
+                    <div class="mt-4 sm:mt-0">
+                        <a href="{{ url_for('asset_management.maintenance_schedule') }}" class="inline-flex items-center px-4 py-2 bg-white/20 backdrop-blur-sm text-white rounded-full hover:bg-white/30 transition-all">
+                            <i class="fas fa-arrow-left mr-2"></i> Back to Maintenance
+                        </a>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Section -->
+            <div class="p-6">
+                <form method="POST" action="{{ url_for('asset_management.add_maintenance') }}">
+                    <!-- Asset and Technician Section -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+                        <div>
+                            <h2 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                                <i class="fas fa-cube text-blue-500 mr-2"></i> Asset Information
+                            </h2>
+
+                            <div class="mb-6">
+                                <label class="block text-gray-700 mb-2 font-medium">Select Asset*</label>
+                                <select name="asset_id" required class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    <option value="" disabled selected>Choose an asset</option>
+                                    {% for asset in assets %}
+                                    <option value="{{ asset.id }}" {% if request.args.get('asset_id')|int == asset.id %}selected{% endif %}>
+                                        {{ asset.name }} ({{ asset.serial_number }})
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="flex items-center p-4 bg-gray-50 rounded-xl">
+                                <div class="mr-4">
+                                    <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-500">
+                                        <i class="fas fa-info-circle"></i>
+                                    </div>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-600">When you select an asset, its current status will be shown here.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h2 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                                <i class="fas fa-user-cog text-purple-500 mr-2"></i> Technician Details
+                            </h2>
+
+                            <div class="mb-6">
+                                <label class="block text-gray-700 mb-2 font-medium">Performed By*</label>
+                                <select name="technician_id" required class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    <option value="" disabled selected>Select technician</option>
+                                    {% for technician in technicians %}
+                                    <option value="{{ technician.id }}">{{ technician.name }} - {{ technician.specialization }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="flex items-center p-4 bg-gray-50 rounded-xl">
+                                <div class="mr-4">
+                                    <div class="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center text-purple-500">
+                                        <i class="fas fa-lightbulb"></i>
+                                    </div>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-600">Can't find the technician? <a href="{{ url_for('asset_management.add_technician') }}" class="text-blue-600 hover:underline">Add a new technician</a>.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Maintenance Details Section -->
+                    <div class="mb-10">
+                        <h2 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                            <i class="fas fa-tools text-yellow-500 mr-2"></i> Maintenance Details
+                        </h2>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-gray-700 mb-2 font-medium">Maintenance Date*</label>
+                                <input type="date" name="maintenance_date" value="{{ datetime.utcnow().strftime('%Y-%m-%d') }}" required class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            </div>
+
+                            <div>
+                                <label class="block text-gray-700 mb-2 font-medium">Next Maintenance Date</label>
+                                <input type="date" name="next_maintenance_date" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            </div>
+
+                            <div>
+                                <label class="block text-gray-700 mb-2 font-medium">Maintenance Type*</label>
+                                <select name="maintenance_type" required class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    <option value="" disabled selected>Select type</option>
+                                    <option value="Preventive">Preventive Maintenance</option>
+                                    <option value="Corrective">Corrective Maintenance</option>
+                                    <option value="Predictive">Predictive Maintenance</option>
+                                    <option value="Emergency">Emergency Repair</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-gray-700 mb-2 font-medium">Total Cost*</label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                                    <input type="number" step="0.01" name="cost" required class="w-full pl-8 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="0.00">
+                                </div>
+                            </div>
+
+                            <div class="md:col-span-2">
+                                <label class="block text-gray-700 mb-2 font-medium">Description*</label>
+                                <textarea name="description" rows="3" required class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Describe the maintenance performed..."></textarea>
+                            </div>
+
+                            <div class="md:col-span-2">
+                                <label class="block text-gray-700 mb-2 font-medium">Notes</label>
+                                <textarea name="notes" rows="2" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Any additional notes or observations..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Asset Status Update Section -->
+                    <div class="mb-10">
+                        <h2 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                            <i class="fas fa-sync-alt text-green-500 mr-2"></i> Status Update
+                        </h2>
+
+                        <div class="bg-blue-50 border border-blue-200 rounded-xl p-6">
+                            <div class="flex items-start mb-4">
+                                <div class="mr-4">
+                                    <input type="checkbox" id="update_status" name="update_status" value="yes" class="mt-1 w-5 h-5 text-blue-600 rounded focus:ring-blue-500">
+                                </div>
+                                <div>
+                                    <label for="update_status" class="block text-gray-700 font-medium mb-2">Update Asset Status After Maintenance</label>
+                                    <p class="text-gray-600 text-sm">Check this box if this maintenance activity changes the operational status of the asset.</p>
+                                </div>
+                            </div>
+
+                            <div id="status-fields" class="hidden pl-9">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label class="block text-gray-700 mb-2 font-medium">New Status*</label>
+                                        <select name="new_status" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                            {% for status in statuses %}
+                                            <option value="{{ status }}">{{ status }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-gray-700 mb-2 font-medium">Location</label>
+                                        <input type="text" name="location" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="New asset location (if changed)">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Parts Replacement Section -->
+                    <div class="mb-10">
+                        <h2 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                            <i class="fas fa-cogs text-red-500 mr-2"></i> Parts Replacement
+                        </h2>
+
+                        <div class="bg-gray-50 border border-gray-200 rounded-xl p-6">
+                            <div id="parts-container">
+                                <!-- Part 1 -->
+                                <div class="part-entry mb-6">
+                                    <div class="flex justify-between items-center mb-4">
+                                        <h3 class="font-medium text-gray-700">Replaced Part #1</h3>
+                                        <button type="button" class="remove-part text-red-500 hover:text-red-700">
+                                            <i class="fas fa-times"></i> Remove
+                                        </button>
+                                    </div>
+
+                                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                        <div>
+                                            <label class="block text-gray-700 mb-2 text-sm">Part Name*</label>
+                                            <input type="text" name="part_name[]" required class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                                        </div>
+                                        <div>
+                                            <label class="block text-gray-700 mb-2 text-sm">Part Number</label>
+                                            <input type="text" name="part_number[]" class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                                        </div>
+                                        <div>
+                                            <label class="block text-gray-700 mb-2 text-sm">Cost*</label>
+                                            <input type="number" step="0.01" name="part_cost[]" required class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500" placeholder="0.00">
+                                        </div>
+                                        <div>
+                                            <label class="block text-gray-700 mb-2 text-sm">Quantity*</label>
+                                            <input type="number" name="part_quantity[]" value="1" min="1" required class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button type="button" id="add-part" class="inline-flex items-center px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+                                <i class="fas fa-plus mr-2"></i> Add Another Part
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="flex flex-col sm:flex-row justify-between items-center gap-4 pt-6 border-t border-gray-200">
+                        <button type="reset" class="w-full sm:w-auto px-6 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors">
+                            <i class="fas fa-redo mr-2"></i> Reset Form
+                        </button>
+                        <button type="submit" class="w-full sm:w-auto px-8 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-medium rounded-xl hover:shadow-lg transition-all transform hover:-translate-y-1 flex items-center">
+                            <i class="fas fa-save mr-2"></i> Save Maintenance Record
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Tips Section -->
+        <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-blue-500">
+                <div class="flex items-start">
+                    <div class="p-3 bg-blue-100 rounded-full mr-4">
+                        <i class="fas fa-clipboard-check text-blue-500 text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-gray-800 mb-2">Maintenance Best Practices</h3>
+                        <p class="text-gray-600 text-sm">Document all maintenance activities thoroughly to maintain accurate asset histories.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-green-500">
+                <div class="flex items-start">
+                    <div class="p-3 bg-green-100 rounded-full mr-4">
+                        <i class="fas fa-money-bill-wave text-green-500 text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-gray-800 mb-2">Cost Tracking</h3>
+                        <p class="text-gray-600 text-sm">Accurately record all costs to calculate total cost of ownership for each asset.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-purple-500">
+                <div class="flex items-start">
+                    <div class="p-3 bg-purple-100 rounded-full mr-4">
+                        <i class="fas fa-calendar-alt text-purple-500 text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-gray-800 mb-2">Scheduling</h3>
+                        <p class="text-gray-600 text-sm">Set next maintenance dates to ensure timely follow-ups and preventive care.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript for Dynamic Parts and Status Update -->
+<script>
+    // Status update toggle
+    document.getElementById('update_status').addEventListener('change', function() {
+        document.getElementById('status-fields').classList.toggle('hidden', !this.checked);
+
+        // Make status field required if checked
+        const statusSelect = document.querySelector('select[name="new_status"]');
+        statusSelect.required = this.checked;
+    });
+
+    // Parts replacement functionality
+    let partCounter = 1;
+
+    document.getElementById('add-part').addEventListener('click', function() {
+        partCounter++;
+        const partsContainer = document.getElementById('parts-container');
+
+        const partEntry = document.createElement('div');
+        partEntry.className = 'part-entry mb-6';
+        partEntry.innerHTML = `
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-medium text-gray-700">Replaced Part #${partCounter}</h3>
+                <button type="button" class="remove-part text-red-500 hover:text-red-700">
+                    <i class="fas fa-times"></i> Remove
+                </button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-gray-700 mb-2 text-sm">Part Name*</label>
+                    <input type="text" name="part_name[]" required class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-gray-700 mb-2 text-sm">Part Number</label>
+                    <input type="text" name="part_number[]" class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-gray-700 mb-2 text-sm">Cost*</label>
+                    <input type="number" step="0.01" name="part_cost[]" required class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500" placeholder="0.00">
+                </div>
+                <div>
+                    <label class="block text-gray-700 mb-2 text-sm">Quantity*</label>
+                    <input type="number" name="part_quantity[]" value="1" min="1" required class="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                </div>
+            </div>
+        `;
+
+        partsContainer.appendChild(partEntry);
+
+        // Add event listener to new remove button
+        partEntry.querySelector('.remove-part').addEventListener('click', function() {
+            partEntry.remove();
+            updatePartNumbers();
+        });
+    });
+
+    // Add event listeners to existing remove buttons
+    document.querySelectorAll('.remove-part').forEach(button => {
+        button.addEventListener('click', function() {
+            this.closest('.part-entry').remove();
+            updatePartNumbers();
+        });
+    });
+
+    // Update part numbers when parts are removed
+    function updatePartNumbers() {
+        const partEntries = document.querySelectorAll('.part-entry');
+        partEntries.forEach((entry, index) => {
+            const title = entry.querySelector('h3');
+            if (title) {
+                title.textContent = `Replaced Part #${index + 1}`;
+            }
+        });
+        partCounter = partEntries.length;
+    }
+</script>
+{% endblock %}
