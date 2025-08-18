@@ -335,8 +335,8 @@ def create_app(config_name='default'):
     def inject_user_helpers():
         return dict(has_privilege=current_user.has_privilege if current_user.is_authenticated else lambda x: False)
 
-    @app.route('/help/')
-    @app.route('/help/<path:path>')
+    @app.route('/docs/')
+    @app.route('/docs/<path:path>')
     def help_docs(path='index.html'):
         # Absolute path to the MkDocs 'site' folder
         docs_path = os.path.abspath(os.path.join(current_app.root_path, '..', 'hms-docs', 'site'))
