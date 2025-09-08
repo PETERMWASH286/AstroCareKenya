@@ -23,20 +23,38 @@
         </div>
 
 
-        <div class="mb-6 bg-white/80 backdrop-blur-md border border-gray-200 dark:border-gray-700 dark:bg-gray-900 rounded-xl p-2 flex flex-wrap gap-2 shadow-lg">
-            <button class="tab-button px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ease-in-out flex items-center space-x-2" data-tab="consultation">
-                <i class="fas fa-users-medical text-green-500"></i>
-                <span class="text-gray-700 dark:text-gray-300">Consultations ({{ waiting_for_consultation|length }})</span>
-            </button>
-            <button class="tab-button px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ease-in-out flex items-center space-x-2" data-tab="lab-tests">
-                <i class="fas fa-flask text-orange-500"></i>
-                <span class="text-gray-700 dark:text-gray-300">Lab Results ({{ completed_paid_lab_tests|length }})</span>
-            </button>
-            <button class="tab-button px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ease-in-out flex items-center space-x-2" data-tab="radiology">
-                <i class="fas fa-x-ray text-cyan-500"></i>
-                <span class="text-gray-700 dark:text-gray-300">Radiology Reports ({{ completed_paid_radiology_orders|length }})</span>
-            </button>
-        </div>
+<div class="mb-6 bg-white/80 backdrop-blur-md border border-gray-200 dark:border-gray-700 dark:bg-gray-900 rounded-xl p-2 flex flex-wrap gap-2 shadow-lg">
+    <!-- Consultations -->
+    <button class="tab-button px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ease-in-out flex items-center space-x-2" data-tab="consultation">
+        <i class="fas fa-users-medical text-green-500"></i>
+        <span class="text-gray-700 dark:text-gray-300">Consultations ({{ waiting_for_consultation|length }})</span>
+    </button>
+    
+    <!-- Lab Results -->
+    <button class="tab-button px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ease-in-out flex items-center space-x-2" data-tab="lab-tests">
+        <i class="fas fa-flask text-orange-500"></i>
+        <span class="text-gray-700 dark:text-gray-300">Lab Results ({{ completed_paid_lab_tests|length }})</span>
+    </button>
+    
+    <!-- Radiology Reports -->
+    <button class="tab-button px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ease-in-out flex items-center space-x-2" data-tab="radiology">
+        <i class="fas fa-x-ray text-cyan-500"></i>
+        <span class="text-gray-700 dark:text-gray-300">Radiology Reports ({{ completed_paid_radiology_orders|length }})</span>
+    </button>
+
+    <!-- Completed Treatment -->
+    <button class="tab-button px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ease-in-out flex items-center space-x-2" data-tab="completed-treatment">
+        <i class="fas fa-check-circle text-blue-500"></i>
+        <span class="text-gray-700 dark:text-gray-300">Completed Treatment ({{ completed_treatments|length }})</span>
+    </button>
+    
+    <!-- Pending Treatment -->
+    <button class="tab-button px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ease-in-out flex items-center space-x-2" data-tab="pending-treatment">
+        <i class="fas fa-hourglass-half text-purple-500"></i>
+        <span class="text-gray-700 dark:text-gray-300">Pending Treatment ({{ pending_treatments|length }})</span>
+    </button>
+</div>
+
         <div class="mb-6 bg-white/80 backdrop-blur-md border border-gray-200 dark:border-gray-700 dark:bg-gray-900 rounded-xl p-4 shadow-lg">
             <h3 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Filter Patients 🔍</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-center">
@@ -461,10 +479,8 @@ function applyFilters() {
         if (dateTo) {
             dateTo.setHours(23, 59, 59, 999);
         }
-
         const activePaymentFilter = document.querySelector('.col-span-1.lg-col-span-1 button.bg-blue-500');
         const paymentType = activePaymentFilter ? activePaymentFilter.dataset.paymentType : 'all';
-
         const activeTabContent = document.querySelector('.tab-content:not(.hidden)');
         let currentTableBodyId;
         if (activeTabContent) {
@@ -538,7 +554,6 @@ function applyFilters() {
     // Initial application of filters when the page loads
     applyFilters();
 });
-
 // JavaScript for actions (unchanged)
 async function completeVisit(visitId) {
     if (confirm('Are you sure you want to mark this patient visit as completed? This will finalize their consultation.')) {

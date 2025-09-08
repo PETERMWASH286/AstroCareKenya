@@ -1,6 +1,6 @@
 {% extends "base.html" %} {% block title %}Patient Vitals – {{ patient.reg_no }}{% endblock %} {% block content %}
-<div class="min-h-screen p-4 md:p-8">
-    <div class="max-w-4xl mx-auto space-y-12">
+<div class="min-h-screen p-2 md:p-8">
+    <div class="max-w-4xl mx-auto space-y-2">
         <!-- Patient Header (unchanged) -->
         <div class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center">
             <div>
@@ -27,263 +27,484 @@
             </div>
         </div>
 
-        <!-- Vitals + TB Screening Form -->
-        <section class="bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:bg-gray-800 rounded-2xl shadow-lg p-6 md:p-8">
-            <form id="vitalsForm" class="space-y-6">
-                <!-- 1) Vital Signs Grid (unchanged) -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Temperature -->
-                    <div>
-                        <label for="temp" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              <i class="fas fa-thermometer-half text-orange-500 mr-1"></i>Temperature (°C)
+<!-- Single form: Vitals + Panel buttons + Collapsible TB / GBV / Other Investigations -->
+<section class="bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 dark:bg-gray-900 rounded-2xl shadow-lg p-6 md:p-8 pb-28">
+  <!-- NOTE: pb-28 ensures page content won't be hidden behind fixed footer -->
+  <form id="vitalsForm" class="space-y-6" autocomplete="off">
+    <!-- ========== Vitals (UNCHANGED content) ========== -->
+     {% if patient.age <= 5 %}
+    <!-- Pediatric Form -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Weight -->
+        <div>
+            <label for="weight" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <i class="fas fa-weight text-pink-500 mr-1"></i>Weight (kg)
             </label>
-                        <input id="temp" name="temperature" type="number" step="0.1" min="32" max="42" required placeholder="36.5" class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
-                        />
-                    </div>
-                    <!-- Heart Rate -->
-                    <div>
-                        <label for="hr" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              <i class="fas fa-heartbeat text-red-500 mr-1"></i>Heart Rate (BPM)
-            </label>
-                        <input id="hr" name="heart_rate" type="number" min="30" max="250" required placeholder="72" class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
-                        />
-                    </div>
-                    <!-- Blood Pressure -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              <i class="fas fa-tachometer-alt text-purple-500 mr-1"></i>Blood Pressure (mmHg)
-            </label>
-                        <div class="flex space-x-2">
-                            <input id="bp_sys" name="bp_systolic" type="number" min="50" max="250" required placeholder="120" class="flex-1 px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
-                            />
-                            <span class="self-center font-bold text-gray-600 dark:text-gray-400">/</span>
-                            <input id="bp_dia" name="bp_diastolic" type="number" min="30" max="150" required placeholder="80" class="flex-1 px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
-                            />
-                        </div>
-                    </div>
-                    <!-- SpO₂ -->
-                    <div>
-                        <label for="spo2" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              <i class="fas fa-lungs text-blue-500 mr-1"></i>SpO₂ (%)
-            </label>
-                        <input id="spo2" name="spo2" type="number" min="70" max="100" required placeholder="98" class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
-                        />
-                    </div>
-                    <!-- Respiratory Rate -->
-                    <div>
-                        <label for="rr" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              <i class="fas fa-wind text-green-500 mr-1"></i>Respiratory Rate (BPM)
-            </label>
-                        <input id="rr" name="resp_rate" type="number" min="8" max="40" required placeholder="16" class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
-                        />
-                    </div>
-                    <!-- Pain Score -->
-                    <div>
-                        <label for="pain" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              <i class="fas fa-exclamation-triangle text-yellow-500 mr-1"></i>Pain Score (0–10)
-            </label>
-                        <input id="pain" name="pain_score" type="number" min="0" max="10" required placeholder="0" class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
-                        />
-                    </div>
-                </div>
+            <input id="weight" name="weight" type="number" step="0.1" min="1" max="30" required placeholder="10"
+                   class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 transition" />
+        </div>
 
-                <!-- 2) TB Screening Section (NEW) -->
-                <div class="pt-6 border-t border-gray-200 dark:border-gray-700">
-                    <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-4 flex items-center">
-                        <i class="fas fa-procedures text-red-600 mr-2"></i>TB Screening
-                    </h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <!-- Cough Duration -->
-                        <div>
-                            <label for="cough_duration" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                <i class="fas fa-microphone-slash text-gray-500 mr-1"></i>Cough Duration (weeks)
-              </label>
-                            <input id="cough_duration" name="cough_duration" type="number" min="0" max="52" placeholder="2" class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
-                            />
-                        </div>
-                        <!-- Fever (Yes/No + Duration) -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                <i class="fas fa-thermometer text-orange-500 mr-1"></i>Fever?
-              </label>
-                            <div class="flex space-x-4">
-                                <label class="inline-flex items-center">
-                  <input type="radio" name="fever" value="yes" class="form-radio text-indigo-600" />
-                  <span class="ml-2 text-gray-700 dark:text-gray-300">Yes</span>
-                </label>
-                                <label class="inline-flex items-center">
-                  <input type="radio" name="fever" value="no" checked class="form-radio text-indigo-600" />
-                  <span class="ml-2 text-gray-700 dark:text-gray-300">No</span>
-                </label>
-                            </div>
-                            <input id="fever_duration" name="fever_duration" type="number" min="0" max="52" placeholder="0" class="mt-2 w-full px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
-                                placeholder="Duration (weeks)" />
-                        </div>
-                        <!-- Night Sweats (Yes/No) -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                <i class="fas fa-bed text-blue-500 mr-1"></i>Night Sweats?
-              </label>
-                            <div class="flex space-x-4">
-                                <label class="inline-flex items-center">
-                  <input type="radio" name="night_sweats" value="yes" class="form-radio text-indigo-600" />
-                  <span class="ml-2 text-gray-700 dark:text-gray-300">Yes</span>
-                </label>
-                                <label class="inline-flex items-center">
-                  <input type="radio" name="night_sweats" value="no" checked class="form-radio text-indigo-600" />
-                  <span class="ml-2 text-gray-700 dark:text-gray-300">No</span>
-                </label>
-                            </div>
-                        </div>
-                        <!-- Weight Loss (Yes/No + Approx. kg) -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                <i class="fas fa-weight text-green-500 mr-1"></i>Weight Loss?
-              </label>
-                            <div class="flex space-x-4">
-                                <label class="inline-flex items-center">
-                  <input type="radio" name="weight_loss_flag" value="yes" class="form-radio text-indigo-600" />
-                  <span class="ml-2 text-gray-700 dark:text-gray-300">Yes</span>
-                </label>
-                                <label class="inline-flex items-center">
-                  <input type="radio" name="weight_loss_flag" value="no" checked class="form-radio text-indigo-600" />
-                  <span class="ml-2 text-gray-700 dark:text-gray-300">No</span>
-                </label>
-                            </div>
-                            <input id="weight_loss_amount" name="weight_loss_amount" type="number" min="0" max="50" placeholder="kg" class="mt-2 w-full px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
-                                placeholder="Approx. kg lost" />
-                        </div>
-                        <!-- Hemoptysis (Yes/No) -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                <i class="fas fa-tint text-red-500 mr-1"></i>Hemoptysis?
-              </label>
-                            <div class="flex space-x-4">
-                                <label class="inline-flex items-center">
-                  <input type="radio" name="hemoptysis" value="yes" class="form-radio text-indigo-600" />
-                  <span class="ml-2 text-gray-700 dark:text-gray-300">Yes</span>
-                </label>
-                                <label class="inline-flex items-center">
-                  <input type="radio" name="hemoptysis" value="no" checked class="form-radio text-indigo-600" />
-                  <span class="ml-2 text-gray-700 dark:text-gray-300">No</span>
-                </label>
-                            </div>
-                        </div>
-                        <!-- HIV Status -->
-                        <div>
-                            <label for="hiv_status" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                <i class="fas fa-virus text-pink-500 mr-1"></i>HIV Status
-              </label>
-                            <select id="hiv_status" name="hiv_status" required class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
-                <option value="">Select</option>
-                <option value="positive">Positive</option>
-                <option value="negative">Negative</option>
-                <option value="unknown">Unknown</option>
-              </select>
-                        </div>
-                        <!-- Diabetes (Yes/No) -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                <i class="fas fa-syringe text-blue-700 mr-1"></i>Diabetes?
-              </label>
-                            <div class="flex space-x-4">
-                                <label class="inline-flex items-center">
-                  <input type="radio" name="diabetes" value="yes" class="form-radio text-indigo-600" />
-                  <span class="ml-2 text-gray-700 dark:text-gray-300">Yes</span>
-                </label>
-                                <label class="inline-flex items-center">
-                  <input type="radio" name="diabetes" value="no" checked class="form-radio text-indigo-600" />
-                  <span class="ml-2 text-gray-700 dark:text-gray-300">No</span>
-                </label>
-                            </div>
-                        </div>
-                        <!-- Prior TB History (Yes/No + Year) -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                <i class="fas fa-bed text-yellow-600 mr-1"></i>Prior TB History?
-              </label>
-                            <div class="flex space-x-4">
-                                <label class="inline-flex items-center">
-                  <input type="radio" name="prior_tb" value="yes" class="form-radio text-indigo-600" />
-                  <span class="ml-2 text-gray-700 dark:text-gray-300">Yes</span>
-                </label>
-                                <label class="inline-flex items-center">
-                  <input type="radio" name="prior_tb" value="no" checked class="form-radio text-indigo-600" />
-                  <span class="ml-2 text-gray-700 dark:text-gray-300">No</span>
-                </label>
-                            </div>
-                            <input id="prior_tb_year" name="prior_tb_year" type="number" min="1950" max="2025" placeholder="Year" class="mt-2 w-full px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
-                                placeholder="Year of last treatment" />
-                        </div>
-                        <!-- Household Contact with TB (Yes/No) -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                <i class="fas fa-users text-gray-700 mr-1"></i>Household TB Contact?
-              </label>
-                            <div class="flex space-x-4">
-                                <label class="inline-flex items-center">
-                  <input type="radio" name="household_contact" value="yes" class="form-radio text-indigo-600" />
-                  <span class="ml-2 text-gray-700 dark:text-gray-300">Yes</span>
-                </label>
-                                <label class="inline-flex items-center">
-                  <input type="radio" name="household_contact" value="no" checked class="form-radio text-indigo-600" />
-                  <span class="ml-2 text-gray-700 dark:text-gray-300">No</span>
-                </label>
-                            </div>
-                        </div>
-                        <!-- Smoking History -->
-                        <div>
-                            <label for="smoking" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                <i class="fas fa-smoking text-gray-800 mr-1"></i>Smoking Status
-              </label>
-                            <select id="smoking" name="smoking_history" required class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
-                <option value="">Select</option>
-                <option value="never">Never</option>
-                <option value="former">Former</option>
-                <option value="current">Current</option>
-              </select>
-                        </div>
-                        <!-- Alcohol Use -->
-                        <div>
-                            <label for="alcohol" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                <i class="fas fa-beer text-yellow-700 mr-1"></i>Alcohol Use
-              </label>
-                            <select id="alcohol" name="alcohol_use" required class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
-                <option value="">Select</option>
-                <option value="none">None</option>
-                <option value="moderate">Moderate</option>
-                <option value="heavy">Heavy</option>
-              </select>
-                        </div>
-                    </div>
-                </div>
+        <!-- Temperature -->
+        <div>
+            <label for="temp" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <i class="fas fa-thermometer-half text-orange-500 mr-1"></i>Temperature (°C)
+            </label>
+            <input id="temp" name="temperature" type="number" step="0.1" min="32" max="42" required placeholder="36.5"
+                   class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 transition" />
+        </div>
 
-                <!-- 3) Clinical Notes (unchanged) -->
-                <div>
-                    <label for="notes" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            <i class="fas fa-comment-medical text-gray-500 mr-1"></i>Clinical Notes
-          </label>
-                    <textarea id="notes" name="notes" rows="4" placeholder="Enter additional observations..." class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"></textarea>
-                </div>
+        <!-- Respiratory Rate -->
+        <div>
+            <label for="rr" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <i class="fas fa-wind text-green-500 mr-1"></i>Respiratory Rate (BPM)
+            </label>
+            <input id="rr" name="resp_rate" type="number" min="20" max="60" required placeholder="30"
+                   class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 transition" />
+        </div>
 
-                <!-- 4) Sticky Mobile Bar (unchanged) -->
-                <div class="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
-                    <button id="saveBtnMobile" type="submit" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition">
-            <i class="fas fa-save mr-2"></i>Save
-          </button>
-                </div>
+        <!-- MUAC (Malnutrition Screening) -->
+        <div>
+            <label for="muac" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <i class="fas fa-ruler text-yellow-500 mr-1"></i>MUAC (cm)
+            </label>
+            <input id="muac" name="muac" type="number" min="8" max="30" placeholder="12"
+                   class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 transition" />
+        </div>
+    </div>
+{% else %}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <!-- Temperature -->
+      <div>
+        <label for="temp" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <i class="fas fa-thermometer-half text-orange-500 mr-1"></i>Temperature (°C)
+        </label>
+        <input id="temp" name="temperature" type="number" step="0.1" min="32" max="42" required placeholder="36.5"
+               class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" />
+      </div>
 
-                <!-- 5) Desktop Buttons (unchanged) -->
-                <div class="hidden md:flex justify-end space-x-4 border-t border-gray-200 dark:border-gray-700 pt-6">
-                    <button type="reset" class="px-6 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-lg font-semibold">
-            Cancel
-          </button>
-                    <button id="saveBtn" type="submit" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition">
-            <i class="fas fa-save mr-2"></i>Save Vitals
-          </button>
-                </div>
-            </form>
-        </section>
+      <!-- Pulse -->
+      <div>
+        <label for="hr" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <i class="fas fa-heartbeat text-red-500 mr-1"></i>Pulse Rate (BPM)
+        </label>
+        <input id="hr" name="heart_rate" type="number" min="30" max="250" required placeholder="72"
+               class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" />
+      </div>
+
+      <!-- Blood Pressure -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <i class="fas fa-tachometer-alt text-purple-500 mr-1"></i>Blood Pressure (mmHg)
+        </label>
+        <div class="flex space-x-2">
+          <input id="bp_sys" name="bp_systolic" type="number" min="50" max="250" required placeholder="120"
+                 class="flex-1 px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" />
+          <span class="self-center font-bold text-gray-600 dark:text-gray-400">/</span>
+          <input id="bp_dia" name="bp_diastolic" type="number" min="30" max="150" required placeholder="80"
+                 class="flex-1 px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" />
+        </div>
+      </div>
+
+      <!-- SpO2 -->
+      <div>
+        <label for="spo2" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <i class="fas fa-lungs text-blue-500 mr-1"></i>SpO₂ (%)
+        </label>
+        <input id="spo2" name="spo2" type="number" min="70" max="100" required placeholder="98"
+               class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" />
+      </div>
+
+      <!-- Respiratory Rate -->
+      <div>
+        <label for="rr" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <i class="fas fa-wind text-green-500 mr-1"></i>Respiratory Rate (BPM)
+        </label>
+        <input id="rr" name="resp_rate" type="number" min="8" max="40" required placeholder="16"
+               class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" />
+      </div>
+
+      <!-- Pain Score -->
+      <div>
+        <label for="pain" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <i class="fas fa-exclamation-triangle text-yellow-500 mr-1"></i>Pain Score (0–10)
+        </label>
+        <input id="pain" name="pain_score" type="number" min="0" max="10" required placeholder="0"
+               class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" />
+      </div>
+    </div>{% endif %}
+
+
+
+    <!-- ========== Small button group to open panels (placed BEFORE TB panel) ========== -->
+    <div class="pt-4">
+      <div class="flex flex-wrap gap-3">
+        <button type="button" aria-expanded="false" aria-controls="panel-tb"
+                class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium flex items-center space-x-2"
+                onclick="togglePanel('panel-tb', this)">
+          <i class="fas fa-procedures"></i><span>TB Screening</span>
+        </button>
+
+        <button type="button" aria-expanded="false" aria-controls="panel-gbv"
+                class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg font-medium flex items-center space-x-2"
+                onclick="togglePanel('panel-gbv', this)">
+          <i class="fas fa-shield-alt"></i><span>Gender-Based Violence</span>
+        </button>
+
+        <button type="button" aria-expanded="false" aria-controls="panel-other"
+                class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-medium flex items-center space-x-2"
+                onclick="togglePanel('panel-other', this)">
+          <i class="fas fa-flask"></i><span>Other Investigations</span>
+        </button>
+      </div>
+
+      <p class="text-sm text-gray-500 mt-2">Open a section to fill — collapsing panels keep the main form short and focused.</p>
+    </div>
+
+    <!-- ========== TB Screening Panel (collapsible) - STYLED for better UX ========== -->
+    <div id="panel-tb" class="mt-6 hidden" role="region" aria-labelledby="tbHeading">
+      <div class="p-4 rounded-xl border border-red-200 dark:border-red-800 bg-gradient-to-r from-white to-red-50 dark:from-red-900/10 dark:to-gray-800 shadow-sm">
+        <div class="flex items-center justify-between">
+          <h2 id="tbHeading" class="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-4 flex items-center">
+            <i class="fas fa-procedures text-red-600 mr-2"></i>TB Screening
+          </h2>
+          <span class="text-sm font-medium px-2 py-1 rounded-md bg-red-100 dark:bg-red-800 text-red-700 dark:text-red-200">Quick check</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Radio group style: slightly larger clickable area and subtle borders for clarity -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <i class="fas fa-microphone-slash text-gray-500 mr-1"></i>Cough (Yes/No)
+            </label>
+            <div class="flex gap-3">
+              <label class="inline-flex items-center cursor-pointer px-3 py-2 rounded-lg border hover:shadow-sm">
+                <input type="radio" name="cough_yes_no" value="yes" class="form-radio text-indigo-600 mr-2" />
+                <span class="text-gray-700 dark:text-gray-300">Yes</span>
+              </label>
+              <label class="inline-flex items-center cursor-pointer px-3 py-2 rounded-lg border hover:shadow-sm">
+                <input type="radio" name="cough_yes_no" value="no" checked class="form-radio text-indigo-600 mr-2" />
+                <span class="text-gray-700 dark:text-gray-300">No</span>
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <i class="fas fa-thermometer text-orange-500 mr-1"></i>Fever (Yes/No)
+            </label>
+            <div class="flex gap-3">
+              <label class="inline-flex items-center cursor-pointer px-3 py-2 rounded-lg border hover:shadow-sm">
+                <input type="radio" name="fever" value="yes" class="form-radio text-indigo-600 mr-2" />
+                <span class="text-gray-700 dark:text-gray-300">Yes</span>
+              </label>
+              <label class="inline-flex items-center cursor-pointer px-3 py-2 rounded-lg border hover:shadow-sm">
+                <input type="radio" name="fever" value="no" checked class="form-radio text-indigo-600 mr-2" />
+                <span class="text-gray-700 dark:text-gray-300">No</span>
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <i class="fas fa-bed text-blue-500 mr-1"></i>Night Sweats (Yes/No)
+            </label>
+            <div class="flex gap-3">
+              <label class="inline-flex items-center cursor-pointer px-3 py-2 rounded-lg border hover:shadow-sm">
+                <input type="radio" name="night_sweats" value="yes" class="form-radio text-indigo-600 mr-2" />
+                <span class="text-gray-700 dark:text-gray-300">Yes</span>
+              </label>
+              <label class="inline-flex items-center cursor-pointer px-3 py-2 rounded-lg border hover:shadow-sm">
+                <input type="radio" name="night_sweats" value="no" checked class="form-radio text-indigo-600 mr-2" />
+                <span class="text-gray-700 dark:text-gray-300">No</span>
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <i class="fas fa-weight text-green-500 mr-1"></i>Weight Loss (Yes/No)
+            </label>
+            <div class="flex gap-3">
+              <label class="inline-flex items-center cursor-pointer px-3 py-2 rounded-lg border hover:shadow-sm">
+                <input type="radio" name="weight_loss_flag" value="yes" class="form-radio text-indigo-600 mr-2" />
+                <span class="text-gray-700 dark:text-gray-300">Yes</span>
+              </label>
+              <label class="inline-flex items-center cursor-pointer px-3 py-2 rounded-lg border hover:shadow-sm">
+                <input type="radio" name="weight_loss_flag" value="no" checked class="form-radio text-indigo-600 mr-2" />
+                <span class="text-gray-700 dark:text-gray-300">No</span>
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <i class="fas fa-tint text-red-500 mr-1"></i>Hemoptysis (Yes/No)
+            </label>
+            <div class="flex gap-3">
+              <label class="inline-flex items-center cursor-pointer px-3 py-2 rounded-lg border hover:shadow-sm">
+                <input type="radio" name="hemoptysis" value="yes" class="form-radio text-indigo-600 mr-2" />
+                <span class="text-gray-700 dark:text-gray-300">Yes</span>
+              </label>
+              <label class="inline-flex items-center cursor-pointer px-3 py-2 rounded-lg border hover:shadow-sm">
+                <input type="radio" name="hemoptysis" value="no" checked class="form-radio text-indigo-600 mr-2" />
+                <span class="text-gray-700 dark:text-gray-300">No</span>
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <i class="fas fa-syringe text-blue-700 mr-1"></i>Diabetes (Yes/No)
+            </label>
+            <div class="flex gap-3">
+              <label class="inline-flex items-center cursor-pointer px-3 py-2 rounded-lg border hover:shadow-sm">
+                <input type="radio" name="diabetes" value="yes" class="form-radio text-indigo-600 mr-2" />
+                <span class="text-gray-700 dark:text-gray-300">Yes</span>
+              </label>
+              <label class="inline-flex items-center cursor-pointer px-3 py-2 rounded-lg border hover:shadow-sm">
+                <input type="radio" name="diabetes" value="no" checked class="form-radio text-indigo-600 mr-2" />
+                <span class="text-gray-700 dark:text-gray-300">No</span>
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <i class="fas fa-bed text-yellow-600 mr-1"></i>Prior TB History (Yes/No)
+            </label>
+            <div class="flex gap-3">
+              <label class="inline-flex items-center cursor-pointer px-3 py-2 rounded-lg border hover:shadow-sm">
+                <input type="radio" name="prior_tb" value="yes" class="form-radio text-indigo-600 mr-2" />
+                <span class="text-gray-700 dark:text-gray-300">Yes</span>
+              </label>
+              <label class="inline-flex items-center cursor-pointer px-3 py-2 rounded-lg border hover:shadow-sm">
+                <input type="radio" name="prior_tb" value="no" checked class="form-radio text-indigo-600 mr-2" />
+                <span class="text-gray-700 dark:text-gray-300">No</span>
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <i class="fas fa-users text-gray-700 mr-1"></i>Household TB Contact (Yes/No)
+            </label>
+            <div class="flex gap-3">
+              <label class="inline-flex items-center cursor-pointer px-3 py-2 rounded-lg border hover:shadow-sm">
+                <input type="radio" name="household_contact" value="yes" class="form-radio text-indigo-600 mr-2" />
+                <span class="text-gray-700 dark:text-gray-300">Yes</span>
+              </label>
+              <label class="inline-flex items-center cursor-pointer px-3 py-2 rounded-lg border hover:shadow-sm">
+                <input type="radio" name="household_contact" value="no" checked class="form-radio text-indigo-600 mr-2" />
+                <span class="text-gray-700 dark:text-gray-300">No</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== Gender-Based Violence Panel (collapsible) ========== -->
+    <div id="panel-gbv" class="mt-6 hidden" role="region" aria-labelledby="gbvHeading">
+      <div class="p-4 rounded-xl border border-rose-100 dark:border-rose-800 bg-white dark:bg-gray-800 shadow-sm">
+        <h2 id="gbvHeading" class="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-4 flex items-center">
+          <i class="fas fa-shield-alt text-rose-600 mr-2"></i>Gender-Based Violence (GBV)
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <i class="fas fa-exclamation-circle mr-1 text-rose-500"></i>Recent GBV Incident (Yes/No)
+            </label>
+            <div class="flex space-x-4">
+              <label class="inline-flex items-center">
+                <input type="radio" name="gbv_incident" value="yes" class="form-radio text-indigo-600" />
+                <span class="ml-2 text-gray-700 dark:text-gray-300">Yes</span>
+              </label>
+              <label class="inline-flex items-center">
+                <input type="radio" name="gbv_incident" value="no" checked class="form-radio text-indigo-600" />
+                <span class="ml-2 text-gray-700 dark:text-gray-300">No</span>
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <i class="fas fa-user-md mr-1 text-yellow-600"></i>Needs immediate medical/legal referral?
+            </label>
+            <div class="flex space-x-4">
+              <label class="inline-flex items-center">
+                <input type="radio" name="gbv_referral_needed" value="yes" class="form-radio text-indigo-600" />
+                <span class="ml-2 text-gray-700 dark:text-gray-300">Yes</span>
+              </label>
+              <label class="inline-flex items-center">
+                <input type="radio" name="gbv_referral_needed" value="no" checked class="form-radio text-indigo-600" />
+                <span class="ml-2 text-gray-700 dark:text-gray-300">No</span>
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <label for="gbv_perpetrator" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Relation to perpetrator (if known)
+            </label>
+            <input id="gbv_perpetrator" name="gbv_perpetrator" type="text" placeholder="e.g., partner, stranger"
+                   class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" />
+          </div>
+
+          <div class="md:col-span-2">
+            <label for="gbv_notes" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Additional GBV notes / immediate actions taken
+            </label>
+            <textarea id="gbv_notes" name="gbv_notes" rows="3" placeholder="Confidential notes..."
+                      class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== Other Investigations Panel (collapsible) - placed BELOW TB (as requested) ========== -->
+    <div id="panel-other" class="mt-6 hidden" role="region" aria-labelledby="otherHeading">
+      <div class="p-4 rounded-xl border border-teal-100 dark:border-teal-800 bg-white dark:bg-gray-800 shadow-sm">
+        <h2 id="otherHeading" class="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-4 flex items-center">
+          <i class="fas fa-flask text-teal-600 mr-2"></i>Other Investigations
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- HIV Status (OPTIONAL - not required) -->
+          <div>
+            <label for="hiv_status" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <i class="fas fa-virus text-pink-500 mr-1"></i>HIV Status
+            </label>
+            <select id="hiv_status" name="hiv_status"
+                    class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+              <option value="">Select</option>
+              <option value="positive">Positive</option>
+              <option value="negative">Negative</option>
+              <option value="unknown">Unknown</option>
+            </select>
+          </div>
+
+          <!-- Smoking Status (OPTIONAL) -->
+          <div>
+            <label for="smoking_status" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <i class="fas fa-smoking text-gray-800 mr-1"></i>Smoking Status
+            </label>
+            <select id="smoking_status" name="smoking_status"
+                    class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+              <option value="">Select</option>
+              <option value="never">Never</option>
+              <option value="former">Former</option>
+              <option value="current">Current</option>
+            </select>
+          </div>
+
+          <!-- Alcohol Use (OPTIONAL) -->
+          <div>
+            <label for="alcohol_use" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <i class="fas fa-beer text-yellow-700 mr-1"></i>Alcohol Use
+            </label>
+            <select id="alcohol_use" name="alcohol_use"
+                    class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+              <option value="">Select</option>
+              <option value="none">None</option>
+              <option value="moderate">Moderate</option>
+              <option value="heavy">Heavy</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== Clinical Notes (UNCHANGED) ========== -->
+    <div>
+      <label for="notes" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        <i class="fas fa-comment-medical text-gray-500 mr-1"></i>Clinical Notes
+      </label>
+      <textarea id="notes" name="notes" rows="4" placeholder="Enter additional observations..."
+                class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"></textarea>
+    </div>
+  </form>
+</section>
+
+<!-- ✅ Modern Fixed Bottom Action Bar -->
+<div id="formActionBar" class="fixed bottom-0 inset-x-0 bg-white/90 dark:bg-gray-900/90 border-t border-gray-200 dark:border-gray-800 z-50 backdrop-blur-md shadow-md">
+  <div class="max-w-6xl mx-auto px-4 py-2 flex items-center justify-between">
+    
+    <!-- Left: Cancel + Hint -->
+    <div class="flex items-center gap-4">
+      <button id="cancelBtn" type="button" class="px-3 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition font-medium">
+        Cancel
+      </button>
+      <span class="hidden md:inline text-xs text-gray-500 dark:text-gray-400 italic">
+        Unsaved changes
+      </span>
+    </div>
+
+    <!-- Right: Save -->
+    <button id="saveBtn" form="vitalsForm" type="submit" class="flex items-center px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold shadow-sm transition">
+      <i class="fas fa-save text-sm mr-2"></i>
+      Save
+    </button>
+
+  </div>
+</div>
+
+
+<!-- ========== Small JS to toggle panels + make optional fields non-blocking ========== -->
+<script>
+  function togglePanel(panelId, btn) {
+    const panel = document.getElementById(panelId);
+    if(!panel) return;
+
+    // collapse other panels for compactness
+    ['panel-tb','panel-gbv','panel-other'].forEach(id => {
+      if(id !== panelId) document.getElementById(id)?.classList.add('hidden');
+    });
+
+    const nowHidden = panel.classList.toggle('hidden'); // returns true if now hidden
+    // Update aria-expanded if caller button passed
+    if (btn) {
+      btn.setAttribute('aria-expanded', String(!nowHidden));
+    }
+
+    // Scroll into view if open
+    if (!nowHidden) {
+      setTimeout(()=> panel.scrollIntoView({behavior: 'smooth', block: 'center'}), 80);
+    }
+  }
+
+  // Cancel: reset form and close optional panels
+  document.getElementById('cancelBtn').addEventListener('click', () => {
+    const form = document.getElementById('vitalsForm');
+    form.reset();
+
+    // Close optional panels (GBV & Other) but keep TB closed too
+    ['panel-tb','panel-gbv','panel-other'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
+
+    // bring user to top of form
+    setTimeout(()=> document.getElementById('vitalsForm')?.scrollIntoView({behavior:'smooth'}), 50);
+  });
+document.addEventListener('DOMContentLoaded', () => {
+    const ageInput = document.querySelector('#age'); // Your age input field
+    const pediatricForm = document.querySelector('#pediatricForm');
+    const adultForm = document.querySelector('#adultForm');
+
+    ageInput.addEventListener('input', () => {
+        const age = parseInt(ageInput.value, 10);
+        if (age >= 0 && age <= 5) {
+            pediatricForm.classList.remove('hidden');
+            adultForm.classList.add('hidden');
+        } else {
+            pediatricForm.classList.add('hidden');
+            adultForm.classList.remove('hidden');
+        }
+    });
+});
+
+  // Optional: make sure form submission is allowed even if optional panels are visible/hidden.
+  // We removed 'required' from optional selects/inputs, so native validation will only check required vitals.
+  // If you want conditional 'required' when a panel is open, we can add that logic — currently optional fields won't block submission.
+</script>
 
         <!-- Measurements Tabs (unchanged) -->
         <div class="space-y-6">

@@ -65,6 +65,9 @@ def datetimeformat(value, format='%d/%m/%Y'):
     if isinstance(value, datetime):
         return value.strftime(format)
     return value  # fallback if not a datetime object
+
+
+
 def time_ago(value):
     now = datetime.utcnow()
     
@@ -400,7 +403,6 @@ def create_app(config_name='default'):
         event.listen(db.session, 'before_flush', before_flush_listener)
     return app
 
-
 def init_extensions(app):
     """Initialize Flask extensions with the app instance."""
     db.init_app(app)
@@ -425,7 +427,6 @@ def load_user(user_id):
     Required by Flask-Login. Loads a user from the database based on user_id.
     The user_id comes from the session.
     """
-
 
     if user_id is not None:
         try:

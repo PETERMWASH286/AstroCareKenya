@@ -537,6 +537,7 @@ class Radiology(db.Model):
     verified_by = db.Column(db.Integer, db.ForeignKey('user.id'))  # Ensure this line exists
     verified_at = db.Column(db.DateTime)
     
+    
     # ───────── Done By ─────────
     done_by_id      = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     done_at         = db.Column(db.DateTime)
