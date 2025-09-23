@@ -178,6 +178,16 @@ def create_hospital():
             ('radiology:imaging_requests', 'Radiology', 'View imaging requests'),
             ('radiology:view_scans', 'Radiology', 'View scans'),
             ('radiology:view_reports', 'Radiology', 'View radiology reports'),
+                ('radiology:archive', 'Radiology', 'View archived radiology reports'),
+    ('radiology:manage_services', 'Radiology', 'Manage radiology services'),
+    ('radiology:equipment_maintenance', 'Radiology', 'Schedule and manage radiology equipment maintenance'),
+    ('radiology:quality_control', 'Radiology', 'Perform and track radiology quality control procedures'),
+
+    # Radiology Inventory Privileges
+    ('radiology_inventory:view', 'Radiology Inventory', 'View radiology consumables and inventory dashboard'),
+    ('radiology_inventory:manage_consumables', 'Radiology Inventory', 'Manage radiology consumables and reagents'),
+    ('radiology_inventory:request_stocks', 'Radiology Inventory', 'Request new radiology consumable stocks'),
+    ('radiology_inventory:stock_flow', 'Radiology Inventory', 'Monitor stock flow and usage in radiology'),
             ('hr:staff_add', 'Human Resources', 'Add New Staff'),
             ('hr:staff_directory', 'Human Resources', 'View Staff Directory'),
             ('hr:staff_profiles', 'Human Resources', 'View/Edit Staff Profiles'),

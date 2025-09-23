@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-3xl mx-auto">
+    
+    <!-- Page Header -->
+    <div class="text-center mb-10">
+      <h2 class="text-4xl font-extrabold text-blue-700 dark:text-blue-400 tracking-tight">
+        <i class="fas fa-x-ray mr-2"></i> Add Radiology Service
+      </h2>
+      <p class="mt-3 text-gray-600 dark:text-gray-300 text-lg">
+        Fill in the details below to register a new radiology service.
+      </p>
+    </div>
+
+    <!-- Form Card -->
+    <div class="bg-white dark:bg-gray-800 shadow-2xl rounded-2xl p-8 border border-gray-200 dark:border-gray-700 transition-transform transform hover:scale-[1.01]">
+      <form method="POST" class="space-y-6">
+        <!-- Service Name -->
+        <div>
+          <label for="name" class="block text-sm font-semibold text-gray-700 dark:text-gray-200">
+            Service Name
+          </label>
+          <input type="text" id="name" name="name" required
+            placeholder="e.g., CT Scan of the Brain"
+            class="mt-2 w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 
+                   focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-sm text-sm">
+        </div>
+
+        <!-- Description -->
+        <div>
+          <label for="description" class="block text-sm font-semibold text-gray-700 dark:text-gray-200">
+            Description
+          </label>
+          <textarea id="description" name="description" rows="4" 
+            placeholder="Brief description of the service..."
+            class="mt-2 w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 
+                   focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-sm text-sm"></textarea>
+        </div>
+
+        <!-- Duration -->
+        <div>
+          <label for="duration" class="block text-sm font-semibold text-gray-700 dark:text-gray-200">
+            Typical Duration <span class="text-xs text-gray-500">(minutes)</span>
+          </label>
+          <input type="number" id="duration" name="duration"
+            placeholder="e.g., 30"
+            class="mt-2 w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 
+                   focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-sm text-sm">
+        </div>
+
+        <!-- Predefined Results -->
+        <div>
+          <label for="predefined_results" class="block text-sm font-semibold text-gray-700 dark:text-gray-200">
+            Predefined Results <span class="text-xs text-gray-500">(comma-separated)</span>
+          </label>
+          <input type="text" id="predefined_results" name="predefined_results"
+            placeholder="e.g., Normal, Abnormal, Requires follow-up"
+            class="mt-2 w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 
+                   focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-sm text-sm">
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex items-center justify-between pt-6">
+          <a href=""
+             class="inline-flex items-center px-5 py-2.5 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-200 
+                    bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 
+                    focus:outline-none focus:ring-2 focus:ring-gray-400 transition-all">
+            <i class="fas fa-arrow-left mr-2"></i> Cancel
+          </a>
+
+          <button type="submit"
+            class="inline-flex items-center px-6 py-3 rounded-xl text-sm font-semibold text-white 
+                   bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 
+                   shadow-lg transform hover:scale-105 transition-all focus:outline-none focus:ring-4 focus:ring-blue-300">
+            <i class="fas fa-save mr-2"></i> Save Service
+          </button>
+        </div>
+      </form>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

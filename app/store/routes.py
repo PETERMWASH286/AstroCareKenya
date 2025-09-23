@@ -7,7 +7,11 @@ from flask_login import current_user
 from sqlalchemy.exc import SQLAlchemyError
 
 from app import db
+from app.hr.models import HRInventory
+from app.lab.models import LabInventory
 from app.patients.models import Service
+from app.pharmacy.models import PharmacyInventory
+from app.radiology.models import RadiologyInventory
 from app.store.models import ExternalOrder, PurchaseOrder, Stock, StockDetail, StockFlow, StockRequest, Supplier
 
 from . import store_web_bp
@@ -336,100 +340,123 @@ def manage_stock_requests():
                          current_status=status)
 
 
-# Updated route handler with stock management
+# Updated route handler with stock management + audit trail + better safety
 @store_web_bp.route('/stock-requests/<uuid:request_id>/action', methods=['POST'])
 def handle_stock_request_action(request_id):
     req = StockRequest.query.get_or_404(request_id)
-    
+
     if not request.is_json:
-        return jsonify({'error': 'Invalid content type'}), 400
-        
+        return jsonify({'error': 'Invalid content type, expected JSON'}), 400
+
     data = request.get_json()
-    
+
     try:
-        if data['action'] == 'approve':
+        action = data.get('action')
+        if not action:
+            raise ValueError("Missing action")
+
+        # ✅ Approve request
+        if action == 'approve':
             if req.status != 'submitted':
                 raise ValueError("Only submitted requests can be approved")
 
-            # Validate stock availability
             if req.stock.current_stock < req.quantity_requested:
                 raise ValueError(f"Insufficient stock. Available: {req.stock.current_stock}")
-                
-            # Update request status
+
+            # Mark approved
             req.status = 'approved'
             req.quantity_approved = req.quantity_requested
             req.approver_id = current_user.id
             req.approval_date = datetime.utcnow()
-            
-            # Update stock levels
+
+            # Deduct from main stock safely
             stock = req.stock
             stock.current_stock -= req.quantity_approved
-            
-            # Find or create related service
+            if stock.current_stock < 0:
+                raise ValueError("Stock deduction went negative, aborting")
+
+            # Route into department-specific inventory
+            dept = req.department.lower()
+            approved_qty = req.quantity_approved
             service = Service.query.filter_by(name=stock.name, category='Pharmacy').first()
-            if not service:
-                service = Service(
-                    name=stock.name,
-                    category='Pharmacy',
-                    item_category=stock.category,
-                    quantity_in_stock=req.quantity_approved,
-                    price=0.0,  # Default price, should be updated manually
-                    dosage_form='Tablet',  # Default, adjust based on your data
-                    strength='',
-                    quantity_per_unit=1,
-                    ndc=stock.batch_number,
-                    supplier_id=stock.supplier_id,
-                    expiration_date=stock.expiration_date,
-                    min_stock_level=50
-                )
-                db.session.add(service)
+
+            # Helper function for inventory updates
+            def update_inventory(model_cls, has_expiry=True):
+                inv = model_cls.query.filter_by(item_name=stock.name).first()
+                if not inv:
+                    inv = model_cls(
+                        item_name=stock.name,
+                        category=stock.category,
+                        quantity=approved_qty,
+                        expiry_date=stock.expiration_date if has_expiry else None,
+                        supplier=stock.supplier.name if stock.supplier else None
+                    )
+                    db.session.add(inv)
+                else:
+                    inv.quantity += approved_qty
+
+            if dept == "lab":
+                update_inventory(LabInventory)
+            elif dept == "pharmacy":
+                update_inventory(PharmacyInventory)
+            elif dept == "radiology":
+                update_inventory(RadiologyInventory)
+            elif dept == "hr":
+                update_inventory(HRInventory, has_expiry=False)
             else:
-                service.quantity_in_stock += req.quantity_approved
-            
-            # Create stock flow records
-            stock_flow = StockFlow(
-                stock_id=stock.id,
-                service_id=service.id,
-                quantity_change=-req.quantity_approved,
-                flow_type='approval',
-                reference_id=req.id,
-                notes=f'Stock approval for {req.quantity_approved} units'
-            )
-            db.session.add(stock_flow)
-            
-            service_flow = StockFlow(
-                service_id=service.id,
-                quantity_change=req.quantity_approved,
-                flow_type='approval',
-                reference_id=req.id,
-                notes=f'Stock received from approval {req.id}'
-            )
-            db.session.add(service_flow)
-            
-        elif data['action'] == 'reject':
-            # Existing reject logic remains the same
+                raise ValueError(f"Unknown department: {req.department}")
+
+            # ✅ Stock flow records
+            db.session.add_all([
+                StockFlow(
+                    stock_id=stock.id,
+                    service_id=service.id if service else None,
+                    quantity_change=-req.quantity_approved,
+                    flow_type='approval',
+                    reference_id=req.id,
+                    notes=f'Stock approval for {req.quantity_approved} units'
+                ),
+                StockFlow(
+                    service_id=service.id if service else None,
+                    quantity_change=req.quantity_approved,
+                    flow_type='approval',
+                    reference_id=req.id,
+                    notes=f'Stock received from approval {req.id}'
+                )
+            ])
+
+        # ✅ Reject request
+        elif action == 'reject':
             if req.status != 'submitted':
                 raise ValueError("Only submitted requests can be rejected")
-                
-            reason = data.get('reason', 'No reason provided').strip()
+
+            reason = data.get('reason', '').strip()
             if not reason:
                 raise ValueError("Rejection reason is required")
-                
+
             req.status = 'rejected'
             req.approval_notes = reason
             req.approver_id = current_user.id
             req.approval_date = datetime.utcnow()
-            
+
         else:
-            raise ValueError("Invalid action")
-            
+            raise ValueError("Invalid action provided")
+
+        # 🔐 Commit transaction
         db.session.commit()
-        return jsonify({'success': True, 'message': 'Action completed successfully'})
-        
+
+        # 📦 Log activity (good for audit trails)
+        current_app.logger.info(
+            f"Stock request {req.id} {action} by user {current_user.id}"
+        )
+
+        return jsonify({'success': True, 'message': f'Request {action}d successfully'})
+
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Action failed: {str(e)}")
         return jsonify({'error': str(e)}), 400
+
     
 
 @store_web_bp.route('/reports/generate')

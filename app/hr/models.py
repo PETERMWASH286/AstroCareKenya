@@ -645,3 +645,17 @@ class DisciplinaryReport(db.Model):
     def __repr__(self):
         return f"<DisciplinaryReport {self.report_type} ({self.start_date} to {self.end_date})>"
 
+
+
+class HRInventory(db.Model):
+    __tablename__ = 'hr_inventory'
+    __audit_trail__ = True
+
+    id = db.Column(db.Integer, primary_key=True)
+    item_name = db.Column(db.String(120), nullable=False)
+    category = db.Column(db.String(50), nullable=False)  # Uniforms, Office Supplies
+    quantity = db.Column(db.Integer, default=0)
+    supplier = db.Column(db.String(100))
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

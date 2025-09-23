@@ -24,7 +24,7 @@ class Service(db.Model):
     
     # General Service Information
     description = db.Column(db.Text)
-    price = db.Column(db.Float, nullable=False)
+    price = db.Column(db.Float, nullable=False, default=0.0)
     duration = db.Column(db.Integer)  # In minutes for services, days supply for medications
     
     # Pharmacy-Specific Fields (nullable for non-pharmacy services)

@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-5xl mx-auto py-12 px-6">
+  <!-- Page header -->
+  <div class="flex items-center space-x-3 mb-8">
+    <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" stroke-width="2"
+      viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round"
+        d="M12 6v6l4 2m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+    <h1 class="text-3xl font-extrabold text-gray-800">
+      Add Consumables for <span class="text-blue-600">{{ test.test_name }}</span>
+    </h1>
+  </div>
+
+  <!-- Form card -->
+  <div class="bg-white shadow-xl rounded-2xl p-8 border border-gray-100">
+    <form id="consumablesForm" class="space-y-8">
+      <!-- Consumables rows -->
+      <div id="consumablesList" class="space-y-6">
+        <div
+          class="flex items-center space-x-4 p-4 bg-gray-50 rounded-xl shadow-sm border border-gray-200">
+          <div class="flex-1">
+            <label class="block text-sm font-medium text-gray-600 mb-1">Select Item</label>
+            <select name="inventory_id"
+              class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500">
+              {% for item in inventory_items %}
+              <option value="{{ item.id }}">
+                {{ item.item_name }} ({{ item.quantity }} available)
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="w-40">
+            <label class="block text-sm font-medium text-gray-600 mb-1">Quantity</label>
+            <input type="number" name="quantity_used" min="1" value="1"
+              class="w-full rounded-lg border-gray-300 shadow-sm focus:ring-green-500 focus:border-green-500" />
+          </div>
+          <button type="button"
+            class="removeRow p-2 rounded-lg text-red-500 hover:bg-red-100 transition">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2"
+              viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Add Row button -->
+      <button type="button" id="addRow"
+        class="flex items-center justify-center w-full py-3 px-4 text-blue-700 bg-blue-50 rounded-xl border border-blue-200 hover:bg-blue-100 hover:shadow-md transition font-semibold">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" stroke-width="2"
+          viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+        </svg>
+        Add Another Consumable
+      </button>
+
+      <!-- Save button -->
+      <div class="pt-6">
+        <button type="submit"
+          class="w-full flex items-center justify-center py-3 px-6 text-white font-bold rounded-xl shadow-lg bg-green-600 hover:bg-green-700 hover:shadow-xl transition">
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" stroke-width="2"
+            viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M5 13l4 4L19 7"/>
+          </svg>
+          Save Consumables
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+document.getElementById("addRow").addEventListener("click", () => {
+  const list = document.getElementById("consumablesList");
+  const row = list.firstElementChild.cloneNode(true);
+  row.querySelector("input").value = 1; // reset qty
+  list.appendChild(row);
+
+  // re-bind remove button
+  bindRemove(row.querySelector(".removeRow"));
+});
+
+function bindRemove(btn) {
+  btn.addEventListener("click", () => {
+    if (document.querySelectorAll("#consumablesList > div").length > 1) {
+      btn.closest("div").remove();
+    }
+  });
+}
+
+// Bind remove on first row
+bindRemove(document.querySelector(".removeRow"));
+
+document.getElementById("consumablesForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const consumables = [];
+  document.querySelectorAll("#consumablesList > div").forEach(row => {
+    consumables.push({
+      inventory_id: row.querySelector("select").value,
+      quantity_used: row.querySelector("input").value
+    });
+  });
+
+  const res = await fetch("", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ consumables })
+  });
+  const data = await res.json();
+  if (data.success) {
+    alert(data.message);
+    window.location.href = "{{ url_for('lab_web.manage_consumables') }}";
+  } else {
+    alert("Error: " + data.error);
+  }
+});
+</script>
+{% endblock %}

@@ -265,10 +265,15 @@ class StockFlow(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     date = db.Column(db.DateTime, default=datetime.utcnow)
+
     stock_id = db.Column(db.Integer, db.ForeignKey('stock.id'))
-    service_id = db.Column(db.Integer, db.ForeignKey('services.id'))
+    service_id = db.Column(db.Integer, db.ForeignKey('services.id'), nullable=True)  # now nullable
+    entry_id = db.Column(db.Integer, nullable=True)  # will store ID from lab/pharmacy/hr/radiology inventory
+    location = db.Column(db.String(255), nullable=True)  # department location (Lab, Pharmacy, HR, Radiology)
+
     quantity_change = db.Column(db.Integer)
     flow_type = db.Column(db.String(50))  # approval, transfer, adjustment
+    
     reference_id = db.Column(
         db.String(36),
         db.ForeignKey('stock_requests.id'),

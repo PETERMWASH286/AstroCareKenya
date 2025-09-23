@@ -30,34 +30,51 @@
         </div>
     </div>
 
-    <!-- Patient Summary -->
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 mb-8">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <!-- Patient -->
-            <div>
-                <label class="block text-sm text-gray-500 dark:text-gray-400 mb-1">Patient</label>
-                <p class="font-medium text-gray-900 dark:text-white">
-                    {{ order.consultation.patient.full_name }}
-                </p>
-            </div>
+ <!-- Patient Summary -->
+<div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 mb-8">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <!-- Patient -->
+        <div>
+            <label class="block text-sm text-gray-500 dark:text-gray-400 mb-1">Patient</label>
+            <p class="font-medium text-gray-900 dark:text-white">
+                {{ order.consultation.patient.full_name }}
+            </p>
+        </div>
 
-            <!-- Requested By -->
-            <div>
-                <label class="block text-sm text-gray-500 dark:text-gray-400 mb-1">Requested By</label>
-                <p class="font-medium flex items-center text-gray-900 dark:text-white">
-                    <i class="fas fa-user-md text-blue-500 mr-2"></i> Dr. {{ order.consultation.treated_by.full_name }}
-                </p>
-            </div>
+        <!-- Requested By -->
+        <div>
+            <label class="block text-sm text-gray-500 dark:text-gray-400 mb-1">Requested By</label>
+            <p class="font-medium flex items-center text-gray-900 dark:text-white">
+                <i class="fas fa-user-md text-blue-500 mr-2"></i> Dr. {{ order.consultation.treated_by.full_name }}
+            </p>
+        </div>
 
-            <!-- Request Date -->
-            <div>
-                <label class="block text-sm text-gray-500 dark:text-gray-400 mb-1">Request Date</label>
+        <!-- Request Date -->
+        <div>
+            <label class="block text-sm text-gray-500 dark:text-gray-400 mb-1">Request Date</label>
+            <p class="font-medium text-gray-900 dark:text-white">
+                {{ order.requested_at.strftime('%b %d, %Y %H:%M') }}
+            </p>
+        </div>
+
+        <!-- Payment / Coverage -->
+        <div>
+            <label class="block text-sm text-gray-500 dark:text-gray-400 mb-1">Coverage</label>
+            {% if order.consultation.patient.payment_method == 'insurance' %}
                 <p class="font-medium text-gray-900 dark:text-white">
-                    {{ order.requested_at.strftime('%b %d, %Y %H:%M') }}
+                    <i class="fas fa-shield-alt text-green-500 mr-2"></i>
+                    {{ order.consultation.patient.insurance_provider }}  
+                    <span class="text-sm text-gray-500 dark:text-gray-400 ml-2">({{ order.consultation.patient.insurance_number }})</span>
                 </p>
-            </div>
+            {% else %}
+                <p class="font-medium text-gray-900 dark:text-white">
+                    <i class="fas fa-money-bill-wave text-yellow-500 mr-2"></i> Cash
+                </p>
+            {% endif %}
         </div>
     </div>
+</div>
+
 
     <!-- Two‑column layout -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -92,7 +109,38 @@
 
         <!-- Right: Imaging form (spans two columns on lg) -->
         <div class="lg:col-span-2 space-y-8">
-            <form method="POST" enctype="multipart/form-data" class="space-y-8">
+            <form method="POST" enctype="multipart/form-data" class="space-y-8">                <!-- Image Management -->
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+                    <div class="border-b border-gray-100 dark:border-gray-700 pb-4 mb-6">
+                        <h2 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
+                            <i class="fas fa-images text-green-500 mr-3"></i> Image Management
+                        </h2>
+                    </div>
+
+                    <div class="space-y-6">
+                        <!-- Image Upload Dropzone -->
+                        <div class="border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl p-8 text-center">
+                            <div class="mb-4 text-gray-400 dark:text-gray-600 text-3xl">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                            </div>
+                            <p class="text-gray-600 dark:text-gray-400 mb-2">
+                                Drag & drop DICOM files or click to upload
+                            </p>
+                            <!-- Add name="file-upload" to the file input -->
+
+                            <input type="file" name="file-upload" id="file-upload" class="hidden" multiple accept=".dcm,image/*">
+                            <!-- Add name attribute to file input -->
+                            <button type="button" onclick="document.getElementById('file-upload').click()" class="px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg text-gray-600 dark:text-gray-300 transition-colors">
+                        Select Files
+                    </button>
+                        </div>
+
+                        <!-- Image Preview Grid -->
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-4" id="image-preview">
+                            <!-- Dynamic image previews will be inserted here -->
+                        </div>
+                    </div>
+                </div>
                 <!-- Radiological Findings (unchanged) -->
                 <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
                     <div class="border-b border-gray-100 dark:border-gray-700 pb-4 mb-6">
@@ -127,39 +175,6 @@
                 Recommendations
               </label>
                             <textarea name="recommendations" rows="4" class="w-full px-4 py-3 rounded-xl border-0 ring-2 ring-gray-200 dark:ring-gray-700 focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-900">{{ order.results_data.recommendations if order.results_data }}</textarea>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Image Management -->
-                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
-                    <div class="border-b border-gray-100 dark:border-gray-700 pb-4 mb-6">
-                        <h2 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
-                            <i class="fas fa-images text-green-500 mr-3"></i> Image Management
-                        </h2>
-                    </div>
-
-                    <div class="space-y-6">
-                        <!-- Image Upload Dropzone -->
-                        <div class="border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl p-8 text-center">
-                            <div class="mb-4 text-gray-400 dark:text-gray-600 text-3xl">
-                                <i class="fas fa-cloud-upload-alt"></i>
-                            </div>
-                            <p class="text-gray-600 dark:text-gray-400 mb-2">
-                                Drag & drop DICOM files or click to upload
-                            </p>
-                            <!-- Add name="file-upload" to the file input -->
-
-                            <input type="file" name="file-upload" id="file-upload" class="hidden" multiple accept=".dcm,image/*">
-                            <!-- Add name attribute to file input -->
-                            <button type="button" onclick="document.getElementById('file-upload').click()" class="px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg text-gray-600 dark:text-gray-300 transition-colors">
-                        Select Files
-                    </button>
-                        </div>
-
-                        <!-- Image Preview Grid -->
-                        <div class="grid grid-cols-2 md:grid-cols-3 gap-4" id="image-preview">
-                            <!-- Dynamic image previews will be inserted here -->
                         </div>
                     </div>
                 </div>

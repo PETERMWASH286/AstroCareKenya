@@ -1,350 +1,190 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="min-h-screen bg-gray-50">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+
     <!-- Header -->
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
-      <div class="mb-4 md:mb-0">
-        <h1 class="text-3xl font-bold text-gray-900">Lab Consumables Inventory</h1>
-        <p class="mt-1 text-gray-600">Manage your laboratory supplies with advanced filtering and tracking</p>
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-10">
+      <div>
+        <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Lab Tests & Consumables</h1>
+        <p class="mt-1 text-gray-600">Link consumables with laboratory tests for better inventory tracking</p>
       </div>
-      <div class="flex items-center space-x-3">
-        <a href="#" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-          Export Data
-        </a>
-        <a href="#" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-          Stock Report
+      <div>
+        <a href=""
+           class="inline-flex items-center px-5 py-3 rounded-xl bg-indigo-600 text-white font-semibold shadow hover:shadow-lg hover:bg-indigo-700 transition">
+          <svg class="h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+               stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 4v16m8-8H4"/>
+          </svg>
+          New Test
         </a>
       </div>
     </div>
+<!-- Filters -->
+<div class="bg-white shadow-lg rounded-2xl p-6 mb-8 border border-gray-100">
+  <div class="flex flex-col md:flex-row gap-6 md:items-end md:justify-between">
 
-    <!-- Flash Messages -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        <div class="mb-6">
-          {% for category, message in messages %}
-            <div class="rounded-md bg-{{ category }}-50 p-4 mb-3">
-              <div class="flex">
-                <div class="flex-shrink-0">
-                  {% if category == 'success' %}
-                    <svg class="h-5 w-5 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                    </svg>
-                  {% else %}
-                    <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
-                    </svg>
-                  {% endif %}
-                </div>
-                <div class="ml-3">
-                  <p class="text-sm font-medium text-{{ category }}-800">{{ message }}</p>
-                </div>
-              </div>
-            </div>
-          {% endfor %}
-        </div>
-      {% endif %}
-    {% endwith %}
+    <!-- Search -->
+    <div class="flex-1">
+      <label for="searchInput" class="block text-sm font-semibold text-gray-800 mb-2 tracking-wide">🔎 Search by Test Name</label>
+      <input type="text" id="searchInput" placeholder="Type test name..."
+             class="w-full rounded-xl border border-gray-300 px-4 py-2.5 shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition duration-300 ease-in-out hover:border-indigo-400">
+    </div>
 
-    <!-- Main Content Grid -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <!-- Add New Consumable Form -->
-      <div class="lg:col-span-1">
-        <div class="bg-white shadow rounded-lg overflow-hidden">
-          <div class="px-6 py-5 border-b border-gray-200">
-            <h2 class="text-lg font-medium text-gray-900">Add New Consumable</h2>
-          </div>
-          <div class="p-6">
-            <form method="POST" action="{{ url_for('lab_web.manage_consumables') }}">
-              {{ form.hidden_tag() }}
-              <div class="space-y-4">
-                <div>
-                  {{ form.name.label(class="block text-sm font-medium text-gray-700") }}
-                  {{ form.name(class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500") }}
-                </div>
-                
-                <div>
-                  {{ form.description.label(class="block text-sm font-medium text-gray-700") }}
-                  {{ form.description(class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500") }}
-                </div>
-                
-                <div class="grid grid-cols-2 gap-4">
-                  <div>
-                    {{ form.sku.label(class="block text-sm font-medium text-gray-700") }}
-                    {{ form.sku(class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500") }}
-                  </div>
-                  
-                  <div>
-                    {{ form.category.label(class="block text-sm font-medium text-gray-700") }}
-                    {{ form.category(class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500") }}
-                  </div>
-                </div>
-                
-                <div class="grid grid-cols-2 gap-4">
-                  <div>
-                    {{ form.unit_of_measure.label(class="block text-sm font-medium text-gray-700") }}
-                    {{ form.unit_of_measure(class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500") }}
-                  </div>
-                  
-                  <div>
-                    {{ form.storage_temp.label(class="block text-sm font-medium text-gray-700") }}
-                    {{ form.storage_temp(class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500") }}
-                  </div>
-                </div>
-                
-                <div class="grid grid-cols-2 gap-4">
-                  <div>
-                    {{ form.hazard_class.label(class="block text-sm font-medium text-gray-700") }}
-                    {{ form.hazard_class(class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500") }}
-                  </div>
-                  
-                  <div>
-                    {{ form.shelf_life.label(class="block text-sm font-medium text-gray-700") }}
-                    {{ form.shelf_life(class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500") }}
-                  </div>
-                </div>
-                
-                <div class="grid grid-cols-2 gap-4">
-                  <div>
-                    {{ form.current_stock.label(class="block text-sm font-medium text-gray-700") }}
-                    {{ form.current_stock(class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500") }}
-                  </div>
-                  
-                  <div>
-                    {{ form.min_stock_level.label(class="block text-sm font-medium text-gray-700") }}
-                    {{ form.min_stock_level(class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500") }}
-                  </div>
-                </div>
-                
-                <div>
-                  {{ form.unit_cost.label(class="block text-sm font-medium text-gray-700") }}
-                  <div class="mt-1 relative rounded-md shadow-sm">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <span class="text-gray-500 sm:text-sm">$</span>
-                    </div>
-                    {{ form.unit_cost(class="block w-full pl-7 pr-12 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500") }}
-                  </div>
-                </div>
-                
-                <div>
-                  {{ form.supplier_id.label(class="block text-sm font-medium text-gray-700") }}
-                  {{ form.supplier_id(class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500") }}
-                </div>
-                
-                <div class="pt-4">
-                  <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                    Add Consumable
-                  </button>
-                </div>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
+    <!-- Category -->
+    <div>
+      <label for="categoryFilter" class="block text-sm font-semibold text-gray-800 mb-2 tracking-wide">📂 Filter by Category</label>
+      <select id="categoryFilter"
+              class="w-60 rounded-xl border border-gray-300 px-4 py-2.5 shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition duration-300 ease-in-out hover:border-indigo-400 bg-white">
+        <option value="">All Categories</option>
+        {% for cat in categories %}
+          <option value="{{ cat }}">{{ cat }}</option>
+        {% endfor %}
+      </select>
+    </div>
 
-      <!-- Consumables List & Filters -->
-      <div class="lg:col-span-2">
-        <div class="bg-white shadow rounded-lg overflow-hidden">
-          <div class="px-6 py-5 border-b border-gray-200">
-            <h2 class="text-lg font-medium text-gray-900">Inventory Management</h2>
-            <p class="mt-1 text-sm text-gray-500">Filter and manage your laboratory consumables</p>
-          </div>
-          
-          <!-- Filters -->
-          <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
-            <form method="GET" action="{{ url_for('lab_web.manage_consumables') }}" class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
-              <div class="flex-1">
-                <label for="category" class="block text-sm font-medium text-gray-700">Category</label>
-                <select id="category" name="category" class="mt-1 block w-full border border-gray-300 bg-white rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
-                  <option value="all" {% if category_filter == 'all' %}selected{% endif %}>All Categories</option>
-                  {% for category in categories %}
-                    <option value="{{ category[0] }}" {% if category_filter == category[0] %}selected{% endif %}>{{ category[0] }}</option>
-                  {% endfor %}
-                </select>
-              </div>
-              
-              <div class="flex-1">
-                <label for="stock" class="block text-sm font-medium text-gray-700">Stock Level</label>
-                <select id="stock" name="stock" class="mt-1 block w-full border border-gray-300 bg-white rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
-                  <option value="all" {% if stock_filter == 'all' %}selected{% endif %}>All Stock Levels</option>
-                  <option value="low" {% if stock_filter == 'low' %}selected{% endif %}>Low Stock</option>
-                  <option value="critical" {% if stock_filter == 'critical' %}selected{% endif %}>Critical Stock</option>
-                </select>
-              </div>
-              
-              <div class="flex items-end">
-                <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 h-[42px]">
-                  Apply Filters
-                </button>
-              </div>
-            </form>
-          </div>
-          
-          <!-- Consumables Table -->
-          <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-              <thead class="bg-gray-50">
-                <tr>
-                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
-                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
-                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supplier</th>
-                  <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody class="bg-white divide-y divide-gray-200">
-                {% for consumable in consumables.items %}
-                  <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-4 whitespace-nowrap">
-                      <div class="flex items-center">
-                        <div class="flex-shrink-0 h-10 w-10">
-                          <div class="bg-gray-200 border-2 border-dashed rounded-xl w-10 h-10"></div>
-                        </div>
-                        <div class="ml-4">
-                          <div class="text-sm font-medium text-gray-900">{{ consumable.name }}</div>
-                          <div class="text-sm text-gray-500">{{ consumable.sku }}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                      <div class="text-sm text-gray-900">{{ consumable.category }}</div>
-                      <div class="text-sm text-gray-500">{{ consumable.unit_of_measure }}</div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                      <div class="text-sm font-medium text-gray-900">
-                        {{ consumable.current_stock|round(2) }} 
-                        {% if consumable.min_stock_level %}
-                          / {{ consumable.min_stock_level|round(2) }}
-                        {% endif %}
-                      </div>
-                      <div class="mt-1">
-                        {% set stock_percentage = (consumable.current_stock / consumable.min_stock_level * 100) if consumable.min_stock_level and consumable.min_stock_level > 0 else 100 %}
-                        {% if stock_percentage < 30 %}
-                          {% set bar_class = "bg-red-600" %}
-                        {% elif stock_percentage < 70 %}
-                          {% set bar_class = "bg-yellow-500" %}
-                        {% else %}
-                          {% set bar_class = "bg-green-600" %}
-                        {% endif %}
-                        
-                        <div class="w-full bg-gray-200 rounded-full h-2">
-                          <div class="h-2 rounded-full {{ bar_class }}" style="width: {{ [stock_percentage, 100]|min }}%"></div>
-                        </div>
-                      </div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      ${{ consumable.total_value|round(2) }}
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {% if consumable.supplier %}
-                        {{ consumable.supplier.name }}
-                      {% else %}
-                        <span class="text-gray-400">None</span>
-                      {% endif %}
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div class="flex space-x-2">
-                        <a href="#" class="text-indigo-600 hover:text-indigo-900">Edit</a>
-                        <a href="#" class="text-gray-600 hover:text-gray-900">Log</a>
-                        <a href="#" class="text-red-600 hover:text-red-900">Delete</a>
-                      </div>
-                    </td>
-                  </tr>
-                {% else %}
-                  <tr>
-                    <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">
-                      No consumables found. Add your first consumable using the form.
-                    </td>
-                  </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-          
-          <!-- Pagination -->
-          {% if consumables.pages > 1 %}
-            <div class="bg-white px-6 py-3 flex items-center justify-between border-t border-gray-200">
-              <div class="flex-1 flex justify-between sm:hidden">
-                {% if consumables.has_prev %}
-                  <a href="{{ url_for('lab_web.manage_consumables', page=consumables.prev_num, category=category_filter, stock=stock_filter) }}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                    Previous
-                  </a>
-                {% else %}
-                  <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-300 bg-white cursor-not-allowed">
-                    Previous
-                  </span>
-                {% endif %}
-                
-                {% if consumables.has_next %}
-                  <a href="{{ url_for('lab_web.manage_consumables', page=consumables.next_num, category=category_filter, stock=stock_filter) }}" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                    Next
-                  </a>
-                {% else %}
-                  <span class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-300 bg-white cursor-not-allowed">
-                    Next
-                  </span>
-                {% endif %}
-              </div>
-              
-              <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                <div>
-                  <p class="text-sm text-gray-700">
-                    Showing
-                    <span class="font-medium">{{ consumables.first }}</span>
-                    to
-                    <span class="font-medium">{{ consumables.last }}</span>
-                    of
-                    <span class="font-medium">{{ consumables.total }}</span>
-                    results
-                  </p>
-                </div>
-                <div>
-                  <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                    {% if consumables.has_prev %}
-                      <a href="{{ url_for('lab_web.manage_consumables', page=consumables.prev_num, category=category_filter, stock=stock_filter) }}" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                        <span class="sr-only">Previous</span>
-                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                          <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
-                        </svg>
-                      </a>
-                    {% endif %}
-                    
-                    {% for page_num in consumables.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=3) %}
-                      {% if page_num %}
-                        {% if page_num == consumables.page %}
-                          <a href="{{ url_for('lab_web.manage_consumables', page=page_num, category=category_filter, stock=stock_filter) }}" class="relative z-10 inline-flex items-center px-4 py-2 border border-indigo-500 text-sm font-medium text-white bg-indigo-600">
-                            {{ page_num }}
-                          </a>
-                        {% else %}
-                          <a href="{{ url_for('lab_web.manage_consumables', page=page_num, category=category_filter, stock=stock_filter) }}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                            {{ page_num }}
-                          </a>
-                        {% endif %}
-                      {% else %}
-                        <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
-                          ...
-                        </span>
-                      {% endif %}
-                    {% endfor %}
-                    
-                    {% if consumables.has_next %}
-                      <a href="{{ url_for('lab_web.manage_consumables', page=consumables.next_num, category=category_filter, stock=stock_filter) }}" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                        <span class="sr-only">Next</span>
-                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                          <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-                        </svg>
-                      </a>
-                    {% endif %}
-                  </nav>
-                </div>
-              </div>
-            </div>
-          {% endif %}
-        </div>
-      </div>
+    <!-- Reset -->
+    <div class="flex-shrink-0">
+      <button id="resetFilters"
+              class="inline-flex items-center px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-semibold shadow-md hover:shadow-lg hover:scale-105 transform transition duration-300 ease-in-out">
+        ♻ Reset
+      </button>
     </div>
   </div>
 </div>
+
+
+    <!-- Table -->
+    <div class="bg-white shadow-xl rounded-2xl overflow-hidden border border-gray-200">
+      <table id="testsTable" class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Test</th>
+            <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Category</th>
+            <th class="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Consumables</th>
+            <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Turnaround</th>
+            <th class="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-100">
+          {% for entry in tests %}
+          {% set test = entry.test %}
+          <tr class="hover:bg-indigo-50 transition"
+              data-category="{{ test.department | lower }}"
+              data-name="{{ test.test_name | lower }}">
+            
+            <!-- Test Info -->
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="flex items-center">
+                <div class="w-10 h-10 flex items-center justify-center rounded-lg bg-indigo-100 text-indigo-600 font-bold">
+                  {{ test.test_name[0] }}
+                </div>
+                <div class="ml-3">
+                  <p class="text-sm font-bold text-gray-900">{{ test.test_name }}</p>
+                  <p class="text-xs text-gray-500">ID: {{ test.test_id }}</p>
+                </div>
+              </div>
+            </td>
+
+            <!-- Department -->
+            <td class="px-6 py-4 text-sm text-gray-700">{{ test.department }}</td>
+
+            <!-- Consumables -->
+            <td class="px-6 py-4 text-center">
+              {% if entry.consumables %}
+                <div class="flex flex-wrap justify-center gap-2">
+                  {% for c in entry.consumables %}
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                      {{ c.item_name }} × {{ c.quantity_used }}
+                    </span>
+                  {% endfor %}
+                </div>
+              {% else %}
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-200 text-gray-700">
+                  N/A
+                </span>
+              {% endif %}
+            </td>
+
+            <!-- Turnaround -->
+            <td class="px-6 py-4 text-sm text-gray-600">{{ test.turnaround_time }} mins</td>
+
+<!-- Actions -->
+<td class="px-6 py-4 text-right text-sm font-medium">
+  <div class="flex justify-end space-x-2">
+    {% if entry.consumables %}
+      <!-- Edit Consumables -->
+      <a href="{{ url_for('lab_web.edit_consumables', test_id=test.test_id) }}"
+         class="inline-flex items-center px-3 py-1.5 rounded-lg bg-yellow-100 text-yellow-700 hover:bg-yellow-200 transition text-xs">
+        ✏ Edit
+      </a>
+      <!-- Delete All Consumables -->
+<form method="POST" action="{{ url_for('lab_web.delete_consumable', test_id=test.test_id) }}"
+      onsubmit="return confirm('Are you sure you want to delete this item?');"
+      class="inline">
+    <button type="submit"
+            class="inline-flex items-center px-3 py-1.5 rounded-lg bg-red-100 text-red-700 hover:bg-red-200 transition text-xs">
+        Delete
+    </button>
+</form>
+
+    {% else %}
+      <!-- Add Consumables -->
+      <a href="{{ url_for('lab_web.add_consumables', test_id=test.test_id) }}"
+         class="inline-flex items-center px-3 py-1.5 rounded-lg bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition text-xs">
+        ➕ Add Consumables
+      </a>
+    {% endif %}
+  </div>
+</td>
+
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="5" class="px-6 py-6 text-center text-sm text-gray-500">No tests available. Start by adding one.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<!-- Filtering Script -->
+<script>
+  const searchInput = document.getElementById("searchInput");
+  const categoryFilter = document.getElementById("categoryFilter");
+  const resetBtn = document.getElementById("resetFilters");
+  const rows = document.querySelectorAll("#testsTable tbody tr");
+
+  function applyFilters() {
+    const search = searchInput.value.toLowerCase();
+    const category = categoryFilter.value.toLowerCase();
+
+    rows.forEach(row => {
+      const name = row.getAttribute("data-name");
+      const cat = row.getAttribute("data-category");
+
+      const matchesSearch = name.includes(search);
+      const matchesCategory = !category || cat === category;
+
+      if (matchesSearch && matchesCategory) {
+        row.style.display = "";
+      } else {
+        row.style.display = "none";
+      }
+    });
+  }
+
+  searchInput.addEventListener("input", applyFilters);
+  categoryFilter.addEventListener("change", applyFilters);
+  resetBtn.addEventListener("click", () => {
+    searchInput.value = "";
+    categoryFilter.value = "";
+    applyFilters();
+  });
+</script>
 {% endblock %}

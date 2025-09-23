@@ -1780,45 +1780,70 @@ def add_sample():
         db.session.rollback()
         flash(f'Error adding sample: {str(e)}', 'danger')
         return redirect(url_for('lab_web.new_sample'))
-
+    
 @lab_web_bp.route('/lab/inventory')
 @login_required
 def inventory_management():
-    """Manage laboratory inventory with low stock alerts"""
-    try:
-        page = request.args.get('page', 1, type=int)
-        category_filter = request.args.get('category', 'all')
-        low_stock = request.args.get('low_stock', 'false') == 'true'
-        
-        query = LabInventory.query
-        
-        # Apply category filter
-        if category_filter != 'all':
-            query = query.filter(LabInventory.category == category_filter)
-        
-        # Filter for low stock items
-        if low_stock:
-            query = query.filter(LabInventory.quantity <= LabInventory.low_stock_threshold)
-        
-        inventory = query.order_by(LabInventory.item_name.asc()).paginate(
-            page=page, per_page=20, error_out=False
-        )
-        
-        # Get distinct categories for filter dropdown
-        categories = db.session.query(LabInventory.category.distinct()).all()
-        
-        return render_template(
-            'lab/inventory_management.html',
-            inventory=inventory,
-            categories=categories,
-            category_filter=category_filter,
-            low_stock=low_stock,
-            title="Lab Inventory"
-        )
-    
-    except Exception as e:
-        flash(f'Error retrieving inventory: {str(e)}', 'danger')
-        return redirect(url_for('lab_web.list_lab_tests'))
+    """Manage laboratory inventory with category and stock filters"""
+
+    from sqlalchemy import case, func
+    from datetime import datetime, timedelta
+
+    # Pagination
+    page = request.args.get('page', 1, type=int)
+
+    # Filters from query params
+    category_filter = request.args.get('category', 'all').strip()
+    low_stock = request.args.get('low_stock', 'false').lower() == 'true'
+
+    # Base query
+    query = LabInventory.query
+
+    if category_filter != 'all':
+        query = query.filter(LabInventory.category == category_filter)
+
+    if low_stock:
+        query = query.filter(LabInventory.quantity <= LabInventory.low_stock_threshold)
+
+    # Order by expiry date (soonest first), then name
+    query = query.order_by(
+        case((LabInventory.expiry_date == None, 1), else_=0),
+        LabInventory.expiry_date.asc(),
+        LabInventory.item_name.asc()
+    )
+
+    # Paginate results
+    inventory = query.paginate(page=page, per_page=20, error_out=False)
+
+    # Stats (calculated separately)
+    total_items = db.session.query(func.count(LabInventory.id)).scalar()
+
+    low_stock_count = db.session.query(func.count(LabInventory.id)).filter(
+        LabInventory.quantity <= LabInventory.low_stock_threshold
+    ).scalar()
+
+    expiring_soon_count = db.session.query(func.count(LabInventory.id)).filter(
+        LabInventory.expiry_date != None,
+        LabInventory.expiry_date <= datetime.utcnow() + timedelta(days=30)
+    ).scalar()
+
+    # Distinct categories
+    categories = [c[0] for c in db.session.query(LabInventory.category).distinct()]
+
+    return render_template(
+        'lab-inventory/inventory_management.html',
+        inventory=inventory,
+        categories=categories,
+        category_filter=category_filter,
+        low_stock=low_stock,
+        total_items=total_items,
+        low_stock_count=low_stock_count,
+        expiring_soon_count=expiring_soon_count,
+        timedelta=timedelta,
+        now = datetime.utcnow().date(),
+        title="Laboratory Inventory"
+    )
+
 
 def get_current_week_dates():
     today = datetime.utcnow().date()
@@ -2835,65 +2860,167 @@ def delete_blood_record(donation_id):
 
 
 
-@lab_web_bp.route('/inventory/manage-consumables', methods=['GET', 'POST'])
+@lab_web_bp.route('/inventory/manage-consumables', methods=['GET'])
 @login_required
 def manage_consumables():
-    """Manage laboratory consumables inventory with advanced filtering"""
-    # Handle form submission for new consumable
-    form = LabConsumableForm()
-    form.supplier_id.choices = [(s.id, s.name) for s in Supplier.query.all()]  # Moved up for GET requests
-    
-    if form.validate_on_submit():
-        new_consumable = LabConsumable(
-            name=form.name.data,
-            description=form.description.data,
-            sku=form.sku.data,
-            category=form.category.data,
-            unit_of_measure=form.unit_of_measure.data,
-            storage_temp=form.storage_temp.data,
-            hazard_class=form.hazard_class.data,
-            shelf_life=form.shelf_life.data,
-            current_stock=form.current_stock.data,
-            min_stock_level=form.min_stock_level.data,
-            unit_cost=form.unit_cost.data,
-            supplier_id=form.supplier_id.data
+    """List all active laboratory tests and their consumables"""
+    try:
+        tests = LaboratoryTest.query.filter_by(is_active=True) \
+            .order_by(LaboratoryTest.test_name.asc()) \
+            .all()
+
+        # Collect consumables for each test
+        tests_with_consumables = []
+        for test in tests:
+            consumables = [
+                {
+                    "item_name": c.inventory_item.item_name,
+                    "quantity_used": c.quantity_used
+                }
+                for c in test.consumables
+            ]
+            tests_with_consumables.append({
+                "test": test,
+                "consumables": consumables
+            })
+
+        return render_template(
+            "lab-inventory/manage_consumables.html",
+            tests=tests_with_consumables,
+            title="Manage Consumables"
         )
-        db.session.add(new_consumable)
-        db.session.commit()
-        flash('Consumable added successfully!', 'success')
-        return redirect(url_for('lab_web.manage_consumables'))
-    
-    # Apply filters
-    category_filter = request.args.get('category', 'all')
-    stock_filter = request.args.get('stock', 'all')
-    page = request.args.get('page', 1, type=int)
-    
-    query = LabConsumable.query
-    
-    if category_filter != 'all':
-        query = query.filter(LabConsumable.category == category_filter)
-        
-    if stock_filter == 'low':
-        query = query.filter(LabConsumable.current_stock <= LabConsumable.min_stock_level)
-    elif stock_filter == 'critical':
-        query = query.filter(LabConsumable.current_stock <= (LabConsumable.min_stock_level * 0.5))
-    
-    # Get distinct categories for filter dropdown
-    categories = db.session.query(LabConsumable.category.distinct()).all()
-    
-    consumables = query.order_by(LabConsumable.name.asc()).paginate(
-        page=page, per_page=25, error_out=False
-    )
-    
+    except Exception as e:
+        flash(f"Error loading laboratory tests: {str(e)}", "danger")
+        return redirect(url_for("lab_web.inventory_management"))
+
+
+@lab_web_bp.route('/inventory/add-consumables/<int:test_id>', methods=['GET', 'POST'])
+@login_required
+def add_consumables(test_id):
+    """Add consumables to a specific laboratory test"""
+    test = LaboratoryTest.query.get_or_404(test_id)
+
+    if request.method == 'POST':
+        try:
+            # safer parsing of JSON
+            consumables_data = request.get_json(force=True).get("consumables", [])
+            if not consumables_data:
+                return jsonify({"error": "No consumables provided"}), 400
+
+            for item in consumables_data:
+                inventory_id = item.get("inventory_id")
+                qty = int(item.get("quantity_used", 1))
+
+                inv_item = LabInventory.query.get(inventory_id)
+                if not inv_item:
+                    raise ValueError(f"Inventory item {inventory_id} not found")
+
+                if qty <= 0:
+                    raise ValueError(f"Quantity must be positive for {inv_item.item_name}")
+
+                # 🔗 Save link
+                consumable = LabConsumable(
+                    test_id=test.test_id,
+                    inventory_id=inventory_id,
+                    quantity_used=qty
+                )
+                db.session.add(consumable)
+
+            db.session.commit()
+            return jsonify({"success": True, "message": f"Consumables added for {test.test_name}"})
+
+        except Exception as e:
+            db.session.rollback()
+            # print full traceback for debugging
+            import traceback
+            print("❌ ERROR in add_consumables:", e)
+            traceback.print_exc()
+            return jsonify({"error": str(e)}), 400
+
+    # GET → load form with available consumables
+    inventory_items = LabInventory.query.order_by(LabInventory.item_name).all()
+
     return render_template(
-        'lab-inventory/manage_consumables.html',
-        consumables=consumables,
-        form=form,
-        categories=categories,
-        category_filter=category_filter,
-        stock_filter=stock_filter,
-        title="Manage Lab Consumables"
+        "lab-inventory/add_consumables.html",
+        test=test,
+        inventory_items=inventory_items,
+        title=f"Add Consumables for {test.test_name}"
     )
+
+
+@lab_web_bp.route('/inventory/edit-consumables/<int:test_id>', methods=['GET', 'POST'])
+@login_required
+def edit_consumables(test_id):
+    """Edit consumables for a specific laboratory test"""
+    test = LaboratoryTest.query.get_or_404(test_id)
+    inventory_items = LabInventory.query.order_by(LabInventory.item_name).all()
+
+    if request.method == 'POST':
+        try:
+            consumables_data = request.get_json(force=True).get("consumables", [])
+            if not consumables_data:
+                return jsonify({"error": "No consumables provided"}), 400
+
+            # Delete existing consumables first
+            LabConsumable.query.filter_by(test_id=test_id).delete()
+
+            # Add updated consumables
+            for item in consumables_data:
+                inventory_id = item.get("inventory_id")
+                qty = int(item.get("quantity_used", 1))
+                if qty <= 0:
+                    raise ValueError("Quantity must be positive")
+
+                consumable = LabConsumable(
+                    test_id=test_id,
+                    inventory_id=inventory_id,
+                    quantity_used=qty
+                )
+                db.session.add(consumable)
+
+            db.session.commit()
+            return jsonify({"success": True, "message": f"Consumables updated for {test.test_name}"})
+
+        except Exception as e:
+            db.session.rollback()
+            import traceback
+            traceback.print_exc()
+            return jsonify({"error": str(e)}), 400
+
+    # GET → show current consumables for editing
+    current_consumables = [
+        {
+            "inventory_id": c.inventory_item.id,
+            "item_name": c.inventory_item.item_name,
+            "quantity_used": c.quantity_used
+        } for c in test.consumables
+    ]
+
+    return render_template(
+        "lab-inventory/edit_consumables.html",
+        test=test,
+        inventory_items=inventory_items,
+        current_consumables=current_consumables,
+        title=f"Edit Consumables for {test.test_name}"
+    )
+
+
+@lab_web_bp.route('/inventory/delete-consumables/<int:test_id>', methods=['POST'])
+@login_required
+def delete_consumable(test_id):
+    test = LaboratoryTest.query.get_or_404(test_id)
+    try:
+        # Delete all consumables linked to this test
+        LabConsumable.query.filter_by(test_id=test.test_id).delete()
+        db.session.commit()
+        flash(f"All consumables for '{test.test_name}' have been deleted successfully.", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error deleting consumables: {str(e)}", "danger")
+    return redirect(url_for('lab_web.manage_consumables'))
+
+
+
     
 @lab_web_bp.route('/inventory/request-stocks')
 @login_required

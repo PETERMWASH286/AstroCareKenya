@@ -234,7 +234,6 @@ function confirmCancel(requestId) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token() }}'  // Add CSRF protection
             }
         })
         .then(response => response.json())

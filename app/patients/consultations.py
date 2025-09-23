@@ -343,6 +343,11 @@ def add_treatment(visit_id):
                         price=price,
                         prescribed_at=datetime.utcnow() # Add prescribed_at
                     )
+                    # attach to consultation or visit
+                    if consultation:
+                        medication.consultation = consultation
+                        medication.visit = visit
+
                     db.session.add(medication)
             
             # Delete medications that were removed by the user (not in submitted_medication_service_ids)
@@ -375,7 +380,11 @@ def add_treatment(visit_id):
                             service=service,
                             status='requested'
                         )
+                        if consultation:
+                            lab_test.consultation = consultation
+                            lab_test.visit = visit
                         db.session.add(lab_test)
+
             
             # Process Radiology Orders (Existing logic, no changes needed here)
             # This logic explicitly deletes all and re-adds, which is fine if that's the intended behavior for radiology
@@ -391,6 +400,9 @@ def add_treatment(visit_id):
                         service=service,
                         status='requested'
                     )
+                    if consultation:
+                        radiology.consultation = consultation
+                        radiology.visit = visit
                     db.session.add(radiology)
 
             db.session.commit() # Commit after processing medications, lab tests, and radiology

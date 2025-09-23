@@ -227,15 +227,15 @@ def create_app(config_name='default'):
     configure_logging(app)
     moment = Moment(app) # <--- INITIALIZE FLASK-MOMENT HERE
 
-    # Initialize SocketIO
-    socketio.init_app(
-        app,
-        async_mode='eventlet',
-        cors_allowed_origins="*",
-        manage_session=False,
-    logger=True,  # Enable for debugging
-    engineio_logger=True
-)
+#     # Initialize SocketIO
+#     socketio.init_app(
+#         app,
+#         async_mode='eventlet',
+#         cors_allowed_origins="*",
+#         manage_session=False,
+#     logger=True,  # Enable for debugging
+#     engineio_logger=True
+# )
     @socketio.on('connect')
     def on_connect():
         print('client connected')

@@ -334,44 +334,19 @@ class BloodInventory(db.Model):
 class LabConsumable(db.Model):
     __tablename__ = 'lab_consumables'
     __audit_trail__ = True
-    
+
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(120), nullable=False)
-    description = db.Column(db.Text)
-    sku = db.Column(db.String(50), unique=True, nullable=False)
-    category = db.Column(db.String(50), nullable=False)  # e.g., Reagent, Disposable, Chemical
-    unit_of_measure = db.Column(db.String(20), nullable=False)  # e.g., ml, units, kg
-    
-    # Storage Information
-    storage_temp = db.Column(db.String(20))  # e.g., Room Temp, 2-8°C, -20°C
-    hazard_class = db.Column(db.String(50))  # e.g., Flammable, Corrosive, Biohazard
-    shelf_life = db.Column(db.Integer)  # In months
-    
-    # Inventory Tracking
-    current_stock = db.Column(db.Float, default=0.0)
-    min_stock_level = db.Column(db.Float, default=10.0)
-    reorder_quantity = db.Column(db.Float)
-    last_restocked = db.Column(db.DateTime)
-    last_used = db.Column(db.DateTime)
-    
-    # Cost Tracking
-    unit_cost = db.Column(db.Float, nullable=False, default=0.0)
-    
-    # Relationships
-    supplier_id = db.Column(db.Integer, db.ForeignKey('suppliers.id'))
-    supplier = db.relationship('Supplier', backref='lab_consumables')
-    
-    # Timestamps
+    test_id = db.Column(db.Integer, db.ForeignKey('laboratory_tests.test_id'), nullable=False)
+    inventory_id = db.Column(db.Integer, db.ForeignKey('lab_inventory.id'), nullable=False)
+    quantity_used = db.Column(db.Integer, nullable=False, default=1)
+
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    def __repr__(self):
-        return f'<LabConsumable {self.sku} - {self.name}>'
-    
-    @hybrid_property
-    def total_value(self):
-        """Automatically calculate inventory value"""
-        return self.current_stock * self.unit_cost
+    # 🔗 Relationships
+    test = db.relationship("LaboratoryTest", backref=db.backref("consumables", lazy="dynamic"))
+    inventory_item = db.relationship("LabInventory", backref=db.backref("consumable_links", lazy="dynamic"))
+
 # Association Table: Lab Test to Consumables
 test_consumables = db.Table('test_consumables',
     db.Column('test_id', db.Integer, db.ForeignKey('services.id'), primary_key=True),

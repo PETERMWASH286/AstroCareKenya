@@ -121,14 +121,33 @@
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                 {{ user.last_login }}
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <a href="{{ url_for('user_management_web.edit_user', user_id=user.id) }}" class="text-indigo-600 hover:text-indigo-900 mr-3">
-                                    <i class="fas fa-edit"></i> Edit
-                                </a>
-                                <a href="{{ url_for('user_management_web.change_password', user_id=user.id) }}" class="text-blue-600 hover:text-blue-900 mr-3">
-                                    <i class="fas fa-key"></i> Password
-                                </a>
-                            </td>
+<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+    <a href="{{ url_for('user_management_web.edit_user', user_id=user.id) }}" 
+       class="text-indigo-600 hover:text-indigo-900 mr-3">
+        <i class="fas fa-edit"></i> Edit
+    </a>
+    <a href="{{ url_for('user_management_web.change_password', user_id=user.id) }}" 
+       class="text-blue-600 hover:text-blue-900 mr-3">
+        <i class="fas fa-key"></i> Password
+    </a>
+
+    <!-- New Activate / Deactivate Button -->
+    <form method="POST" 
+          action="{{ url_for('user_management_web.toggle_user_status', user_id=user.id) }}" 
+          class="inline">
+        <button type="submit"
+            class="px-3 py-1 rounded-full text-xs font-semibold
+                   {% if user.is_active %}
+                       bg-red-100 text-red-700 hover:bg-red-200
+                   {% else %}
+                       bg-green-100 text-green-700 hover:bg-green-200
+                   {% endif %}">
+            <i class="fas {% if user.is_active %}fa-user-slash{% else %}fa-user-check{% endif %} mr-1"></i>
+            {{ 'Deactivate' if user.is_active else 'Activate' }}
+        </button>
+    </form>
+</td>
+
                         </tr>
                         {% else %}
                         <tr>

@@ -535,6 +535,48 @@ def edit_user(user_id):
                            departments=departments,
                            all_roles=all_roles,
                            user_roles=user_roles)
+# --- Toggle User Active / Inactive Status ---
+@user_management_web_bp.route('/users/<int:user_id>/toggle-status', methods=['POST'])
+@login_required
+def toggle_user_status(user_id):
+    """
+    Activate or deactivate a user.
+    """
+    user = User.query.get_or_404(user_id)
+
+    try:
+        # Switch the status
+        user.is_active = not user.is_active
+        user.updated_at = datetime.utcnow()  # optional if you track update times
+
+        db.session.commit()
+
+        # Send notification (optional)
+        status_text = "activated" if user.is_active else "deactivated"
+        admin_department = Department.query.filter_by(name='Administrator').first()
+
+        if admin_department:
+            NotificationService.send_notification(
+                title="User Status Changed",
+                message=(
+                    f"User '{user.full_name}' was {status_text} by "
+                    f"'{current_user.full_name or current_user.username}' "
+                    f"from department '{current_user.department.name if current_user.department else 'N/A'}'."
+                ),
+                recipient_type="department",
+                recipient_id=admin_department.id,
+                notification_type="info",
+                icon="user-check" if user.is_active else "user-slash",
+                sender_id=current_user.id,
+            )
+
+        flash(f"User '{user.full_name}' has been {status_text}.", "success")
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error toggling user status: {e}", exc_info=True)
+        flash("An error occurred while updating the user status.", "error")
+
+    return redirect(url_for("user_management_web.manage_users"))
 
 
 @user_management_web_bp.route('/change_password/<int:user_id>', methods=['GET', 'POST'])

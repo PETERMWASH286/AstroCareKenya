@@ -86,15 +86,30 @@
                             </div>
                         </td>
 
-                        <!-- Status -->
-                        <td class="px-6 py-4">
-                            {% set status_colors = { 'requested': 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-100', 'processing': 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100', 'completed': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100'
-                            } %}
-                            <span class="px-3 py-1 rounded-full text-sm font-medium {{ status_colors[request.status] }}">
-                                <i class="fas fa-{{ 'clock' if request.status == 'requested' else 'spinner' if request.status == 'processing' else 'check-circle' }} mr-2"></i>
-                                {{ request.status|title }}
-                            </span>
-                        </td>
+<!-- Status -->
+<td class="px-3 py-2">
+    {% set status_colors = { 
+        'requested': 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-100',
+        'waiting processing': 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100 animate-pulse',
+        'completed': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100',
+        'rejected': 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100',
+        'pending': 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-100'
+    } %}
+
+    {% set status_icons = {
+        'requested': 'clock',
+        'waiting processing': 'spinner fa-spin',
+        'completed': 'check-circle',
+        'rejected': 'times-circle',
+        'pending': 'hourglass-half'
+    } %}
+
+    <span class="px-3 py-1 rounded-full text-sm font-semibold shadow-sm transition transform hover:scale-105 cursor-default {{ status_colors[request.status] }}">
+        <i class="fas fa-{{ status_icons[request.status] }} mr-2"></i>
+        {{ request.status|title }}
+    </span>
+</td>
+
                         <!-- Paid? -->
                         <td class="px-6 py-4 whitespace-nowrap">
 
@@ -112,22 +127,56 @@
                             </div>
                         </td>
 
-                        <!-- Actions -->
-                        <td class="px-6 py-4 text-right">
-                            <div class="flex justify-end space-x-3">
+<!-- Actions -->
+<td class="px-6 py-4 text-right">
+  <div class="flex justify-end space-x-3">
+    
+    {% if request.status == 'requested' %}
+      <!-- Accept Request -->
+      <form method="POST" action="{{ url_for('radiology_web.accept_request', order_id=request.id) }}" 
+            onsubmit="return confirm('Accept this imaging request?');">
+        <button type="submit" 
+                class="px-3 py-1.5 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition text-sm font-medium flex items-center space-x-2">
+          <i class="fas fa-check mr-1"></i>
+          <span>Accept Request</span>
+        </button>
+      </form>
+
+    {% elif request.status == 'waiting processing' %}
+      <!-- Process Imaging -->
                                 <a href="{{ url_for('radiology_web.process_imaging', order_id=request.id) }}" class="p-2.5 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg text-blue-500 hover:text-blue-600 transition-colors" data-tooltip="Process Imaging">
                                     <i class="fas fa-microscope"></i>
                                 </a>
-                                <a href="{{ url_for('radiology_web.view_scan', order_id=request.id) }}" class="p-2.5 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg text-purple-500 hover:text-purple-600 transition-colors" data-tooltip="View Details">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                <form method="POST" action="{{ url_for('radiology_web.delete_request', order_id=request.id) }}" onsubmit="return confirm('Permanently delete this imaging request?');">
-                                    <button type="submit" class="p-2.5 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg text-red-500 hover:text-red-600 transition-colors" data-tooltip="Delete">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </form>
-                            </div>
-                        </td>
+
+    {% elif request.status == 'processing' %}
+      <!-- Already Processing: just view -->
+      <a href="{{ url_for('radiology_web.view_scan', order_id=request.id) }}" 
+         class="p-2.5 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg text-purple-500 hover:text-purple-600 transition-colors"
+         data-tooltip="View Scan">
+        <i class="fas fa-eye"></i>
+      </a>
+
+    {% elif request.status == 'completed' %}
+      <!-- Completed: only view -->
+      <a href="{{ url_for('radiology_web.view_scan', order_id=request.id) }}" 
+         class="px-3 py-1.5 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition text-sm font-medium flex items-center space-x-2">
+        <i class="fas fa-eye mr-1"></i>
+        <span>View Scan</span>
+      </a>
+    {% endif %}
+
+    <!-- Delete (always available) -->
+    <form method="POST" action="{{ url_for('radiology_web.delete_request', order_id=request.id) }}" 
+          onsubmit="return confirm('Permanently delete this imaging request?');">
+      <button type="submit" 
+              class="p-2.5 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg text-red-500 hover:text-red-600 transition-colors" 
+              data-tooltip="Delete">
+        <i class="fas fa-trash"></i>
+      </button>
+    </form>
+  </div>
+</td>
+
                     </tr>
                     {% endfor %}
                 </tbody>

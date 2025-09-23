@@ -781,22 +781,43 @@ def migrate_tenants():
                 ])
             
             # Find existing tables that need migration
+            # Find existing tables that need migration
             for table_name in existing_tables & expected_tables:
                 table = metadata.tables[table_name]
                 # Compare columns
                 existing_columns = {c['name'] for c in inspector.get_columns(table_name)}
                 expected_columns = {c.name for c in table.columns}
                 
-                # Find missing columns
+                # 1. Add missing columns
                 missing_columns = expected_columns - existing_columns
                 if missing_columns:
                     click.echo(f"  - Adding {len(missing_columns)} columns to {table_name}")
-                    # Add missing columns
                     with engine.begin() as connection:
                         for column_name in missing_columns:
                             column = table.columns[column_name]
                             alter_stmt = text(f"ALTER TABLE {table_name} ADD COLUMN {column.name} {column.type}")
                             connection.execute(alter_stmt)
+
+                # 2. Drop extra columns
+                # 2. Drop extra columns
+                extra_columns = existing_columns - expected_columns
+                if extra_columns:
+                    click.echo(f"  - Dropping {len(extra_columns)} columns from {table_name}")
+                    with engine.begin() as connection:
+                        for column_name in extra_columns:
+                            # 2a. Drop foreign key constraints referencing this column
+                            fks = inspector.get_foreign_keys(table_name)
+                            for fk in fks:
+                                if column_name in fk.get("constrained_columns", []):
+                                    fk_name = fk["name"]
+                                    click.echo(f"    - Dropping foreign key {fk_name} on {table_name}.{column_name}")
+                                    connection.execute(text(f"ALTER TABLE {table_name} DROP FOREIGN KEY {fk_name}"))
+
+                            # 2b. Now safe to drop column
+                            alter_stmt = text(f"ALTER TABLE {table_name} DROP COLUMN {column_name}")
+                            connection.execute(alter_stmt)
+
+
             
             click.echo(f"✅ Successfully migrated {hospital.name}")
             

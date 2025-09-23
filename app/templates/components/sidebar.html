@@ -609,41 +609,146 @@
         {% endif %}
     </ul>
 </li>
-{% endif %} {# Radiology Section #} {% if has_privilege('radiology:imaging_requests') or has_privilege('radiology:scan_results') or has_privilege('radiology:archived_reports') %}
-            <li class="dropdown-group">
-                <button class="dropdown-btn flex items-center justify-between w-full p-3 rounded-lg hover:bg-blue-100 transition-all dark:hover:bg-gray-700 dark:text-gray-200 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  <div class="flex items-center space-x-3">
-                    <i class="fas fa-x-ray text-indigo-600 dark:text-indigo-400"></i> {# Different icon color #}
-                    <span class="sidebar-text transition-opacity duration-300">Radiology</span>
-                  </div>
-                  <i class="fas fa-chevron-down text-xs transition-transform duration-200 text-gray-400 dark:text-gray-500 sidebar-text"></i>
-                </button>
-                <ul class="dropdown-content ml-6 pl-3 border-l-2 border-blue-300 dark:border-blue-700 space-y-1 mt-1">
-                    {% if has_privilege('radiology:imaging_requests') %}
-                    <li>
-                        <a href="{{ url_for('radiology_web.list_imaging_requests') }}" class="flex items-center space-x-3 p-2 text-sm rounded-lg hover:bg-blue-200 transition-all dark:hover:bg-gray-600 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400">
-                            <i class="fas fa-procedures text-pink-600 dark:text-pink-400"></i> {# Different icon color #}
-                            <span class="sidebar-text transition-opacity duration-300">Imaging Requests</span>
-                        </a>
-                    </li>
-                    {% endif %} {% if has_privilege('radiology:scan_results') %}
-                    <li>
-                        <a href="#" class="flex items-center space-x-3 p-2 text-sm rounded-lg hover:bg-blue-200 transition-all dark:hover:bg-gray-600 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400">
-                            <i class="fas fa-image text-yellow-600 dark:text-yellow-400"></i> {# Different icon color #}
-                            <span class="sidebar-text transition-opacity duration-300">View Scans</span>
-                        </a>
-                    </li>
-                    {% endif %} {% if has_privilege('radiology:archived_reports') %}
-                    <li>
-                        <a href="{{ url_for('radiology_web.list_radiology_reports') }}" class="flex items-center space-x-3 p-2 text-sm rounded-lg hover:bg-blue-200 transition-all dark:hover:bg-gray-600 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400">
-                            <i class="fas fa-file-medical text-red-600 dark:text-red-400"></i> {# Different icon color #}
-                            <span class="sidebar-text transition-opacity duration-300">Radiology Reports</span>
-                        </a>
-                    </li>
-                    {% endif %}
-                </ul>
-            </li>
-            {% endif %}{# Human Resources Section #} 
+{% endif %} {# Radiology Section #}
+{% if has_privilege('radiology:imaging_requests') or has_privilege('radiology:scan_results') 
+   or has_privilege('radiology:archive') or has_privilege('radiology:manage_services') 
+   or has_privilege('radiology:equipment_maintenance') or has_privilege('radiology:quality_control') 
+   or has_privilege('radiology_inventory:view') %}
+<li class="dropdown-group">
+    <button class="dropdown-btn flex items-center justify-between w-full p-3 rounded-lg hover:bg-blue-100 transition-all dark:hover:bg-gray-700 dark:text-gray-200 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <div class="flex items-center space-x-3">
+            <i class="fas fa-x-ray text-indigo-600 dark:text-indigo-400"></i>
+            <span class="sidebar-text transition-opacity duration-300">Radiology</span>
+        </div>
+        <i class="fas fa-chevron-down text-xs transition-transform duration-200 text-gray-400 dark:text-gray-500 sidebar-text"></i>
+    </button>
+    <ul class="dropdown-content ml-6 pl-3 border-l-2 border-blue-300 dark:border-blue-700 space-y-1 mt-1">
+
+        {% if has_privilege('radiology:imaging_requests') %}
+        <li>
+            <a href="{{ url_for('radiology_web.list_imaging_requests') }}" 
+               class="flex items-center space-x-3 p-2 text-sm rounded-lg hover:bg-blue-200 transition-all 
+                      dark:hover:bg-gray-600 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 
+                      focus:ring-blue-400">
+                <i class="fas fa-procedures text-pink-600 dark:text-pink-400"></i>
+                <span class="sidebar-text transition-opacity duration-300">Imaging Requests</span>
+            </a>
+        </li>
+        {% endif %}
+
+        {% if has_privilege('radiology:scan_results') %}
+        <li>
+            <a href="#" 
+               class="flex items-center space-x-3 p-2 text-sm rounded-lg hover:bg-blue-200 transition-all 
+                      dark:hover:bg-gray-600 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 
+                      focus:ring-blue-400">
+                <i class="fas fa-image text-yellow-600 dark:text-yellow-400"></i>
+                <span class="sidebar-text transition-opacity duration-300">View Scans</span>
+            </a>
+        </li>
+        {% endif %}
+
+        {% if has_privilege('radiology:archive') %}
+        <li>
+            <a href="{{ url_for('radiology_web.list_radiology_reports') }}" 
+               class="flex items-center space-x-3 p-2 text-sm rounded-lg hover:bg-blue-200 transition-all 
+                      dark:hover:bg-gray-600 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 
+                      focus:ring-blue-400">
+                <i class="fas fa-file-medical text-red-600 dark:text-red-400"></i>
+                <span class="sidebar-text transition-opacity duration-300">Radiology Reports</span>
+            </a>
+        </li>
+        {% endif %}
+
+        {% if has_privilege('radiology:manage_services') %}
+        <li>
+            <a href="{{ url_for('radiology_web.manage_services') }}" 
+               class="flex items-center space-x-3 p-2 text-sm rounded-lg hover:bg-blue-200 transition-all 
+                      dark:hover:bg-gray-600 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 
+                      focus:ring-blue-400">
+                <i class="fas fa-edit text-orange-600 dark:text-orange-400"></i>
+                <span class="sidebar-text transition-opacity duration-300">Manage Services</span>
+            </a>
+        </li>
+        {% endif %}
+
+        {# NEW: Inventory Management Subgroup #}
+        {% if has_privilege('radiology_inventory:view') or has_privilege('radiology_inventory:manage_consumables') 
+           or has_privilege('radiology_inventory:request_stocks') or has_privilege('radiology_inventory:stock_flow') %}
+        <li class="dropdown-subgroup">
+            <button class="dropdown-sub-btn flex items-center justify-between w-full p-2 text-sm rounded-lg hover:bg-blue-200 transition-all 
+                           dark:hover:bg-gray-600 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-boxes text-amber-600 dark:text-amber-400"></i>
+                    <span class="sidebar-text transition-opacity duration-300">Inventory Management</span>
+                </div>
+                <i class="fas fa-chevron-down text-xs transition-transform duration-200 text-gray-400 dark:text-gray-500"></i>
+            </button>
+            <ul class="dropdown-subcontent ml-4 pl-3 border-l-2 border-blue-400 dark:border-blue-600 space-y-1 mt-1">
+
+                {% if has_privilege('radiology_inventory:view') %}
+                <li>
+                    <a href="{{ url_for('radiology_web.inventory_dashboard') }}" 
+                       class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-blue-300 transition-all 
+                              dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                        <i class="fas fa-tachometer-alt text-blue-600 dark:text-blue-400"></i>
+                        <span class="sidebar-text transition-opacity duration-300">Inventory Dashboard</span>
+                    </a>
+                </li>
+                {% endif %}
+
+
+
+                {% if has_privilege('radiology_inventory:request_stocks') %}
+                <li>
+                    <a href="{{ url_for('radiology_web.request_stocks') }}" 
+                       class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-blue-300 transition-all 
+                              dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                        <i class="fas fa-cart-arrow-down text-green-600 dark:text-green-400"></i>
+                        <span class="sidebar-text transition-opacity duration-300">Request Stocks</span>
+                    </a>
+                </li>
+                {% endif %}
+
+                {% if has_privilege('radiology_inventory:stock_flow') %}
+                <li>
+                    <a href="{{ url_for('radiology_web.stock_flow') }}" 
+                       class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-blue-300 transition-all 
+                              dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                        <i class="fas fa-exchange-alt text-red-600 dark:text-red-400"></i>
+                        <span class="sidebar-text transition-opacity duration-300">Stock Flow</span>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </li>
+        {% endif %}
+
+        {% if has_privilege('radiology:equipment_maintenance') %}
+        <li>
+            <a href="{{ url_for('radiology_web.equipment_maintenance') }}" 
+               class="flex items-center space-x-3 p-2 text-sm rounded-lg hover:bg-blue-200 transition-all 
+                      dark:hover:bg-gray-600 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                <i class="fas fa-toolbox text-cyan-600 dark:text-cyan-400"></i>
+                <span class="sidebar-text transition-opacity duration-300">Equipment Maintenance</span>
+            </a>
+        </li>
+        {% endif %}
+
+        {% if has_privilege('radiology:quality_control') %}
+        <li>
+            <a href="{{ url_for('radiology_web.quality_control') }}" 
+               class="flex items-center space-x-3 p-2 text-sm rounded-lg hover:bg-blue-200 transition-all 
+                      dark:hover:bg-gray-600 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                <i class="fas fa-clipboard-check text-lime-600 dark:text-lime-400"></i>
+                <span class="sidebar-text transition-opacity duration-300">Quality Control</span>
+            </a>
+        </li>
+        {% endif %}
+    </ul>
+</li>
+{% endif %}
+{# Human Resources Section #} 
 {% if has_privilege('hr:staff_add') or has_privilege('hr:staff_directory') or has_privilege('hr:staff_profiles') 
     or has_privilege('hr:attendance') or has_privilege('hr:payroll:salary') or has_privilege('hr:payroll:payslips')
     or has_privilege('hr:payroll:reports') or has_privilege('hr:recruitment') 

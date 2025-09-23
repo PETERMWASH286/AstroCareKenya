@@ -1,5 +1,4 @@
-import eventlet
-eventlet.monkey_patch()
+
 import os
 
 # Import both create_app and make_celery from the app package
@@ -17,11 +16,4 @@ app = create_app(config_name)
 # This is for running with 'python run.py' during development
 # In production, a WSGI server (like Gunicorn) will use wsgi.py
 if __name__ == '__main__':
-    socketio.run(
-        app,
-        host='0.0.0.0',
-        port=5000,
-        debug=True,
-        use_reloader=True,
-        log_output=True
-    )
+    app.run(host="127.0.0.1", port=5000, debug=True)
