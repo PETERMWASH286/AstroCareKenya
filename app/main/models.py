@@ -1,13 +1,14 @@
 from datetime import datetime
 from app.extensions import db, bcrypt # Import db and bcrypt from extensions
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask_login import UserMixin
 
 
 
 # models.py (add this new model)
-class PatientUser(db.Model):
-    _tablename__ = 'patient_users'  # Define the table name
-    
+class PatientUser(db.Model, UserMixin):
+    __tablename__ = 'patient_users'  # fixed typo _tablename__ -> __tablename__
+
     id = db.Column(db.Integer, primary_key=True)
     first_name = db.Column(db.String(50), nullable=False)
     last_name = db.Column(db.String(50), nullable=False)
@@ -18,7 +19,7 @@ class PatientUser(db.Model):
     agree_terms = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_login_at = db.Column(db.DateTime)
-    is_active = db.Column(db.Boolean, default=True) # Added is_active column
+    is_active = db.Column(db.Boolean, default=True)
     
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
