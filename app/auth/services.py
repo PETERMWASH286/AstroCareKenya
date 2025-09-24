@@ -10,16 +10,8 @@ class AuthService:
 
     @staticmethod
     def authenticate_user(username, password):
-        """
-        Authenticates a user by username and password.
-        Returns the user object if successful, None otherwise.
-        """
         user = User.query.filter_by(username=username).first()
         if user and user.is_active and user.check_password(password):
-            # Optional: Update last login time
-            user.last_login_at = datetime.utcnow()
-            db.session.add(user)
-            db.session.commit()
             return user
         return None
 

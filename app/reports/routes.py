@@ -28,8 +28,7 @@ def view_audit_logs():
     Requires 'reports:audit' privilege.
     """
 
-
-    # Get pagination parameters from query string
+    # Pagination
     try:
         page = int(request.args.get('page', 1))
         per_page = int(request.args.get('per_page', 25))
@@ -37,31 +36,58 @@ def view_audit_logs():
         page = 1
         per_page = 25
 
-    # Optional filtering (e.g., by model_name or action)
+    # Filters
+    user_filter = request.args.get('user', None)
+    patient_filter = request.args.get('patient', None)
+    date_from = request.args.get('date_from', None)
+    date_to = request.args.get('date_to', None)
     model_filter = request.args.get('model', None)
     action_filter = request.args.get('action', None)
 
     query = AuditLog.query
 
+    if user_filter:
+        query = query.filter(AuditLog.username.ilike(f"%{user_filter}%"))
+    if patient_filter:
+        query = query.filter(AuditLog.patient_name.ilike(f"%{patient_filter}%"))
+    if date_from:
+        query = query.filter(AuditLog.timestamp >= date_from)
+    if date_to:
+        query = query.filter(AuditLog.timestamp <= date_to)
     if model_filter:
         query = query.filter(AuditLog.model_name == model_filter)
     if action_filter:
         query = query.filter(AuditLog.action == action_filter)
 
-    # Order by newest first
     query = query.order_by(AuditLog.timestamp.desc())
-
-    # Paginate results
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
-    logs = pagination.items
 
     return render_template(
-        'audit_logs.html',
-        logs=logs,
+        "audit_logs.html",
+        logs=pagination.items,
         pagination=pagination,
+        total_logs=query.count(),
+        user_filter=user_filter,
+        patient_filter=patient_filter,
+        date_from=date_from,
+        date_to=date_to,
         model_filter=model_filter,
-        action_filter=action_filter
+        action_filter=action_filter,
     )
+
+
+
+@reports_web_bp.route('/audit-logs/<int:log_id>')
+@login_required
+def view_audit_log_details(log_id):
+    """View details for a specific audit log entry"""
+    log = AuditLog.query.get_or_404(log_id)
+    return render_template(
+        'audit_log_details.html',
+        log=log,
+        title=f"Audit Log #{log.id} Details"
+    )
+
 
 
 @reports_web_bp.route('/clinical')

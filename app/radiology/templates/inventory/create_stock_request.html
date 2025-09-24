@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header with Gradient Background -->
+    <div class="bg-gradient-to-r from-cyan-600 to-teal-700 rounded-xl p-6 shadow-lg mb-8">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-white">New Radiology Stock Request</h1>
+                <p class="text-cyan-100 mt-1">Request Radiology items</p>
+            </div>
+            <a href="{{ url_for('lab_web.request_stocks') }}" class="flex items-center text-white hover:text-cyan-200 transition-colors">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 15l-3-3m0 0l3-3m-3 3h8M3 12a9 9 0 1118 0 9 9 0 01-18 0z"/>
+                </svg> Back to Requests
+            </a>
+        </div>
+    </div>
+
+    <!-- Stock Request Form -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <form method="POST" class="space-y-6" id="stockRequestForm">
+            {{ form.hidden_tag() }}
+            
+            <!-- Item Selection -->
+            <div class="grid grid-cols-1 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Laboratory Item
+                    </label>
+                    <div class="relative">
+                        {{ form.item_id(class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500") }}
+                        <div class="absolute inset-y-0 right-3 top-3 flex items-center pointer-events-none">
+                            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Item Details Panel -->
+            <div id="itemDetailsPanel" class="bg-teal-50 p-4 rounded-lg border border-teal-100 hidden">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div class="flex items-center">
+                        <svg class="w-4 h-4 text-teal-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/>
+                        </svg>
+                        <div>
+                            <span class="text-gray-600">Category:</span>
+                            <span id="itemCategory" class="font-medium ml-1">-</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center">
+                        <svg class="w-4 h-4 text-teal-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <div>
+                            <span class="text-gray-600">SKU:</span>
+                            <span id="itemSKU" class="font-medium ml-1">-</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center">
+                        <svg class="w-4 h-4 text-teal-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/>
+                        </svg>
+                        <div>
+                            <span class="text-gray-600">Current Stock:</span>
+                            <span id="itemStock" class="font-medium ml-1">-</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center">
+                        <svg class="w-4 h-4 text-teal-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                        <div>
+                            <span class="text-gray-600">Last Restocked:</span>
+                            <span id="itemRestock" class="font-medium ml-1">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Request Details -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Quantity -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Quantity Needed
+                    </label>
+                    {{ form.quantity(class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500", placeholder="Enter quantity") }}
+                    {% for error in form.quantity.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+                    {% endfor %}
+                </div>
+                
+                <!-- Priority -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Priority Level
+                    </label>
+                    <div class="relative">
+                        {{ form.priority(class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500") }}
+                        <div class="absolute inset-y-0 right-3 top-3 flex items-center pointer-events-none">
+                            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reason -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Reason for Request
+                </label>
+                {{ form.reason(class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500", rows=4, placeholder="Explain why you need these items...") }}
+                {% for error in form.reason.errors %}
+                <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+                {% endfor %}
+            </div>
+
+            <!-- Submit Section -->
+            <div class="border-t border-gray-200 pt-6">
+                <div class="flex flex-col sm:flex-row justify-end gap-3">
+                    <button type="reset" class="px-5 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-medium">
+                        Reset Form
+                    </button>
+                    <button type="submit" class="bg-gradient-to-r from-teal-600 to-cyan-700 text-white px-5 py-3 rounded-lg font-medium hover:from-teal-700 hover:to-cyan-800 transition-all shadow-md">
+                        Submit Request
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Script for Dynamic Form Interactions -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const itemSelect = document.getElementById('item_id');
+        const detailsPanel = document.getElementById('itemDetailsPanel');
+        
+        // Item details mapping from server
+        const itemDetails = {
+            {% for item in radiology_items %}
+            {{ item.id }}: {
+                category: "{{ item.category }}",
+                sku: "{{ item.sku }}",
+                current_stock: "{{ item.quantity }}",
+                last_restocked: "{{ item.last_restocked.strftime('%b %d, %Y') if item.last_restocked else 'N/A' }}"
+            },
+            {% endfor %}
+        };
+        
+        function updateItemDetails() {
+            const itemId = itemSelect.value;
+            const details = itemDetails[itemId];
+            
+            if (itemId && details) {
+                document.getElementById('itemCategory').textContent = details.category || '-';
+                document.getElementById('itemSKU').textContent = details.sku || '-';
+                document.getElementById('itemStock').textContent = details.current_stock || '0';
+                document.getElementById('itemRestock').textContent = details.last_restocked || '-';
+                detailsPanel.classList.remove('hidden');
+            } else {
+                detailsPanel.classList.add('hidden');
+            }
+        }
+        
+        // Initial update
+        updateItemDetails();
+        
+        // Update on select change
+        itemSelect.addEventListener('change', updateItemDetails);
+        
+        // Initialize Select2
+        $(itemSelect).select2({
+            placeholder: "Search lab items...",
+            minimumResultsForSearch: 3,
+            width: '100%',
+            dropdownParent: $('#stockRequestForm')
+        });
+    });
+</script>
+
+<!-- Select2 Styling -->
+<style>
+    .select2-container--default .select2-selection--single {
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+        height: 48px;
+        padding: 0.5rem 1rem;
+    }
+    
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 36px;
+        padding-left: 0;
+    }
+    
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 46px;
+    }
+    
+    .select2-container--default .select2-results__option--highlighted[aria-selected] {
+        background-color: #0d9488;
+    }
+    
+    .select2-container--default .select2-results__option[aria-selected=true] {
+        background-color: #f0fdfa;
+    }
+</style>
+{% endblock %}

@@ -7,19 +7,32 @@ from flask_login import UserMixin
 
 
 class AuditLog(db.Model):
-    __tablename__ = 'audit_logs' # Changed to lowercase 'user' for consistency
-
+    __tablename__ = 'audit_logs'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    user_id = db.Column(db.Integer, nullable=True)  # Adjust type if using UUID
-    username = db.Column(db.String(128), nullable=True)
-    ip_address = db.Column(db.String(45), nullable=True)  # Supports IPv6
-    action = db.Column(db.String(10))  # CREATE/UPDATE/DELETE
-    model_name = db.Column(db.String(64))
-    record_id = db.Column(db.String(64))  # String to handle non-integer PKs
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-    details = db.Column(db.JSON)  # Stores changes, old/new values
 
-    __audit_trail__ = False  # Exclude this model from auditing
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    username = db.Column(db.String(128), nullable=True)
+    ip_address = db.Column(db.String(45), nullable=True)
+    patient_name = db.Column(db.String(255), nullable=True)
+    method = db.Column(db.String(10), nullable=True)
+    endpoint = db.Column(db.String(255), nullable=True)
+
+    action = db.Column(db.String(20))   # expanded length: CREATE/UPDATE/DELETE/LOGIN/LOGOUT/etc
+    model_name = db.Column(db.String(64))
+    record_id = db.Column(db.String(128))
+
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    details = db.Column(db.JSON)
+
+    # NEW:
+    success = db.Column(db.Boolean, nullable=True)          # NULL = not applicable, True/False for e.g. LOGIN
+    message = db.Column(db.String(1024), nullable=True)     # human readable interpretation
+
+    __audit_trail__ = False
+    user = db.relationship('User', backref=db.backref('audit_logs', lazy='dynamic'))
+
+    def __repr__(self):
+        return f"<AuditLog {self.id} - {self.action} on {self.model_name} by User {self.user_id}>"
 
 
 

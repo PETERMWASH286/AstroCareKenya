@@ -494,9 +494,18 @@ document.addEventListener('DOMContentLoaded', () => {
         if (age >= 0 && age <= 5) {
             pediatricForm.classList.remove('hidden');
             adultForm.classList.add('hidden');
+
+                        // pediatric required ON, adult required OFF
+            pediatricForm.querySelectorAll('[name]').forEach(el => el.required = true);
+            adultForm.querySelectorAll('[name]').forEach(el => el.required = false);
+
         } else {
             pediatricForm.classList.add('hidden');
             adultForm.classList.remove('hidden');
+
+                        // adult required ON, pediatric required OFF
+            adultForm.querySelectorAll('[name]').forEach(el => el.required = true);
+            pediatricForm.querySelectorAll('[name]').forEach(el => el.required = false);
         }
     });
 });

@@ -1,84 +1,290 @@
-<!-- /home/pincho/Desktop/astrocare/app/reports/templates/reports/audit_logs.html -->
+{% extends "base.html" %}
+{% block title %}Audit Logs{% endblock %}
 
-{% extends "base.html" %} {% block title %}Audit Logs{% endblock %} {% block content %}
-<div class="min-h-screen p-6 md:p-8">
-    <div class="max-w-7xl mx-auto space-y-6">
-        <!-- Header -->
-        <div class="flex items-center justify-between">
-            <h1 class="text-3xl font-bold text-gray-800 dark:text-white">
-                <i class="fas fa-file-alt text-yellow-500 mr-2"></i>Audit Logs
-            </h1>
-            <form method="GET" class="flex space-x-2">
-                <input type="text" name="model" value="{{ model_filter or '' }}" placeholder="Filter by Model" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-                <input type="text" name="action" value="{{ action_filter or '' }}" placeholder="Filter by Action" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-                <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition">
-          Apply
-        </button>
-            </form>
-        </div>
+{% block content %}
+<div class="min-h-screen p-6 md:p-8 bg-gray-50 dark:bg-gray-900">
+  <div class="max-w-7xl mx-auto space-y-6">
 
-        <!-- Log Table -->
-        <div class="overflow-x-auto rounded-2xl shadow-md bg-white dark:bg-gray-900">
-            <table class="w-full text-left">
-                <thead class="bg-gray-100 dark:bg-gray-800">
-                    <tr>
-                        <th class="px-4 py-3 text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">Timestamp</th>
-                        <th class="px-4 py-3 text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">User</th>
-                        <th class="px-4 py-3 text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">Action</th>
-                        <th class="px-4 py-3 text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">Model</th>
-                        <th class="px-4 py-3 text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">Record ID</th>
-                        <th class="px-4 py-3 text-xs font-medium text-gray-600 dark:text-gray-400 uppercase">Details</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                    {% for log in logs %}
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
-                        <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
-                            {% if log.username %}{{ log.username }}{% else %}<span class="italic text-gray-500">system</span>{% endif %}
-                        </td>
-                        <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ log.action }}</td>
-                        <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ log.model_name }}</td>
-                        <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ log.record_id }}</td>
-                        <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
-                            <button class="text-indigo-600 dark:text-indigo-400 hover:underline" onclick="toggleDetails({{ log.id }})">
-                View
-              </button>
-                            <div id="details-{{ log.id }}" class="mt-2 hidden text-xs text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
-                                <pre class="whitespace-pre-wrap">{{ log.details | tojson(indent=2) }}</pre>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+    <!-- Header -->
+    <div class="flex items-start justify-between gap-4">
+      <div>
+        <h1 class="text-3xl font-extrabold text-gray-900 dark:text-white flex items-center gap-3">
+          <i class="fas fa-shield-alt text-indigo-600"></i>
+          Audit Logs
+        </h1>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          Showing <strong class="text-gray-700 dark:text-gray-200">{{ logs|length }}</strong> of
+          <strong class="text-gray-700 dark:text-gray-200">{{ total_logs or '—' }}</strong> entries
+        </p>
+      </div>
 
-        <!-- Pagination -->
-        <nav class="flex justify-between items-center pt-4">
-            {% if pagination.has_prev %}
-            <a href="{{ url_for('reports_web.view_audit_logs', page=pagination.prev_num, per_page=pagination.per_page, model=model_filter, action=action_filter) }}" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition">
-          &larr; Previous
-        </a> {% else %}
-            <span class="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-400 rounded-lg cursor-not-allowed">&larr; Previous</span> {% endif %}
-
-            <span class="text-sm text-gray-600 dark:text-gray-400">
-        Page {{ pagination.page }} of {{ pagination.pages }}
-      </span> {% if pagination.has_next %}
-            <a href="{{ url_for('reports_web.view_audit_logs', page=pagination.next_num, per_page=pagination.per_page, model=model_filter, action=action_filter) }}" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition">
-          Next &rarr;
-        </a> {% else %}
-            <span class="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-400 rounded-lg cursor-not-allowed">Next &rarr;</span> {% endif %}
-        </nav>
+      <!-- Rows per page -->
+      <div class="flex items-center gap-3">
+        <label for="per_page" class="text-sm text-gray-600 dark:text-gray-300">Rows</label>
+        <form id="perPageForm" method="GET" class="inline">
+          <!-- keep current filters by rendering them into hidden inputs (server should include these) -->
+          <input type="hidden" name="user" value="{{ user_filter or '' }}">
+          <input type="hidden" name="patient" value="{{ patient_filter or '' }}">
+          <input type="hidden" name="date_from" value="{{ date_from or '' }}">
+          <input type="hidden" name="date_to" value="{{ date_to or '' }}">
+          <select name="per_page" id="per_page" data-auto-filter
+            class="px-2 py-1 border rounded-lg bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="10" {% if pagination.per_page == 10 %}selected{% endif %}>10</option>
+            <option value="25" {% if pagination.per_page == 25 %}selected{% endif %}>25</option>
+            <option value="50" {% if pagination.per_page == 50 %}selected{% endif %}>50</option>
+            <option value="100" {% if pagination.per_page == 100 %}selected{% endif %}>100</option>
+          </select>
+        </form>
+      </div>
     </div>
+
+<!-- Filters (slightly larger inputs) -->
+<form id="filtersForm" method="GET"
+      class="flex flex-wrap items-center gap-3 bg-white dark:bg-gray-900 p-4 rounded-xl shadow"
+      novalidate>
+  <input type="hidden" name="page" value="{{ pagination.page }}">
+
+  <!-- User -->
+  <div class="relative">
+    <input data-auto-filter type="search" name="user" value="{{ user_filter or '' }}" placeholder="User"
+           class="w-36 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800
+                  text-base text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+    <i class="fas fa-search absolute right-3 top-3 text-gray-400 text-sm"></i>
+  </div>
+
+  <!-- Patient -->
+  <input data-auto-filter type="search" name="patient" value="{{ patient_filter or '' }}" placeholder="Patient"
+         class="w-32 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800
+                text-base text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+
+  <!-- Action -->
+  <select name="action" data-auto-filter
+          class="w-32 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800
+                 text-base text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+    <option value="">Action</option>
+    <option value="CREATE" {% if action_filter == 'CREATE' %}selected{% endif %}>CREATE</option>
+    <option value="UPDATE" {% if action_filter == 'UPDATE' %}selected{% endif %}>UPDATE</option>
+    <option value="DELETE" {% if action_filter == 'DELETE' %}selected{% endif %}>DELETE</option>
+  </select>
+
+  <!-- Model -->
+  <input data-auto-filter type="search" name="model" value="{{ model_filter or '' }}" placeholder="Model"
+         class="w-32 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800
+                text-base text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+
+  <!-- Date From -->
+  <input data-auto-filter type="date" name="date_from" value="{{ date_from or '' }}"
+         class="w-40 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800
+                text-base text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+
+  <!-- Date To -->
+  <input data-auto-filter type="date" name="date_to" value="{{ date_to or '' }}"
+         class="w-40 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800
+                text-base text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+
+  <!-- Clear Button -->
+  <button id="clearFiltersBtn" type="button"
+          class="px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-sm
+                 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center">
+    <i class="fas fa-times mr-1"></i> Clear
+  </button>
+</form>
+
+
+    <!-- Log Table -->
+    <div class="overflow-x-auto rounded-2xl shadow bg-white dark:bg-gray-900">
+      <table class="w-full text-left min-w-[900px]">
+        <thead class="sticky top-0 z-10 bg-gray-100 dark:bg-gray-800">
+          <tr>
+            <!-- Important columns first -->
+            <th class="px-4 py-3 text-xs font-semibold uppercase text-gray-600 dark:text-gray-400">Timestamp</th>
+            <th class="px-4 py-3 text-xs font-semibold uppercase text-gray-600 dark:text-gray-400">User</th>
+            <th class="px-4 py-3 text-xs font-semibold uppercase text-gray-600 dark:text-gray-400">Action</th>
+            <th class="px-4 py-3 text-xs font-semibold uppercase text-gray-600 dark:text-gray-400">Model</th>
+            <th class="px-4 py-3 text-xs font-semibold uppercase text-gray-600 dark:text-gray-400">Record ID</th>
+            <th class="px-4 py-3 text-xs font-semibold uppercase text-gray-600 dark:text-gray-400">Patient</th>
+            <th class="px-4 py-3 text-xs font-semibold uppercase text-gray-600 dark:text-gray-400">IP</th>
+            <th class="px-4 py-3 text-xs font-semibold uppercase text-gray-600 dark:text-gray-400 text-center">Action</th>
+          </tr>
+        </thead>
+
+        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+          {% for log in logs %}
+          <tr class="hover:bg-gray-50 dark:hover:bg-gray-800">
+            <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
+              {{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}
+            </td>
+
+            <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
+              {% if log.username %}
+                {% if log.user_profile_url %}
+                  <a href="{{ log.user_profile_url }}" class="font-medium hover:underline text-indigo-600 dark:text-indigo-400">
+                    {{ log.username }}
+                  </a>
+                {% else %}
+                  <span class="font-medium">{{ log.username }}</span>
+                {% endif %}
+              {% else %}
+                <span class="italic text-gray-500">system</span>
+              {% endif %}
+            </td>
+
+            <td class="px-4 py-3 text-sm">
+              <span class="px-2 py-1 rounded-full text-xs font-semibold
+                {% if log.action == 'CREATE' %} bg-green-100 text-green-700
+                {% elif log.action == 'UPDATE' %} bg-yellow-100 text-yellow-700
+                {% elif log.action == 'DELETE' %} bg-red-100 text-red-700
+                {% else %} bg-gray-100 text-gray-600 {% endif %}">
+                {{ log.action }}
+              </span>
+            </td>
+
+            <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ log.model_name or '-' }}</td>
+
+            <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
+              <div class="flex items-center gap-2">
+                <span class="truncate max-w-[120px]">{{ log.record_id or '-' }}</span>
+                {% if log.record_id %}
+
+                {% endif %}
+              </div>
+            </td>
+
+            <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ log.patient_name or '-' }}</td>
+
+            <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
+              <div class="flex items-center gap-2">
+                <span class="truncate max-w-[110px]">{{ log.ip_address or '-' }}</span>
+                {% if log.ip_address %}
+
+                {% endif %}
+              </div>
+            </td>
+
+            <td class="px-4 py-3 text-center">
+              {# flexible endpoint name: pass 'detail_endpoint' from your view if different from default #}
+              {% set detail_endpoint = detail_endpoint if detail_endpoint is defined else 'reports_web.view_audit_log_details' %}
+              <a href="{{ url_for(detail_endpoint, log_id=log.id) }}" class="inline-flex items-center gap-2 text-indigo-600 dark:text-indigo-400 hover:underline">
+                <i class="fas fa-eye"></i> View
+              </a>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="8" class="px-4 py-6 text-center text-gray-500 dark:text-gray-400">No logs match your filters.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <nav class="flex items-center justify-between pt-4">
+      <div>
+        {% if pagination.has_prev %}
+        <a href="{{ url_for('reports_web.view_audit_logs', page=pagination.prev_num, per_page=pagination.per_page,
+                          user=user_filter, patient=patient_filter, date_from=date_from, date_to=date_to) }}"
+           class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition">
+          &larr; Previous
+        </a>
+        {% else %}
+        <span class="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-400 rounded-lg cursor-not-allowed">&larr; Previous</span>
+        {% endif %}
+      </div>
+
+      <div class="text-sm text-gray-600 dark:text-gray-400">Page {{ pagination.page }} of {{ pagination.pages }}</div>
+
+      <div>
+        {% if pagination.has_next %}
+        <a href="{{ url_for('reports_web.view_audit_logs', page=pagination.next_num, per_page=pagination.per_page,
+                          user=user_filter, patient=patient_filter, date_from=date_from, date_to=date_to) }}"
+           class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition">
+          Next &rarr;
+        </a>
+        {% else %}
+        <span class="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-400 rounded-lg cursor-not-allowed">Next &rarr;</span>
+        {% endif %}
+      </div>
+    </nav>
+
+  </div>
 </div>
 
+<!-- JS: debounce auto-submit and copy-to-clipboard -->
 <script>
-    function toggleDetails(logId) {
-        const elem = document.getElementById(`details-${logId}`);
-        elem.classList.toggle('hidden');
-    }
+(function () {
+  const form = document.getElementById('filtersForm');
+  const perPageForm = document.getElementById('perPageForm');
+  const inputs = document.querySelectorAll('[data-auto-filter]');
+  const clearBtn = document.getElementById('clearFiltersBtn');
+
+  // simple debounce
+  function debounce(fn, wait) {
+    let t;
+    return (...args) => {
+      clearTimeout(t);
+      t = setTimeout(() => fn(...args), wait);
+    };
+  }
+
+  // set page to 1 before submit so filter changes reset to first page
+  function submitFilters() {
+    const pageInput = form.querySelector('input[name="page"]');
+    if (pageInput) pageInput.value = 1;
+    form.submit();
+  }
+  const debouncedSubmit = debounce(submitFilters, 600);
+
+  inputs.forEach(input => {
+    const ev = (input.type === 'date' || input.tagName.toLowerCase() === 'select') ? 'change' : 'input';
+    input.addEventListener(ev, debouncedSubmit);
+  });
+
+  // clear filters button: wipe auto inputs and submit
+  clearBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    inputs.forEach(i => i.value = '');
+    submitFilters();
+  });
+
+  // if per-page is changed in the small form, propagate current filters if any and submit
+  const perPageSelect = document.getElementById('per_page');
+  if (perPageSelect) {
+    perPageSelect.addEventListener('change', () => {
+      // copy current filter values into perPageForm hidden inputs to preserve them
+      ['user','patient','date_from','date_to','page'].forEach(name => {
+        const existing = form.querySelector(`[name="${name}"]`);
+        if (existing) {
+          let hidden = perPageForm.querySelector(`input[name="${name}"]`);
+          if (!hidden) {
+            hidden = document.createElement('input');
+            hidden.type = 'hidden';
+            hidden.name = name;
+            perPageForm.appendChild(hidden);
+          }
+          hidden.value = existing.value || '';
+        }
+      });
+      perPageForm.submit();
+    });
+  }
+
+  // copy buttons
+  document.addEventListener('click', function (e) {
+    const btn = e.target.closest('[data-copy]');
+    if (!btn) return;
+    const text = btn.getAttribute('data-copy');
+    if (!text) return;
+    navigator.clipboard?.writeText(text).then(() => {
+      // tiny success feedback
+      btn.classList.add('ring', 'ring-green-300');
+      setTimeout(() => btn.classList.remove('ring', 'ring-green-300'), 700);
+    }).catch(() => {
+      // fallback: select and execCopy (rare)
+      console.warn('Copy failed');
+    });
+  });
+
+})();
 </script>
 {% endblock %}

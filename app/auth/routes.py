@@ -8,6 +8,7 @@ from flask import abort, g, jsonify, render_template, redirect, send_file, sessi
 # UPDATED: Import Flask-Login functions
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.utils import secure_filename  # Import secure_filename for file handling
+from werkzeug.security import check_password_hash  # Import for password hash checking
 
 # from flask_wtf import FlaskForm # If using Flask-WTF for forms
 # from wtforms import StringField, PasswordField, BooleanField, SubmitField # If using Flask-WTF
@@ -15,6 +16,7 @@ from werkzeug.utils import secure_filename  # Import secure_filename for file ha
 from flask_mail import Message
 from itsdangerous import URLSafeTimedSerializer
 
+from app.audit import log_audit_event
 from app.extensions import db
 from app.notifications.models import NotificationRead
 from app.super_admin.models import HospitalProfile
@@ -39,50 +41,130 @@ def validate_email(email):
 
 @auth_web_bp.route('/login', methods=['GET', 'POST'])
 def login():
+    # fast return if already logged in
     if current_user.is_authenticated:
         current_app.logger.info(f"User {current_user.get_id()} already authenticated, redirecting from login.")
         return redirect(url_for('dashboard_web.index'))
 
     if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
+        username_input = (request.form.get('username') or '').strip()
+        password_input = request.form.get('password') or ''
         remember = request.form.get('remember') == 'on'
+        ip = request.remote_addr or 'unknown'
 
-        if not username or not password:
+        if not username_input or not password_input:
             flash('Please enter username and password.', 'warning')
             return redirect(url_for('.login'))
 
-        user = AuthService.authenticate_user(username, password)
+        # optional: quick rate-limit check (simple example, tune thresholds)
+        recent_failures = db.session.query(db.func.count()).select_from(User.__table__).scalar()  # placeholder - see note below
 
-        if user:
-            # Check if 2FA is enabled
-            if user.requires_2fa:
-                # Store user ID in session for 2FA verification
-                session['2fa_user_id'] = user.id
-                session['remember_me'] = remember
-                
-                # Send 2FA code to user's primary method
-                primary_method = user.two_factor_methods.filter_by(
-                    is_primary=True, 
-                    verified=True
-                ).first()
-                
-                if primary_method:
-                    send_verification_code(primary_method)
-                    return redirect(url_for('auth_web.verify_2fa'))
-                else:
-                    flash('No valid 2FA method found. Please contact support.', 'danger')
-                    return redirect(url_for('.login'))
+        user = User.query.filter_by(username=username_input).first()
 
-            # If no 2FA required, log in directly
-            login_user(user, remember=remember)
-            flash('Logged in successfully!', 'success')
-            return redirect_after_login(user)
-
-        else:
+        if user is None:
+            # user not found -> audit and return
+            log_audit_event(
+                'LOGIN',
+                target=None,
+                connection=None,
+                model_name_override='Auth',
+                record_id_override=username_input,
+                success=False,
+                details_extra={'reason': 'user_not_found', 'attempted_username': username_input, 'ip': ip}
+            )
+            current_app.logger.warning(f"Failed login attempt for username: {username_input} from {ip}")
             flash('Invalid username or password.', 'danger')
-            current_app.logger.warning(f"Failed login attempt for username: {username}")
+            return redirect(url_for('.login'))
 
+        if not getattr(user, 'is_active', True):
+            log_audit_event(
+                'LOGIN',
+                target=user,
+                connection=None,
+                success=False,
+                details_extra={'reason': 'account_inactive', 'ip': ip}
+            )
+            flash('Your account is inactive. Please contact support.', 'danger')
+            return redirect(url_for('.login'))
+
+        # check password (prefer user.check_password if available)
+        try:
+            if hasattr(user, 'check_password') and callable(user.check_password):
+                password_ok = user.check_password(password_input)
+            else:
+                # fallback to werkzeug
+                password_ok = check_password_hash(getattr(user, 'password_hash', ''), password_input)
+        except Exception:
+            current_app.logger.exception("Password check failed for user id %s", getattr(user, 'id', '<unknown>'))
+            password_ok = False
+
+        if not password_ok:
+            # record failed attempt
+            log_audit_event(
+                'LOGIN',
+                target=user,
+                connection=None,
+                success=False,
+                details_extra={'reason': 'invalid_password', 'ip': ip}
+            )
+            current_app.logger.warning(f"Failed login (invalid password) for user id {user.id} from {ip}")
+            flash('Invalid username or password.', 'danger')
+
+            # optionally: implement account lockout here (see note at end)
+            return redirect(url_for('.login'))
+
+        # password correct -> check 2FA
+        if getattr(user, 'requires_2fa', False):
+            # set temporary session and send verification code
+            session['2fa_user_id'] = user.id
+            session['remember_me'] = remember
+
+            primary_method = user.two_factor_methods.filter_by(is_primary=True, verified=True).first()
+            if primary_method:
+                # log that 2FA was initiated (success = None -> in-progress)
+                log_audit_event(
+                    'LOGIN',
+                    target=user,
+                    connection=None,
+                    success=None,
+                    details_extra={'2fa_initiated': True, 'method': getattr(primary_method, 'method', None), 'ip': ip}
+                )
+                # send the code (make sure function exists)
+                send_verification_code(primary_method)
+                return redirect(url_for('auth_web.verify_2fa'))
+            else:
+                log_audit_event(
+                    'LOGIN',
+                    target=user,
+                    connection=None,
+                    success=False,
+                    details_extra={'reason': 'no_primary_2fa', 'ip': ip}
+                )
+                flash('No valid 2FA method found. Please contact support.', 'danger')
+                return redirect(url_for('.login'))
+
+        # no 2FA required => final successful login
+        login_user(user, remember=remember)
+        try:
+            user.last_login_at = datetime.utcnow()
+            db.session.add(user)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception("Failed to update last_login_at for user %s", user.id)
+
+        log_audit_event(
+            'LOGIN',
+            target=user,
+            connection=None,
+            success=True,
+            details_extra={'method': 'password', 'ip': ip}
+        )
+        current_app.logger.info(f"User {user.id} logged in successfully from {ip}")
+
+        return redirect_after_login(user)
+
+    # GET -> show the form
     return render_template('login.html')
 
 def redirect_after_login(user):
@@ -1332,51 +1414,83 @@ def verify_2fa_setup():
 
 @auth_web_bp.route('/verify-2fa', methods=['GET', 'POST'])
 def verify_2fa():
-    # Redirect if not in 2FA verification flow
+    # Must be in a 2FA session
     if '2fa_user_id' not in session:
+        flash('Session expired. Please log in again.', 'warning')
         return redirect(url_for('auth_web.login'))
-    
+
     user = User.query.get(session['2fa_user_id'])
-    
+    ip = request.remote_addr or 'unknown'
+
     if not user:
         flash('User session expired. Please log in again.', 'danger')
+        session.pop('2fa_user_id', None)
+        session.pop('remember_me', None)
         return redirect(url_for('auth_web.login'))
-    
+
     # Get primary 2FA method
     primary_method = user.two_factor_methods.filter_by(
-        is_primary=True, 
+        is_primary=True,
         verified=True
     ).first()
-    
+
     if not primary_method:
+        log_audit_event(
+            'LOGIN',
+            target=user,
+            connection=None,
+            success=False,
+            details_extra={'reason': 'no_primary_2fa', 'ip': ip}
+        )
         flash('No valid 2FA method found. Please contact support.', 'danger')
+        session.pop('2fa_user_id', None)
+        session.pop('remember_me', None)
         return redirect(url_for('auth_web.login'))
-    
+
     if request.method == 'POST':
-        code = request.form.get('code')
-        
+        code = (request.form.get('code') or '').strip()
+
         if verify_code(primary_method, code):
-            # Log the user in
+            # Finalize login
             remember = session.pop('remember_me', False)
             login_user(user, remember=remember)
-            
-            # Update method usage timestamp
+
+            # Update timestamps
+            user.last_login_at = datetime.utcnow()
             primary_method.last_used = datetime.utcnow()
             db.session.commit()
-            
-            # Clear session variables
+
+            # Clear session
             session.pop('2fa_user_id', None)
-            
+
+            log_audit_event(
+                'LOGIN',
+                target=user,
+                connection=None,
+                success=True,
+                details_extra={'method': '2fa', 'ip': ip}
+            )
+
             flash('Logged in successfully!', 'success')
             return redirect_after_login(user)
-        
-        flash('Invalid verification code', 'danger')
-    
-    # Mask destination for display
+        else:
+            log_audit_event(
+                'LOGIN',
+                target=user,
+                connection=None,
+                success=False,
+                details_extra={'reason': '2fa_invalid_code', 'ip': ip}
+            )
+            flash('Invalid verification code.', 'danger')
+
+    # Mask destination for display (email/phone)
     masked_destination = mask_sensitive(primary_method.destination)
-    return render_template('verify_2fa_login.html', 
-                          method=primary_method.method,
-                          masked_destination=masked_destination)
+    return render_template(
+        'verify_2fa_login.html',
+        method=primary_method.method,
+        masked_destination=masked_destination
+    )
+
 
 def send_verification_code(method):
     code = generate_verification_code()

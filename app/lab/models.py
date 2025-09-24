@@ -118,6 +118,10 @@ class UploadedFile(db.Model):
     daily_log_entry_id = db.Column(db.Integer, db.ForeignKey('daily_log_entries.id'), nullable=True)
     scheduled_maintenance_log_id = db.Column(db.Integer, db.ForeignKey('scheduled_maintenance_logs.id'), nullable=True)
 
+
+    # Radiology references
+    radiology_daily_log_entry_id = db.Column(db.Integer, db.ForeignKey('radiology_daily_log_entries.id'), nullable=True)
+    radiology_scheduled_maintenance_log_id = db.Column(db.Integer, db.ForeignKey('radiology_scheduled_maintenance_logs.id'), nullable=True)
     def __repr__(self):
         return f"<UploadedFile {self.filename}>"
 

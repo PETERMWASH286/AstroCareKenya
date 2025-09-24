@@ -1407,14 +1407,45 @@ def api_recent_vitals():
 
 @patients_web_bp.route('/patients')
 def view_patients():
-    # Get all patients with their latest visit status
-    patients = Patient.query.options(
-        db.joinedload(Patient.visits)
-    ).order_by(Patient.last_name.asc()).all()
-    
-    return render_template('view_patients.html', 
-                         patients=patients,
-                         now=datetime.utcnow())
+    # pagination parameters
+    try:
+        page = int(request.args.get('page', 1))
+    except (ValueError, TypeError):
+        page = 1
+
+    try:
+        per_page = int(request.args.get('per_page', 25))  # default 25 rows per page
+    except (ValueError, TypeError):
+        per_page = 25
+
+    # base query
+    base_q = Patient.query
+
+    # ordering (by last_name then first_name)
+    base_q = base_q.order_by(Patient.last_name.asc(), Patient.first_name.asc())
+
+    # paginate
+    pagination = base_q.paginate(page=page, per_page=per_page, error_out=False)
+    patients = pagination.items
+
+    # summary counts (do simple fast queries)
+    total_patients = db.session.query(db.func.count(Patient.id)).scalar()
+    insured_count = db.session.query(db.func.count(Patient.id)).filter(Patient.insurance_provider.isnot(None)).scalar()
+    minors_count = db.session.query(db.func.count(Patient.id)).filter(Patient.age < 18).scalar()
+    seniors_count = db.session.query(db.func.count(Patient.id)).filter(Patient.age >= 60).scalar()
+
+    return render_template(
+        'view_patients.html',
+        patients=patients,
+        pagination=pagination,
+        total_patients=total_patients,
+        insured_count=insured_count,
+        minors_count=minors_count,
+        seniors_count=seniors_count,
+        per_page=per_page,
+        now=datetime.utcnow()
+    )
+
 
     
     
