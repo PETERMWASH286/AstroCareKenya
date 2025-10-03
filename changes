@@ -1,0 +1,5 @@
+ALTER TABLE external_orders
+  MODIFY delivery_date DATETIME NULL,
+  MODIFY department VARCHAR(100) NULL,
+  MODIFY budget_code VARCHAR(50) NULL,
+  MODIFY required_by DATETIME NULL;

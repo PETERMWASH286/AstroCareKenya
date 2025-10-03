@@ -56,6 +56,8 @@ class Config:
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
     MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER', 'noreply@example.com')
     
+    
+    
     # Handle ADMINS as a list
     admins = os.environ.get('ADMINS', '')
     ADMINS = [email.strip() for email in admins.split(',') if email.strip()]
@@ -110,7 +112,7 @@ class Config:
 class DevelopmentConfig(Config):
     """Development configuration."""
     DEBUG = True
-    SQLALCHEMY_ECHO = True # Log database queries in development
+    SQLALCHEMY_ECHO = False # Log database queries in development
     # MAIL_SERVER, MAIL_PORT, etc. likely from .env or set specifically here for dev
 
 class TestingConfig(Config):

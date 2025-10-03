@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>LPO - {{ lpo.lpo_number }}</title>
+    <style>
+        @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            line-height: 1.3;
+            color: #1f2937;
+            background: #ffffff;
+            font-size: 12px;
+        }
+
+        /* Compact Hospital Header */
+        .hospital-header {
+            background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+            color: white;
+            padding: 15px 20px;
+        }
+
+        .hospital-header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .hospital-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .hospital-icon {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px;
+            border-radius: 8px;
+        }
+
+        .hospital-text h1 {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+
+        .hospital-text .tagline {
+            color: #dbeafe;
+            font-size: 11px;
+        }
+
+        .hospital-contact {
+            text-align: right;
+            font-size: 10px;
+            color: #dbeafe;
+        }
+
+        /* Compact LPO Header */
+        .lpo-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .lpo-title-section h2 {
+            font-size: 20px;
+            font-weight: bold;
+            color: #111827;
+            margin-bottom: 4px;
+        }
+
+        .lpo-meta {
+            display: flex;
+            gap: 15px;
+            color: #6b7280;
+            font-size: 11px;
+            margin-top: 5px;
+        }
+
+        .lpo-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .status-badge {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 11px;
+        }
+
+        /* Compact Info Sections */
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            padding: 15px 20px;
+        }
+
+        .info-card {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .card-icon {
+            padding: 5px;
+            border-radius: 5px;
+            font-size: 11px;
+        }
+
+        .supplier-icon {
+            background: #dbeafe;
+            color: #2563eb;
+        }
+
+        .delivery-icon {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .card-header h3 {
+            font-size: 12px;
+            font-weight: 600;
+            color: #111827;
+        }
+
+        .info-details {
+            font-size: 11px;
+        }
+
+        .info-row {
+            margin-bottom: 4px;
+        }
+
+        .info-label {
+            color: #6b7280;
+            font-size: 10px;
+            margin-bottom: 1px;
+        }
+
+        .info-value {
+            color: #111827;
+            font-weight: 500;
+            font-size: 11px;
+        }
+
+        /* Compact Order Items */
+        .order-section {
+            padding: 0 20px 15px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+
+        .section-icon {
+            padding: 5px;
+            background: #f3e8ff;
+            color: #7c3aed;
+            border-radius: 5px;
+            font-size: 11px;
+        }
+
+        .section-header h3 {
+            font-size: 13px;
+            font-weight: 600;
+            color: #111827;
+        }
+
+        .order-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            overflow: hidden;
+            font-size: 11px;
+        }
+
+        .order-table thead {
+            background: #f9fafb;
+        }
+
+        .order-table th {
+            padding: 8px 10px;
+            text-align: left;
+            font-weight: 600;
+            color: #374151;
+            font-size: 10px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .order-table td {
+            padding: 10px;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .item-number {
+            width: 24px;
+            height: 24px;
+            background: #dbeafe;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #2563eb;
+            font-weight: bold;
+            font-size: 10px;
+        }
+
+        .item-details {
+            min-width: 200px;
+        }
+
+        .item-name {
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 2px;
+            font-size: 11px;
+        }
+
+        .item-category {
+            color: #6b7280;
+            font-size: 9px;
+            margin-bottom: 3px;
+        }
+
+        .item-reason {
+            color: #6b7280;
+            font-size: 9px;
+            background: #f9fafb;
+            padding: 2px 5px;
+            border-radius: 3px;
+            margin-top: 2px;
+        }
+
+        .quantity-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: #f3f4f6;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+        }
+
+        .quantity-value {
+            font-weight: bold;
+            color: #111827;
+        }
+
+        .quantity-unit {
+            color: #6b7280;
+            font-size: 9px;
+        }
+
+        .price-cell {
+            text-align: right;
+        }
+
+        .price-value {
+            font-weight: 600;
+            color: #111827;
+            font-size: 11px;
+        }
+
+        .total-price {
+            font-weight: bold;
+            color: #059669;
+            font-size: 12px;
+        }
+
+        /* Compact Financial Summary */
+        .financial-section {
+            padding: 0 20px 15px;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .summary-card {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 12px;
+        }
+
+        .summary-card h4 {
+            font-size: 11px;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 10px;
+            color: #111827;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 0;
+            border-bottom: 1px solid #f3f4f6;
+            font-size: 10px;
+        }
+
+        .summary-label {
+            color: #6b7280;
+        }
+
+        .summary-value {
+            font-weight: 600;
+            color: #111827;
+        }
+
+        .summary-total {
+            background: #f0f9ff;
+            margin: 6px -12px -12px;
+            padding: 8px 12px;
+            border-radius: 0 0 6px 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+        }
+
+        .total-label {
+            font-weight: bold;
+            color: #111827;
+        }
+
+        .total-value {
+            font-weight: bold;
+            color: #2563eb;
+        }
+
+        /* Compact Approvals */
+        .approvals-section {
+            padding: 15px 20px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .approvals-title {
+            font-size: 12px;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 15px;
+            color: #111827;
+        }
+
+        .approvals-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .approval-card {
+            text-align: center;
+        }
+
+        .approval-badge {
+            background: #2563eb;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 8px;
+            font-weight: bold;
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+            margin-bottom: 5px;
+        }
+
+        .finance-approved {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+
+        .director-approved {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+        }
+
+        .approval-content {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 10px;
+        }
+
+        .approval-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 5px;
+            color: white;
+            font-size: 10px;
+        }
+
+        .prepared-icon {
+            background: #2563eb;
+        }
+
+        .finance-icon {
+            background: #10b981;
+        }
+
+        .director-icon {
+            background: #8b5cf6;
+        }
+
+        .approval-role {
+            font-size: 10px;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 8px;
+        }
+
+        .signature-line {
+            border-bottom: 1px solid #d1d5db;
+            height: 20px;
+            margin: 10px auto;
+            width: 80px;
+            position: relative;
+        }
+
+        .signature-text {
+            position: absolute;
+            top: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #f9fafb;
+            padding: 0 4px;
+            font-size: 8px;
+            color: #6b7280;
+        }
+
+        .approved-text {
+            color: #059669;
+            font-weight: bold;
+        }
+
+        .approval-details {
+            margin-top: 5px;
+        }
+
+        .approval-name {
+            color: #2563eb;
+            font-weight: 600;
+            font-size: 9px;
+        }
+
+        .approval-date {
+            color: #6b7280;
+            font-size: 8px;
+            margin-top: 1px;
+        }
+
+        .pending-text {
+            color: #6b7280;
+            font-style: italic;
+            font-size: 9px;
+            margin-top: 5px;
+        }
+
+        /* Compact Footer */
+        .footer {
+            background: #1f2937;
+            color: white;
+            padding: 12px 20px;
+            font-size: 10px;
+        }
+
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .footer-brand h4 {
+            font-size: 11px;
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+
+        .footer-tagline {
+            color: #d1d5db;
+            font-size: 9px;
+        }
+
+        .footer-contact {
+            color: #d1d5db;
+            font-size: 9px;
+            text-align: right;
+        }
+
+        /* Print Styles */
+        @media print {
+            body { 
+                -webkit-print-color-adjust: exact; 
+                font-size: 10px;
+            }
+            .hospital-header { background: #2563eb !important; }
+            .status-badge { background: #059669 !important; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Compact Hospital Header -->
+    <div class="hospital-header">
+        <div class="hospital-header-content">
+            <div class="hospital-brand">
+                <div class="hospital-icon">
+                    <i class="fas fa-hospital" style="font-size: 16px;"></i>
+                </div>
+                <div class="hospital-text">
+                    <h1>MEDICAL CENTER HOSPITAL</h1>
+                    <p class="tagline">Excellence in Healthcare Delivery</p>
+                </div>
+            </div>
+            <div class="hospital-contact">
+                <p>P.O. Box 12345, Nairobi</p>
+                <p>Tel: +254 700 123 456</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Compact LPO Header -->
+    <div class="lpo-header">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div class="lpo-title-section">
+                <h2>LOCAL PURCHASE ORDER</h2>
+                <div class="lpo-meta">
+                    <div class="lpo-meta-item">
+                        <i class="fas fa-calendar" style="color: #2563eb; font-size: 10px;"></i>
+                        <span>{{ lpo.created_at.strftime('%Y-%m-%d') if lpo.created_at else 'N/A' }}</span>
+                    </div>
+                    <div class="lpo-meta-item">
+                        <i class="fas fa-hashtag" style="color: #059669; font-size: 10px;"></i>
+                        <span>{{ lpo.lpo_number or "LPO-" ~ lpo.id }}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="status-badge">
+                {{ lpo.status|replace('_',' ')|title if lpo.status else 'ISSUED' }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Compact Supplier & Order Info -->
+    <div class="info-grid">
+        <!-- Supplier Info -->
+        <div class="info-card">
+            <div class="card-header">
+                <div class="card-icon supplier-icon">
+                    <i class="fas fa-truck" style="font-size: 10px;"></i>
+                </div>
+                <h3>SUPPLIER</h3>
+            </div>
+            <div class="info-details">
+                <div class="info-row">
+                    <div class="info-label">Supplier Name</div>
+                    <div class="info-value">
+                        {{ lpo.supplier.name if lpo.supplier else (lpo.contact_person or 'Unknown Supplier') }}
+                    </div>
+                </div>
+                {% if lpo.supplier %}
+                    {% if lpo.supplier.email %}
+                    <div class="info-row">
+                        <div class="info-label">Email</div>
+                        <div class="info-value">{{ lpo.supplier.email }}</div>
+                    </div>
+                    {% endif %}
+                    {% if lpo.supplier.phone %}
+                    <div class="info-row">
+                        <div class="info-label">Phone</div>
+                        <div class="info-value">{{ lpo.supplier.phone }}</div>
+                    </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Order & Delivery Info -->
+        <div class="info-card">
+            <div class="card-header">
+                <div class="card-icon delivery-icon">
+                    <i class="fas fa-shipping-fast" style="font-size: 10px;"></i>
+                </div>
+                <h3>ORDER DETAILS</h3>
+            </div>
+            <div class="info-details">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+                    <div>
+                        <div class="info-label">Order Date</div>
+                        <div class="info-value">
+                            {{ lpo.created_at.strftime('%Y-%m-%d') if lpo.created_at else 'N/A' }}
+                        </div>
+                    </div>
+                    <div>
+                        <div class="info-label">Requested By</div>
+                        <div class="info-value">
+                            {{ lpo.user.full_name if lpo.user and lpo.user.full_name else (lpo.user.username if lpo.user else 'Store Officer') }}
+                        </div>
+                    </div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Delivery Date</div>
+                    <div class="info-value" style="color: #059669; font-weight: 600;">
+                        {% if lpo.delivery_date %}
+                            {{ lpo.delivery_date.strftime('%Y-%m-%d') }}
+                        {% else %}
+                            Not set
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Compact Order Items & Financial Summary -->
+    <div class="financial-section">
+        <div class="summary-grid">
+            <!-- Order Items -->
+            <div>
+                <div class="section-header">
+                    <div class="section-icon">
+                        <i class="fas fa-boxes" style="font-size: 10px;"></i>
+                    </div>
+                    <h3>ORDER ITEM</h3>
+                </div>
+
+                <table class="order-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 30px;">#</th>
+                            <th>Description</th>
+                            <th style="text-align: center; width: 50px;">Qty</th>
+                            <th style="text-align: right; width: 70px;">Price</th>
+                            <th style="text-align: right; width: 70px;">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <div class="item-number">1</div>
+                            </td>
+                            <td>
+                                <div class="item-details">
+                                    <div class="item-name">{{ lpo.item_name }}</div>
+                                    {% if lpo.category %}
+                                    <div class="item-category">
+                                        {{ lpo.category|replace('_', ' ')|title }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td style="text-align: center;">
+                                <div class="quantity-badge">
+                                    <span class="quantity-value">{{ lpo.quantity or 0 }}</span>
+                                    <span class="quantity-unit">{{ lpo.unit }}</span>
+                                </div>
+                            </td>
+
+                            {% set unit_price = (lpo.unit_price or 0) %}
+                            {% set qty = (lpo.quantity or 0) %}
+                            {% set subtotal = unit_price * qty %}
+                            {% set tax_rate = (lpo.tax_rate or 0) %}
+                            {% set tax_amount = (subtotal * tax_rate / 100) %}
+                            {% set computed_total = (subtotal + tax_amount) %}
+                            {% set line_total = (lpo.total_price if lpo.total_price is not none else computed_total) %}
+
+                            <td class="price-cell">
+                                <div class="price-value">KSh {{ "{:,.2f}".format(unit_price) }}</div>
+                            </td>
+                            <td class="price-cell">
+                                <div class="total-price">KSh {{ "{:,.2f}".format(line_total) }}</div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Financial Summary -->
+            <div>
+                <div class="summary-card">
+                    <h4>FINANCIAL SUMMARY</h4>
+                    <div class="summary-row">
+                        <span class="summary-label">Subtotal:</span>
+                        <span class="summary-value">KSh {{ "{:,.2f}".format(subtotal) }}</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">Tax ({{ tax_rate }}%):</span>
+                        <span class="summary-value">KSh {{ "{:,.2f}".format(tax_amount) }}</span>
+                    </div>
+                    <div class="summary-total">
+                        <span class="total-label">Total:</span>
+                        <span class="total-value">KSh {{ "{:,.2f}".format(line_total) }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Compact Approvals Section -->
+    <div class="approvals-section">
+        <h3 class="approvals-title">AUTHORIZATIONS</h3>
+        <div class="approvals-grid">
+            <!-- Prepared By -->
+            <div class="approval-card">
+                <div class="approval-badge">
+                    <i class="fas fa-user-edit" style="font-size: 7px;"></i>
+                    PREPARED
+                </div>
+                <div class="approval-content">
+                    <div class="approval-icon prepared-icon">
+                        <i class="fas fa-user-edit" style="font-size: 10px;"></i>
+                    </div>
+                    <div class="approval-role">Prepared By</div>
+                    <div class="signature-line">
+                        <div class="signature-text">
+                            {% if lpo.user and lpo.created_at %}
+                            <span class="approved-text">✓ PREPARED</span>
+                            {% else %}
+                            Signature
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="approval-details">
+                        <div class="approval-name">
+                            {{ lpo.user.full_name if lpo.user and lpo.user.full_name else (lpo.user.username if lpo.user else 'Store Officer') }}
+                        </div>
+                        <div class="approval-date">
+                            {{ lpo.created_at.strftime('%Y-%m-%d') if lpo.created_at else '' }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Finance Manager -->
+            <div class="approval-card">
+                {% if lpo.finance_approved %}
+                <div class="approval-badge finance-approved">
+                    <i class="fas fa-stamp" style="font-size: 7px;"></i>
+                    APPROVED
+                </div>
+                {% endif %}
+                <div class="approval-content" style="{% if lpo.finance_approved %}border-color: #10b981;{% else %}border-style: dashed; border-color: #d1d5db;{% endif %}">
+                    <div class="approval-icon finance-icon" style="{% if not lpo.finance_approved %}background: #9ca3af;{% endif %}">
+                        <i class="fas fa-file-invoice-dollar" style="font-size: 10px;"></i>
+                    </div>
+                    <div class="approval-role">Finance</div>
+                    <div class="signature-line">
+                        <div class="signature-text">
+                            {% if lpo.finance_approved %}
+                            <span class="approved-text">✓ APPROVED</span>
+                            {% else %}
+                            Signature
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if lpo.finance_approved %}
+                    <div class="approval-details">
+                        <div class="approval-name">
+                            {{ lpo.finance_user.full_name if lpo.finance_user and lpo.finance_user.full_name else (lpo.finance_user.username if lpo.finance_user else 'Finance') }}
+                        </div>
+                        <div class="approval-date">
+                            {{ lpo.finance_approved_at.strftime('%Y-%m-%d') if lpo.finance_approved_at else '' }}
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="pending-text">Pending</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Director -->
+            <div class="approval-card">
+                {% if lpo.director_approved %}
+                <div class="approval-badge director-approved">
+                    <i class="fas fa-crown" style="font-size: 7px;"></i>
+                    APPROVED
+                </div>
+                {% endif %}
+                <div class="approval-content" style="{% if lpo.director_approved %}border-color: #8b5cf6;{% else %}border-style: dashed; border-color: #d1d5db;{% endif %}">
+                    <div class="approval-icon director-icon" style="{% if not lpo.director_approved %}background: #9ca3af;{% endif %}">
+                        <i class="fas fa-user-tie" style="font-size: 10px;"></i>
+                    </div>
+                    <div class="approval-role">Director</div>
+                    <div class="signature-line">
+                        <div class="signature-text">
+                            {% if lpo.director_approved %}
+                            <span class="approved-text">✓ APPROVED</span>
+                            {% else %}
+                            Signature
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if lpo.director_approved %}
+                    <div class="approval-details">
+                        <div class="approval-name">
+                            {{ lpo.director_user.full_name if lpo.director_user and lpo.director_user.full_name else (lpo.director_user.username if lpo.director_user else 'Director') }}
+                        </div>
+                        <div class="approval-date">
+                            {{ lpo.director_approved_at.strftime('%Y-%m-%d') if lpo.director_approved_at else '' }}
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="pending-text">Pending</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Compact Footer -->
+    <div class="footer">
+        <div class="footer-content">
+            <div class="footer-brand">
+                <h4>MEDICAL CENTER HOSPITAL</h4>
+                <p class="footer-tagline">Quality Healthcare Services</p>
+            </div>
+            <div class="footer-contact">
+                <p>procurement@medicalcenter.co.ke | +254 700 123 457</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

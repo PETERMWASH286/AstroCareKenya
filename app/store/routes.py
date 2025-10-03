@@ -1,7 +1,9 @@
 from datetime import datetime, timedelta
 import os
 import re
+import tempfile
 from flask import Blueprint, app, current_app, flash, json, jsonify, redirect, render_template, request, url_for
+from weasyprint import HTML
 from werkzeug.utils import secure_filename
 from flask_login import current_user
 from sqlalchemy.exc import SQLAlchemyError
@@ -12,7 +14,8 @@ from app.lab.models import LabInventory
 from app.patients.models import Service
 from app.pharmacy.models import PharmacyInventory
 from app.radiology.models import RadiologyInventory
-from app.store.models import ExternalOrder, PurchaseOrder, Stock, StockDetail, StockFlow, StockRequest, Supplier
+from app.store.models import LPO, ExternalOrder, PurchaseOrder, Stock, StockDetail, StockFlow, StockRequest, Supplier, SupplierAccount, SupplierInvoice, SupplierTransaction
+from app.utils.notifications import notification_manager
 
 from . import store_web_bp
 
@@ -575,29 +578,19 @@ def create_external_order():
         if priority not in ['low', 'medium', 'high', 'urgent']:
             priority = 'medium'
         
-        try:
-            delivery_date = datetime.strptime(request.form.get('delivery_date'), '%Y-%m-%d')
-        except (TypeError, ValueError):
-            flash('Invalid delivery date format', 'error')
-            return redirect(url_for('store_web_bp.external_orders'))
+
         
         category = request.form.get('category', '').strip()
         if not category:
             flash('Category is required', 'error')
             return redirect(url_for('store_web_bp.external_orders'))
         
-        department = request.form.get('project', '').strip()  # Note: form uses 'project' for department
-        if not department:
-            flash('Department is required', 'error')
-            return redirect(url_for('store_web_bp.external_orders'))
-        
-        budget_code = request.form.get('budget_code', '').strip()
-        
         try:
             required_by = datetime.strptime(request.form.get('required_by'), '%Y-%m-%d')
         except (TypeError, ValueError):
             flash('Invalid required by date format', 'error')
             return redirect(url_for('store_web_bp.external_orders'))
+
         
         reason = request.form.get('reason', '').strip()
         if not reason:
@@ -616,10 +609,7 @@ def create_external_order():
             contact_person=contact_person,
             contact_info=contact_info,
             priority=priority,
-            delivery_date=delivery_date,
             category=category,
-            department=department,
-            budget_code=budget_code,
             required_by=required_by,
             reason=reason,
             user_id=current_user.id,  # Assuming you have current_user from Flask-Login
@@ -679,17 +669,14 @@ def edit_external_order(order_id):
             order.contact_person = request.form.get('contact', '')
             order.contact_info = request.form.get('contact_info', '')
             order.priority = request.form['priority']
-            order.delivery_date = datetime.strptime(request.form['delivery_date'], '%Y-%m-%d')
             order.category = request.form['category']
-            order.department = request.form['project']  # Note: form uses 'project' for department
-            order.budget_code = request.form.get('budget_code', '')
-            order.required_by = datetime.strptime(request.form['required_by'], '%Y-%m-%d')
+
             order.reason = request.form['reason']
             order.updated_at = datetime.utcnow()
             
             db.session.commit()
             flash('Requisition updated successfully!', 'success')
-            return redirect(url_for('store_web.external_orders'))
+            return redirect(url_for('store_web_bp.external_orders'))
         
         except Exception as e:
             db.session.rollback()
@@ -705,20 +692,247 @@ def edit_external_order(order_id):
                           suppliers=suppliers, 
                           currency=currency)
 
+# Cancel External Order
+@store_web_bp.route('/external-orders/<int:order_id>/cancel', methods=['POST'])
+def cancel_external_order(order_id):
+    order = ExternalOrder.query.get_or_404(order_id)
+
+    # Allow cancellation if order is pending OR approved by finance (but not yet director-approved)
+    if not (
+        order.status == 'pending' or 
+        (order.finance_approved is True )
+    ):
+        flash('Only pending or finance-approved orders can be cancelled.', 'warning')
+        return redirect(url_for('store_web_bp.external_orders'))
+
+    try:
+        order.status = 'cancelled'
+        order.updated_at = datetime.utcnow()
+        db.session.commit()
+        flash('Order has been cancelled successfully.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error cancelling order: {str(e)}")
+        flash('An error occurred while cancelling the order.', 'error')
+
+    return redirect(url_for('store_web_bp.external_orders'))
+
+# Generate LPO
+@store_web_bp.route('/external-orders/<int:order_id>/generate-lpo')
+def generate_lpo(order_id):
+    order = ExternalOrder.query.get_or_404(order_id)
+
+    # Only allow for director-approved orders
+    if order.status != 'director_approved':
+        flash('LPO can only be generated after Director approval.', 'warning')
+        return redirect(url_for('store_web_bp.external_orders'))
+
+    return render_template(
+        'lpo_template.html',
+        order=order,
+        now=datetime.utcnow()   # ✅ pass datetime to template
+    )
+
+@store_web_bp.route("/lpos/<int:order_id>/generate", methods=["POST"])
+def approve_lpo(order_id):
+    """
+    Generate an LPO for a given external order.
+    This prepares the LPO but does not approve it yet.
+    """
+    try:
+        data = request.get_json()
+        delivery_date = data.get("delivery_date")
+
+        external_order = ExternalOrder.query.get_or_404(order_id)
+
+        # ✅ Prevent duplicate LPOs for the same order (if one already exists)
+        existing_lpo = LPO.query.filter_by(external_order_id=external_order.id).first()
+        if existing_lpo:
+            return jsonify({
+                "success": False,
+                "message": f"LPO already exists: {existing_lpo.lpo_number}"
+            }), 400
+
+        # ✅ Create new LPO (status = pending, not approved yet)
+        new_lpo = LPO(
+            external_order_id=external_order.id,
+            item_name=external_order.item_name,
+            category=external_order.category,
+            unit=external_order.unit,
+            quantity=external_order.quantity,
+            unit_price=external_order.unit_price,
+            tax_rate=external_order.tax_rate,
+            total_price=external_order.total_price,
+            supplier_id=external_order.supplier_id,
+            contact_person=external_order.contact_person,
+            contact_info=external_order.contact_info,
+            status="pending",   # 👈 not approved yet
+            created_by=current_user.id,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow(),
+        )
+
+        # Optional: set delivery date if passed
+        if delivery_date:
+            try:
+                new_lpo.delivery_date = datetime.fromisoformat(delivery_date)
+            except Exception:
+                pass
+
+        db.session.add(new_lpo)
+        db.session.flush()  # get new_lpo.id before commit
+
+        # Generate LPO number
+        new_lpo.lpo_number = f"LPO-{new_lpo.id}"
+
+        # Do NOT mark external order completed yet (still under approvals)
+        external_order.status = "lpo_generated"
+        external_order.updated_at = datetime.utcnow()
+
+        db.session.commit()
+
+        return jsonify({
+            "success": True,
+            "message": "LPO generated successfully. Awaiting approvals.",
+            "lpo_id": new_lpo.id,
+            "lpo_number": new_lpo.lpo_number
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@store_web_bp.route("/view-lpo/<int:order_id>")
+def view_lpo(order_id):
+    """View LPO by external order ID"""
+    lpo = LPO.query.filter_by(external_order_id=order_id).first_or_404()
+    return render_template("view_lpo.html", lpo=lpo)
+
+
 @store_web_bp.route('/external-orders/<int:order_id>/place-order')
 def place_order(order_id):
     try:
         requisition = ExternalOrder.query.get_or_404(order_id)
-        
-        # Only allow placing orders for approved requisitions
-        if requisition.status != 'approved':
-            flash('Only approved requisitions can be converted to purchase orders', 'warning')
+
+        if requisition.status != 'completed':
+            flash('Only completed requisitions can be converted to purchase orders', 'warning')
             return redirect(url_for('store_web_bp.external_orders'))
+
+        # Check LPO
+        lpo = LPO.query.filter_by(external_order_id=order_id).first()
+        if not lpo:
+            flash('No LPO found for this requisition', 'warning')
+            return redirect(url_for('store_web_bp.external_orders'))
+
+        # Generate Compact PDF with the new template
+        html_content = render_template("lpo_pdf.html", lpo=lpo)
         
-        # Create purchase order from requisition
+        # Configure PDF options for compact size
+        pdf_options = {
+            'page-size': 'A4',
+            'margin-top': '0.3in',
+            'margin-right': '0.3in',
+            'margin-bottom': '0.3in',
+            'margin-left': '0.3in',
+            'encoding': "UTF-8",
+            'no-outline': None,
+            'quiet': None
+        }
+        
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
+            HTML(string=html_content).write_pdf(tmp_file.name, options=pdf_options)
+            pdf_path = tmp_file.name
+
+        # Send professional email to supplier
+        email_sent = False
+        if lpo.supplier and lpo.supplier.email:
+            subject = f"{lpo.lpo_number} - Medical Center Hospital"
+            
+            # Plain text email content
+            plain_text_body = f"""
+Dear {lpo.supplier.name},
+
+Please find attached Local Purchase Order {lpo.lpo_number} from Medical Center Hospital.
+
+ORDER SUMMARY:
+• Item: {requisition.item_name}
+• Quantity: {requisition.quantity} {requisition.unit}
+• Total: KSh {requisition.total_price:,.2f}
+• Delivery: {requisition.delivery_date.strftime('%Y-%m-%d') if requisition.delivery_date else 'TBC'}
+
+Please acknowledge receipt and confirm delivery timeline. Reference this LPO number on your invoice.
+
+Best regards,
+Procurement Department
+Medical Center Hospital
+"""
+            
+            # HTML email content
+            html_email_body = f"""
+<!DOCTYPE html>
+<html>
+<body style="font-family: Arial, sans-serif; line-height: 1.4; color: #333;">
+    <div style="background: #2563eb; color: white; padding: 15px; text-align: center;">
+        <h2 style="margin: 0;">Medical Center Hospital</h2>
+    </div>
+    
+    <div style="padding: 20px;">
+        <h3 style="color: #2563eb;">{lpo.lpo_number}</h3>
+        
+        <p>Dear <strong>{lpo.supplier.name}</strong>,</p>
+        
+        <p>Please find attached Local Purchase Order <strong>{lpo.lpo_number}</strong>.</p>
+        
+        <div style="background: #f8fafc; padding: 15px; border-radius: 5px; margin: 15px 0;">
+            <h4 style="margin: 0 0 10px 0; color: #1e293b;">Order Summary:</h4>
+            <table style="width: 100%;">
+                <tr>
+                    <td style="padding: 2px 0;"><strong>Item:</strong></td>
+                    <td style="padding: 2px 0;">{requisition.item_name}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 2px 0;"><strong>Quantity:</strong></td>
+                    <td style="padding: 2px 0;">{requisition.quantity} {requisition.unit}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 2px 0;"><strong>Total Amount:</strong></td>
+                    <td style="padding: 2px 0;">KSh {requisition.total_price:,.2f}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 2px 0;"><strong>Delivery:</strong></td>
+                    <td style="padding: 2px 0;">{requisition.delivery_date.strftime('%Y-%m-%d') if requisition.delivery_date else 'To be confirmed'}</td>
+                </tr>
+            </table>
+        </div>
+        
+        <p>Please acknowledge receipt and confirm delivery timeline. Reference this LPO number on your invoice.</p>
+        
+        <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #e2e8f0;">
+            <p style="margin: 5px 0;"><strong>Best regards,</strong></p>
+            <p style="margin: 5px 0; color: #2563eb;"><strong>Procurement Department</strong></p>
+            <p style="margin: 5px 0; font-size: 12px; color: #64748b;">
+                Medical Center Hospital • procurement@medicalcenter.co.ke • +254 700 123 457
+            </p>
+        </div>
+    </div>
+</body>
+</html>
+"""
+            
+            email_sent = notification_manager.send_email(
+                subject=subject,
+                recipients=[lpo.supplier.email],
+                body=plain_text_body,  # Changed from 'body' to 'plain_text_body'
+                html_body=html_email_body,  # Changed from 'html_body' to 'html_email_body'
+                attachments=[pdf_path]
+            )
+
+        # Create PurchaseOrder record
         purchase_order = PurchaseOrder(
             requisition_id=requisition.id,
             supplier_id=requisition.supplier_id,
+            lpo_id=lpo.id,
+            lpo_number=lpo.lpo_number,
             item_name=requisition.item_name,
             quantity=requisition.quantity,
             unit=requisition.unit,
@@ -729,22 +943,34 @@ def place_order(order_id):
             status='ordered',
             created_by=current_user.id
         )
-        
-        # Update requisition status to 'completed' instead of 'processing'
-        requisition.status = 'completed'  # Changed from 'processing'
+
+        requisition.status = 'placed'
         requisition.updated_at = datetime.utcnow()
-        
+
         db.session.add(purchase_order)
         db.session.commit()
-        
-        flash(f'Purchase order #{purchase_order.id} created successfully!', 'success')
+
+        # Clean up temporary file
+        try:
+            os.unlink(pdf_path)
+        except:
+            pass
+
+        # Show appropriate success message
+        if email_sent:
+            flash(f'Purchase order #{purchase_order.id} created and LPO sent to {lpo.supplier.name}!', 'success')
+        else:
+            flash(f'Purchase order #{purchase_order.id} created but email failed to send to supplier.', 'warning')
+
         return redirect(url_for('store_web_bp.external_orders'))
-    
-    except SQLAlchemyError as e:
+
+    except Exception as e:
         db.session.rollback()
-        current_app.logger.error(f"Error creating purchase order: {str(e)}")
-        flash('An error occurred while creating the purchase order. Please try again.', 'error')
+        current_app.logger.error(f"Error creating purchase order or sending LPO: {str(e)}")
+        flash('An error occurred while creating the purchase order or sending LPO.', 'error')
         return redirect(url_for('store_web_bp.external_orders'))
+
+    
 # Delete Order
 @store_web_bp.route('/external-orders/<int:order_id>/delete', methods=['POST'])
 def delete_external_order(order_id):
@@ -800,37 +1026,146 @@ def record_delivery(id):
             if order.requisition:
                 category = order.requisition.category
             
-            # Create stock entry (matching the approach from status update)
-            stock_item = Stock(
-                name=order.item_name,
-                category=category,
-                quantity=quantity_received,
-                unit_price=order.unit_price,
+            # Check if stock item already exists for this batch and PO
+            existing_stock = Stock.query.filter_by(
                 batch_number=batch_number,
-                expiration_date=datetime.strptime(expiration_date, '%Y-%m-%d') if expiration_date else None,
-                location=location,
-                supplier_id=order.supplier.id,
                 purchase_order_id=order.id,
-                reorder_level=max(50, quantity_received // 2),
-                current_stock=quantity_received
+                name=order.item_name
+            ).first()
+            
+            if existing_stock:
+                # Update existing stock
+                existing_stock.quantity += quantity_received
+                existing_stock.current_stock += quantity_received
+                existing_stock.last_restocked = datetime.utcnow()
+                
+                # Update stock detail or create if doesn't exist
+                existing_detail = StockDetail.query.filter_by(stock_id=existing_stock.id).first()
+                if existing_detail:
+                    existing_detail.condition = condition
+                    existing_detail.storage_temp = storage_temp
+                    existing_detail.certification = certification
+                    existing_detail.inspector = inspector
+                    existing_detail.delivery_notes = notes
+                    existing_detail.serial_numbers = serial_numbers
+                    if attachment_paths:
+                        existing_attachments = existing_detail.attachments.split(',') if existing_detail.attachments else []
+                        existing_attachments.extend(attachment_paths)
+                        existing_detail.attachments = ",".join(existing_attachments)
+                else:
+                    existing_detail = StockDetail(
+                        stock=existing_stock,
+                        condition=condition,
+                        storage_temp=storage_temp,
+                        certification=certification,
+                        inspector=inspector,
+                        delivery_notes=notes,
+                        serial_numbers=serial_numbers,
+                        attachments=",".join(attachment_paths) if attachment_paths else None
+                    )
+                    db.session.add(existing_detail)
+                
+                stock_item = existing_stock
+                stock_detail = existing_detail
+                
+            else:
+                # Create new stock entry
+                stock_item = Stock(
+                    name=order.item_name,
+                    category=category,
+                    quantity=quantity_received,
+                    unit_price=order.unit_price,
+                    batch_number=batch_number,
+                    expiration_date=datetime.strptime(expiration_date, '%Y-%m-%d') if expiration_date else None,
+                    location=location,
+                    supplier_id=order.supplier.id,
+                    purchase_order_id=order.id,
+                    reorder_level=max(50, quantity_received // 2),
+                    current_stock=quantity_received
+                )
+                
+                # Generate derived fields
+                stock_item.sku = stock_item.generate_sku()
+                if not expiration_date:
+                    stock_item.expiration_date = stock_item.calculate_expiration()
+                
+                # Create stock detail entry
+                stock_detail = StockDetail(
+                    stock=stock_item,
+                    condition=condition,
+                    storage_temp=storage_temp,
+                    certification=certification,
+                    inspector=inspector,
+                    delivery_notes=notes,
+                    serial_numbers=serial_numbers,
+                    attachments=",".join(attachment_paths) if attachment_paths else None
+                )
+                
+                db.session.add(stock_item)
+                db.session.add(stock_detail)
+            
+            # 🔥 NEW: Create or Update Supplier Account
+            supplier_account = SupplierAccount.query.filter_by(supplier_id=order.supplier.id).first()
+            if not supplier_account:
+                supplier_account = SupplierAccount(
+                    supplier_id=order.supplier.id,
+                    account_type='regular',
+                    credit_limit=100000.00,
+                    current_balance=0.0
+                )
+                db.session.add(supplier_account)
+                db.session.flush()
+                supplier_account.generate_account_number()
+
+            # 🔥 NEW: Create Invoice
+            invoice = SupplierInvoice(
+                supplier_account_id=supplier_account.id,
+                purchase_order_id=order.id,
+                invoice_date=datetime.utcnow(),
+                delivery_date=datetime.utcnow(),
+                subtotal_amount=order.total_price,
+                tax_amount= 0.0,  # Assuming tax is included in total_price
+                total_amount=order.total_price,
+                balance_due=order.total_price,
+                payment_terms=order.supplier.payment_terms or 'Net 30',
+                status='issued',
+                items_delivered={
+                    'item_name': order.item_name,
+                    'quantity_delivered': quantity_received,
+                    'unit_price': order.unit_price,
+                    'total_amount': order.total_price,
+                    'batch_number': batch_number,
+                    'delivery_condition': condition
+                }
+            )
+
+            # Generate invoice number using the safe method
+            invoice.generate_invoice_number()
+            invoice.calculate_due_date()
+
+            db.session.add(invoice)
+            db.session.flush()
+
+            # Update to final invoice number if temporary was used
+            if 'TEMP' in invoice.invoice_number:
+                invoice.generate_invoice_number()
+
+            # 🔥 NEW: Create Supplier Transaction
+            transaction = SupplierTransaction(
+                supplier_account_id=supplier_account.id,
+                invoice_id=invoice.id,
+                transaction_type='invoice',
+                amount=invoice.total_amount,
+                balance_after=supplier_account.current_balance + invoice.total_amount,
+                description=f"Invoice for {order.item_name} - Qty: {quantity_received}",
+                reference=invoice.invoice_number
             )
             
-            # Generate derived fields
-            stock_item.sku = stock_item.generate_sku()
-            if not expiration_date:
-                stock_item.expiration_date = stock_item.calculate_expiration()
-            
-            # Create stock detail entry
-            stock_detail = StockDetail(
-                stock=stock_item,
-                condition=condition,
-                storage_temp=storage_temp,
-                certification=certification,
-                inspector=inspector,
-                delivery_notes=notes,
-                serial_numbers=serial_numbers,
-                attachments=",".join(attachment_paths) if attachment_paths else None
-            )
+            # Update supplier account balance
+            supplier_account.current_balance += invoice.total_amount
+            supplier_account.total_orders += 1
+            supplier_account.total_order_value += order.total_price
+            supplier_account.last_order_date = datetime.utcnow()
             
             # Update order status
             order.status = 'delivered'
@@ -844,11 +1179,11 @@ def record_delivery(id):
                 order.requisition.status = 'completed'
             
             # Save to database
-            db.session.add(stock_item)
-            db.session.add(stock_detail)
+            db.session.add(invoice)
+            db.session.add(transaction)
             db.session.commit()
             
-            flash('Delivery recorded and stock updated successfully!', 'success')
+            flash('Delivery recorded, stock updated, and invoice created successfully!', 'success')
             return redirect(url_for('store_web_bp.purchase_orders'))
             
         except Exception as e:
@@ -856,7 +1191,4 @@ def record_delivery(id):
             current_app.logger.error(f"Error recording delivery: {str(e)}")
             flash(f'Error recording delivery: {str(e)}', 'danger')
     
-    # For GET request, show the form
-    return render_template('record_delivery.html', 
-                          order=order,
-                          datetime=datetime)
+    return render_template('record_delivery.html', order=order, datetime=datetime)

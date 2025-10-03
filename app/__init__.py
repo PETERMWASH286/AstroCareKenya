@@ -47,6 +47,7 @@ from app.board import board_bp
 # Import the main API v1 blueprint
 from app.api.v1 import api_v1_bp
 from app.notifications import communications as comms_module
+from app.utils.notifications import notification_manager
 
 # Import error handlers module
 from app.errors import handlers as error_handlers
@@ -413,6 +414,7 @@ def init_extensions(app):
     bcrypt.init_app(app)
     ma.init_app(app)
     login_manager.init_app(app)
+    notification_manager.init_app(app)
 
     # Example: Initialize other extensions
     # cache = Cache()
@@ -464,7 +466,11 @@ def register_blueprints(app):
 
     app.register_blueprint(api_v1_bp, url_prefix='/api/v1')
     app.register_blueprint(admin_web_bp, url_prefix='/super-admin')
+    # NEW: Admin
+    from app.super_admin.admin_routes import admin_web
 
+    app.register_blueprint(admin_web, url_prefix='/admin')
+    
     app.register_blueprint(asset_management_bp, url_prefix='/asset-management')
     app.register_blueprint(board_bp, url_prefix='/board')
 # Add this with other blueprint registrations

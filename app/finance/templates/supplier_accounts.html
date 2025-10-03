@@ -1,0 +1,396 @@
+{% extends "base.html" %}
+
+{% block title %}Supplier Accounts Management - AstroCare{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <!-- Header Section -->
+        <div class="mb-8">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900 dark:text-white bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                        Supplier Accounts
+                    </h1>
+                    <p class="mt-2 text-lg text-gray-600 dark:text-gray-400">
+                        Manage supplier financial accounts, credit limits, and payment terms
+                    </p>
+                </div>
+                <div class="mt-4 sm:mt-0 flex space-x-3">
+                    <div class="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm border border-gray-200 dark:border-gray-700">
+                        <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ accounts|length }}</div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">Active Accounts</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white shadow-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-blue-100 text-sm font-medium">Total Credit Limit</p>
+                        <p class="text-2xl font-bold mt-1">KSh {{ "{:,.0f}".format(accounts|sum(attribute='credit_limit')) }}</p>
+                    </div>
+                    <div class="bg-blue-400/20 p-3 rounded-xl">
+                        <i class="fas fa-credit-card text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-6 text-white shadow-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-green-100 text-sm font-medium">Available Credit</p>
+                        <p class="text-2xl font-bold mt-1">KSh {{ "{:,.0f}".format(accounts|sum(attribute='credit_limit') - accounts|sum(attribute='current_balance')) }}</p>
+                    </div>
+                    <div class="bg-green-400/20 p-3 rounded-xl">
+                        <i class="fas fa-wallet text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl p-6 text-white shadow-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-orange-100 text-sm font-medium">Outstanding Balance</p>
+                        <p class="text-2xl font-bold mt-1">KSh {{ "{:,.0f}".format(accounts|sum(attribute='current_balance')) }}</p>
+                    </div>
+                    <div class="bg-orange-400/20 p-3 rounded-xl">
+                        <i class="fas fa-money-bill-wave text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 text-white shadow-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-purple-100 text-sm font-medium">Pending Suppliers</p>
+                        <p class="text-2xl font-bold mt-1">{{ suppliers_without_accounts|length }}</p>
+                    </div>
+                    <div class="bg-purple-400/20 p-3 rounded-xl">
+                        <i class="fas fa-user-plus text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- Accounts List -->
+            <div class="lg:col-span-2">
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center justify-between">
+                            <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Supplier Accounts</h2>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-sm text-gray-500 dark:text-gray-400">{{ accounts|length }} accounts</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="divide-y divide-gray-200 dark:divide-gray-700">
+                        {% for account in accounts %}
+                        <div class="p-6 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors duration-200">
+                            <div class="flex items-start justify-between">
+                                <div class="flex-1">
+                                    <div class="flex items-center space-x-3 mb-3">
+                                        <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-lg">
+                                            {{ account.supplier.name[:2].upper() }}
+                                        </div>
+                                        <div class="flex-1">
+                                            <div class="flex items-center space-x-2">
+                                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                                                    {{ account.supplier.name }}
+                                                </h3>
+                                                <span class="px-2 py-1 text-xs font-medium rounded-full 
+                                                            {% if account.status == 'active' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
+                                                            {% elif account.status == 'suspended' %}bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200
+                                                            {% else %}bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300{% endif %}">
+                                                    {{ account.status|title }}
+                                                </span>
+                                            </div>
+                                            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                                {{ account.account_number }} • 
+                                                <span class="capitalize">{{ account.account_type }}</span> • 
+                                                Credit Rating: <span class="font-semibold">{{ account.credit_rating }}</span>
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Financial Metrics -->
+                                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                                        <div>
+                                            <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Credit Limit</p>
+                                            <p class="text-sm font-semibold text-gray-900 dark:text-white">KSh {{ "{:,.2f}".format(account.credit_limit) }}</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Balance</p>
+                                            <p class="text-sm font-semibold {% if account.current_balance > 0 %}text-orange-600 dark:text-orange-400{% else %}text-green-600 dark:text-green-400{% endif %}">
+                                                KSh {{ "{:,.2f}".format(account.current_balance) }}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Available</p>
+                                            <p class="text-sm font-semibold text-blue-600 dark:text-blue-400">
+                                                KSh {{ "{:,.2f}".format(account.credit_limit - account.current_balance) }}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Payment Terms</p>
+                                            <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ account.payment_terms }}</p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Performance Metrics -->
+                                    {% if account.on_time_delivery_rate %}
+                                    <div class="flex items-center space-x-4 text-xs">
+                                        <div class="flex items-center space-x-1">
+                                            <span class="text-gray-500 dark:text-gray-400">On-time Delivery:</span>
+                                            <span class="font-semibold {% if account.on_time_delivery_rate >= 90 %}text-green-600 dark:text-green-400{% elif account.on_time_delivery_rate >= 80 %}text-yellow-600 dark:text-yellow-400{% else %}text-red-600 dark:text-red-400{% endif %}">
+                                                {{ "%.1f"|format(account.on_time_delivery_rate) }}%
+                                            </span>
+                                        </div>
+                                        <div class="flex items-center space-x-1">
+                                            <span class="text-gray-500 dark:text-gray-400">Avg Delivery:</span>
+                                            <span class="font-semibold">{{ account.average_delivery_time or 'N/A' }} days</span>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="flex items-center justify-between mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                                <div class="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
+                                    <i class="fas fa-calendar"></i>
+                                    <span>Last order: {{ account.last_order_date.strftime('%Y-%m-%d') if account.last_order_date else 'Never' }}</span>
+                                </div>
+                                <div class="flex space-x-2">
+                                    <button onclick="editAccount({{ account.id }})" 
+                                            class="inline-flex items-center px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
+                                        <i class="fas fa-edit mr-1.5"></i> Edit
+                                    </button>
+                                    <a href="{{ url_for('finance_web_bp.supplier_invoices', account_id=account.id) }}"
+                                       class="inline-flex items-center px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium text-white transition-colors">
+                                        <i class="fas fa-file-invoice mr-1.5"></i> Invoices
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="p-8 text-center">
+                            <div class="w-16 h-16 mx-auto bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
+                                <i class="fas fa-users text-gray-400 text-xl"></i>
+                            </div>
+                            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">No supplier accounts</h3>
+                            <p class="text-gray-500 dark:text-gray-400 mb-4">Get started by creating your first supplier account.</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Create Account Sidebar -->
+            <div class="lg:col-span-1">
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 sticky top-8">
+                    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                        <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Create New Account</h2>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Set up account for new supplier</p>
+                    </div>
+
+                    <div class="p-6">
+                        {% if suppliers_without_accounts %}
+                        <form method="POST" action="{{ url_for('finance_web_bp.create_supplier_account') }}" class="space-y-6">
+                            <!-- Supplier Selection -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Select Supplier <span class="text-red-500">*</span>
+                                </label>
+                                <select name="supplier_id" required
+                                        class="w-full border border-gray-300 dark:border-gray-600 rounded-xl px-4 py-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                                    <option value="">Choose a supplier...</option>
+                                    {% for supplier in suppliers_without_accounts %}
+                                    <option value="{{ supplier.id }}">
+                                        {{ supplier.name }} • {{ supplier.contact }} • {{ supplier.category }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <!-- Account Type -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Account Type
+                                </label>
+                                <div class="grid grid-cols-3 gap-2">
+                                    <label class="relative flex cursor-pointer">
+                                        <input type="radio" name="account_type" value="regular" class="sr-only peer" checked>
+                                        <div class="w-full p-3 text-center border border-gray-300 dark:border-gray-600 rounded-lg peer-checked:border-blue-500 peer-checked:bg-blue-50 dark:peer-checked:bg-blue-900/20 transition-colors">
+                                            <div class="text-sm font-medium text-gray-900 dark:text-white">Regular</div>
+                                        </div>
+                                    </label>
+                                    <label class="relative flex cursor-pointer">
+                                        <input type="radio" name="account_type" value="preferred" class="sr-only peer">
+                                        <div class="w-full p-3 text-center border border-gray-300 dark:border-gray-600 rounded-lg peer-checked:border-green-500 peer-checked:bg-green-50 dark:peer-checked:bg-green-900/20 transition-colors">
+                                            <div class="text-sm font-medium text-gray-900 dark:text-white">Preferred</div>
+                                        </div>
+                                    </label>
+                                    <label class="relative flex cursor-pointer">
+                                        <input type="radio" name="account_type" value="strategic" class="sr-only peer">
+                                        <div class="w-full p-3 text-center border border-gray-300 dark:border-gray-600 rounded-lg peer-checked:border-purple-500 peer-checked:bg-purple-50 dark:peer-checked:bg-purple-900/20 transition-colors">
+                                            <div class="text-sm font-medium text-gray-900 dark:text-white">Strategic</div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Credit Limit -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Credit Limit (KSh) <span class="text-red-500">*</span>
+                                </label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">KSh</span>
+                                    <input type="number" name="credit_limit" value="100000.00" step="1000" min="0" required
+                                           class="w-full border border-gray-300 dark:border-gray-600 rounded-xl pl-12 pr-4 py-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                                </div>
+                            </div>
+
+                            <!-- Payment Terms -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Payment Terms
+                                </label>
+                                <select name="payment_terms"
+                                        class="w-full border border-gray-300 dark:border-gray-600 rounded-xl px-4 py-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                                    <option value="Net 30">Net 30 Days</option>
+                                    <option value="Net 15">Net 15 Days</option>
+                                    <option value="Net 45">Net 45 Days</option>
+                                    <option value="Net 60">Net 60 Days</option>
+                                    <option value="Due on receipt">Due on Receipt</option>
+                                </select>
+                            </div>
+
+                            <!-- Submit Button -->
+                            <button type="submit" 
+                                    class="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium py-3 px-4 rounded-xl shadow-lg transition-all duration-200 transform hover:scale-[1.02] focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                                <i class="fas fa-plus-circle mr-2"></i>Create Supplier Account
+                            </button>
+                        </form>
+                        {% else %}
+                        <div class="text-center py-8">
+                            <div class="w-16 h-16 mx-auto bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mb-4">
+                                <i class="fas fa-check text-green-600 dark:text-green-400 text-xl"></i>
+                            </div>
+                            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">All Set!</h3>
+                            <p class="text-gray-500 dark:text-gray-400">All suppliers have accounts set up.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Quick Actions Card -->
+                <div class="mt-6 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h3>
+                    <div class="space-y-3">
+                        <a href="{{ url_for('store_web_bp.suppliers') }}" 
+                           class="flex items-center space-x-3 p-3 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors group">
+                            <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center group-hover:bg-blue-200 dark:group-hover:bg-blue-800 transition-colors">
+                                <i class="fas fa-truck text-blue-600 dark:text-blue-400"></i>
+                            </div>
+                            <div>
+                                <p class="font-medium text-gray-900 dark:text-white">Manage Suppliers</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">View all suppliers</p>
+                            </div>
+                        </a>
+                        <a href="{{ url_for('finance_web_bp.financial_dashboard') }}" 
+                           class="flex items-center space-x-3 p-3 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors group">
+                            <div class="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center group-hover:bg-green-200 dark:group-hover:bg-green-800 transition-colors">
+                                <i class="fas fa-chart-line text-green-600 dark:text-green-400"></i>
+                            </div>
+                            <div>
+                                <p class="font-medium text-gray-900 dark:text-white">Financial Dashboard</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">View financial overview</p>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function editAccount(accountId) {
+    // You can implement a modal or redirect to edit page
+    console.log('Edit account:', accountId);
+    // For now, show a simple alert
+    alert('Edit functionality for account ' + accountId + ' will be implemented here.');
+}
+
+// Add some interactivity
+document.addEventListener('DOMContentLoaded', function() {
+    // Animate cards on scroll
+    const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    }, observerOptions);
+
+    // Observe all account cards
+    document.querySelectorAll('.lg\\:col-span-2 > div > div > div').forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        card.style.transition = `opacity 0.6s ease ${index * 0.1}s, transform 0.6s ease ${index * 0.1}s`;
+        observer.observe(card);
+    });
+});
+</script>
+
+<style>
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in-up {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+/* Custom scrollbar for dark mode */
+.dark ::-webkit-scrollbar {
+    width: 8px;
+}
+
+.dark ::-webkit-scrollbar-track {
+    background: #374151;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+    background: #6B7280;
+    border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+    background: #9CA3AF;
+}
+</style>
+{% endblock %}

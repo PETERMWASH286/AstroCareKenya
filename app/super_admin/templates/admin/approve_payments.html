@@ -1,0 +1,600 @@
+{% extends "base.html" %}
+
+{% block title %}Director Payment Approval - AstroCare{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+    <!-- Header Section -->
+    <div class="bg-white shadow-lg border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">Director Payment Approval</h1>
+                    <p class="mt-1 text-sm text-gray-600">Final approval authority for payment requests</p>
+                </div>
+                <div class="flex space-x-3">
+                    <button onclick="exportApprovals()" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors duration-200">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                        </svg>
+                        Export Report
+                    </button>
+                    <button onclick="showAnalytics()" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors duration-200">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                        View Analytics
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Section -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-5">
+            <!-- Pending Director Approval Card -->
+            <div class="bg-white overflow-hidden shadow-lg rounded-xl border border-purple-100 transform hover:scale-105 transition-transform duration-200">
+                <div class="px-5 py-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-purple-100 rounded-xl p-3">
+                            <svg class="h-7 w-7 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-4 flex-1">
+                            <p class="text-sm font-medium text-gray-600">Pending Approval</p>
+                            <p class="text-2xl font-bold text-gray-900">{{ stats.pending_director }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Total Amount Pending Card -->
+            <div class="bg-white overflow-hidden shadow-lg rounded-xl border border-blue-100 transform hover:scale-105 transition-transform duration-200">
+                <div class="px-5 py-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-blue-100 rounded-xl p-3">
+                            <svg class="h-7 w-7 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-4 flex-1">
+                            <p class="text-sm font-medium text-gray-600">Amount Pending</p>
+                            <p class="text-2xl font-bold text-gray-900">KSh {{ "{:,.2f}".format(stats.total_amount_pending) }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- High Value Requests Card -->
+            <div class="bg-white overflow-hidden shadow-lg rounded-xl border border-orange-100 transform hover:scale-105 transition-transform duration-200">
+                <div class="px-5 py-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-orange-100 rounded-xl p-3">
+                            <svg class="h-7 w-7 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-4 flex-1">
+                            <p class="text-sm font-medium text-gray-600">High Value (>50K)</p>
+                            <p class="text-2xl font-bold text-gray-900">{{ stats.high_value_requests }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Approved Today Card -->
+            <div class="bg-white overflow-hidden shadow-lg rounded-xl border border-green-100 transform hover:scale-105 transition-transform duration-200">
+                <div class="px-5 py-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-green-100 rounded-xl p-3">
+                            <svg class="h-7 w-7 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-4 flex-1">
+                            <p class="text-sm font-medium text-gray-600">Approved Today</p>
+                            <p class="text-2xl font-bold text-gray-900">{{ stats.approved_today }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Monthly Approved Card -->
+            <div class="bg-white overflow-hidden shadow-lg rounded-xl border border-indigo-100 transform hover:scale-105 transition-transform duration-200">
+                <div class="px-5 py-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-indigo-100 rounded-xl p-3">
+                            <svg class="h-7 w-7 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-4 flex-1">
+                            <p class="text-sm font-medium text-gray-600">Monthly Approved</p>
+                            <p class="text-2xl font-bold text-gray-900">{{ stats.total_approved_month }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Main Content - Pending Requests -->
+            <div class="lg:col-span-2">
+                <div class="bg-white shadow-lg rounded-xl border border-gray-200">
+                    <div class="px-6 py-5 border-b border-gray-200">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-lg font-semibold text-gray-900">
+                                Pending Director Approval
+                            </h3>
+                            <div class="flex space-x-3">
+                                <div class="relative">
+                                    <input type="text" placeholder="Search payments..." class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors duration-200">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                                <select class="block pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 rounded-lg transition-colors duration-200">
+                                    <option>All Suppliers</option>
+                                    <option>High Priority</option>
+                                    <option>Overdue</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Table -->
+                    <div class="overflow-hidden">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Invoice & Supplier</th>
+                                    <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Financial Details</th>
+                                    <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Approval Trail</th>
+                                    <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                {% for request in pending_requests %}
+                                <tr class="hover:bg-purple-50 transition-colors duration-150" id="request-{{ request.id }}">
+                                    <td class="px-6 py-5 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <div class="flex-shrink-0 h-12 w-12 bg-gradient-to-br from-purple-100 to-blue-100 rounded-xl flex items-center justify-center shadow-sm">
+                                                <svg class="h-6 w-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                                </svg>
+                                            </div>
+                                            <div class="ml-4">
+                                                <div class="text-sm font-semibold text-gray-900">{{ request.invoice.invoice_number }}</div>
+                                                <div class="text-sm text-gray-600 font-medium">{{ request.invoice.supplier_account.supplier.name }}</div>
+                                                <div class="text-xs text-gray-500 mt-1">{{ request.invoice.supplier_account.account_number }}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-5 whitespace-nowrap">
+                                        <div class="text-lg font-bold text-gray-900">KSh {{ "{:,.2f}".format(request.amount) }}</div>
+                                        <div class="text-sm text-gray-600">{{ request.payment_method|replace('_', ' ')|title }}</div>
+                                        {% if request.amount >= 50000 %}
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 mt-1">
+                                            <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                                <path fill-rule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                                            </svg>
+                                            High Value
+                                        </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-6 py-5 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900">
+                                            <div class="flex items-center">
+                                                <div class="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                                                Finance Approved
+                                            </div>
+                                            <div class="text-xs text-gray-500 mt-1">
+                                                By: {{ request.finance_reviewer.username if request.finance_reviewer else 'N/A' }}
+                                            </div>
+                                            <div class="text-xs text-gray-500">
+                                                On: {{ request.finance_reviewed_at.strftime('%d %b %Y') if request.finance_reviewed_at else 'N/A' }}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-5 whitespace-nowrap text-sm font-medium">
+                                        <div class="flex space-x-2">
+                                            <button onclick="openDirectorReviewModal({{ request.id }})" class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-lg text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors duration-200 shadow-sm">
+                                                Review
+                                            </button>
+                                            <button onclick="openQuickApproveModal({{ request.id }})" class="inline-flex items-center px-3 py-1.5 border border-green-300 text-xs font-medium rounded-lg text-green-700 bg-green-50 hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200">
+                                                Quick Approve
+                                            </button>
+                                            <button onclick="openDetailsModal({{ request.id }})" class="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
+                                                Details
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="4" class="px-6 py-12 text-center">
+                                        <div class="flex flex-col items-center justify-center">
+                                            <svg class="w-16 h-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                            </svg>
+                                            <h3 class="text-lg font-medium text-gray-900 mb-1">No pending approvals</h3>
+                                            <p class="text-gray-500">All payment requests have been processed.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar - Recent Activity -->
+            <div class="lg:col-span-1">
+                <!-- Recent Approved -->
+                <div class="bg-white shadow-lg rounded-xl border border-gray-200 mb-6">
+                    <div class="px-6 py-5 border-b border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-900">Recently Approved</h3>
+                    </div>
+                    <div class="divide-y divide-gray-200">
+                        {% for approved in recent_approved %}
+                        <div class="px-6 py-4 hover:bg-gray-50 transition-colors duration-150">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900">{{ approved.invoice.invoice_number }}</p>
+                                    <p class="text-sm text-gray-600">{{ approved.invoice.supplier_account.supplier.name }}</p>
+                                    <p class="text-sm font-semibold text-green-600">KSh {{ "{:,.2f}".format(approved.amount) }}</p>
+                                </div>
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    Approved
+                                </span>
+                            </div>
+                            <div class="text-xs text-gray-500 mt-2">
+                                {{ approved.director_approved_at.strftime('%d %b %Y, %H:%M') }}
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="px-6 py-8 text-center">
+                            <p class="text-gray-500 text-sm">No recent approvals</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="bg-white shadow-lg rounded-xl border border-gray-200">
+                    <div class="px-6 py-5 border-b border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-900">Quick Actions</h3>
+                    </div>
+                    <div class="p-4 space-y-3">
+                        <button onclick="bulkApprove()" class="w-full flex items-center justify-center px-4 py-3 border border-transparent text-sm font-medium rounded-lg text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200 shadow-sm">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            Bulk Approve All
+                        </button>
+                        <button onclick="viewMonthlyReport()" class="w-full flex items-center justify-center px-4 py-3 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            Monthly Report
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Director Review Modal -->
+<div id="directorReviewModal" class="fixed inset-0 overflow-y-auto hidden z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        <div class="inline-block align-bottom bg-white rounded-2xl px-6 pt-6 pb-8 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-8">
+            <div>
+                <div class="mx-auto flex items-center justify-center h-14 w-14 rounded-full bg-purple-100">
+                    <svg class="h-7 w-7 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                    </svg>
+                </div>
+                <div class="mt-4 text-center sm:mt-6">
+                    <h3 class="text-xl leading-6 font-bold text-gray-900" id="modal-title">
+                        Director Review
+                    </h3>
+                    <div class="mt-3">
+                        <p class="text-sm text-gray-600">
+                            Provide final approval or rejection for this payment request.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-6">
+                <form id="directorReviewForm">
+                    <div class="mb-5">
+                        <label for="directorNotes" class="block text-sm font-medium text-gray-700 mb-2">Approval Notes</label>
+                        <textarea id="directorNotes" name="director_notes" rows="4" class="block w-full border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors duration-200 p-3" placeholder="Add any comments or instructions for this approval..."></textarea>
+                    </div>
+                    <div class="flex space-x-4">
+                        <button type="button" onclick="submitDirectorReview('approve')" id="directorApproveBtn" class="flex-1 inline-flex justify-center items-center px-4 py-3 border border-transparent text-base font-medium rounded-xl shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <span id="directorApproveText">Approve Payment</span>
+                            <span id="directorApproveSpinner" class="hidden ml-2">
+                                <svg class="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                            </span>
+                        </button>
+                        <button type="button" onclick="submitDirectorReview('reject')" id="directorRejectBtn" class="flex-1 inline-flex justify-center items-center px-4 py-3 border border-transparent text-base font-medium rounded-xl shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <span id="directorRejectText">Reject</span>
+                            <span id="directorRejectSpinner" class="hidden ml-2">
+                                <svg class="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                            </span>
+                        </button>
+                        <button type="button" onclick="closeDirectorReviewModal()" class="flex-1 inline-flex justify-center items-center px-4 py-3 border border-gray-300 text-base font-medium rounded-xl shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success Notification -->
+<div id="notification" class="fixed top-4 right-4 z-50 hidden">
+    <div class="rounded-xl bg-green-50 p-4 shadow-lg border border-green-200 max-w-sm transform transition-all duration-300">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            <div class="ml-3">
+                <h3 id="notificationTitle" class="text-sm font-semibold text-green-800">Success</h3>
+                <p id="notificationMessage" class="text-sm text-green-700 mt-1"></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentRequestId = null;
+
+    function openDirectorReviewModal(requestId) {
+        currentRequestId = requestId;
+        document.getElementById('directorReviewModal').classList.remove('hidden');
+        document.getElementById('directorReviewModal').classList.add('block');
+    }
+
+    function closeDirectorReviewModal() {
+        document.getElementById('directorReviewModal').classList.remove('block');
+        document.getElementById('directorReviewModal').classList.add('hidden');
+        document.getElementById('directorNotes').value = '';
+        resetDirectorButtons();
+        currentRequestId = null;
+    }
+
+    function openQuickApproveModal(requestId) {
+        currentRequestId = requestId;
+        // Auto-approve with empty notes
+        submitDirectorReview('approve');
+    }
+
+    function openDetailsModal(requestId) {
+        currentRequestId = requestId;
+        // Implementation for details modal would go here
+        showNotification('Details view would open here');
+    }
+
+    function showNotification(message, isError = false) {
+        const notification = document.getElementById('notification');
+        const title = document.getElementById('notificationTitle');
+        const messageEl = document.getElementById('notificationMessage');
+        
+        if (isError) {
+            notification.className = 'fixed top-4 right-4 z-50 rounded-xl bg-red-50 p-4 shadow-lg border border-red-200 max-w-sm transform transition-all duration-300';
+            title.textContent = 'Error';
+            title.className = 'text-sm font-semibold text-red-800';
+            messageEl.className = 'text-sm text-red-700 mt-1';
+        } else {
+            notification.className = 'fixed top-4 right-4 z-50 rounded-xl bg-green-50 p-4 shadow-lg border border-green-200 max-w-sm transform transition-all duration-300';
+            title.textContent = 'Success';
+            title.className = 'text-sm font-semibold text-green-800';
+            messageEl.className = 'text-sm text-green-700 mt-1';
+        }
+        
+        messageEl.textContent = message;
+        notification.classList.remove('hidden');
+        
+        setTimeout(() => {
+            notification.classList.add('hidden');
+        }, 5000);
+    }
+
+    function setDirectorButtonLoading(buttonType, isLoading) {
+        const approveBtn = document.getElementById('directorApproveBtn');
+        const rejectBtn = document.getElementById('directorRejectBtn');
+        const approveText = document.getElementById('directorApproveText');
+        const rejectText = document.getElementById('directorRejectText');
+        const approveSpinner = document.getElementById('directorApproveSpinner');
+        const rejectSpinner = document.getElementById('directorRejectSpinner');
+
+        if (buttonType === 'approve') {
+            if (isLoading) {
+                approveBtn.disabled = true;
+                approveText.classList.add('hidden');
+                approveSpinner.classList.remove('hidden');
+            } else {
+                approveBtn.disabled = false;
+                approveText.classList.remove('hidden');
+                approveSpinner.classList.add('hidden');
+            }
+        } else if (buttonType === 'reject') {
+            if (isLoading) {
+                rejectBtn.disabled = true;
+                rejectText.classList.add('hidden');
+                rejectSpinner.classList.remove('hidden');
+            } else {
+                rejectBtn.disabled = false;
+                rejectText.classList.remove('hidden');
+                rejectSpinner.classList.add('hidden');
+            }
+        }
+    }
+
+    function resetDirectorButtons() {
+        setDirectorButtonLoading('approve', false);
+        setDirectorButtonLoading('reject', false);
+    }
+
+async function submitDirectorReview(action) {
+    const notes = document.getElementById('directorNotes').value;
+    
+    if (!currentRequestId) {
+        showNotification('No payment request selected', true);
+        return;
+    }
+
+    // Set button to loading state
+    setDirectorButtonLoading(action, true);
+
+    try {
+        const response = await fetch(`/admin/payment-requests/${currentRequestId}/director-review`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                action: action,
+                notes: notes
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            let successMessage = data.message;
+            
+            // Add invoice status information if available
+            if (data.invoice_status && data.invoice_balance !== undefined) {
+                const statusMap = {
+                    'paid': 'Fully Paid',
+                    'partially_paid': 'Partially Paid',
+                    'pending': 'Pending'
+                };
+                
+                successMessage += `<br><span class="text-sm text-green-600">
+                    Invoice Status: <strong>${statusMap[data.invoice_status] || data.invoice_status}</strong> | 
+                    Remaining Balance: <strong>KSh ${data.invoice_balance.toLocaleString()}</strong>
+                </span>`;
+            }
+            
+            showNotification(successMessage, false, true);
+            closeDirectorReviewModal();
+            
+            // Remove the row from the table with animation
+            const row = document.getElementById(`request-${currentRequestId}`);
+            if (row) {
+                row.style.opacity = '0';
+                setTimeout(() => {
+                    row.remove();
+                    updateStatsDisplay();
+                }, 300);
+            }
+            
+        } else {
+            showNotification(data.message, true);
+            setDirectorButtonLoading(action, false);
+        }
+
+    } catch (error) {
+        console.error('Error submitting director review:', error);
+        showNotification('An error occurred while processing your request', true);
+        setDirectorButtonLoading(action, false);
+    }
+}
+
+// Enhanced notification function to handle HTML content
+function showNotification(message, isError = false, isHtml = false) {
+    const notification = document.getElementById('notification');
+    const title = document.getElementById('notificationTitle');
+    const messageEl = document.getElementById('notificationMessage');
+    
+    if (isError) {
+        notification.className = 'fixed top-4 right-4 z-50 rounded-xl bg-red-50 p-4 shadow-lg border border-red-200 max-w-sm transform transition-all duration-300';
+        title.textContent = 'Error';
+        title.className = 'text-sm font-semibold text-red-800';
+        messageEl.className = 'text-sm text-red-700 mt-1';
+    } else {
+        notification.className = 'fixed top-4 right-4 z-50 rounded-xl bg-green-50 p-4 shadow-lg border border-green-200 max-w-sm transform transition-all duration-300';
+        title.textContent = 'Success';
+        title.className = 'text-sm font-semibold text-green-800';
+        messageEl.className = 'text-sm text-green-700 mt-1';
+    }
+    
+    if (isHtml) {
+        messageEl.innerHTML = message;
+    } else {
+        messageEl.textContent = message;
+    }
+    
+    notification.classList.remove('hidden');
+    
+    setTimeout(() => {
+        notification.classList.add('hidden');
+    }, 6000);
+}
+
+    function updateStatsDisplay() {
+        // In a real implementation, you would update the stats numbers
+        // For now, we'll just show a notification
+        showNotification('Dashboard updated with latest statistics');
+    }
+
+    function exportApprovals() {
+        showNotification('Exporting approval report...');
+        // Implementation for export would go here
+    }
+
+    function showAnalytics() {
+        showNotification('Opening analytics dashboard...');
+        // Implementation for analytics would go here
+    }
+
+    function bulkApprove() {
+        showNotification('Bulk approval feature would open here');
+        // Implementation for bulk approval would go here
+    }
+
+    function viewMonthlyReport() {
+        showNotification('Opening monthly financial report...');
+        // Implementation for monthly report would go here
+    }
+
+    // Close modals when clicking outside
+    window.onclick = function(event) {
+        const directorModal = document.getElementById('directorReviewModal');
+        
+        if (event.target === directorModal) {
+            closeDirectorReviewModal();
+        }
+    }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            closeDirectorReviewModal();
+        }
+    });
+</script>
+{% endblock %}

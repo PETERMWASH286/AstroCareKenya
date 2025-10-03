@@ -208,6 +208,11 @@ def create_hospital():
             ('finance:expenses', 'Finance', 'Track Expenses'),
             ('finance:insurance', 'Finance', 'Manage Insurance Policies'),
             ('finance:reports', 'Finance', 'Generate Financial Reports'),
+            
+                ('finance:approve_lpo', 'Finance', 'Approve Local Purchase Orders (LPOs)'),
+                ('finance:supplier_accounts', 'Finance', 'Manage Supplier Accounts'),
+                ('finance:approve_payments', 'Finance', 'Approve Payments'),
+
             ('reports:clinical', 'Reports', 'Access Clinical Reports'),
             ('reports:financial', 'Reports', 'Access Financial Reports'),
             ('reports:analytics', 'Reports', 'Access Analytics Dashboard'),
@@ -275,6 +280,15 @@ def create_hospital():
     ('optician:examinations', 'Optician Clinic', 'Perform Eye Examinations'),
     ('optician:dispensing', 'Optician Clinic', 'Manage Glasses & Contact Lens Dispensing'),
         ('consultations:manage_services', 'Service Management', 'Manage consultation service types and pricing'),
+    # --- Admin & Director Privileges ---
+    ('admin:dashboard', 'Admin & Director', 'Access administrative dashboard'),
+    ('admin:approve_requisitions', 'Admin & Director', 'Approve or reject purchase requisitions'),
+    ('admin:orders_progress', 'Admin & Director', 'View and track progress of purchase orders'),
+    ('admin:manage_users', 'Admin & Director', 'High-level user and role management'),
+    ('admin:system_settings', 'Admin & Director', 'Manage core system configurations'),
+    ('admin:reports_overview', 'Admin & Director', 'Access consolidated reports (financial, clinical, HR, assets)'),
+    ('admin:approve_lpo', 'Admin & Director', 'Approve Local Purchase Orders (LPOs)'),
+    ('admin:approve_payments', 'Admin & Director', 'Approve Payments'),
 
             ]
             # --- Privileges ---

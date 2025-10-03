@@ -1,0 +1,466 @@
+{% extends "base.html" %}
+
+{% block title %}Approve LPOs - Finance Dashboard{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-blue-900/20 py-8 px-4 sm:px-6 lg:px-8">
+    <!-- Header Section -->
+    <div class="max-w-9xl mx-auto">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
+            <div class="flex items-center gap-4 mb-6 lg:mb-0">
+                <div class="p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl shadow-lg">
+                    <i class="fas fa-file-invoice-dollar text-2xl text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900 dark:text-white">LPO Approval Dashboard</h1>
+                    <p class="text-gray-600 dark:text-gray-400 mt-2 text-lg">Review and approve pending Local Purchase Orders</p>
+                </div>
+            </div>
+            
+            <!-- Stats Cards -->
+            <div class="flex flex-wrap gap-4">
+                <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700 min-w-[140px]">
+                    <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ lpos|length }}</div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">Total Pending</div>
+                </div>
+                <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700 min-w-[140px]">
+                    <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                        {{ lpos|selectattr('priority', 'equalto', 'High')|list|length }}
+                    </div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">High Priority</div>
+                </div>
+                <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700 min-w-[140px]">
+                    <div class="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                        KSh {{ "%.2f"|format(lpos|sum(attribute='total_price') or 0) }}
+                    </div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">Total Value</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Advanced Filters Section -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
+            <div class="flex flex-col lg:flex-row lg:items-end gap-6">
+                <!-- Search Input -->
+                <div class="flex-1">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <i class="fas fa-search mr-2 text-gray-400"></i>Search LPOs
+                    </label>
+                    <div class="relative">
+                        <input type="text" 
+                               id="search-input" 
+                               placeholder="Search by LPO number, item name, supplier..."
+                               class="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200">
+                        <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    </div>
+                </div>
+
+                <!-- Priority Filter -->
+                <div class="flex-1">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <i class="fas fa-flag mr-2 text-gray-400"></i>Priority
+                    </label>
+                    <select id="priority-filter" 
+                            class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200">
+                        <option value="">All Priorities</option>
+                        <option value="High">High Priority</option>
+                        <option value="Medium">Medium Priority</option>
+                        <option value="Low">Low Priority</option>
+                    </select>
+                </div>
+
+                <!-- Date Range Filter -->
+                <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <i class="fas fa-calendar-alt mr-2 text-gray-400"></i>From Date
+                        </label>
+                        <input type="date" 
+                               id="from-date"
+                               class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <i class="fas fa-calendar-alt mr-2 text-gray-400"></i>To Date
+                        </label>
+                        <input type="date" 
+                               id="to-date"
+                               class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200">
+                    </div>
+                </div>
+
+                <!-- Filter Actions -->
+                <div class="flex gap-3">
+                    <button id="clear-filters" 
+                            class="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 font-medium">
+                        <i class="fas fa-times mr-2"></i>Clear
+                    </button>
+                    <button id="apply-filters" 
+                            class="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-200 font-medium shadow-sm">
+                        <i class="fas fa-filter mr-2"></i>Apply
+                    </button>
+                </div>
+            </div>
+
+            <!-- Active Filters Display -->
+            <div id="active-filters" class="hidden mt-4 flex-wrap gap-2">
+                <!-- Active filters will appear here -->
+            </div>
+        </div>
+
+        <!-- Enhanced Table Section -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700">
+                        <tr>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">LPO Details</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Financial Info</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Supplier & Contact</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Priority & Dates</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Department</th>
+                            <th class="px-6 py-4 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700" id="lpos-table">
+                        {% for lpo in lpos %}
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-750 transition-all duration-200" 
+                            data-lpo-number="{{ (lpo.lpo_number or '')|lower }}"
+                            data-item-name="{{ (lpo.item_name or '')|lower }}"
+                            data-supplier="{{ (lpo.supplier.name if lpo.supplier else '')|lower }}"
+                            data-priority="{{ lpo.external_order.priority if lpo.external_order else '' }}"
+                            data-created-date="{{ lpo.created_at[:16] if lpo.created_at else '' }}"
+                            data-department="{{ (lpo.external_order.department if lpo.external_order else '')|lower }}"
+                            data-total-price="{{ lpo.total_price or 0 }}">
+                            
+                            <!-- LPO Details Column -->
+                            <td class="px-6 py-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+                                        <i class="fas fa-file-invoice text-blue-600 dark:text-blue-400"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-semibold text-blue-600 dark:text-blue-400">
+                                            {{ lpo.lpo_number or "LPO-" ~ lpo.id }}
+                                        </div>
+                                        <div class="text-base font-medium text-gray-900 dark:text-white mt-1">
+                                            {{ lpo.item_name }}
+                                        </div>
+                                        <div class="text-sm text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-1">
+                                            {{ lpo.quantity }} {{ lpo.unit }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <!-- Financial Info Column -->
+                            <td class="px-6 py-4">
+                                <div class="space-y-2">
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Unit Price</p>
+                                        <p class="text-lg font-semibold text-gray-900 dark:text-white">
+                                            KSh {{ "%.2f"|format(lpo.unit_price or 0) }}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Price</p>
+                                        <p class="text-xl font-bold text-green-600 dark:text-green-400">
+                                            KSh {{ "%.2f"|format(lpo.total_price or 0) }}
+                                        </p>
+                                    </div>
+                                    {% if lpo.tax_rate %}
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                                        Tax: {{ lpo.tax_rate }}%
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </td>
+
+                            <!-- Supplier & Contact Column -->
+                            <td class="px-6 py-4">
+                                <div class="space-y-2">
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Supplier</p>
+
+                                    </div>
+                                    {% if lpo.contact_person %}
+                                    <div class="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
+                                        <i class="fas fa-user text-xs"></i>
+                                        {{ lpo.contact_person }}
+                                    </div>
+                                    {% endif %}
+                                    {% if lpo.contact_info %}
+                                    <div class="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
+                                        <i class="fas fa-phone text-xs"></i>
+                                        {{ lpo.contact_info }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </td>
+
+                            <!-- Priority & Dates Column -->
+                            <td class="px-6 py-4">
+                                <div class="space-y-3">
+                                    <!-- Priority Badge -->
+                                    <div>
+                                        {% set priority = lpo.external_order.priority if lpo.external_order else 'Medium' %}
+                                        <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold
+                                            {% if priority == 'High' %} 
+                                                bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200
+                                            {% elif priority == 'Medium' %}
+                                                bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200
+                                            {% else %}
+                                                bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
+                                            {% endif %}">
+                                            <i class="fas fa-flag text-xs"></i>
+                                            {{ priority }}
+                                        </span>
+                                    </div>
+                                    
+                                    <!-- Dates -->
+                                    <div class="space-y-1 text-sm">
+                                        <div class="flex items-center gap-1 text-gray-600 dark:text-gray-400">
+                                            <i class="fas fa-calendar-plus text-xs"></i>
+                                            Created: {{ lpo.created_at[:16] if lpo.created_at else '' }}
+                                        </div>
+                                        {% if lpo.external_order and lpo.external_order.delivery_date %}
+                                        <div class="flex items-center gap-1 text-gray-600 dark:text-gray-400">
+                                            <i class="fas fa-shipping-fast text-xs"></i>
+                                            Delivery: {{ lpo.external_order.delivery_date.strftime('%d %b %Y') }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+
+                            <!-- Department Column -->
+                            <td class="px-6 py-4">
+                                <div class="space-y-1">
+
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Category</p>
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                                            {{ lpo.category|replace('_', ' ')|title if lpo.category else 'General' }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <!-- Actions Column -->
+                            <td class="px-6 py-4 whitespace-nowrap text-right">
+                                <div class="flex justify-end gap-2">
+                                    <a href="{{ url_for('finance_web_bp.view_lpo', lpo_id=lpo.id) }}" 
+                                       class="inline-flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-xl transition-all duration-200 shadow-sm hover:shadow-md text-sm font-medium"
+                                       title="View Details">
+                                        <i class="fas fa-eye text-xs"></i>
+                                        View
+                                    </a>
+                                    <a href="{{ url_for('finance_web_bp.approve_lpo_action', lpo_id=lpo.id, action='approve') }}" 
+                                       class="inline-flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-xl transition-all duration-200 shadow-sm hover:shadow-md text-sm font-medium"
+                                       title="Approve LPO">
+                                        <i class="fas fa-check text-xs"></i>
+                                        Approve
+                                    </a>
+                                    <a href="{{ url_for('finance_web_bp.approve_lpo_action', lpo_id=lpo.id, action='reject') }}" 
+                                       class="inline-flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-xl transition-all duration-200 shadow-sm hover:shadow-md text-sm font-medium"
+                                       title="Reject LPO">
+                                        <i class="fas fa-times text-xs"></i>
+                                        Reject
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="px-6 py-12 text-center">
+                                <div class="text-gray-400 dark:text-gray-500">
+                                    <i class="fas fa-check-circle text-5xl mb-4"></i>
+                                    <p class="text-xl font-medium">No pending LPOs found</p>
+                                    <p class="mt-2 text-gray-500 dark:text-gray-400">All LPOs have been processed and approved</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript for Real-time Filtering -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('search-input');
+    const priorityFilter = document.getElementById('priority-filter');
+    const fromDate = document.getElementById('from-date');
+    const toDate = document.getElementById('to-date');
+    const applyFilters = document.getElementById('apply-filters');
+    const clearFilters = document.getElementById('clear-filters');
+    const activeFilters = document.getElementById('active-filters');
+    const tableRows = document.querySelectorAll('#lpos-table tr');
+    
+    // Filter function
+    function filterLPOs() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const priorityValue = priorityFilter.value;
+        const fromDateValue = fromDate.value;
+        const toDateValue = toDate.value;
+        
+        let activeFilterCount = 0;
+        let visibleCount = 0;
+        
+        tableRows.forEach(row => {
+            if (row.querySelector('td')) { // Skip empty rows
+                const lpoNumber = row.getAttribute('data-lpo-number') || '';
+                const itemName = row.getAttribute('data-item-name') || '';
+                const supplier = row.getAttribute('data-supplier') || '';
+                const priority = row.getAttribute('data-priority') || '';
+                const createdDate = row.getAttribute('data-created-date') || '';
+                const department = row.getAttribute('data-department') || '';
+                
+                let matchesSearch = true;
+                let matchesPriority = true;
+                let matchesDate = true;
+                
+                // Search filter
+                if (searchTerm) {
+                    const searchableText = lpoNumber + ' ' + itemName + ' ' + supplier + ' ' + department;
+                    if (!searchableText.includes(searchTerm)) {
+                        matchesSearch = false;
+                    }
+                }
+                
+                // Priority filter
+                if (priorityValue && priority !== priorityValue.toLowerCase()) {
+                    matchesPriority = false;
+                }
+                
+                // Date range filter
+                if (fromDateValue && createdDate < fromDateValue) {
+                    matchesDate = false;
+                }
+                if (toDateValue && createdDate > toDateValue) {
+                    matchesDate = false;
+                }
+                
+                // Show/hide row
+                if (matchesSearch && matchesPriority && matchesDate) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+                
+                // Count active filters
+                if (searchTerm) activeFilterCount++;
+                if (priorityValue) activeFilterCount++;
+                if (fromDateValue) activeFilterCount++;
+                if (toDateValue) activeFilterCount++;
+            }
+        });
+        
+        // Update active filters display
+        updateActiveFiltersDisplay(searchTerm, priorityValue, fromDateValue, toDateValue, activeFilterCount);
+        
+        // Update stats or show no results
+        if (visibleCount === 0 && tableRows.length > 1) {
+            showNoResults();
+        }
+    }
+    
+    // Update active filters display
+    function updateActiveFiltersDisplay(searchTerm, priority, fromDate, toDate, count) {
+        activeFilters.innerHTML = '';
+        
+        if (count > 0) {
+            activeFilters.classList.remove('hidden');
+            activeFilters.classList.add('flex');
+            
+            if (searchTerm) {
+                const badge = createFilterBadge('search', `Search: "${searchTerm}"`, 'blue');
+                activeFilters.appendChild(badge);
+            }
+            
+            if (priority) {
+                const badge = createFilterBadge('flag', `Priority: ${priority}`, 'red');
+                activeFilters.appendChild(badge);
+            }
+            
+            if (fromDate) {
+                const badge = createFilterBadge('calendar', `From: ${formatDate(fromDate)}`, 'green');
+                activeFilters.appendChild(badge);
+            }
+            
+            if (toDate) {
+                const badge = createFilterBadge('calendar', `To: ${formatDate(toDate)}`, 'purple');
+                activeFilters.appendChild(badge);
+            }
+        } else {
+            activeFilters.classList.add('hidden');
+            activeFilters.classList.remove('flex');
+        }
+    }
+    
+    // Create filter badge
+    function createFilterBadge(icon, text, color) {
+        const badge = document.createElement('div');
+        badge.className = `inline-flex items-center gap-1 px-3 py-1 bg-${color}-100 dark:bg-${color}-900 text-${color}-800 dark:text-${color}-200 rounded-full text-sm`;
+        badge.innerHTML = `<i class="fas fa-${icon} text-xs"></i> ${text}`;
+        return badge;
+    }
+    
+    // Format date for display
+    function formatDate(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+    
+    // Show no results message
+    function showNoResults() {
+        // You can add a no results message if needed
+    }
+    
+    // Clear all filters
+    function clearAllFilters() {
+        searchInput.value = '';
+        priorityFilter.value = '';
+        fromDate.value = '';
+        toDate.value = '';
+        filterLPOs();
+    }
+    
+    // Event listeners
+    applyFilters.addEventListener('click', filterLPOs);
+    clearFilters.addEventListener('click', clearAllFilters);
+    
+    // Real-time filtering
+    searchInput.addEventListener('input', filterLPOs);
+    priorityFilter.addEventListener('change', filterLPOs);
+    fromDate.addEventListener('change', filterLPOs);
+    toDate.addEventListener('change', filterLPOs);
+    
+    // Initialize
+    filterLPOs();
+});
+</script>
+
+<style>
+.shadow-sm {
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+.hover\:shadow-md:hover {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+input:focus, select:focus {
+    outline: none;
+    ring: 2px;
+}
+
+.bg-gradient-to-br {
+    background-image: linear-gradient(to bottom right, var(--tw-gradient-stops));
+}
+</style>
+{% endblock %}

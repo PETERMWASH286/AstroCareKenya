@@ -1,0 +1,372 @@
+{% extends 'base.html' %}
+{% block title %}Manage Requisitions{% endblock %}
+
+{% block content %}
+<div class="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Enhanced Header Section -->
+    <div class="mb-10">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-8">
+            <div class="flex items-center gap-4">
+                <div class="p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl shadow-lg">
+                    <i class="fas fa-clipboard-list text-2xl text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Requisition Management</h1>
+                    <p class="mt-2 text-gray-600 dark:text-gray-400 text-lg">Review and manage purchase requisitions approved by Finance</p>
+                </div>
+            </div>
+            
+            <!-- Stats Overview -->
+            <div class="flex flex-wrap gap-4">
+                <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700 min-w-[140px]">
+                    <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ orders|length }}</div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">Total</div>
+                </div>
+                <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700 min-w-[140px]">
+                    <div class="text-2xl font-bold text-green-600 dark:text-green-400">
+                        {{ orders|selectattr('finance_approved')|list|length }}
+                    </div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">Finance Approved</div>
+                </div>
+                <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700 min-w-[140px]">
+                    <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                        {{ orders|rejectattr('director_approved')|selectattr('finance_approved')|list|length }}
+                    </div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">Pending Action</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Enhanced Filters Section -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
+            <div class="flex flex-col lg:flex-row lg:items-end gap-6">
+                <!-- Search by Item Name -->
+                <div class="flex-1">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <i class="fas fa-search mr-2 text-gray-400"></i>Search Items
+                    </label>
+                    <div class="relative">
+                        <input type="text" 
+                               id="search-item" 
+                               placeholder="Enter item name..."
+                               class="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200">
+                        <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    </div>
+                </div>
+
+                <!-- Date Range Filter -->
+                <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <i class="fas fa-calendar-alt mr-2 text-gray-400"></i>From Date
+                        </label>
+                        <input type="date" 
+                               id="from-date"
+                               class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <i class="fas fa-calendar-alt mr-2 text-gray-400"></i>To Date
+                        </label>
+                        <input type="date" 
+                               id="to-date"
+                               class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200">
+                    </div>
+                </div>
+
+                <!-- Filter Actions -->
+                <div class="flex gap-3">
+                    <button id="clear-filters" 
+                            class="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 font-medium">
+                        <i class="fas fa-times mr-2"></i>Clear
+                    </button>
+                    <button id="apply-filters" 
+                            class="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 font-medium shadow-sm">
+                        <i class="fas fa-filter mr-2"></i>Apply Filters
+                    </button>
+                </div>
+            </div>
+
+            <!-- Active Filters Display -->
+            <div id="active-filters" class="hidden mt-4 flex-wrap gap-2">
+                <!-- Active filters will appear here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Table Section -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-750">
+                    <tr>
+                        <th class="px-8 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">ID & Item</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Quantity</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Department</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Requested By</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Finance Status</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Required By</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Total Cost</th>
+                        <th class="px-8 py-4 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700" id="requisitions-table">
+                    {% for req in orders %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-750 transition-all duration-200" 
+                        data-item-name="{{ req.item_name.lower() }}"
+                        data-created-date="{{ req.created_at.strftime('%Y-%m-%d') if req.created_at else '' }}"
+                        data-required-date="{{ req.required_by.strftime('%Y-%m-%d') if req.required_by else '' }}">
+                        <td class="px-8 py-5">
+                            <div class="flex items-center gap-3">
+                                <div class="p-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg">
+                                    <i class="fas fa-box text-indigo-600 dark:text-indigo-400 text-sm"></i>
+                                </div>
+                                <div>
+                                    <div class="text-sm font-semibold text-indigo-600 dark:text-indigo-400">#REQ-{{ req.id }}</div>
+                                    <div class="text-base font-medium text-gray-900 dark:text-white mt-1">{{ req.item_name }}</div>
+                                    <div class="text-sm text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-1">
+                                        <i class="fas fa-truck text-xs"></i>
+                                        {{ req.supplier.name if req.supplier else 'No supplier' }}
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+
+                        <td class="px-6 py-5">
+                            <div class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ req.quantity }} {{ req.unit }}</div>
+                            <div class="text-sm text-gray-500 dark:text-gray-400">
+                                {{ currency }} {{ "%.2f"|format(req.unit_price) }} per unit
+                            </div>
+                        </td>
+
+                        <td class="px-6 py-5">
+                            <div class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ req.department|title }}</div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400 px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-full inline-block mt-1">
+                                {{ req.category|replace('_', ' ')|title }}
+                            </div>
+                        </td>
+
+                        <td class="px-6 py-5">
+                            <div class="flex items-center">
+                                <div class="relative mr-4">
+                                    <div class="w-10 h-10 bg-gradient-to-br from-gray-300 to-gray-400 dark:from-gray-600 dark:to-gray-700 rounded-xl flex items-center justify-center shadow-sm">
+                                        <span class="text-sm font-semibold text-white">{{ req.user.username|first|upper }}</span>
+                                    </div>
+                                    {% if req.finance_approved %}
+                                    <div class="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white dark:border-gray-800"></div>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <div class="text-sm font-medium text-gray-900 dark:text-white">{{ req.user.username }}</div>
+                                    <div class="text-sm text-gray-500 dark:text-gray-400">
+                                        {{ req.created_at.strftime('%d %b %Y') }}
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+
+                        <td class="px-6 py-5">
+                            {% if req.finance_approved %}
+                                <span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                    <i class="fas fa-check-circle"></i>
+                                    Approved
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                                    <i class="fas fa-clock"></i>
+                                    Pending
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <td class="px-6 py-5">
+                            <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                {% if req.required_by %}
+                                    {{ req.required_by.strftime('%d %b %Y') }}
+                                {% else %}
+                                    <span class="text-gray-400">Not specified</span>
+                                {% endif %}
+                            </div>
+                        </td>
+
+                        <td class="px-6 py-5">
+                            <div class="text-lg font-bold text-gray-900 dark:text-white">
+                                {{ currency }} {{ "%.2f"|format(req.total_price) }}
+                            </div>
+                        </td>
+
+                        <td class="px-8 py-5 whitespace-nowrap text-right">
+                            <div class="flex justify-end gap-2">
+                                {% if req.finance_approved and not req.director_approved %}
+                                    <a href="{{ url_for('admin_web_bp.approve_requisition', order_id=req.id) }}" 
+                                       class="p-2 bg-green-500 hover:bg-green-600 text-white rounded-xl transition-all duration-200 shadow-sm hover:shadow-md" 
+                                       title="Approve">
+                                        <i class="fas fa-check text-sm"></i>
+                                    </a>
+                                    <a href="{{ url_for('admin_web_bp.reject_requisition', order_id=req.id) }}" 
+                                       class="p-2 bg-red-500 hover:bg-red-600 text-white rounded-xl transition-all duration-200 shadow-sm hover:shadow-md" 
+                                       title="Reject">
+                                        <i class="fas fa-times text-sm"></i>
+                                    </a>
+                                {% endif %}
+                                <a href="{{ url_for('admin_web_bp.view_requisition', order_id=req.id) }}" 
+                                   class="p-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl transition-all duration-200 shadow-sm hover:shadow-md" 
+                                   title="View Details">
+                                    <i class="fas fa-eye text-sm"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="px-8 py-12 text-center">
+                            <div class="text-gray-400 dark:text-gray-500">
+                                <i class="fas fa-check-circle text-5xl mb-4"></i>
+                                <p class="text-xl font-medium">No requisitions pending</p>
+                                <p class="mt-2 text-gray-500 dark:text-gray-400">All purchase requisitions are processed and up to date</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript for Filtering -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchItem = document.getElementById('search-item');
+    const fromDate = document.getElementById('from-date');
+    const toDate = document.getElementById('to-date');
+    const applyFilters = document.getElementById('apply-filters');
+    const clearFilters = document.getElementById('clear-filters');
+    const activeFilters = document.getElementById('active-filters');
+    const tableRows = document.querySelectorAll('#requisitions-table tr');
+    
+    // Filter function
+    function filterRequisitions() {
+        const searchTerm = searchItem.value.toLowerCase();
+        const fromDateValue = fromDate.value;
+        const toDateValue = toDate.value;
+        
+        let activeFilterCount = 0;
+        
+        tableRows.forEach(row => {
+            if (row.querySelector('td')) { // Skip empty rows
+                const itemName = row.getAttribute('data-item-name') || '';
+                const createdDate = row.getAttribute('data-created-date') || '';
+                const requiredDate = row.getAttribute('data-required-date') || '';
+                
+                let matchesSearch = true;
+                let matchesDate = true;
+                
+                // Search filter
+                if (searchTerm && !itemName.includes(searchTerm)) {
+                    matchesSearch = false;
+                }
+                
+                // Date range filter (using created date)
+                if (fromDateValue && createdDate < fromDateValue) {
+                    matchesDate = false;
+                }
+                if (toDateValue && createdDate > toDateValue) {
+                    matchesDate = false;
+                }
+                
+                // Show/hide row
+                if (matchesSearch && matchesDate) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+                
+                // Count active filters
+                if (searchTerm) activeFilterCount++;
+                if (fromDateValue) activeFilterCount++;
+                if (toDateValue) activeFilterCount++;
+            }
+        });
+        
+        // Update active filters display
+        updateActiveFiltersDisplay(searchTerm, fromDateValue, toDateValue, activeFilterCount);
+    }
+    
+    // Update active filters display
+    function updateActiveFiltersDisplay(searchTerm, fromDate, toDate, count) {
+        activeFilters.innerHTML = '';
+        
+        if (count > 0) {
+            activeFilters.classList.remove('hidden');
+            activeFilters.classList.add('flex');
+            
+            if (searchTerm) {
+                const badge = document.createElement('div');
+                badge.className = 'inline-flex items-center gap-1 px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm';
+                badge.innerHTML = `<i class="fas fa-search text-xs"></i> Item: "${searchTerm}"`;
+                activeFilters.appendChild(badge);
+            }
+            
+            if (fromDate) {
+                const badge = document.createElement('div');
+                badge.className = 'inline-flex items-center gap-1 px-3 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full text-sm';
+                badge.innerHTML = `<i class="fas fa-calendar text-xs"></i> From: ${formatDate(fromDate)}`;
+                activeFilters.appendChild(badge);
+            }
+            
+            if (toDate) {
+                const badge = document.createElement('div');
+                badge.className = 'inline-flex items-center gap-1 px-3 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 rounded-full text-sm';
+                badge.innerHTML = `<i class="fas fa-calendar text-xs"></i> To: ${formatDate(toDate)}`;
+                activeFilters.appendChild(badge);
+            }
+        } else {
+            activeFilters.classList.add('hidden');
+            activeFilters.classList.remove('flex');
+        }
+    }
+    
+    // Format date for display
+    function formatDate(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+    
+    // Clear all filters
+    function clearAllFilters() {
+        searchItem.value = '';
+        fromDate.value = '';
+        toDate.value = '';
+        filterRequisitions();
+    }
+    
+    // Event listeners
+    applyFilters.addEventListener('click', filterRequisitions);
+    clearFilters.addEventListener('click', clearAllFilters);
+    
+    // Real-time search
+    searchItem.addEventListener('input', filterRequisitions);
+    fromDate.addEventListener('change', filterRequisitions);
+    toDate.addEventListener('change', filterRequisitions);
+    
+    // Initialize
+    filterRequisitions();
+});
+</script>
+
+<style>
+.shadow-sm {
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+.hover\:shadow-md:hover {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+input:focus, button:focus {
+    outline: none;
+    ring: 2px;
+}
+</style>
+{% endblock %}

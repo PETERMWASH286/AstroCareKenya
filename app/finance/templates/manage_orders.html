@@ -77,9 +77,14 @@
                             </div>
                         </td>
                         <td class="px-6 py-4">
-                            <div class="text-sm text-gray-900 dark:text-gray-100">
-                                {{ order.required_by.strftime('%d %b %Y') }}
-                            </div>
+<div class="text-sm text-gray-900 dark:text-gray-100">
+    {% if order.required_by %}
+        {{ order.required_by.strftime('%d %b %Y') }}
+    {% else %}
+        Not specified
+    {% endif %}
+</div>
+
                             <div class="text-xs {% if order.is_overdue %}text-red-600{% else %}text-gray-500{% endif %}">
                                 {{ order.days_text }}
                             </div>

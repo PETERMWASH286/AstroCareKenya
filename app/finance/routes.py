@@ -3,14 +3,14 @@ from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import smtplib
-from flask import Blueprint, flash, jsonify, redirect, render_template, request, session, url_for
-from flask_login import current_user
+from flask import Blueprint, abort, flash, jsonify, redirect, render_template, request, session, url_for
+from flask_login import current_user, login_required
 from sqlalchemy import func
 
 from app.finance.models import Expense, ExpenseCategory, Insurance, InsuranceClaim, InsuranceService, Invoice, InvoiceItem, Payment
 from sqlalchemy.exc import IntegrityError
 
-from app.store.models import ExternalOrder, Supplier
+from app.store.models import LPO, ExternalOrder, PaymentRequest, Supplier, SupplierAccount, SupplierInvoice
 from app.user_management.models import Department
 
 from . import finance_web_bp
@@ -1499,27 +1499,31 @@ def manage_orders():
         orders_with_info = []
         
         for order in pending_orders:
-            # Calculate days until required
-            delta = order.required_by - now
-            days_until = delta.days
-            is_overdue = days_until < 0
-            
-            # Format days display text
-            if days_until < 0:
-                days_text = f"{abs(days_until)} days overdue"
-            elif days_until == 0:
-                days_text = "Today"
-            elif days_until == 1:
-                days_text = "Tomorrow"
+            if order.required_by:  # Only calculate if it's not None
+                delta = order.required_by - now
+                days_until = delta.days
+                is_overdue = days_until < 0
+
+                if days_until < 0:
+                    days_text = f"{abs(days_until)} days overdue"
+                elif days_until == 0:
+                    days_text = "Today"
+                elif days_until == 1:
+                    days_text = "Tomorrow"
+                else:
+                    days_text = f"{days_until} days"
             else:
-                days_text = f"{days_until} days"
-            
-            # Add calculated properties directly to the order object
+                # Handle missing required_by
+                days_until = None
+                is_overdue = False
+                days_text = "Not specified"
+
+            # Attach attributes
             order.days_until = days_until
             order.is_overdue = is_overdue
             order.days_text = days_text
-            
             orders_with_info.append(order)
+
         
         # Get currency from config
         currency = current_app.config.get('CURRENCY', 'Ksh')
@@ -1537,40 +1541,35 @@ def manage_orders():
 
 
 @finance_web_bp.route('/approve-order/<int:order_id>')
-
 def approve_order(order_id):
     try:
         order = ExternalOrder.query.get_or_404(order_id)
-        
-        # Ensure order is pending
-        if order.status != 'pending':
-            flash('Only pending orders can be approved', 'warning')
+
+        # If already fully approved
+        if order.status == 'director_approved':
+            flash('This requisition is already fully approved.', 'info')
             return redirect(url_for('finance_web_bp.manage_orders'))
-        
-        # Update order status
-        order.status = 'approved'
-        order.updated_at = datetime.utcnow()
-        
-        # Add audit trail note
-        # (Assuming you have an audit trail system)
-        # audit_trail.add(f"Order approved by {current_user.username}")
-        
+
+        # Finance approval step
+        if not order.finance_approved:
+            order.finance_approved = True
+            order.finance_approved_at = datetime.utcnow()
+            order.finance_approved_by = current_user.id
+            order.status = 'finance_approved'
+            flash(f'Requisition #{order.id} approved by Finance.', 'success')
+
+        else:
+            flash('Finance has already approved this requisition.', 'warning')
+
         db.session.commit()
-        
-        # Send notification (optional)
-        # notification.send(
-        #     f"Your requisition #{order.id} has been approved",
-        #     recipients=[order.user.email]
-        # )
-        
-        flash(f'Requisition #{order.id} approved successfully!', 'success')
         return redirect(url_for('finance_web_bp.manage_orders'))
-    
+
     except SQLAlchemyError as e:
         db.session.rollback()
         current_app.logger.error(f"Error approving order {order_id}: {str(e)}")
         flash('An error occurred while approving the order. Please try again.', 'error')
         return redirect(url_for('finance_web_bp.manage_orders'))
+
 
 @finance_web_bp.route('/reject-order/<int:order_id>')
 def reject_order(order_id):
@@ -1656,7 +1655,69 @@ def view_order(order_id):
         flash('An error occurred while loading the order details. Please try again.', 'error')
         return redirect(url_for('finance_web_bp.manage_orders'))
 
+@finance_web_bp.route("/approve-lpo")
 
+def approve_lpo():
+    """
+    Page for approving LPOs pending finance approval.
+    Fetch LPOs that are:
+    - Not yet finance approved
+    - Status is pending
+    """
+    # Query all LPOs pending finance approval
+    pending_lpos = (
+        LPO.query
+        .filter(LPO.finance_approved == False)  # not approved yet
+        .filter(LPO.status == "pending")        # only pending LPOs
+        .order_by(LPO.created_at.desc())
+        .all()
+    )
+
+    # Optional: convert to dict if needed in template
+    lpos_data = [lpo.to_dict() for lpo in pending_lpos]
+
+    return render_template("approve_lpo.html", lpos=lpos_data)
+
+
+@finance_web_bp.route("/view-lpo/<int:lpo_id>")
+
+def view_lpo(lpo_id):
+    """
+    View detailed info about a single LPO
+    """
+    lpo = LPO.query.get_or_404(lpo_id)
+    return render_template("view_lpo.html", lpo=lpo)
+
+
+@finance_web_bp.route("/approve-lpo-action/<int:lpo_id>/<string:action>")
+
+def approve_lpo_action(lpo_id, action):
+    """
+    Approve or reject an LPO
+    action: 'approve' or 'reject'
+    """
+    lpo = LPO.query.get_or_404(lpo_id)
+
+    if lpo.finance_approved:
+        flash("This LPO has already been approved by finance.", "warning")
+        return redirect(url_for("finance_web_bp.approve_lpo"))
+
+    if action == "approve":
+        lpo.finance_approved = True
+        lpo.finance_approved_at = datetime.utcnow()
+        lpo.finance_approved_by = current_user.id
+        lpo.status = "finance_approved"  # Update overall status
+        flash(f"LPO {lpo.lpo_number or lpo.id} approved successfully.", "success")
+    elif action == "reject":
+        lpo.finance_approved = False
+        lpo.status = "rejected"
+        flash(f"LPO {lpo.lpo_number or lpo.id} rejected.", "danger")
+    else:
+        flash("Invalid action.", "danger")
+        return redirect(url_for("finance_web_bp.approve_lpo"))
+
+    db.session.commit()
+    return redirect(url_for("finance_web_bp.approve_lpo"))
 
 @finance_web_bp.route('/expenses/new', methods=['GET', 'POST'])
 def new_expense():
@@ -1975,3 +2036,358 @@ def print_receipt(invoice_id):
         paid_amount=paid_amount,
         today=datetime.utcnow().date()
     )
+    
+
+
+@finance_web_bp.route('/supplier-accounts')
+def supplier_accounts():
+    """Manage supplier accounts"""
+    accounts = SupplierAccount.query.all()
+    suppliers_without_accounts = Supplier.query.filter(
+        ~Supplier.id.in_([acc.supplier_id for acc in accounts])
+    ).all()
+    
+    return render_template('supplier_accounts.html',
+                         accounts=accounts,
+                         suppliers_without_accounts=suppliers_without_accounts)
+
+@finance_web_bp.route('/supplier-accounts/create', methods=['POST'])
+def create_supplier_account():
+    """Create a new supplier account"""
+    try:
+        supplier_id = request.form.get('supplier_id')
+        account_type = request.form.get('account_type', 'regular')
+        credit_limit = float(request.form.get('credit_limit', 100000.00))
+        payment_terms = request.form.get('payment_terms', 'Net 30')
+        
+        # Check if account already exists
+        existing_account = SupplierAccount.query.filter_by(supplier_id=supplier_id).first()
+        if existing_account:
+            flash('Account already exists for this supplier!', 'warning')
+            return redirect(url_for('finance_web_bp.supplier_accounts'))
+        
+        supplier = Supplier.query.get_or_404(supplier_id)
+        
+        # Get the next available ID
+        last_account = SupplierAccount.query.order_by(SupplierAccount.id.desc()).first()
+        next_id = (last_account.id + 1) if last_account else 1
+        
+        # Generate account number before creating the object
+        prefix = "SUP"
+        supplier_initials = ''.join([word[0].upper() for word in supplier.name.split()[:3]])
+        timestamp = datetime.utcnow().strftime("%y%m")
+        account_number = f"{prefix}-{supplier_initials}-{timestamp}-{next_id:04d}"
+        
+        # Create new account with pre-generated account number
+        account = SupplierAccount(
+            account_number=account_number,  # Set it directly
+            supplier_id=supplier_id,
+            account_type=account_type,
+            credit_limit=credit_limit,
+            current_balance=0.0,
+            payment_terms=payment_terms,
+            preferred_payment_method='bank_transfer'
+        )
+        
+        db.session.add(account)
+        db.session.commit()
+        
+        flash(f'Account created successfully for {supplier.name}!', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error creating account: {str(e)}', 'danger')
+
+    return redirect(url_for('finance_web_bp.supplier_accounts'))
+
+@finance_web_bp.route('/supplier-accounts/<int:account_id>/update', methods=['POST'])
+def update_supplier_account(account_id):
+    """Update supplier account"""
+    try:
+        account = SupplierAccount.query.get_or_404(account_id)
+        
+        account.credit_limit = float(request.form.get('credit_limit', account.credit_limit))
+        account.payment_terms = request.form.get('payment_terms', account.payment_terms)
+        account.preferred_payment_method = request.form.get('payment_method', account.preferred_payment_method)
+        account.status = request.form.get('status', account.status)
+        
+        # Update bank details if provided
+        if request.form.get('bank_name'):
+            account.bank_name = request.form.get('bank_name')
+            account.bank_account_number = request.form.get('bank_account_number')
+            account.bank_branch = request.form.get('bank_branch')
+            account.swift_code = request.form.get('swift_code')
+        
+        db.session.commit()
+        flash('Account updated successfully!', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error updating account: {str(e)}', 'danger')
+
+    return redirect(url_for('finance_web_bp.supplier_accounts'))
+
+
+
+
+@finance_web_bp.route('/supplier-accounts/<int:account_id>/invoices')
+def supplier_invoices(account_id):
+    account = SupplierAccount.query.get_or_404(account_id)
+    invoices = SupplierInvoice.query.filter_by(
+        supplier_account_id=account_id
+    ).order_by(SupplierInvoice.invoice_date.desc()).all()
+
+    # Aging buckets
+    upcoming_invoices = [
+        inv for inv in invoices
+        if inv.due_date and inv.due_date <= (datetime.utcnow() + timedelta(days=30))
+    ]
+    upcoming_balance = sum(inv.balance_due for inv in upcoming_invoices)
+
+    upcoming_31_60 = sum(
+        inv.balance_due for inv in invoices
+        if inv.due_date and (datetime.utcnow() + timedelta(days=31)) <= inv.due_date <= (datetime.utcnow() + timedelta(days=60))
+    )
+
+    overdue_61_plus = sum(
+        inv.balance_due for inv in invoices
+        if inv.due_date and inv.due_date > (datetime.utcnow() + timedelta(days=60))
+    )
+
+    return render_template(
+        'supplier_invoices.html',
+        account=account,
+        invoices=invoices,
+        upcoming_31_60=upcoming_31_60,
+        upcoming_balance=upcoming_balance,
+        overdue_61_plus=overdue_61_plus
+    )
+
+    
+    
+@finance_web_bp.route('/supplier-invoices/<int:invoice_id>/request-payment', methods=['POST'])
+def request_invoice_payment(invoice_id):
+    """Create a payment request for approval (instead of direct payment)"""
+    try:
+        invoice = SupplierInvoice.query.get_or_404(invoice_id)
+        
+        # Get payment data from request
+        payment_data = request.get_json()
+        amount = float(payment_data.get('amount'))
+        payment_method = payment_data.get('payment_method')
+        reference = payment_data.get('reference')
+        notes = payment_data.get('notes', '')
+        
+        # Validate payment data
+        if not amount or amount <= 0:
+            return jsonify({
+                'success': False,
+                'message': 'Please enter a valid payment amount'
+            }), 400
+        
+        if amount > invoice.balance_due:
+            return jsonify({
+                'success': False,
+                'message': f'Payment amount cannot exceed the balance due of KSh {invoice.balance_due:.2f}'
+            }), 400
+        
+        if not reference:
+            return jsonify({
+                'success': False,
+                'message': 'Please enter a payment reference number'
+            }), 400
+        
+        # Check for existing pending payment requests
+        existing_request = PaymentRequest.query.filter(
+            PaymentRequest.invoice_id == invoice_id,
+            PaymentRequest.status.in_(['draft', 'submitted', 'finance_review', 'director_approval'])
+        ).first()
+        
+        if existing_request:
+            return jsonify({
+                'success': False,
+                'message': f'There is already a pending payment request (ID: {existing_request.id}) for this invoice'
+            }), 400
+        
+        # ✅ NEW: Update invoice status to 'pending'
+        invoice.status = 'pending'
+        
+        # Create payment request
+        payment_request = PaymentRequest(
+            invoice_id=invoice_id,
+            requested_by=current_user.id,  # Assuming you have current_user from Flask-Login
+            amount=amount,
+            payment_method=payment_method,
+            reference=reference,
+            notes=notes,
+            status='submitted'  # Automatically submit for approval
+        )
+        
+        db.session.add(payment_request)
+        db.session.commit()
+        
+        # Return success response
+        return jsonify({
+            'success': True,
+            'message': f'Payment request for KSh {amount:.2f} submitted for approval',
+            'payment_request_id': payment_request.id,
+            'next_approval_step': 'Finance Department Review',
+            'invoice_status': invoice.status  # Return updated status
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error creating payment request: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': f'Error creating payment request: {str(e)}'
+        }), 500
+        
+        
+        
+        
+@finance_web_bp.route('/approve-payments')
+@login_required
+def approve_payments():
+    """Finance department payment approval dashboard"""
+    if not current_user.has_privilege('finance:approve_payments'):
+        flash('You do not have permission to access this page.', 'danger')
+        return redirect(url_for('finance_web_bp.financial_dashboard'))
+    
+    # Get payment requests pending finance review
+    pending_requests = PaymentRequest.query.filter(
+        PaymentRequest.status.in_(['submitted', 'finance_review'])
+    ).order_by(PaymentRequest.requested_at.desc()).all()
+    
+    # Get payment request statistics
+    stats = {
+        'pending_finance': PaymentRequest.query.filter_by(status='submitted').count(),
+        'under_review': PaymentRequest.query.filter_by(status='finance_review').count(),
+        'pending_director': PaymentRequest.query.filter_by(status='director_approval').count(),
+        'total_approved': PaymentRequest.query.filter_by(status='approved').count(),
+        'total_rejected': PaymentRequest.query.filter_by(status='rejected').count(),
+    }
+    
+    return render_template('approve_payments.html',
+                         pending_requests=pending_requests,
+                         stats=stats)
+
+@finance_web_bp.route('/payment-requests/<int:request_id>/finance-review', methods=['POST'])
+@login_required
+def finance_review_payment(request_id):
+    """Finance department reviews and forwards payment request to director"""
+    if not current_user.has_privilege('finance:approve_payments'):
+        return jsonify({
+            'success': False,
+            'message': 'Unauthorized: Finance approval permission required'
+        }), 403
+    
+    try:
+        payment_request = PaymentRequest.query.get_or_404(request_id)
+        
+        # Validate that request is in correct status for finance review
+        if payment_request.status not in ['submitted', 'finance_review']:
+            return jsonify({
+                'success': False,
+                'message': f'Payment request must be in submitted status. Current status: {payment_request.status}'
+            }), 400
+        
+        data = request.get_json()
+        action = data.get('action')  # 'approve' or 'reject'
+        notes = data.get('notes', '')
+        
+        if action == 'approve':
+            # Finance approves and forwards to director
+            payment_request.approve_by_finance(current_user.id, notes)
+            message = 'Payment request forwarded to director for final approval'
+            
+        elif action == 'reject':
+            # Finance rejects the payment request
+            payment_request.reject(current_user.id, notes, rejected_by_finance=True)
+            message = 'Payment request rejected by finance department'
+            
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Invalid action. Must be "approve" or "reject"'
+            }), 400
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': message,
+            'payment_request': payment_request.to_dict()
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error in finance review: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': f'Error processing finance review: {str(e)}'
+        }), 500
+
+@finance_web_bp.route('/payment-requests/<int:request_id>/finance-details')
+@login_required
+def finance_payment_details(request_id):
+    """Get detailed information for finance review"""
+    if not current_user.has_privilege('finance:approve_payments'):
+        return jsonify({
+            'success': False,
+            'message': 'Unauthorized'
+        }), 403
+    
+    payment_request = PaymentRequest.query.get_or_404(request_id)
+    
+    # Get additional details for finance review
+    invoice = payment_request.invoice
+    supplier_account = invoice.supplier_account
+    supplier = supplier_account.supplier
+    
+    details = {
+        'payment_request': payment_request.to_dict(),
+        'invoice': {
+            'id': invoice.id,
+            'invoice_number': invoice.invoice_number,
+            'total_amount': invoice.total_amount,
+            'amount_paid': invoice.amount_paid,
+            'balance_due': invoice.balance_due,
+            'invoice_date': invoice.invoice_date.isoformat(),
+            'due_date': invoice.due_date.isoformat(),
+            'days_overdue': (datetime.utcnow().date() - invoice.due_date.date()).days if invoice.due_date and datetime.utcnow().date() > invoice.due_date.date() else 0
+        },
+        'supplier': {
+            'name': supplier.name,
+            'contact': supplier.contact,
+            'phone': supplier.phone,
+            'email': supplier.email,
+            'rating': supplier.rating
+        },
+        'supplier_account': {
+            'account_number': supplier_account.account_number,
+            'current_balance': supplier_account.current_balance,
+            'credit_limit': supplier_account.credit_limit,
+            'credit_rating': supplier_account.credit_rating
+        },
+        'purchase_order': {
+            'lpo_number': invoice.purchase_order.lpo_number,
+            'order_date': invoice.purchase_order.order_date.isoformat(),
+            'item_name': invoice.purchase_order.item_name,
+            'quantity': invoice.purchase_order.quantity
+        }
+    }
+    
+    return jsonify(details)
+
+@finance_web_bp.route('/finance/payment-requests/export')
+@login_required
+def export_finance_payment_requests():
+    """Export payment requests for finance department"""
+    if not current_user.has_privilege('finance:approve_payments'):
+        flash('Unauthorized', 'danger')
+        return redirect(url_for('finance_web_bp.approve_payments'))
+    
+    # Implementation for exporting to Excel/PDF
+    # This would generate and return a file download
+    pass
