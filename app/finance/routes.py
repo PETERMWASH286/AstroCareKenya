@@ -3,6 +3,7 @@ from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import smtplib
+import tempfile
 from flask import Blueprint, abort, flash, jsonify, redirect, render_template, request, session, url_for
 from flask_login import current_user, login_required
 from sqlalchemy import func
@@ -10,7 +11,7 @@ from sqlalchemy import func
 from app.finance.models import Expense, ExpenseCategory, Insurance, InsuranceClaim, InsuranceService, Invoice, InvoiceItem, Payment
 from sqlalchemy.exc import IntegrityError
 
-from app.store.models import LPO, ExternalOrder, PaymentRequest, Supplier, SupplierAccount, SupplierInvoice
+from app.store.models import LPO, ExternalOrder, PaymentRequest, PurchaseOrder, Supplier, SupplierAccount, SupplierInvoice
 from app.user_management.models import Department
 
 from . import finance_web_bp
@@ -19,6 +20,7 @@ from flask import Blueprint, render_template, current_app
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import joinedload
 from app.extensions import db
+from app.utils.notifications import notification_manager
 
 # Financial Dashboard
 @finance_web_bp.route('/dashboard')
@@ -1485,7 +1487,7 @@ def manage_orders():
         # Fetch pending orders ordered by urgency (required_by date)
         pending_orders = (
             ExternalOrder.query
-            .filter_by(status='pending')
+            .filter(ExternalOrder.status.in_(['pending', 'rejected', 'completed', 'director_approved', 'finance_approved', 'lpo_generated', 'order_placed']))
             .options(
                 joinedload(ExternalOrder.supplier),
                 joinedload(ExternalOrder.user)
@@ -1654,6 +1656,336 @@ def view_order(order_id):
         current_app.logger.error(f"Error fetching order {order_id}: {str(e)}")
         flash('An error occurred while loading the order details. Please try again.', 'error')
         return redirect(url_for('finance_web_bp.manage_orders'))
+
+
+@finance_web_bp.route('/external-orders/<int:order_id>/add-details', methods=['GET', 'POST'])
+@login_required
+def add_details(order_id):
+    """Page for finance to add/edit order details and verify information"""
+    order = ExternalOrder.query.get_or_404(order_id)
+    suppliers = Supplier.query.filter_by(is_active=True).all()
+    
+    if request.method == 'POST':
+        try:
+            # Update all editable fields
+            order.item_name = request.form.get('item_name')
+            order.quantity = int(request.form.get('quantity'))
+            order.unit = request.form.get('unit')
+            order.category = request.form.get('category')
+            order.priority = request.form.get('priority', 'medium')
+            order.reason = request.form.get('reason')
+            
+            # Supplier details
+            order.supplier_id = request.form.get('supplier_id') or None
+            order.contact_person = request.form.get('contact_person')
+            
+            # Combine phone and email for contact_info
+            contact_phone = request.form.get('contact_phone', '')
+            contact_email = request.form.get('contact_email', '')
+            order.contact_info = f"{contact_phone}" + (f" | {contact_email}" if contact_email else "")
+            
+            # Financial details
+            order.unit_price = float(request.form.get('unit_price'))
+            order.tax_rate = float(request.form.get('tax_rate', 0))
+            order.total_price = float(request.form.get('total_price'))
+            
+            # Dates
+            if request.form.get('required_by'):
+                order.required_by = datetime.strptime(request.form.get('required_by'), '%Y-%m-%d')
+            if request.form.get('delivery_date'):
+                order.delivery_date = datetime.strptime(request.form.get('delivery_date'), '%Y-%m-%d')
+            
+            order.updated_at = datetime.utcnow()
+            
+            db.session.commit()
+
+            flash('Order details updated successfully! Now you can approve the order.', 'success')
+            return redirect(url_for('finance_web_bp.manage_orders'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error updating order details: {str(e)}', 'danger')
+
+    return render_template('add_requisition_details.html',
+                         order=order,
+                         suppliers=suppliers,
+                         title=f"Edit Details - {order.item_name}")
+
+
+
+@finance_web_bp.route("/lpos/<int:order_id>/generate", methods=["POST", "GET"])
+def generate_lpo(order_id):
+    """
+    Generate an LPO for a given external order.
+    Sets all approvals to True and redirects to LPO page.
+    """
+    try:
+        external_order = ExternalOrder.query.get_or_404(order_id)
+
+        # ✅ Prevent duplicate LPOs for the same order
+        existing_lpo = LPO.query.filter_by(external_order_id=external_order.id).first()
+        if existing_lpo:
+            flash(f"LPO already exists: {existing_lpo.lpo_number}", "warning")
+            return redirect(url_for('finance_web_bp.view_order_lpo', lpo_id=existing_lpo.id))
+
+        # ✅ Create new LPO with all approvals set to True
+        new_lpo = LPO(
+            external_order_id=external_order.id,
+            item_name=external_order.item_name,
+            category=external_order.category,
+            unit=external_order.unit,
+            quantity=external_order.quantity,
+            unit_price=external_order.unit_price,
+            tax_rate=external_order.tax_rate,
+            total_price=external_order.total_price,
+            supplier_id=external_order.supplier_id,
+            contact_person=external_order.contact_person,
+            contact_info=external_order.contact_info,
+            status="approved",  # Set status to approved
+            created_by=current_user.id,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow(),
+            delivery_date=external_order.delivery_date,
+            # Set all approvals to True
+            finance_approved=True,
+            finance_approved_at=datetime.utcnow(),
+            finance_approved_by=current_user.id,
+            director_approved=True,
+            director_approved_at=datetime.utcnow(),
+            director_approved_by=external_order.director_approved_by,
+        )
+
+        db.session.add(new_lpo)
+        db.session.flush()  # Get new_lpo.id before commit
+
+        # Generate LPO number
+        new_lpo.lpo_number = f"LPO-{new_lpo.id}"
+
+        # Update external order status
+        external_order.status = "lpo_generated"  # Or "lpo_generated" if you prefer
+        external_order.updated_at = datetime.utcnow()
+
+        db.session.commit()
+
+        flash(f"LPO generated successfully: {new_lpo.lpo_number}", "success")
+        
+        # ✅ Redirect to LPO page after creation
+        return redirect(url_for('finance_web_bp.view_order_lpo', lpo_id=new_lpo.id))
+
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error generating LPO: {str(e)}", "error")
+        return redirect(url_for('finance_web_bp.external_orders'))
+    
+@finance_web_bp.route("/orders/<int:order_id>/send-lpo", methods=["POST", 'GET'])
+def send_order_lpo(order_id):
+    """Send LPO to supplier from order ID"""
+    external_order = ExternalOrder.query.get_or_404(order_id)
+    
+    # Check if LPO exists for this order
+    if not external_order.lpos:
+        return jsonify({
+            "success": False,
+            "message": "No LPO found for this order"
+        }), 400
+    
+    lpo = external_order.lpos[0]
+    return place_order(lpo.id)  # Call the existing place_order function
+
+@finance_web_bp.route("/lpos/<int:lpo_id>/send-to-supplier", methods=["POST"])
+def place_order(lpo_id):
+    try:
+        lpo = LPO.query.get_or_404(lpo_id)
+        
+        # Check if LPO is approved
+        if not (lpo.finance_approved and lpo.director_approved and lpo.status == 'approved'):
+            return jsonify({
+                "success": False,
+                "message": "LPO must be fully approved before sending to supplier"
+            }), 400
+
+        # Get the external order (requisition)
+        external_order = lpo.external_order
+        if not external_order:
+            return jsonify({
+                "success": False,
+                "message": "External order not found for this LPO"
+            }), 400
+
+        # Generate Compact PDF with the new template
+        html_content = render_template("lpo_pdf.html", lpo=lpo)
+        
+        # Configure PDF options for compact size
+        pdf_options = {
+            'page-size': 'A4',
+            'margin-top': '0.3in',
+            'margin-right': '0.3in',
+            'margin-bottom': '0.3in',
+            'margin-left': '0.3in',
+            'encoding': "UTF-8",
+            'no-outline': None,
+            'quiet': None
+        }
+        
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
+            HTML(string=html_content).write_pdf(tmp_file.name, options=pdf_options)
+            pdf_path = tmp_file.name
+
+        # Send professional email to supplier
+        email_sent = False
+        if lpo.supplier and lpo.supplier.email:
+            subject = f"{lpo.lpo_number} - Medical Center Hospital"
+            
+            # Plain text email content
+            plain_text_body = f"""
+Dear {lpo.supplier.name},
+
+Please find attached Local Purchase Order {lpo.lpo_number} from Medical Center Hospital.
+
+ORDER SUMMARY:
+• Item: {external_order.item_name}
+• Quantity: {external_order.quantity} {external_order.unit}
+• Total: KSh {external_order.total_price:,.2f}
+• Delivery: {external_order.delivery_date.strftime('%Y-%m-%d') if external_order.delivery_date else 'TBC'}
+
+Please acknowledge receipt and confirm delivery timeline. Reference this LPO number on your invoice.
+
+Best regards,
+Procurement Department
+Medical Center Hospital
+"""
+            
+            # HTML email content
+            html_email_body = f"""
+<!DOCTYPE html>
+<html>
+<body style="font-family: Arial, sans-serif; line-height: 1.4; color: #333;">
+    <div style="background: #2563eb; color: white; padding: 15px; text-align: center;">
+        <h2 style="margin: 0;">Medical Center Hospital</h2>
+    </div>
+    
+    <div style="padding: 20px;">
+        <h3 style="color: #2563eb;">{lpo.lpo_number}</h3>
+        
+        <p>Dear <strong>{lpo.supplier.name}</strong>,</p>
+        
+        <p>Please find attached Local Purchase Order <strong>{lpo.lpo_number}</strong>.</p>
+        
+        <div style="background: #f8fafc; padding: 15px; border-radius: 5px; margin: 15px 0;">
+            <h4 style="margin: 0 0 10px 0; color: #1e293b;">Order Summary:</h4>
+            <table style="width: 100%;">
+                <tr>
+                    <td style="padding: 2px 0;"><strong>Item:</strong></td>
+                    <td style="padding: 2px 0;">{external_order.item_name}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 2px 0;"><strong>Quantity:</strong></td>
+                    <td style="padding: 2px 0;">{external_order.quantity} {external_order.unit}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 2px 0;"><strong>Total Amount:</strong></td>
+                    <td style="padding: 2px 0;">KSh {external_order.total_price:,.2f}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 2px 0;"><strong>Delivery:</strong></td>
+                    <td style="padding: 2px 0;">{external_order.delivery_date.strftime('%Y-%m-%d') if external_order.delivery_date else 'To be confirmed'}</td>
+                </tr>
+            </table>
+        </div>
+        
+        <p>Please acknowledge receipt and confirm delivery timeline. Reference this LPO number on your invoice.</p>
+        
+        <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #e2e8f0;">
+            <p style="margin: 5px 0;"><strong>Best regards,</strong></p>
+            <p style="margin: 5px 0; color: #2563eb;"><strong>Procurement Department</strong></p>
+            <p style="margin: 5px 0; font-size: 12px; color: #64748b;">
+                Medical Center Hospital • procurement@medicalcenter.co.ke • +254 700 123 457
+            </p>
+        </div>
+    </div>
+</body>
+</html>
+"""
+            
+            email_sent = notification_manager.send_email(
+                subject=subject,
+                recipients=[lpo.supplier.email],
+                body=plain_text_body,
+                html_body=html_email_body,
+                attachments=[pdf_path]
+            )
+
+        # Create PurchaseOrder record (if you have this model)
+        # If you don't have PurchaseOrder model, you can skip this part
+        try:
+            purchase_order = PurchaseOrder(
+                requisition_id=external_order.id,  # Changed from requisition_id
+                supplier_id=external_order.supplier_id,
+                lpo_id=lpo.id,
+                lpo_number=lpo.lpo_number,
+                item_name=external_order.item_name,
+                quantity=external_order.quantity,
+                unit=external_order.unit,
+                unit_price=external_order.unit_price,
+                total_price=external_order.total_price,
+                currency=current_app.config.get('CURRENCY', 'Ksh'),
+                delivery_date=external_order.delivery_date,
+                status='ordered',
+                created_by=current_user.id
+            )
+            db.session.add(purchase_order)
+        except NameError:
+            # PurchaseOrder model might not exist, so skip this part
+            pass
+
+        # Update external order and LPO status
+        external_order.status = 'order_placed'
+        external_order.updated_at = datetime.utcnow()
+        
+        lpo.status = 'sent_to_supplier'
+        lpo.updated_at = datetime.utcnow()
+
+        db.session.commit()
+
+        # Clean up temporary file
+        try:
+            os.unlink(pdf_path)
+        except:
+            pass
+
+        # Show appropriate success message
+        if email_sent:
+            flash(f'Purchase order created and LPO sent to {lpo.supplier.name}!', 'success')
+        else:
+            flash(f'Purchase order created but email failed to send to supplier.', 'warning')
+
+        return redirect(url_for('finance_web_bp.view_order_lpo', lpo_id=lpo.id))
+
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error creating purchase order or sending LPO: {str(e)}")
+        flash('An error occurred while creating the purchase order or sending LPO.', 'error')
+        return redirect(url_for('finance_web_bp.view_order_lpo', lpo_id=lpo_id))
+
+@finance_web_bp.route("/orders/<int:order_id>/lpo")
+def view_lpo_for_order(order_id):
+    """View LPO details from order ID - redirects to LPO view"""
+    external_order = ExternalOrder.query.get_or_404(order_id)
+    
+    # Check if LPO exists for this order
+    if not external_order.lpos:
+        flash('No LPO found for this order', 'error')
+        return redirect(url_for('finance_web_bp.view_order', order_id=order_id))
+    
+    lpo = external_order.lpos[0]  # Get the first LPO
+    return redirect(url_for('finance_web_bp.view_order_lpo', lpo_id=lpo.id))
+
+
+@finance_web_bp.route("/lpos/<int:lpo_id>")
+def view_order_lpo(lpo_id):
+    """View LPO details"""
+    lpo = LPO.query.get_or_404(lpo_id)
+    return render_template("view_supplier_lpo.html", lpo=lpo)
 
 @finance_web_bp.route("/approve-lpo")
 

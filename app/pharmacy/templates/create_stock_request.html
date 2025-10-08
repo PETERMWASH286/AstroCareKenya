@@ -20,26 +20,40 @@
         <form method="POST" class="space-y-6" id="stockRequestForm">
             <!-- Stock Item Selection -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="relative">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Medical Item</label>
-                    <select name="stock_id" required class="stock-select w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500">
-                        <option value="">Select Medical Item</option>
-                        {% for item in stock_items %}
-                        <option value="{{ item.id }}" 
-                                data-batch="{{ item.batch_number }}"
-                                data-expiration="{{ item.expiration_date.strftime('%Y-%m-%d') }}"
-                                data-location="{{ item.location }}"
-                                data-quantity="{{ item.current_stock }}">
-                            {{ item.name }} ({{ item.sku }})
-                        </option>
-                        {% endfor %}
-                    </select>
-                    <div class="absolute inset-y-0 right-3 top-5 flex items-center pointer-events-none">
-                        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                        </svg>
-                    </div>
-                </div>
+<div class="relative">
+    <label class="block text-sm font-medium text-gray-700 mb-2">Medical Item</label>
+
+    <div id="customSearch" class="relative">
+        <!-- ✅ Input aligned so selected text appears at the start -->
+        <input type="text" id="itemSearch" 
+               placeholder="Type to search medical items..." 
+               class="w-full p-3 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-left">
+
+
+        
+        <!-- Search Results Dropdown -->
+        <div id="searchResults" 
+             class="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg hidden max-h-60 overflow-y-auto">
+            <!-- Results will be dynamically added here -->
+        </div>
+    </div>
+    
+    <!-- Hidden select for form submission -->
+    <select name="stock_id" id="stock_id" class="hidden">
+        <option value="">Select Medical Item</option>
+        {% for item in stock_items %}
+        <option value="{{ item.id }}" 
+                data-batch="{{ item.batch_number }}"
+                data-expiration="{{ item.expiration_date.strftime('%Y-%m-%d') }}"
+                data-location="{{ item.location }}"
+                data-quantity="{{ item.current_stock }}">
+            {{ item.name }} ({{ item.sku }})
+        </option>
+        {% endfor %}
+    </select>
+</div>
+
+
 
                 <!-- Auto-populated Batch Info -->
                 <div class="bg-blue-50 p-4 rounded-lg">
@@ -68,7 +82,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Quantity Needed</label>
-                    <input type="number" name="quantity_requested" min="1" required class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500" placeholder="Enter quantity">
+                    <input type="number" name="quantity_requested" min="1" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500" placeholder="Enter quantity">
                 </div>
 
                 <div>
@@ -96,7 +110,7 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Expiration Date</label>
-                    <input type="date" name="expiration_date" required class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500" id="expirationDateInput">
+                    <input type="date" name="expiration_date" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500" id="expirationDateInput">
                 </div>
             </div>
             <!-- Add these hidden fields inside the form -->
@@ -120,49 +134,229 @@
 <!-- Script for Dynamic Form Interactions -->
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const stockSelect = document.querySelector('.stock-select');
+        const stockSelect = document.getElementById('stock_id');
+        const itemSearch = document.getElementById('itemSearch');
+        const searchResults = document.getElementById('searchResults');
         const batchNumber = document.getElementById('batchNumber');
         const expirationDate = document.getElementById('expirationDate');
         const storageLocation = document.getElementById('storageLocation');
         const availableQuantity = document.getElementById('availableQuantity');
         const expirationDateInput = document.getElementById('expirationDateInput');
 
-        stockSelect.addEventListener('change', function() {
-            const selectedOption = this.options[this.selectedIndex];
+        let allItems = [];
+        let debounceTimer;
+        let selectedItem = null;
 
-            batchNumber.textContent = selectedOption.dataset.batch || '-';
-            expirationDate.textContent = selectedOption.dataset.expiration || '-';
-            storageLocation.textContent = selectedOption.dataset.location || '-';
-            availableQuantity.textContent = selectedOption.dataset.quantity || '-';
-            // Update hidden form fields
-            document.getElementById('batchNumberInput').value = selectedOption.dataset.batch;
-            document.getElementById('locationInput').value = selectedOption.dataset.location;
-            // Set expiration date picker
-            if (selectedOption.dataset.expiration) {
-                expirationDateInput.value = selectedOption.dataset.expiration;
+        // Initialize items from select options
+        function initializeItems() {
+            allItems = Array.from(stockSelect.options).map(option => ({
+                id: option.value,
+                text: option.textContent,
+                batch: option.dataset.batch,
+                expiration: option.dataset.expiration,
+                location: option.dataset.location,
+                quantity: option.dataset.quantity
+            })).filter(item => item.id); // Remove empty option
+        }
+
+        // Search function with debouncing
+        function performSearch(query) {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                const results = allItems.filter(item => 
+                    item.text.toLowerCase().includes(query.toLowerCase()) ||
+                    item.id.toLowerCase().includes(query.toLowerCase())
+                );
+                displayResults(results);
+            }, 300);
+        }
+
+        // Display search results
+        function displayResults(results) {
+            searchResults.innerHTML = '';
+            
+            if (results.length === 0) {
+                const noResult = document.createElement('div');
+                noResult.className = 'p-3 text-gray-500 text-sm';
+                noResult.textContent = 'No items found';
+                searchResults.appendChild(noResult);
+            } else {
+                results.forEach(item => {
+                    const resultItem = document.createElement('div');
+                    resultItem.className = 'p-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0';
+                    resultItem.innerHTML = `
+                        <div class="font-medium text-gray-800">${item.text}</div>
+                        <div class="text-sm text-gray-600 mt-1">
+                            <span class="bg-gray-100 px-2 py-1 rounded">Batch: ${item.batch}</span>
+                            <span class="ml-2">Stock: ${item.quantity}</span>
+                        </div>
+                    `;
+                    
+                    resultItem.addEventListener('click', () => {
+                        selectItem(item);
+                    });
+                    
+                    searchResults.appendChild(resultItem);
+                });
+            }
+            
+            searchResults.classList.remove('hidden');
+        }
+
+        // Select an item from search results
+        function selectItem(item) {
+            selectedItem = item;
+            stockSelect.value = item.id;
+            itemSearch.value = item.text;
+            searchResults.classList.add('hidden');
+            updateBatchInfo(item);
+        }
+
+        // Clear selection
+        function clearSelection() {
+            selectedItem = null;
+            stockSelect.value = '';
+            itemSearch.value = '';
+            updateBatchInfo(null);
+        }
+
+        // Update item details panel
+        function updateBatchInfo(item) {
+            if (item && item.id) {
+                batchNumber.textContent = item.batch || '-';
+                expirationDate.textContent = item.expiration || '-';
+                storageLocation.textContent = item.location || '-';
+                availableQuantity.textContent = item.quantity || '-';
+                
+                // Update hidden form fields
+                document.getElementById('batchNumberInput').value = item.batch || '';
+                document.getElementById('locationInput').value = item.location || '';
+                
+                // Set expiration date picker
+                if (item.expiration) {
+                    expirationDateInput.value = item.expiration;
+                }
+            } else {
+                // Clear all fields when no item is selected
+                batchNumber.textContent = '-';
+                expirationDate.textContent = '-';
+                storageLocation.textContent = '-';
+                availableQuantity.textContent = '-';
+                document.getElementById('batchNumberInput').value = '';
+                document.getElementById('locationInput').value = '';
+                expirationDateInput.value = '';
+            }
+        }
+
+        // Event listeners
+        itemSearch.addEventListener('input', (e) => {
+            const query = e.target.value.trim();
+            if (query.length > 0) {
+                performSearch(query);
+            } else {
+                searchResults.classList.add('hidden');
+                if (!selectedItem) {
+                    updateBatchInfo(null);
+                }
             }
         });
 
-        // Initialize Select2
-        $('.stock-select').select2({
-            placeholder: "Search medical items...",
-            minimumResultsForSearch: 3,
-            width: '100%',
-            dropdownParent: $('#stockRequestForm')
+        itemSearch.addEventListener('focus', () => {
+            if (itemSearch.value.trim().length > 0 && !selectedItem) {
+                performSearch(itemSearch.value.trim());
+            }
         });
+
+        // Allow clearing by backspace/delete when input is empty
+        itemSearch.addEventListener('keydown', (e) => {
+            if ((e.key === 'Backspace' || e.key === 'Delete') && itemSearch.value === '' && selectedItem) {
+                clearSelection();
+            }
+        });
+
+        // Close search results when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#customSearch')) {
+                searchResults.classList.add('hidden');
+            }
+        });
+
+        // Keyboard navigation for search results
+        itemSearch.addEventListener('keydown', (e) => {
+            const results = searchResults.querySelectorAll('div');
+            const activeResult = searchResults.querySelector('.bg-blue-100');
+            
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (activeResult) {
+                    const next = activeResult.nextElementSibling;
+                    if (next) {
+                        activeResult.classList.remove('bg-blue-100');
+                        next.classList.add('bg-blue-100');
+                    }
+                } else if (results.length > 0) {
+                    results[0].classList.add('bg-blue-100');
+                }
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (activeResult) {
+                    const prev = activeResult.previousElementSibling;
+                    if (prev) {
+                        activeResult.classList.remove('bg-blue-100');
+                        prev.classList.add('bg-blue-100');
+                    }
+                }
+            } else if (e.key === 'Enter' && activeResult) {
+                e.preventDefault();
+                activeResult.click();
+            } else if (e.key === 'Escape') {
+                searchResults.classList.add('hidden');
+            }
+        });
+
+        // Form reset handler
+        document.querySelector('button[type="reset"]').addEventListener('click', function() {
+            clearSelection();
+        });
+
+        // Initialize
+        initializeItems();
     });
 </script>
 
 <style>
-    .select2-container--default .select2-selection--single {
-        border: 1px solid #d1d5db;
-        border-radius: 0.5rem;
-        height: 48px;
-        padding: 0.5rem 1rem;
+    /* Custom styling for search results */
+    #searchResults div:hover {
+        background-color: #eff6ff !important;
     }
-    
-    .select2-container--default .select2-selection--single .select2-selection__arrow {
-        height: 46px;
+
+    #searchResults .bg-blue-100 {
+        background-color: #eff6ff;
+        border-left: 3px solid #3b82f6;
+    }
+
+    /* Smooth transitions */
+    #searchResults {
+        transition: opacity 0.2s ease-in-out;
+    }
+
+    /* Scrollbar styling */
+    #searchResults::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    #searchResults::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 0 0.5rem 0.5rem 0;
+    }
+
+    #searchResults::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 3px;
+    }
+
+    #searchResults::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
     }
 </style>
 {% endblock %}

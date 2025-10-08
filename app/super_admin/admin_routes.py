@@ -122,29 +122,33 @@ def approve_requisition(order_id):
 
 
 # Reject by Director route
-@admin_web.route("/requisitions/reject/<int:order_id>", methods=["POST", "GET"])
+@admin_web.route("/requisitions/reject/<int:order_id>", methods=['POST'])
 @login_required
 def reject_requisition(order_id):
-    """
-    Director/Admin rejects a requisition (final rejection).
-    """
-
+    """Reject requisition with reason"""
     order = ExternalOrder.query.get_or_404(order_id)
-
-    if order.director_approved:
-        flash("This requisition has already been approved by the Director and cannot be rejected.", "warning")
-        return redirect(url_for("admin_web_bp.manage_requisitions"))
-
-    order.director_approved = False
-    order.director_approved_by = current_user.id
-    order.director_approved_at = datetime.utcnow()
-    order.status = "rejected"
-    order.updated_at = datetime.utcnow()
-
-    db.session.commit()
-    current_app.logger.info(f"Requisition #{order.id} rejected by director {current_user.username}")
-    flash(f"Requisition #{order.id} has been rejected.", "info")
-    return redirect(url_for("admin_web_bp.manage_requisitions"))
+    
+    try:
+        rejection_reason = request.json.get('reason', '').strip()
+        if not rejection_reason:
+            return jsonify({'error': 'Rejection reason is required'}), 400
+        
+        order.status = 'rejected'
+        order.rejection_reason = rejection_reason
+        order.rejected_by = current_user.id
+        order.rejected_at = datetime.utcnow()
+        order.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True, 
+            'message': 'Requisition rejected successfully!'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Error rejecting requisition: {str(e)}'}), 400
 
 
 # View requisition details
@@ -159,6 +163,7 @@ def view_requisition(order_id):
     return render_template(
         "admin/requisition_detail.html",
         order=order,
+        today=datetime.utcnow(),
         currency=current_app.config.get('CURRENCY', 'Ksh')
     )
 

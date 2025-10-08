@@ -314,6 +314,7 @@ def delete_supplier(supplier_id):
 
 
 # app/store/routes.py (or pharmacy/routes.py depending on your structure)
+# app/store/routes.py
 @store_web_bp.route('/manage/stock-requests')
 def manage_stock_requests():
     """Central stock request management for all departments"""
@@ -326,7 +327,8 @@ def manage_stock_requests():
     if status != 'all':
         query = query.filter(StockRequest.status == status)
     
-    requests = query.order_by(StockRequest.required_by_date.asc()).all()
+    # Order by most recent first (based on created_at)
+    requests = query.order_by(StockRequest.created_at.desc()).all()
     
     # Status counts for filters
     status_counts = {
@@ -337,13 +339,16 @@ def manage_stock_requests():
         'fulfilled': StockRequest.query.filter_by(status='fulfilled').count()
     }
     
-    return render_template('manage_stock_requests.html',
-                         requests=requests,
-                         status_counts=status_counts,
-                         current_status=status)
+    return render_template(
+        'manage_stock_requests.html',
+        requests=requests,
+        status_counts=status_counts,
+        current_status=status
+    )
 
 
-# Updated route handler with stock management + audit trail + better safety
+
+# Updated route handler with issued_by and issue_date during collection
 @store_web_bp.route('/stock-requests/<uuid:request_id>/action', methods=['POST'])
 def handle_stock_request_action(request_id):
     req = StockRequest.query.get_or_404(request_id)
@@ -358,7 +363,7 @@ def handle_stock_request_action(request_id):
         if not action:
             raise ValueError("Missing action")
 
-        # ✅ Approve request
+        # ✅ Approve request (NO stock update or stock flow)
         if action == 'approve':
             if req.status != 'submitted':
                 raise ValueError("Only submitted requests can be approved")
@@ -366,11 +371,30 @@ def handle_stock_request_action(request_id):
             if req.stock.current_stock < req.quantity_requested:
                 raise ValueError(f"Insufficient stock. Available: {req.stock.current_stock}")
 
-            # Mark approved
+            # Mark approved WITHOUT updating stock
             req.status = 'approved'
             req.quantity_approved = req.quantity_requested
             req.approver_id = current_user.id
             req.approval_date = datetime.utcnow()
+
+            # NO stock deduction here
+            # NO inventory updates here
+            # NO stock flow records here
+
+        # ✅ Collect request (UPDATE stock and create stock flow)
+        elif action == 'collect':
+            if req.status != 'approved':
+                raise ValueError("Only approved requests can be collected")
+
+            collected_by = data.get('collected_by', '').strip()
+            collection_notes = data.get('collection_notes', '').strip()
+            
+            if not collected_by:
+                raise ValueError("Collector name is required")
+
+            # Verify stock is still available
+            if req.stock.current_stock < req.quantity_approved:
+                raise ValueError(f"Insufficient stock. Available: {req.stock.current_stock}")
 
             # Deduct from main stock safely
             stock = req.stock
@@ -409,24 +433,36 @@ def handle_stock_request_action(request_id):
             else:
                 raise ValueError(f"Unknown department: {req.department}")
 
-            # ✅ Stock flow records
+            # ✅ Stock flow records for collection
             db.session.add_all([
                 StockFlow(
                     stock_id=stock.id,
                     service_id=service.id if service else None,
                     quantity_change=-req.quantity_approved,
-                    flow_type='approval',
+                    flow_type='collection',
                     reference_id=req.id,
-                    notes=f'Stock approval for {req.quantity_approved} units'
+                    notes=f'Stock collection for {req.quantity_approved} units'
                 ),
                 StockFlow(
                     service_id=service.id if service else None,
                     quantity_change=req.quantity_approved,
-                    flow_type='approval',
+                    flow_type='collection',
                     reference_id=req.id,
-                    notes=f'Stock received from approval {req.id}'
+                    notes=f'Stock received from collection {req.id}'
                 )
             ])
+
+            # Update collection and issuance details
+            req.status = 'fulfilled'
+            req.collected_by = collected_by
+            req.collection_notes = collection_notes
+            req.collected_at = datetime.utcnow()
+            req.quantity_issued = req.quantity_approved
+            
+            # ✅ Set issued_by (current user) and issue_date (current time)
+            req.issued_by = current_user.id
+            req.issue_date = datetime.utcnow()
+            req.issue_reference = req.generate_issue_reference()
 
         # ✅ Reject request
         elif action == 'reject':
@@ -453,7 +489,7 @@ def handle_stock_request_action(request_id):
             f"Stock request {req.id} {action} by user {current_user.id}"
         )
 
-        return jsonify({'success': True, 'message': f'Request {action}d successfully'})
+        return jsonify({'success': True, 'message': f'Request {action} successfully'})
 
     except Exception as e:
         db.session.rollback()
@@ -563,13 +599,15 @@ def create_external_order():
         total_price = subtotal + tax_amount
         
         try:
-            supplier_id = int(request.form.get('supplier_id', 0))
-            if supplier_id <= 0:
-                flash('Please select a supplier', 'error')
-                return redirect(url_for('store_web_bp.external_orders'))
+            supplier_id_raw = request.form.get('supplier_id', '').strip()
+            supplier_id = int(supplier_id_raw) if supplier_id_raw else None
+
+            # Treat "0" as not selected
+            if supplier_id == 0:
+                supplier_id = None
         except (TypeError, ValueError):
-            flash('Invalid supplier selection', 'error')
-            return redirect(url_for('store_web_bp.external_orders'))
+            supplier_id = None
+
         
         contact_person = request.form.get('contact', '').strip()
         contact_info = request.form.get('contact_info', '').strip()

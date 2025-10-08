@@ -86,21 +86,193 @@
                         </td>
 
                         <!-- Status -->
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="flex items-center gap-2">
-                                <span class="relative flex h-3 w-3">
-                                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 
-                                        {% if request.status == 'pending' %}bg-yellow-400
-                                        {% elif request.status == 'approved' %}bg-green-400
-                                        {% else %}bg-gray-400{% endif %}"></span>
-                                <span class="relative inline-flex rounded-full h-3 w-3 
-                                        {% if request.status == 'pending' %}bg-yellow-500
-                                        {% elif request.status == 'approved' %}bg-green-500
-                                        {% else %}bg-gray-500{% endif %}"></span>
-                                </span>
-                                <span class="text-sm capitalize">{{ request.status }}</span>
+<!-- Enhanced Compact Status Version -->
+<td class="px-6 py-4 whitespace-nowrap">
+    <div class="flex flex-col gap-1.5">
+        <!-- Main Status Badge -->
+        <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all duration-200
+            {% if request.status == 'draft' %}bg-gray-50 text-gray-700 border-gray-300
+            {% elif request.status == 'submitted' %}bg-blue-50 text-blue-700 border-blue-300
+            {% elif request.status == 'approved' %}bg-emerald-50 text-emerald-700 border-emerald-300
+            {% elif request.status == 'rejected' %}bg-red-50 text-red-700 border-red-300
+            {% elif request.status == 'processing' %}bg-amber-50 text-amber-700 border-amber-300
+            {% elif request.status == 'partially_issued' %}bg-orange-50 text-orange-700 border-orange-300
+            {% elif request.status == 'fulfilled' %}bg-purple-50 text-purple-700 border-purple-300
+            {% elif request.status == 'cancelled' %}bg-slate-100 text-slate-600 border-slate-400{% endif %}">
+            
+            <!-- Status Dot -->
+            <span class="w-1.5 h-1.5 rounded-full
+                {% if request.status == 'draft' %}bg-gray-500
+                {% elif request.status == 'submitted' %}bg-blue-500
+                {% elif request.status == 'approved' %}bg-emerald-500
+                {% elif request.status == 'rejected' %}bg-red-500
+                {% elif request.status == 'processing' %}bg-amber-500
+                {% elif request.status == 'partially_issued' %}bg-orange-500
+                {% elif request.status == 'fulfilled' %}bg-purple-500
+                {% elif request.status == 'cancelled' %}bg-slate-500{% endif %}
+                {% if request.status in ['submitted', 'processing'] %}animate-pulse{% endif %}"></span>
+            
+            <span class="capitalize">{{ request.status.replace('_', ' ') }}</span>
+        </div>
+
+        <!-- Rejection Notes Tooltip -->
+        {% if request.status == 'rejected' and request.approval_notes %}
+        <div class="group relative">
+            <button class="text-xs text-red-600 hover:text-red-700 underline decoration-dashed flex items-center gap-1">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                View Reason
+            </button>
+            <div class="absolute bottom-full left-0 mb-2 hidden group-hover:block w-64 z-10">
+                <div class="bg-red-600 text-white text-sm rounded-lg p-3 shadow-lg">
+                    <div class="font-semibold mb-1">Rejection Reason:</div>
+                    <div class="leading-relaxed">{{ request.approval_notes }}</div>
+                    {% if request.approver %}
+                    <div class="text-red-200 text-xs mt-2">— {{ request.approver.full_name }}</div>
+                    {% endif %}
+                </div>
+                <div class="w-3 h-3 bg-red-600 rotate-45 transform translate-x-4"></div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Fulfilled Details Tooltip -->
+        {% if request.status == 'fulfilled' %}
+        <div class="group relative">
+            <button class="text-xs text-purple-600 hover:text-purple-700 underline decoration-dashed flex items-center gap-1">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                </svg>
+                View Details
+            </button>
+            <div class="absolute bottom-full left-0 mb-2 hidden group-hover:block w-72 z-10">
+                <div class="bg-purple-600 text-white text-sm rounded-lg p-3 shadow-lg">
+                    <div class="font-semibold mb-2">Collection Completed</div>
+                    
+                    <!-- Collection Info -->
+                    <div class="space-y-2">
+                        {% if request.collected_by %}
+                        <div class="flex items-center gap-2">
+                            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                            </svg>
+                            <span><strong>Collected by:</strong> {{ request.collected_by }}</span>
+                        </div>
+                        {% endif %}
+
+                        {% if request.collected_at %}
+                        <div class="flex items-center gap-2">
+                            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <span><strong>Collected on:</strong> {{ request.collected_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                        </div>
+                        {% endif %}
+
+                        {% if request.collection_notes %}
+                        <div class="flex items-start gap-2">
+                            <svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            <span><strong>Notes:</strong> {{ request.collection_notes }}</span>
+                        </div>
+                        {% endif %}
+
+                        {% if request.approver %}
+                        <div class="flex items-center gap-2 pt-1 border-t border-purple-500">
+                            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <span><strong>Approved by:</strong> {{ request.approver.full_name }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="w-3 h-3 bg-purple-600 rotate-45 transform translate-x-4"></div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Approved Details Tooltip -->
+        {% if request.status == 'approved' %}
+        <div class="group relative">
+            <button class="text-xs text-emerald-600 hover:text-emerald-700 underline decoration-dashed flex items-center gap-1">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                View Details
+            </button>
+            <div class="absolute bottom-full left-0 mb-2 hidden group-hover:block w-72 z-10">
+                <div class="bg-emerald-600 text-white text-sm rounded-lg p-3 shadow-lg">
+                    <div class="font-semibold mb-2">Ready for Collection</div>
+                    
+                    <div class="space-y-2">
+                        {% if request.approver %}
+                        <div class="flex items-center gap-2">
+                            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <span><strong>Approved by:</strong> {{ request.approver.full_name }}</span>
+                        </div>
+                        {% endif %}
+
+                        {% if request.approval_date %}
+                        <div class="flex items-center gap-2">
+                            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <span><strong>Approved on:</strong> {{ request.approval_date.strftime('%Y-%m-%d %H:%M') }}</span>
+                        </div>
+                        {% endif %}
+
+                        <!-- Collection Instructions -->
+                        <div class="flex items-start gap-2 p-2 bg-emerald-700 rounded mt-2">
+                            <svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                            </svg>
+                            <div>
+                                <div class="font-semibold">Next Steps:</div>
+                                <div class="text-emerald-100 text-xs mt-1">
+                                    Please collect the items from the main store.
+                                </div>
                             </div>
-                        </td>
+                        </div>
+
+                        <!-- Quantity Info -->
+                        <div class="flex items-center justify-between text-xs pt-1 border-t border-emerald-500">
+                            <span>Approved Quantity:</span>
+                            <span class="font-bold">{{ request.quantity_approved or request.quantity_requested }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="w-3 h-3 bg-emerald-600 rotate-45 transform translate-x-4"></div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Processing Details Tooltip -->
+        {% if request.status == 'submitted' %}
+        <div class="group relative">
+            <button class="text-xs text-amber-600 hover:text-amber-700 underline decoration-dashed flex items-center gap-1">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                View Details
+            </button>
+            <div class="absolute bottom-full left-0 mb-2 hidden group-hover:block w-64 z-10">
+                <div class="bg-amber-600 text-white text-sm rounded-lg p-3 shadow-lg">
+                    <div class="font-semibold mb-2">Processing Request</div>
+                    <div class="leading-relaxed">
+                        Your request is being processed.
+                    </div>
+                </div>
+                <div class="w-3 h-3 bg-amber-600 rotate-45 transform translate-x-4"></div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</td>
 
                         <!-- Priority -->
                         <td class="px-6 py-4 whitespace-nowrap">

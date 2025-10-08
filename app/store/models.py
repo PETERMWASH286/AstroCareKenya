@@ -161,7 +161,6 @@ class StockRequest(db.Model):
     
     # Requester Information
     requester_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-
     department = db.Column(db.String(100), nullable=False)  # e.g., "Pharmacy", "Surgery"
     required_by_date = db.Column(db.DateTime, nullable=True)
     
@@ -206,10 +205,14 @@ class StockRequest(db.Model):
     issue_date = db.Column(db.DateTime)
     issued_by = db.Column(db.Integer, db.ForeignKey('user.id'))
     issue_reference = db.Column(db.String(50))
-    
+
+    # ✅ Collection Details (NEW)
+    collected_by = db.Column(db.String(150), nullable=True)  # Full name of person collecting
+    collected_at = db.Column(db.DateTime, nullable=True)     # Date/time of collection
+    collection_notes = db.Column(db.Text)
+
     # Relationships
     stock = db.relationship('Stock', backref='requests')
-    # Update relationships with back_populates
     requester = db.relationship(
         'User', 
         foreign_keys=[requester_id], 
@@ -250,35 +253,101 @@ class StockRequest(db.Model):
             'priority': self.priority,
             'location': self.location,
             'requester': self.requester.full_name,
-            'age': (datetime.utcnow() - self.created_at).days
+            'age': (datetime.utcnow() - self.created_at).days,
+            # ✅ Include collection info
+            'collected_by': self.collected_by,
+            'collected_at': self.collected_at.isoformat() if self.collected_at else None,
+            # ✅ Include issuance info
+            'issued_by': self.issuer.full_name if self.issuer else None,
+            'issue_date': self.issue_date.isoformat() if self.issue_date else None,
+            'issue_reference': self.issue_reference
         }
 
     def validate_stock_availability(self):
         """Check if requested stock is available, considering existing requests"""
-        # Get available stock (current stock minus pending requests)
         pending_requests = sum(
             req.quantity_requested 
             for req in self.stock.requests 
             if req.status in ['submitted', 'approved'] and req.id != self.id
         )
-        
         available = self.stock.current_stock - pending_requests
         return available >= self.quantity_requested
-
 
     def generate_issue_reference(self):
         """Generate issuance reference number"""
         prefix = self.department[:3].upper()
         date_str = datetime.utcnow().strftime("%y%m%d")
-        return f"{prefix}-ISSUE-{date_str}-{self.id.hex[:6].upper()}"
+        return f"{prefix}-ISSUE-{date_str}-{self.id[:8].upper()}"
 
     def update_stock_levels(self):
         """Update stock quantities after issuance"""
         if self.status == 'fulfilled':
             self.stock.current_stock -= self.quantity_issued
             db.session.commit()
-
-
+            
+            
+            
+class ItemPurchaseRequest(db.Model):
+    __tablename__ = 'item_purchase_requests'
+    
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Item Information
+    item_name = db.Column(db.String(200), nullable=False)
+    category = db.Column(db.String(50), nullable=False)
+    manufacturer = db.Column(db.String(100))
+    specifications = db.Column(db.Text)
+    
+    # Quantity & Requirements
+    quantity = db.Column(db.Integer, nullable=False)
+    units = db.Column(db.String(50), nullable=False)
+    estimated_price = db.Column(db.Float)
+    required_date = db.Column(db.Date, nullable=False)
+    priority = db.Column(db.String(20), nullable=False)  # low, medium, high, critical
+    
+    # Business Justification
+    reason = db.Column(db.Text, nullable=False)
+    alternatives = db.Column(db.Text)
+    urgency_reason = db.Column(db.Text)
+    
+    # Request Details
+    department = db.Column(db.String(50), nullable=False, default='lab')
+    requester_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    status = db.Column(db.String(20), default='submitted')  # submitted, approved, rejected, ordered, received
+    
+    # Approval Process
+    approver_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    approval_date = db.Column(db.DateTime)
+    approval_notes = db.Column(db.Text)
+    rejection_reason = db.Column(db.Text)
+    
+    # Order Details (if approved)
+    purchase_order_id = db.Column(db.String(50))
+    ordered_date = db.Column(db.DateTime)
+    expected_delivery = db.Column(db.Date)
+    
+    # Relationships
+    requester = db.relationship('User', foreign_keys=[requester_id], backref='purchase_requests')
+    approver = db.relationship('User', foreign_keys=[approver_id], backref='approved_purchases')
+    
+    def __repr__(self):
+        return f'<ItemPurchaseRequest {self.item_name} - {self.quantity} {self.units}>'
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'item_name': self.item_name,
+            'category': self.category,
+            'quantity': self.quantity,
+            'units': self.units,
+            'priority': self.priority,
+            'status': self.status,
+            'required_date': self.required_date.isoformat() if self.required_date else None,
+            'created_at': self.created_at.isoformat(),
+            'requester': self.requester.full_name if self.requester else 'Unknown'
+        }
 
 # Add this new model for stock flow tracking
 class StockFlow(db.Model):
@@ -322,9 +391,9 @@ class ExternalOrder(db.Model):
     tax_rate = db.Column(db.Float, default=0.0)
     total_price = db.Column(db.Float, nullable=False)
 
-    supplier_id = db.Column(db.Integer, db.ForeignKey('suppliers.id'), nullable=False)
-    contact_person = db.Column(db.String(120))
-    contact_info = db.Column(db.String(255))
+    supplier_id = db.Column(db.Integer, db.ForeignKey('suppliers.id'), nullable=True)
+    contact_person = db.Column(db.String(120), nullable=True)
+    contact_info = db.Column(db.String(255), nullable=True)
 
     priority = db.Column(db.String(20), nullable=False, default='medium')
     delivery_date = db.Column(db.DateTime, nullable=True)
@@ -347,7 +416,9 @@ class ExternalOrder(db.Model):
     director_approved = db.Column(db.Boolean, default=False)
     director_approved_at = db.Column(db.DateTime, nullable=True)
     director_approved_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
-
+    rejection_reason = db.Column(db.Text, nullable=True)
+    rejected_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    rejected_at = db.Column(db.DateTime, nullable=True)
     # Final status (depends on both approvals)
     status = db.Column(db.String(20), default='pending')  
     # pending / finance_approved / director_approved / rejected / completed

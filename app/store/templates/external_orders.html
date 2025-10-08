@@ -62,32 +62,30 @@
                     </div>
 
                     <!-- Pricing Section -->
-                    <div class="md:col-span-2">
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                                <label for="unit_price" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Unit Price ({{ currency }}) *</label>
-                                <input type="number" name="unit_price" id="unit_price" min="0" step="0.01" required class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                                    oninput="calculateTotal()" />
-                            </div>
-                            <div>
-                                <label for="tax_rate" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tax Rate (%)</label>
-                                <input type="number" name="tax_rate" id="tax_rate" min="0" max="100" value="0" class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                                    oninput="calculateTotal()" />
-                            </div>
-                            <div>
-                                <label for="total_price" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Total Price ({{ currency }})</label>
-                                <input type="text" name="total_price" id="total_price" readonly class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100 bg-gray-100 dark:bg-gray-750 font-semibold" />
-                            </div>
-                        </div>
-                    </div>
+<div class="md:col-span-2" style="display: none;">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+            <label for="unit_price" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Unit Price ({{ currency }}) *</label>
+            <input type="number" name="unit_price" id="unit_price" min="0" step="0.01" value="0" class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
+        </div>
+        <div>
+            <label for="tax_rate" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tax Rate (%)</label>
+            <input type="number" name="tax_rate" id="tax_rate" min="0" max="100" value="0" class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
+        </div>
+        <div>
+            <label for="total_price" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Total Price ({{ currency }})</label>
+            <input type="text" name="total_price" id="total_price" value="0" readonly class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100 bg-gray-100 dark:bg-gray-750 font-semibold" />
+        </div>
+    </div>
+</div>
 
                     <!-- Supplier Information -->
-                    <div class="md:col-span-2">
+                    <div class="md:col-span-2" style="display: none;">
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Supplier Details</label>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
                                 <label for="supplier" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Supplier *</label>
-                                <select name="supplier_id" id="supplier" required class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                <select name="supplier_id" id="supplier" class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
                 <option value="" disabled selected>Select supplier</option>
                 {% for supplier in suppliers %}
                 <option value="{{ supplier.id }}" 
@@ -300,7 +298,7 @@
         </span>
     {% elif order.status == 'lpo_generated' %}
         <span class="px-3 py-1 inline-flex text-xs font-semibold rounded-full bg-purple-100 text-purple-800">
-            <i class="fas fa-file-invoice mr-1"></i> LPO Generated (Pending Approval)
+            <i class="fas fa-file-invoice mr-1"></i> LPO Generated
         </span>
     {% elif order.status == 'finance_approved' %}
         <span class="px-3 py-1 inline-flex text-xs font-semibold rounded-full bg-emerald-100 text-emerald-800">
@@ -310,7 +308,7 @@
         <span class="px-3 py-1 inline-flex text-xs font-semibold rounded-full bg-indigo-100 text-indigo-800">
             <i class="fas fa-user-check mr-1"></i> Approved by Director
         </span>
-    {% elif order.status == 'placed' %}
+    {% elif order.status == 'order_placed' %}
         <span class="px-3 py-1 inline-flex text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
             <i class="fas fa-truck mr-1"></i> Order Placed
         </span>
@@ -362,30 +360,12 @@
 
         <!-- Finance Approved: View + Edit + Cancel -->
         {% if order.status == 'finance_approved' %}
-            <a href="{{ url_for('store_web_bp.edit_external_order', order_id=order.id) }}" 
-               class="text-amber-600 hover:text-amber-900 dark:text-amber-400 dark:hover:text-amber-300 p-2 rounded-lg hover:bg-amber-50 dark:hover:bg-gray-700 transition-colors" 
-               title="Edit Order">
-                <i class="fas fa-edit"></i>
-            </a>
-            <form action="{{ url_for('store_web_bp.cancel_external_order', order_id=order.id) }}" method="POST" class="inline">
-                <button type="submit" 
-                        class="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                        title="Cancel Order">
-                    <i class="fas fa-ban"></i>
-                </button>
-            </form>
+
         {% endif %}
 
         <!-- Director Approved: Place Order + Generate LPO -->
         {% if order.status == 'director_approved' %}
 
-
-            <!-- Generate LPO -->
-            <a href="{{ url_for('store_web_bp.generate_lpo', order_id=order.id) }}" 
-               class="text-purple-600 hover:text-purple-900 dark:text-purple-400 dark:hover:text-purple-300 p-2 rounded-lg hover:bg-purple-50 dark:hover:bg-gray-700 transition-colors" 
-               title="Generate LPO">
-                <i class="fas fa-file-invoice"></i>
-            </a>
         {% endif %}
         <!-- Director Approved: Place Order + Generate LPO -->
         {% if order.status == 'completed' %}
@@ -408,7 +388,7 @@
         {% endif %}
 
         <!-- Placed: Mark as Completed -->
-        {% if order.status == 'placed' %}
+        {% if order.status == 'order_placed' %}
             <form action="" method="POST" class="inline">
                 <button type="submit" 
                         class="text-emerald-600 hover:text-emerald-900 dark:text-emerald-400 dark:hover:text-emerald-300 p-2 rounded-lg hover:bg-emerald-50 dark:hover:bg-gray-700 transition-colors"

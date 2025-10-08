@@ -1,0 +1,457 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 py-8">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header Section -->
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl shadow-lg mb-4">
+                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                </svg>
+            </div>
+            <h1 class="text-4xl font-bold text-gray-900 mb-3">Request New Item</h1>
+            <p class="text-xl text-gray-600 max-w-2xl mx-auto">
+                Can't find what you need? Request the main store to purchase new items for your department.
+            </p>
+        </div>
+
+        <!-- Progress Steps -->
+        <div class="mb-12">
+            <div class="flex items-center justify-center">
+                <div class="flex items-center">
+                    <div class="flex items-center justify-center w-10 h-10 bg-blue-600 text-white rounded-full font-semibold shadow-lg">
+                        1
+                    </div>
+                    <div class="ml-3 text-sm font-medium text-blue-600">Item Details</div>
+                </div>
+                <div class="flex-1 h-1 bg-blue-200 mx-4 max-w-24"></div>
+                <div class="flex items-center">
+                    <div class="flex items-center justify-center w-10 h-10 bg-gray-300 text-gray-500 rounded-full font-semibold">
+                        2
+                    </div>
+                    <div class="ml-3 text-sm font-medium text-gray-500">Requirements</div>
+                </div>
+                <div class="flex-1 h-1 bg-gray-200 mx-4 max-w-24"></div>
+                <div class="flex items-center">
+                    <div class="flex items-center justify-center w-10 h-10 bg-gray-300 text-gray-500 rounded-full font-semibold">
+                        3
+                    </div>
+                    <div class="ml-3 text-sm font-medium text-gray-500">Review</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Form Card -->
+        <div class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-3">
+                <!-- Sidebar -->
+                <div class="bg-gradient-to-b from-blue-600 to-purple-700 p-8 text-white lg:col-span-1">
+                    <div class="space-y-6">
+                        <div>
+                            <h3 class="text-lg font-semibold mb-2">Request Guidelines</h3>
+                            <ul class="space-y-3 text-blue-100 text-sm">
+                                <li class="flex items-start gap-3">
+                                    <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                    <span>Provide detailed item specifications</span>
+                                </li>
+                                <li class="flex items-start gap-3">
+                                    <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                    <span>Include required quantity and units</span>
+                                </li>
+                                <li class="flex items-start gap-3">
+                                    <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                    <span>Specify urgency and required date</span>
+                                </li>
+                                <li class="flex items-start gap-3">
+                                    <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                    <span>Explain the business need clearly</span>
+                                </li>
+                            </ul>
+                        </div>
+                        
+                        <div class="pt-6 border-t border-blue-500">
+                            <h3 class="text-lg font-semibold mb-2">Approval Process</h3>
+                            <div class="space-y-4 text-sm text-blue-100">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-xs font-bold">1</div>
+                                    <span>Department Head Review</span>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <div class="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-xs font-bold">2</div>
+                                    <span>Store Manager Approval</span>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <div class="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-xs font-bold">3</div>
+                                    <span>Procurement Processing</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pt-6 border-t border-blue-500">
+                            <div class="flex items-center gap-3 p-3 bg-blue-500/30 rounded-lg">
+                                <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <div class="text-sm">
+                                    <div class="font-semibold">Estimated Time</div>
+                                    <div>2-5 business days for approval</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Content -->
+                <div class="p-8 lg:col-span-2">
+                    <form method="POST" class="space-y-8" id="newItemForm">
+                        {{ form.hidden_tag() }}
+
+                        <!-- Item Information Section -->
+                        <div class="space-y-6">
+                            <div class="flex items-center gap-3 mb-6">
+                                <div class="w-2 h-8 bg-gradient-to-b from-blue-600 to-purple-600 rounded-full"></div>
+                                <h2 class="text-2xl font-bold text-gray-900">Item Information</h2>
+                            </div>
+
+                            <!-- Item Name -->
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-3">
+                                    Item Name *
+                                </label>
+                                {{ form.item_name(class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/50 backdrop-blur-sm transition-all duration-300", placeholder="Enter the complete item name") }}
+                                {% for error in form.item_name.errors %}
+                                <p class="mt-2 text-sm text-red-600">{{ error }}</p>
+                                {% endfor %}
+                            </div>
+
+                            <!-- Category and Specifications -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-3">
+                                        Category *
+                                    </label>
+                                    <div class="relative">
+                                        {{ form.category(class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white appearance-none cursor-pointer") }}
+                                        <div class="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+                                            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-3">
+                                        Manufacturer / Brand
+                                    </label>
+                                    {{ form.manufacturer(class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500", placeholder="Optional") }}
+                                </div>
+                            </div>
+
+                            <!-- Item Specifications -->
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-3">
+                                    Item Specifications
+                                </label>
+                                {{ form.specifications(class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500", rows="3", placeholder="Size, model, technical specifications, or any specific requirements...") }}
+                            </div>
+                        </div>
+
+                        <!-- Quantity & Requirements Section -->
+                        <div class="space-y-6 pt-6 border-t border-gray-200">
+                            <div class="flex items-center gap-3 mb-6">
+                                <div class="w-2 h-8 bg-gradient-to-b from-blue-600 to-purple-600 rounded-full"></div>
+                                <h2 class="text-2xl font-bold text-gray-900">Quantity & Requirements</h2>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-3">
+                                        Quantity *
+                                    </label>
+                                    {{ form.quantity(class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500", placeholder="0") }}
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-3">
+                                        Units *
+                                    </label>
+                                    {{ form.units(class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500", placeholder="boxes, pieces, etc.") }}
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-3">
+                                        Estimated Unit Price
+                                    </label>
+                                    <div class="relative">
+                                        <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                                        {{ form.estimated_price(class="w-full p-4 pl-10 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500", placeholder="0.00") }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Required Date -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-3">
+                                        Required By Date *
+                                    </label>
+                                    <div class="relative">
+                                        {{ form.required_date(class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500", type="date") }}
+                                        <div class="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+                                            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-3">
+                                        Priority Level *
+                                    </label>
+                                    <div class="relative">
+                                        {{ form.priority(class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500") }}
+                                        <div class="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+                                            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Business Justification Section -->
+                        <div class="space-y-6 pt-6 border-t border-gray-200">
+                            <div class="flex items-center gap-3 mb-6">
+                                <div class="w-2 h-8 bg-gradient-to-b from-blue-600 to-purple-600 rounded-full"></div>
+                                <h2 class="text-2xl font-bold text-gray-900">Business Justification</h2>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-3">
+                                    Reason for Request *
+                                </label>
+                                {{ form.reason(class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500", rows="5", placeholder="Explain why this item is needed, how it will be used, and the impact of not having it...") }}
+                                {% for error in form.reason.errors %}
+                                <p class="mt-2 text-sm text-red-600">{{ error }}</p>
+                                {% endfor %}
+                            </div>
+
+                            <!-- Alternative Items -->
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-3">
+                                    Alternative Items (Optional)
+                                </label>
+                                {{ form.alternatives(class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500", rows="2", placeholder="List any acceptable alternative items or brands...") }}
+                            </div>
+
+                            <!-- Urgency Explanation -->
+                            <div id="urgencyExplanation" class="hidden">
+                                <label class="block text-sm font-semibold text-red-700 mb-3">
+                                    Urgency Explanation *
+                                </label>
+                                {{ form.urgency_reason(class="w-full p-4 border border-red-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500", rows="3", placeholder="Please explain why this request is urgent...") }}
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="pt-8 border-t border-gray-200">
+                            <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+                                <a href="{{ url_for('lab_web.create_stock_request') }}" 
+                                   class="flex items-center justify-center px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-300 font-semibold group">
+                                    <svg class="w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                                    </svg>
+                                    Back to Stock Request
+                                </a>
+                                
+                                <div class="flex flex-col sm:flex-row gap-3">
+                                    <button type="reset" 
+                                            class="px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-300 font-semibold">
+                                        Reset Form
+                                    </button>
+                                    <button type="submit" 
+                                            class="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:-translate-y-0.5">
+                                        Submit Request
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Additional Info -->
+        <div class="mt-8 text-center text-gray-500 text-sm">
+            <p>Your request will be reviewed by the department head and store management. You'll receive updates via email.</p>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript for Enhanced Interactions -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const prioritySelect = document.getElementById('priority');
+    const urgencyExplanation = document.getElementById('urgencyExplanation');
+    const urgencyReason = document.getElementById('urgency_reason');
+
+    // Show urgency explanation for high/critical priority
+    function toggleUrgencyExplanation() {
+        if (prioritySelect.value === 'high' || prioritySelect.value === 'critical') {
+            urgencyExplanation.classList.remove('hidden');
+            urgencyExplanation.classList.add('animate-fadeIn');
+        } else {
+            urgencyExplanation.classList.add('hidden');
+        }
+    }
+
+    // Initialize and add event listener
+    toggleUrgencyExplanation();
+    prioritySelect.addEventListener('change', toggleUrgencyExplanation);
+
+    // Form validation enhancement
+    const form = document.getElementById('newItemForm');
+    form.addEventListener('submit', function(e) {
+        let isValid = true;
+        const requiredFields = form.querySelectorAll('[required]');
+        
+        requiredFields.forEach(field => {
+            if (!field.value.trim()) {
+                isValid = false;
+                field.classList.add('border-red-500', 'ring-2', 'ring-red-200');
+                
+                // Remove error styling after 3 seconds
+                setTimeout(() => {
+                    field.classList.remove('border-red-500', 'ring-2', 'ring-red-200');
+                }, 3000);
+            }
+        });
+
+        // Additional validation for urgency reason
+        if ((prioritySelect.value === 'high' || prioritySelect.value === 'critical') && 
+            (!urgencyReason.value || !urgencyReason.value.trim())) {
+            isValid = false;
+            urgencyReason.classList.add('border-red-500', 'ring-2', 'ring-red-200');
+            
+            setTimeout(() => {
+                urgencyReason.classList.remove('border-red-500', 'ring-2', 'ring-red-200');
+            }, 3000);
+        }
+
+        if (!isValid) {
+            e.preventDefault();
+            
+            // Show error notification
+            showNotification('Please fill in all required fields', 'error');
+            
+            // Scroll to first error
+            const firstError = form.querySelector('.border-red-500');
+            if (firstError) {
+                firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+    });
+
+    // Notification function
+    function showNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        const bgColor = type === 'error' ? 'bg-red-500' : 'bg-blue-500';
+        
+        notification.className = `fixed top-4 right-4 z-50 ${bgColor} text-white px-6 py-4 rounded-xl shadow-lg transform transition-all duration-300 translate-x-full`;
+        notification.innerHTML = `
+            <div class="flex items-center space-x-3">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${type === 'error' ? 'M6 18L18 6M6 6l12 12' : 'M5 13l4 4L19 7'}"/>
+                </svg>
+                <span class="font-medium">${message}</span>
+            </div>
+        `;
+
+        document.body.appendChild(notification);
+
+        // Animate in
+        setTimeout(() => {
+            notification.classList.remove('translate-x-full');
+        }, 100);
+
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            notification.classList.add('translate-x-full');
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }, 5000);
+    }
+
+    // Add loading state to submit button
+    form.addEventListener('submit', function() {
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        
+        submitBtn.innerHTML = `
+            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Processing...
+        `;
+        submitBtn.disabled = true;
+
+        // Revert after 5 seconds (in case of error)
+        setTimeout(() => {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }, 5000);
+    });
+});
+</script>
+
+<style>
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Custom scrollbar for sidebar */
+.bg-gradient-to-b::-webkit-scrollbar {
+    width: 6px;
+}
+
+.bg-gradient-to-b::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+.bg-gradient-to-b::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+}
+
+.bg-gradient-to-b::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+/* Enhanced focus states */
+input:focus, textarea:focus, select:focus {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.15);
+}
+</style>
+{% endblock %}

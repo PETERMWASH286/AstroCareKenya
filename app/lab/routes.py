@@ -9,10 +9,10 @@ from flask import abort, app, current_app, jsonify, make_response, render_templa
 from flask_login import login_required, current_user
 from app import db
 from app.auth.models import User
-from app.lab.forms import LabConsumableForm, LabStockRequestForm
+from app.lab.forms import LabConsumableForm, LabStockRequestForm, NewItemRequestForm
 from app.lab.models import BloodInventory, DailyLogEntry, LabConsumable, LabEquipment, LabInventory, LabTestResult, LaboratoryTest, PanelTest, ParameterOption, ParameterRange, QualityControl, Sample, ScheduledMaintenanceLog, TestPanel, TestParameter, UploadedFile
 from app.patients.models import Consultation, LabTest, Patient, Service, Visit
-from app.store.models import Stock, StockRequest, Supplier
+from app.store.models import ItemPurchaseRequest, Stock, StockRequest, Supplier
 from . import lab_web_bp
 from sqlalchemy import func, or_, and_
 from sqlalchemy.orm import joinedload
@@ -3053,7 +3053,7 @@ def request_stocks():
         # Get status counts for filter badges
         status_counts = {
             'all': StockRequest.query.filter_by(department='lab').count(),
-            'pending': StockRequest.query.filter_by(department='lab', status='pending').count(),
+            'pending': StockRequest.query.filter_by(department='lab', status='submitted').count(),
             'approved': StockRequest.query.filter_by(department='lab', status='approved').count(),
             'fulfilled': StockRequest.query.filter_by(department='lab', status='fulfilled').count(),
             'rejected': StockRequest.query.filter_by(department='lab', status='rejected').count(),
@@ -3138,6 +3138,48 @@ def create_stock_request():
                           form=form, 
                           lab_items=lab_items,
                           title="New Lab Stock Request")
+
+
+@lab_web_bp.route('/inventory/request-new-item', methods=['GET', 'POST'])
+@login_required
+def request_new_item():
+    """Page for requesting main store to purchase new items"""
+    form = NewItemRequestForm()
+    
+    if form.validate_on_submit():
+        try:
+            # Create new item request
+            new_item_request = ItemPurchaseRequest(
+                item_name=form.item_name.data,
+                category=form.category.data,
+                manufacturer=form.manufacturer.data,
+                specifications=form.specifications.data,
+                quantity=form.quantity.data,
+                units=form.units.data,
+                estimated_price=form.estimated_price.data,
+                required_date=form.required_date.data,
+                priority=form.priority.data,
+                reason=form.reason.data,
+                alternatives=form.alternatives.data,
+                urgency_reason=form.urgency_reason.data if form.urgency_reason.data else None,
+                department='lab',
+                requester_id=current_user.id,
+                status='submitted'
+            )
+            
+            db.session.add(new_item_request)
+            db.session.commit()
+            
+            flash('New item request submitted successfully!', 'success')
+            return redirect(url_for('lab_web.request_stocks'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error submitting request: {str(e)}', 'danger')
+    
+    return render_template('lab-inventory/request_new_item.html', 
+                         form=form,
+                         title="Request New Item")
 
 
 # View Stock Request Detail

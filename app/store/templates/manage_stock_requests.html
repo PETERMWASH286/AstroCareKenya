@@ -83,22 +83,50 @@
                         </div>
                     </td>
 
-                    <!-- Status -->
-                    <td class="px-4 py-3.5">
-                        <div class="flex items-center gap-1.5">
-                            <span class="relative flex h-2 w-2">
-                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 
-                                    {% if req.status == 'pending' %}bg-yellow-400
-                                    {% elif req.status == 'approved' %}bg-green-400
-                                    {% else %}bg-gray-400{% endif %}"></span>
-                            <span class="relative inline-flex rounded-full h-2 w-2 
-                                    {% if req.status == 'pending' %}bg-yellow-500
-                                    {% elif req.status == 'approved' %}bg-green-500
-                                    {% else %}bg-gray-500{% endif %}"></span>
-                            </span>
-                            <span class="text-sm text-gray-700 capitalize">{{ req.status }}</span>
-                        </div>
-                    </td>
+<!-- Status Badge -->
+<td class="px-4 py-3.5">
+    <div class="flex items-center justify-start">
+        {% set status_config = {
+            'draft': {'color': 'bg-gray-100 text-gray-700 border-gray-300', 'icon': '📝', 'pulse': false},
+            'submitted': {'color': 'bg-blue-50 text-blue-700 border-blue-200', 'icon': '📤', 'pulse': true},
+            'approved': {'color': 'bg-emerald-50 text-emerald-700 border-emerald-200', 'icon': '✅', 'pulse': false},
+            'rejected': {'color': 'bg-red-50 text-red-700 border-red-200', 'icon': '❌', 'pulse': false},
+            'processing': {'color': 'bg-amber-50 text-amber-700 border-amber-200', 'icon': '🔄', 'pulse': true},
+            'partially_issued': {'color': 'bg-orange-50 text-orange-700 border-orange-200', 'icon': '⚠️', 'pulse': false},
+            'fulfilled': {'color': 'bg-purple-50 text-purple-700 border-purple-200', 'icon': '🎉', 'pulse': false},
+            'cancelled': {'color': 'bg-slate-100 text-slate-600 border-slate-300', 'icon': '🚫', 'pulse': false}
+        } %}
+        
+        {% set config = status_config[req.status] %}
+        
+        <div class="relative group">
+            <div class="flex items-center gap-2 px-3 py-2 rounded-xl border transition-all duration-300 hover:scale-105 hover:shadow-md {{ config.color }}">
+                <!-- Animated Icon -->
+                <div class="relative">
+                    {% if config.pulse %}
+                    <span class="absolute inset-0 animate-ping opacity-75">
+                        {{ config.icon }}
+                    </span>
+                    {% endif %}
+                    <span class="relative text-sm">
+                        {{ config.icon }}
+                    </span>
+                </div>
+                
+                <!-- Status Text -->
+                <span class="text-sm font-medium capitalize whitespace-nowrap">
+                    {{ req.status.replace('_', ' ') }}
+                </span>
+                
+                <!-- Hover Tooltip -->
+                <div class="opacity-0 group-hover:opacity-100 transition-opacity duration-200 absolute -top-8 left-1/2 transform -translate-x-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap pointer-events-none">
+                    {{ req.status.replace('_', ' ') | title }}
+                    <div class="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 rotate-45 w-2 h-2 bg-gray-900"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</td>
 
                     <!-- Priority -->
                     <td class="px-4 py-3.5">
@@ -120,34 +148,48 @@
                     </td>
 
                     <!-- Actions -->
+                    <!-- Actions -->
                     <td class="px-4 py-3.5">
                         <div class="flex items-center gap-1.5">
-                            <!-- View Button -->
+                            <!-- View Button - Always Visible -->
                             <button data-tippy-content="View Details" onclick="handleAction('view', '{{ req.id }}')" class="p-1.5 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0zM2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-            </svg>
-        </button> {% if req.status == 'submitted' %}
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0zM2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                </svg>
+                            </button>
+
+                            {% if req.status == 'submitted' %}
                             <!-- Approve Button -->
                             <button data-tippy-content="Approve Request" onclick="handleAction('approve', '{{ req.id }}')" class="p-1.5 text-green-600 hover:text-green-800 hover:bg-green-100 rounded-lg transition-colors">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-            </svg>
-        </button>
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                            </button>
 
                             <!-- Reject Button -->
                             <button data-tippy-content="Reject Request" onclick="handleAction('reject', '{{ req.id }}')" class="p-1.5 text-red-600 hover:text-red-800 hover:bg-red-100 rounded-lg transition-colors">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-            </svg>
-        </button>
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
 
                             <!-- Edit Button -->
                             <a data-tippy-content="Edit Request" href="{{ url_for('pharmacy_web.edit_stock_request', request_id=req.id) }}" class="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded-lg transition-colors">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
-            </svg>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                                </svg>
                             </a>
+
+                            {% elif req.status == 'approved' %}
+                            <!-- Collect Button -->
+                            <button data-tippy-content="Mark as Collected" onclick="handleAction('collect', '{{ req.id }}')" class="p-1.5 text-purple-600 hover:text-purple-800 hover:bg-purple-100 rounded-lg transition-colors">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                                </svg>
+                            </button>
+
+                            {% elif req.status == 'fulfilled' %}
+                            <!-- Only View button is shown for fulfilled status (no additional actions) -->
                             {% endif %}
                         </div>
                     </td>
@@ -170,16 +212,72 @@
     </div>
 </div>
 
-<!-- Simplified Modal -->
-<div id="actionModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-white rounded-xl shadow-lg w-full max-w-md">
-        <div class="p-5 border-b border-gray-200">
-            <h3 class="text-lg font-semibold text-gray-900" id="modalTitle"></h3>
-        </div>
-        <div class="p-5" id="modalContent"></div>
-        <div class="flex justify-end gap-3 p-5 border-t border-gray-200">
-            <button onclick="closeModal()" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">Cancel</button>
-            <button onclick="confirmAction()" class="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg">Confirm</button>
+<!-- Enhanced Super Modern Modal -->
+<div id="actionModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+    <!-- Backdrop with enhanced blur and gradient -->
+    <div class="fixed inset-0  transition-opacity duration-500"></div>
+    
+    <!-- Modal Container -->
+    <div class="flex min-h-full items-center justify-center p-4">
+        <!-- Modal Card with Glass Morphism -->
+        <div class="relative w-full max-w-lg transform transition-all duration-500 scale-95 opacity-0"
+             id="modalCard">
+            <!-- Animated Border Gradient -->
+            <div class="absolute -inset-1 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 rounded-2xl blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-pulse"></div>
+            
+            <!-- Main Modal Content -->
+            <div class="relative bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-white/20 overflow-hidden">
+                <!-- Dynamic Header with Gradient -->
+                <div class="bg-gradient-to-r from-gray-900 to-blue-900 p-6 relative overflow-hidden">
+                    <!-- Animated Background Pattern -->
+                    <div class="absolute inset-0 opacity-5">
+                        <div class="absolute inset-0" style="background-image: url('data:image/svg+xml,%3Csvg width=\"60\" height=\"60\" viewBox=\"0 0 60 60\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cg fill=\"none\" fill-rule=\"evenodd\"%3E%3Cg fill=\"%23ffffff\" fill-opacity=\"0.1\"%3E%3Ccircle cx=\"30\" cy=\"30\" r=\"1\"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');"></div>
+                    </div>
+                    
+                    <div class="relative flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <!-- Animated Icon -->
+                            <div class="relative">
+                                <div class="absolute inset-0 bg-white/20 rounded-xl animate-ping"></div>
+                                <div id="modalIcon" class="relative w-8 h-8 text-white">
+                                    <!-- Icon will be set dynamically -->
+                                </div>
+                            </div>
+                            <h3 class="text-xl font-bold text-white" id="modalTitle"></h3>
+                        </div>
+                        <!-- Close Button -->
+                        <button onclick="closeModal()" class="p-2 hover:bg-white/10 rounded-xl transition-all duration-300 group">
+                            <svg class="w-5 h-5 text-white/80 group-hover:text-white transform group-hover:rotate-90 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Modal Body -->
+                <div class="p-6 space-y-6" id="modalContent">
+                    <!-- Content will be populated here -->
+                </div>
+
+                <!-- Enhanced Action Buttons -->
+                <div class="px-6 pb-6 pt-4 bg-gradient-to-t from-gray-50 to-white/80 border-t border-gray-100/50">
+                    <div class="flex justify-end space-x-3">
+                        <!-- Cancel Button -->
+                        <button onclick="closeModal()" 
+                                class="px-6 py-3 rounded-xl font-semibold text-gray-700 hover:text-gray-900 bg-white border border-gray-300 hover:border-gray-400 shadow-sm hover:shadow-md transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0">
+                            Cancel
+                        </button>
+                        <!-- Confirm Button -->
+                        <button onclick="confirmAction()" 
+                                id="confirmButton"
+                                class="px-6 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 hover:scale-105 active:translate-y-0 relative overflow-hidden group">
+                            <!-- Shine effect -->
+                            <span class="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></span>
+                            <span class="relative" id="confirmButtonText">Confirm</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -204,6 +302,45 @@
     let currentAction = null;
     let currentRequestId = null;
 
+    // Enhanced modal animation functions
+    function showModal() {
+        const modal = document.getElementById('actionModal');
+        const modalCard = document.getElementById('modalCard');
+        
+        modal.classList.remove('hidden');
+        
+        // Trigger animation
+        setTimeout(() => {
+            modalCard.classList.remove('scale-95', 'opacity-0');
+            modalCard.classList.add('scale-100', 'opacity-100');
+        }, 50);
+    }
+
+    function closeModal() {
+        const modal = document.getElementById('actionModal');
+        const modalCard = document.getElementById('modalCard');
+        
+        modalCard.classList.remove('scale-100', 'opacity-100');
+        modalCard.classList.add('scale-95', 'opacity-0');
+        
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            // Clear previous inputs
+            document.getElementById('modalContent').innerHTML = '';
+            resetModalStyles();
+        }, 300);
+    }
+
+    function resetModalStyles() {
+        const confirmButton = document.getElementById('confirmButton');
+        const modalIcon = document.getElementById('modalIcon');
+        
+        // Reset to default styles
+        confirmButton.className = 'px-6 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 hover:scale-105 active:translate-y-0 relative overflow-hidden group';
+        document.getElementById('confirmButtonText').textContent = 'Confirm';
+        modalIcon.innerHTML = '';
+    }
+
     function handleAction(action, requestId) {
         currentAction = action;
         currentRequestId = requestId;
@@ -211,27 +348,121 @@
         const actions = {
             approve: {
                 title: 'Approve Request',
-                content: `Are you sure you want to approve this request?`
+                content: `<div class="text-center space-y-4">
+                            <div class="w-16 h-16 mx-auto bg-green-100 rounded-2xl flex items-center justify-center">
+                                <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h4 class="text-lg font-semibold text-gray-900">Confirm Approval</h4>
+                                <p class="text-gray-600 mt-1">Are you sure you want to approve this stock request?</p>
+                            </div>
+                         </div>`,
+                icon: `<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                       </svg>`,
+                button: {
+                    text: 'Approve',
+                    class: 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700'
+                }
             },
             reject: {
                 title: 'Reject Request',
-                content: `<textarea id="rejectReason" 
-                            class="w-full mt-2 p-2 border rounded-lg" 
-                            placeholder="Enter rejection reason..."
-                            required></textarea>`
+                content: `<div class="space-y-4">
+                            <div class="w-16 h-16 mx-auto bg-red-100 rounded-2xl flex items-center justify-center mb-2">
+                                <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </div>
+                            <div class="text-center mb-4">
+                                <h4 class="text-lg font-semibold text-gray-900">Reject Request</h4>
+                                <p class="text-gray-600 mt-1">Please provide a reason for rejection</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Rejection Reason</label>
+                                <textarea id="rejectReason" 
+                                    class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white/50 backdrop-blur-sm transition-all duration-300 resize-none"
+                                    placeholder="Enter detailed rejection reason..."
+                                    rows="4"
+                                    required></textarea>
+                            </div>
+                         </div>`,
+                icon: `<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                       </svg>`,
+                button: {
+                    text: 'Reject',
+                    class: 'bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700'
+                }
+            },
+            collect: {
+                title: 'Mark as Collected',
+                content: `<div class="space-y-6">
+                            <div class="w-16 h-16 mx-auto bg-purple-100 rounded-2xl flex items-center justify-center mb-2">
+                                <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                                </svg>
+                            </div>
+                            <div class="text-center mb-2">
+                                <h4 class="text-lg font-semibold text-gray-900">Collection Details</h4>
+                                <p class="text-gray-600 mt-1">Record the collection information</p>
+                            </div>
+                            <div class="space-y-4">
+                                <div>
+                                    <label for="collectedBy" class="block text-sm font-medium text-gray-700 mb-2">Collected By</label>
+                                    <input type="text" 
+                                           id="collectedBy" 
+                                           class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white/50 backdrop-blur-sm transition-all duration-300"
+                                           placeholder="Enter collector's full name"
+                                           required>
+                                </div>
+                                <div>
+                                    <label for="collectionNotes" class="block text-sm font-medium text-gray-700 mb-2">Collection Notes</label>
+                                    <textarea id="collectionNotes" 
+                                              class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white/50 backdrop-blur-sm transition-all duration-300 resize-none"
+                                              placeholder="Any additional notes or observations..."
+                                              rows="3"></textarea>
+                                </div>
+                            </div>
+                         </div>`,
+                icon: `<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                       </svg>`,
+                button: {
+                    text: 'Mark Collected',
+                    class: 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700'
+                }
             }
         };
 
-        document.getElementById('modalTitle').textContent = actions[action].title;
-        document.getElementById('modalContent').innerHTML = actions[action].content;
-        document.getElementById('actionModal').classList.remove('hidden');
+        const actionConfig = actions[action];
+        
+        // Update modal content
+        document.getElementById('modalTitle').textContent = actionConfig.title;
+        document.getElementById('modalContent').innerHTML = actionConfig.content;
+        document.getElementById('modalIcon').innerHTML = actionConfig.icon;
+        
+        // Update confirm button
+        const confirmButton = document.getElementById('confirmButton');
+        const confirmText = document.getElementById('confirmButtonText');
+        
+        confirmButton.className = `px-6 py-3 rounded-xl font-semibold text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 hover:scale-105 active:translate-y-0 relative overflow-hidden group ${actionConfig.button.class}`;
+        confirmText.textContent = actionConfig.button.text;
+
+        // Show modal with animation
+        showModal();
     }
 
     async function confirmAction() {
         const modal = document.getElementById('actionModal');
+        const modalCard = document.getElementById('modalCard');
 
         try {
             let body = {};
+            let isValid = true;
+            let errorMessage = '';
+
             switch (currentAction) {
                 case 'approve':
                     body = {
@@ -239,17 +470,58 @@
                     };
                     break;
                 case 'reject':
-                    const reason = document.getElementById('rejectReason').value;
-                    if (!reason.trim()) {
-                        alert('Please provide a rejection reason');
-                        return;
+                    const reason = document.getElementById('rejectReason')?.value;
+                    if (!reason || !reason.trim()) {
+                        isValid = false;
+                        errorMessage = 'Please provide a rejection reason';
+                        // Add visual feedback
+                        const textarea = document.getElementById('rejectReason');
+                        textarea.classList.add('border-red-500', 'ring-2', 'ring-red-200');
+                        setTimeout(() => {
+                            textarea.classList.remove('border-red-500', 'ring-2', 'ring-red-200');
+                        }, 2000);
+                    } else {
+                        body = {
+                            action: 'reject',
+                            reason: reason.trim()
+                        };
                     }
-                    body = {
-                        action: 'reject',
-                        reason: reason
-                    };
+                    break;
+                case 'collect':
+                    const collectedBy = document.getElementById('collectedBy')?.value;
+                    const collectionNotes = document.getElementById('collectionNotes')?.value;
+                    
+                    if (!collectedBy || !collectedBy.trim()) {
+                        isValid = false;
+                        errorMessage = 'Please enter the collector\'s name';
+                        // Add visual feedback
+                        const input = document.getElementById('collectedBy');
+                        input.classList.add('border-red-500', 'ring-2', 'ring-red-200');
+                        setTimeout(() => {
+                            input.classList.remove('border-red-500', 'ring-2', 'ring-red-200');
+                        }, 2000);
+                    } else {
+                        body = {
+                            action: 'collect',
+                            collected_by: collectedBy.trim(),
+                            collection_notes: collectionNotes ? collectionNotes.trim() : ''
+                        };
+                    }
                     break;
             }
+
+            if (!isValid) {
+                // Show error with modern notification
+                showErrorNotification(errorMessage);
+                return;
+            }
+
+            // Add loading state to confirm button
+            const confirmButton = document.getElementById('confirmButton');
+            const originalText = document.getElementById('confirmButtonText').textContent;
+            document.getElementById('confirmButtonText').textContent = 'Processing...';
+            confirmButton.disabled = true;
+            confirmButton.classList.add('opacity-75', 'cursor-not-allowed');
 
             const response = await fetch(`/inventory/stock-requests/${currentRequestId}/action`, {
                 method: 'POST',
@@ -261,24 +533,111 @@
 
             const data = await response.json();
 
-            if (!response.ok) throw new Error(data.error || 'Action failed');
+            if (!response.ok) {
+                throw new Error(data.error || 'Action failed');
+            }
 
-            // Success handling
-            window.location.reload();
+            // Show success notification
+            showSuccessNotification(`${currentAction.charAt(0).toUpperCase() + currentAction.slice(1)} action completed successfully!`);
+            
+            // Close modal and reload after a brief delay
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
 
         } catch (error) {
             console.error('Error:', error);
-            alert(`Action failed: ${error.message}`);
-        } finally {
-            modal.classList.add('hidden');
+            showErrorNotification(`Action failed: ${error.message}`);
+            
+            // Reset button state on error
+            const confirmButton = document.getElementById('confirmButton');
+            confirmButton.disabled = false;
+            confirmButton.classList.remove('opacity-75', 'cursor-not-allowed');
+            document.getElementById('confirmButtonText').textContent = 
+                currentAction === 'approve' ? 'Approve' : 
+                currentAction === 'reject' ? 'Reject' : 
+                currentAction === 'collect' ? 'Mark Collected' : 'Confirm';
         }
     }
 
-    function closeModal() {
-        document.getElementById('actionModal').classList.add('hidden');
-        // Clear previous inputs
-        document.getElementById('modalContent').innerHTML = '';
+    // Enhanced notification functions
+    function showSuccessNotification(message) {
+        showNotification(message, 'success');
     }
-</script>
 
+    function showErrorNotification(message) {
+        showNotification(message, 'error');
+    }
+
+    function showNotification(message, type = 'info') {
+        // Create notification element
+        const notification = document.createElement('div');
+        const bgColor = type === 'success' ? 'bg-green-500' : 
+                       type === 'error' ? 'bg-red-500' : 'bg-blue-500';
+        const icon = type === 'success' ? 
+            '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>' :
+            type === 'error' ?
+            '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>' :
+            '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
+
+        notification.className = `fixed top-4 right-4 z-50 ${bgColor} text-white px-6 py-4 rounded-xl shadow-lg transform transition-all duration-300 translate-x-full`;
+        notification.innerHTML = `
+            <div class="flex items-center space-x-3">
+                ${icon}
+                <span class="font-medium">${message}</span>
+            </div>
+        `;
+
+        document.body.appendChild(notification);
+
+        // Animate in
+        setTimeout(() => {
+            notification.classList.remove('translate-x-full');
+        }, 100);
+
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            notification.classList.add('translate-x-full');
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }, 5000);
+    }
+
+    // Close modal with Escape key
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            closeModal();
+        }
+    });
+</script>
+<style>
+    /* Custom scrollbar for modal */
+    #actionModal textarea::-webkit-scrollbar {
+        width: 6px;
+    }
+    
+    #actionModal textarea::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 0 8px 8px 0;
+    }
+    
+    #actionModal textarea::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 3px;
+    }
+    
+    #actionModal textarea::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+    }
+
+    /* Enhanced focus states */
+    #actionModal input:focus,
+    #actionModal textarea:focus {
+        transform: translateY(-1px);
+        box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.1), 0 10px 10px -5px rgba(59, 130, 246, 0.04);
+    }
+</style>
 {% endblock %}

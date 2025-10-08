@@ -2,19 +2,33 @@
 {% block content %}
 <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <!-- Header with Gradient Background -->
-    <div class="bg-gradient-to-r from-cyan-600 to-teal-700 rounded-xl p-6 shadow-lg mb-8">
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div>
-                <h1 class="text-2xl font-bold text-white">New Laboratory Stock Request</h1>
-                <p class="text-cyan-100 mt-1">Request lab consumables and reagents</p>
-            </div>
-            <a href="{{ url_for('lab_web.request_stocks') }}" class="flex items-center text-white hover:text-cyan-200 transition-colors">
+<!-- Updated Header Section -->
+<div class="bg-gradient-to-r from-cyan-600 to-teal-700 rounded-xl p-6 shadow-lg mb-8">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-white">New Laboratory Stock Request</h1>
+            <p class="text-cyan-100 mt-1">Request lab consumables and reagents</p>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-3">
+            <!-- New Request Item Button -->
+            <a href="{{ url_for('lab_web.request_new_item') }}" 
+               class="flex items-center justify-center px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors font-medium shadow-md">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                </svg>
+                Request New Item
+            </a>
+            <!-- Back Button -->
+            <a href="{{ url_for('lab_web.request_stocks') }}" 
+               class="flex items-center justify-center px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-colors font-medium">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 15l-3-3m0 0l3-3m-3 3h8M3 12a9 9 0 1118 0 9 9 0 01-18 0z"/>
-                </svg> Back to Requests
+                </svg>
+                Back to Requests
             </a>
         </div>
     </div>
+</div>
 
     <!-- Stock Request Form -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -22,63 +36,88 @@
             {{ form.hidden_tag() }}
             
             <!-- Item Selection -->
-            <div class="grid grid-cols-1 gap-6">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        Laboratory Item
-                    </label>
-                    <div class="relative">
-                        {{ form.item_id(class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500") }}
-                        <div class="absolute inset-y-0 right-3 top-3 flex items-center pointer-events-none">
-                            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                            </svg>
-                        </div>
-                    </div>
+<!-- Enhanced Searchable Item Selection -->
+<div class="grid grid-cols-1 gap-6">
+    <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">
+            Laboratory Item
+        </label>
+        <div class="relative">
+            <select id="item_id" name="item_id" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 hidden">
+                <option value="">Search for an item...</option>
+                {% for item in lab_items %}
+                <option value="{{ item.id }}" 
+                        data-category="{{ item.category }}"
+                        data-sku="{{ item.sku }}"
+                        data-stock="{{ item.current_stock }}"
+                        data-restock="{{ item.last_restocked.strftime('%b %d, %Y') if item.last_restocked else 'N/A' }}">
+                    {{ item.name }} (SKU: {{ item.sku }}) - Stock: {{ item.current_stock }} {{ item.unit_of_measure }}
+                </option>
+                {% endfor %}
+            </select>
+            
+            <!-- Custom Search Input -->
+            <div id="customSearch" class="relative">
+                <input type="text" id="itemSearch" 
+                       placeholder="Type to search lab items..." 
+                       class="w-full p-3 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
+                <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                </div>
+                
+                <!-- Search Results Dropdown -->
+                <div id="searchResults" class="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg hidden max-h-60 overflow-y-auto">
+                    <!-- Results will be populated here -->
                 </div>
             </div>
+        </div>
+    </div>
+</div>
 
-            <!-- Item Details Panel -->
-            <div id="itemDetailsPanel" class="bg-teal-50 p-4 rounded-lg border border-teal-100 hidden">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    <div class="flex items-center">
-                        <svg class="w-4 h-4 text-teal-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/>
-                        </svg>
-                        <div>
-                            <span class="text-gray-600">Category:</span>
-                            <span id="itemCategory" class="font-medium ml-1">-</span>
-                        </div>
-                    </div>
-                    <div class="flex items-center">
-                        <svg class="w-4 h-4 text-teal-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                        </svg>
-                        <div>
-                            <span class="text-gray-600">SKU:</span>
-                            <span id="itemSKU" class="font-medium ml-1">-</span>
-                        </div>
-                    </div>
-                    <div class="flex items-center">
-                        <svg class="w-4 h-4 text-teal-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/>
-                        </svg>
-                        <div>
-                            <span class="text-gray-600">Current Stock:</span>
-                            <span id="itemStock" class="font-medium ml-1">-</span>
-                        </div>
-                    </div>
-                    <div class="flex items-center">
-                        <svg class="w-4 h-4 text-teal-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                        </svg>
-                        <div>
-                            <span class="text-gray-600">Last Restocked:</span>
-                            <span id="itemRestock" class="font-medium ml-1">-</span>
-                        </div>
-                    </div>
-                </div>
+<!-- Item Details Panel (Exact fields as specified) -->
+<div id="itemDetailsPanel" class="bg-teal-50 p-4 rounded-lg border border-teal-100 hidden">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+        <div class="flex items-center">
+            <svg class="w-4 h-4 text-teal-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/>
+            </svg>
+            <div>
+                <span class="text-gray-600">Category:</span>
+                <span id="itemCategory" class="font-medium ml-1">-</span>
             </div>
+        </div>
+        <div class="flex items-center">
+            <svg class="w-4 h-4 text-teal-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            <div>
+                <span class="text-gray-600">SKU:</span>
+                <span id="itemSKU" class="font-medium ml-1">-</span>
+            </div>
+        </div>
+        <div class="flex items-center">
+            <svg class="w-4 h-4 text-teal-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/>
+            </svg>
+            <div>
+                <span class="text-gray-600">Current Stock:</span>
+                <span id="itemStock" class="font-medium ml-1">-</span>
+            </div>
+        </div>
+        <div class="flex items-center">
+            <svg class="w-4 h-4 text-teal-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            <div>
+                <span class="text-gray-600">Last Restocked:</span>
+                <span id="itemRestock" class="font-medium ml-1">-</span>
+            </div>
+        </div>
+    </div>
+</div>
+
 
             <!-- Request Details -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -135,54 +174,195 @@
     </div>
 </div>
 
-<!-- Script for Dynamic Form Interactions -->
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const itemSelect = document.getElementById('item_id');
-        const detailsPanel = document.getElementById('itemDetailsPanel');
+document.addEventListener('DOMContentLoaded', function() {
+    const itemSelect = document.getElementById('item_id');
+    const itemSearch = document.getElementById('itemSearch');
+    const searchResults = document.getElementById('searchResults');
+    const detailsPanel = document.getElementById('itemDetailsPanel');
+    
+    let allItems = [];
+    let debounceTimer;
+
+    // Initialize items from select options
+    function initializeItems() {
+        allItems = Array.from(itemSelect.options).map(option => ({
+            id: option.value,
+            text: option.textContent,
+            category: option.dataset.category,
+            sku: option.dataset.sku,
+            stock: option.dataset.stock,
+            restock: option.dataset.restock
+        })).filter(item => item.id); // Remove empty option
+    }
+
+    // Search function with debouncing
+    function performSearch(query) {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+            const results = allItems.filter(item => 
+                item.text.toLowerCase().includes(query.toLowerCase()) ||
+                item.sku.toLowerCase().includes(query.toLowerCase()) ||
+                item.category.toLowerCase().includes(query.toLowerCase())
+            );
+            displayResults(results);
+        }, 300);
+    }
+
+    // Display search results
+    function displayResults(results) {
+        searchResults.innerHTML = '';
         
-        // Item details mapping from server
-        const itemDetails = {
-            {% for item in lab_items %}
-            {{ item.id }}: {
-                category: "{{ item.category }}",
-                sku: "{{ item.sku }}",
-                current_stock: "{{ item.quantity }}",
-                last_restocked: "{{ item.last_restocked.strftime('%b %d, %Y') if item.last_restocked else 'N/A' }}"
-            },
-            {% endfor %}
-        };
-        
-        function updateItemDetails() {
-            const itemId = itemSelect.value;
-            const details = itemDetails[itemId];
-            
-            if (itemId && details) {
-                document.getElementById('itemCategory').textContent = details.category || '-';
-                document.getElementById('itemSKU').textContent = details.sku || '-';
-                document.getElementById('itemStock').textContent = details.current_stock || '0';
-                document.getElementById('itemRestock').textContent = details.last_restocked || '-';
-                detailsPanel.classList.remove('hidden');
-            } else {
-                detailsPanel.classList.add('hidden');
-            }
+        if (results.length === 0) {
+            const noResult = document.createElement('div');
+            noResult.className = 'p-3 text-gray-500 text-sm';
+            noResult.textContent = 'No items found';
+            searchResults.appendChild(noResult);
+        } else {
+            results.forEach(item => {
+                const resultItem = document.createElement('div');
+                resultItem.className = 'p-3 hover:bg-teal-50 cursor-pointer border-b border-gray-100 last:border-b-0';
+                resultItem.innerHTML = `
+                    <div class="font-medium text-gray-800">${item.text.split(' - ')[0]}</div>
+                    <div class="text-sm text-gray-600 mt-1">
+                        <span class="bg-gray-100 px-2 py-1 rounded">${item.sku}</span>
+                        <span class="ml-2">Stock: ${item.stock}</span>
+                    </div>
+                `;
+                
+                resultItem.addEventListener('click', () => {
+                    selectItem(item);
+                });
+                
+                searchResults.appendChild(resultItem);
+            });
         }
         
-        // Initial update
-        updateItemDetails();
-        
-        // Update on select change
-        itemSelect.addEventListener('change', updateItemDetails);
-        
-        // Initialize Select2
-        $(itemSelect).select2({
-            placeholder: "Search lab items...",
-            minimumResultsForSearch: 3,
-            width: '100%',
-            dropdownParent: $('#stockRequestForm')
-        });
+        searchResults.classList.remove('hidden');
+    }
+
+    // Select an item from search results
+    function selectItem(item) {
+        itemSelect.value = item.id;
+        itemSearch.value = item.text.split(' - ')[0];
+        searchResults.classList.add('hidden');
+        updateItemDetails(item);
+    }
+
+    // Update item details panel
+    function updateItemDetails(item) {
+        if (item && item.id) {
+            document.getElementById('itemCategory').textContent = item.category || '-';
+            document.getElementById('itemSKU').textContent = item.sku || '-';
+            document.getElementById('itemStock').textContent = item.stock || '0';
+            document.getElementById('itemRestock').textContent = item.restock || '-';
+            detailsPanel.classList.remove('hidden');
+        } else {
+            detailsPanel.classList.add('hidden');
+        }
+    }
+
+    // Event listeners
+    itemSearch.addEventListener('input', (e) => {
+        const query = e.target.value.trim();
+        if (query.length > 0) {
+            performSearch(query);
+        } else {
+            searchResults.classList.add('hidden');
+            detailsPanel.classList.add('hidden');
+        }
     });
+
+    itemSearch.addEventListener('focus', () => {
+        if (itemSearch.value.trim().length > 0) {
+            performSearch(itemSearch.value.trim());
+        }
+    });
+
+    // Close search results when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('#customSearch')) {
+            searchResults.classList.add('hidden');
+        }
+    });
+
+    // Keyboard navigation
+    itemSearch.addEventListener('keydown', (e) => {
+        const results = searchResults.querySelectorAll('div');
+        const activeResult = searchResults.querySelector('.bg-teal-100');
+        
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (activeResult) {
+                const next = activeResult.nextElementSibling;
+                if (next) {
+                    activeResult.classList.remove('bg-teal-100');
+                    next.classList.add('bg-teal-100');
+                }
+            } else if (results.length > 0) {
+                results[0].classList.add('bg-teal-100');
+            }
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (activeResult) {
+                const prev = activeResult.previousElementSibling;
+                if (prev) {
+                    activeResult.classList.remove('bg-teal-100');
+                    prev.classList.add('bg-teal-100');
+                }
+            }
+        } else if (e.key === 'Enter' && activeResult) {
+            e.preventDefault();
+            activeResult.click();
+        } else if (e.key === 'Escape') {
+            searchResults.classList.add('hidden');
+        }
+    });
+
+    // Initialize
+    initializeItems();
+});
 </script>
+
+<style>
+/* Custom styling for search results */
+#searchResults div:hover {
+    background-color: #f0fdfa !important;
+}
+
+#searchResults .bg-teal-100 {
+    background-color: #f0fdfa;
+    border-left: 3px solid #0d9488;
+}
+
+/* Smooth transitions */
+#itemDetailsPanel {
+    transition: all 0.3s ease-in-out;
+}
+
+#searchResults {
+    transition: opacity 0.2s ease-in-out;
+}
+
+/* Scrollbar styling */
+#searchResults::-webkit-scrollbar {
+    width: 6px;
+}
+
+#searchResults::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 0 0.5rem 0.5rem 0;
+}
+
+#searchResults::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+#searchResults::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+</style>
 
 <!-- Select2 Styling -->
 <style>

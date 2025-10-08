@@ -1,0 +1,383 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 py-8">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-purple-600 to-indigo-700 rounded-2xl p-6 shadow-lg mb-8">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h1 class="text-2xl font-bold text-white">Requisition Details</h1>
+                    <p class="text-purple-100 mt-1">Review and confirm order information</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="px-3 py-1 bg-white/20 text-white rounded-full text-sm font-medium capitalize">
+                        {{ order.status.replace('_', ' ') }}
+                    </span>
+                    <a href="{{ url_for('admin_web_bp.manage_requisitions') }}" 
+                       class="flex items-center text-white hover:text-purple-200 transition-colors">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 15l-3-3m0 0l3-3m-3 3h8M3 12a9 9 0 1118 0 9 9 0 01-18 0z"/>
+                        </svg>
+                        Back to Requisitions
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <!-- Sidebar - Approval Actions -->
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 sticky top-8">
+                    <h3 class="text-lg font-bold text-gray-900 mb-4">Approval Actions</h3>
+                    
+                    <!-- Status Overview -->
+                    <div class="space-y-4 mb-6">
+                        <div class="flex items-center justify-between p-3 bg-blue-50 rounded-xl">
+                            <span class="text-sm font-medium text-blue-700">Finance Approval</span>
+                            <span class="px-2 py-1 text-xs font-semibold rounded-full {{ 'bg-green-100 text-green-800' if order.finance_approved else 'bg-yellow-100 text-yellow-800' }}">
+                                {{ 'Approved' if order.finance_approved else 'Pending' }}
+                            </span>
+                        </div>
+                        <div class="flex items-center justify-between p-3 bg-blue-50 rounded-xl">
+                            <span class="text-sm font-medium text-blue-700">Director Approval</span>
+                            <span class="px-2 py-1 text-xs font-semibold rounded-full {{ 'bg-green-100 text-green-800' if order.director_approved else 'bg-yellow-100 text-yellow-800' }}">
+                                {{ 'Approved' if order.director_approved else 'Pending' }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    {% if order.status == 'pending' or order.status == 'finance_approved' %}
+                    <div class="space-y-3">
+                        {% if not order.finance_approved %}
+                        <a href="{{ url_for('admin_web.approve_requisition', order_id=order.id, approval_type='finance') }}" 
+                           class="w-full flex items-center justify-center px-4 py-3 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 transition-colors shadow-md">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            Approve Finance
+                        </a>
+                        {% endif %}
+
+                        {% if order.finance_approved and not order.director_approved %}
+                        <a href="{{ url_for('admin_web_bp.approve_requisition', order_id=order.id, approval_type='director') }}" 
+                           class="w-full flex items-center justify-center px-4 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors shadow-md">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            Approve Director
+                        </a>
+                        {% endif %}
+
+                        <a href="{{ url_for('admin_web_bp.reject_requisition', order_id=order.id) }}" 
+                           class="w-full flex items-center justify-center px-4 py-3 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 transition-colors shadow-md">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                            Reject Requisition
+                        </a>
+                    </div>
+                    {% endif %}
+
+                    <!-- Order Summary -->
+                    <div class="mt-6 pt-6 border-t border-gray-200">
+                        <h4 class="text-sm font-semibold text-gray-900 mb-3">Order Summary</h4>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Order ID:</span>
+                                <span class="font-medium">#{{ order.id }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Created:</span>
+                                <span class="font-medium">{{ order.created_at.strftime('%b %d, %Y') }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Total Amount:</span>
+                                <span class="font-medium text-green-600">{{ currency }} {{ "%.2f"|format(order.total_price) }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Requester:</span>
+                                <span class="font-medium">{{ order.user.full_name if order.user else 'Unknown' }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Details -->
+            <div class="lg:col-span-3">
+                <!-- Basic Information Card -->
+                <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 mb-6">
+                    <div class="flex items-center gap-3 mb-6">
+                        <div class="w-2 h-8 bg-gradient-to-b from-purple-600 to-indigo-600 rounded-full"></div>
+                        <h2 class="text-xl font-bold text-gray-900">Basic Information</h2>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-1">
+                            <label class="block text-sm font-semibold text-gray-700">Item Name</label>
+                            <div class="p-3 bg-gray-50 rounded-xl text-gray-900 font-medium">
+                                {{ order.item_name }}
+                            </div>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="block text-sm font-semibold text-gray-700">Category</label>
+                            <div class="p-3 bg-gray-50 rounded-xl text-gray-900 font-medium">
+                                {{ order.category }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
+                        <div class="space-y-1">
+                            <label class="block text-sm font-semibold text-gray-700">Quantity</label>
+                            <div class="p-3 bg-gray-50 rounded-xl text-gray-900 font-medium">
+                                {{ order.quantity }} {{ order.unit }}
+                            </div>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="block text-sm font-semibold text-gray-700">Priority</label>
+                            <div class="p-3 bg-gray-50 rounded-xl">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                    {% if order.priority == 'urgent' %}bg-red-100 text-red-800
+                                    {% elif order.priority == 'high' %}bg-orange-100 text-orange-800
+                                    {% elif order.priority == 'medium' %}bg-yellow-100 text-yellow-800
+                                    {% else %}bg-green-100 text-green-800{% endif %}">
+                                    {{ order.priority|title }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="block text-sm font-semibold text-gray-700">Required By</label>
+                            <div class="p-3 bg-gray-50 rounded-xl text-gray-900 font-medium">
+                                {{ order.required_by.strftime('%b %d, %Y') if order.required_by else 'Not specified' }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 space-y-1">
+                        <label class="block text-sm font-semibold text-gray-700">Reason for Request</label>
+                        <div class="p-4 bg-gray-50 rounded-xl text-gray-900 leading-relaxed">
+                            {{ order.reason|replace('\n', '<br>')|safe }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Supplier & Contact Details Card -->
+                <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 mb-6">
+                    <div class="flex items-center gap-3 mb-6">
+                        <div class="w-2 h-8 bg-gradient-to-b from-purple-600 to-indigo-600 rounded-full"></div>
+                        <h2 class="text-xl font-bold text-gray-900">Supplier & Contact Details</h2>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-1">
+                            <label class="block text-sm font-semibold text-gray-700">Supplier</label>
+                            <div class="p-3 bg-gray-50 rounded-xl text-gray-900 font-medium">
+                                {{ order.supplier.name if order.supplier else 'Not assigned' }}
+                            </div>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="block text-sm font-semibold text-gray-700">Contact Person</label>
+                            <div class="p-3 bg-gray-50 rounded-xl text-gray-900">
+                                {{ order.contact_person or 'Not specified' }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 space-y-1">
+                        <label class="block text-sm font-semibold text-gray-700">Contact Information</label>
+                        <div class="p-3 bg-gray-50 rounded-xl text-gray-900">
+                            {{ order.contact_info or 'Not specified' }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Financial Details Card -->
+                <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 mb-6">
+                    <div class="flex items-center gap-3 mb-6">
+                        <div class="w-2 h-8 bg-gradient-to-b from-purple-600 to-indigo-600 rounded-full"></div>
+                        <h2 class="text-xl font-bold text-gray-900">Financial Details</h2>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="space-y-1">
+                            <label class="block text-sm font-semibold text-gray-700">Unit Price</label>
+                            <div class="p-3 bg-gray-50 rounded-xl text-gray-900 font-medium">
+                                {{ currency }} {{ "%.2f"|format(order.unit_price) }}
+                            </div>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="block text-sm font-semibold text-gray-700">Tax Rate</label>
+                            <div class="p-3 bg-gray-50 rounded-xl text-gray-900 font-medium">
+                                {{ "%.1f"|format(order.tax_rate) }}%
+                            </div>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="block text-sm font-semibold text-gray-700">Total Price</label>
+                            <div class="p-3 bg-green-50 rounded-xl text-green-900 font-bold text-lg">
+                                {{ currency }} {{ "%.2f"|format(order.total_price) }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cost Breakdown -->
+                    <div class="mt-6 p-4 bg-blue-50 rounded-xl">
+                        <h4 class="text-sm font-semibold text-blue-900 mb-3">Cost Breakdown</h4>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-blue-700">Subtotal ({{ order.quantity }} × {{ currency }} {{ "%.2f"|format(order.unit_price) }}):</span>
+                                <span class="font-medium">{{ currency }} {{ "%.2f"|format(order.unit_price * order.quantity) }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-blue-700">Tax ({{ "%.1f"|format(order.tax_rate) }}%):</span>
+                                <span class="font-medium">{{ currency }} {{ "%.2f"|format((order.unit_price * order.quantity) * (order.tax_rate / 100)) }}</span>
+                            </div>
+                            <div class="flex justify-between pt-2 border-t border-blue-200">
+                                <span class="text-blue-900 font-semibold">Total:</span>
+                                <span class="text-blue-900 font-bold">{{ currency }} {{ "%.2f"|format(order.total_price) }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Delivery & Timeline Card -->
+                <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-6">
+                    <div class="flex items-center gap-3 mb-6">
+                        <div class="w-2 h-8 bg-gradient-to-b from-purple-600 to-indigo-600 rounded-full"></div>
+                        <h2 class="text-xl font-bold text-gray-900">Delivery & Timeline</h2>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-1">
+                            <label class="block text-sm font-semibold text-gray-700">Expected Delivery Date</label>
+                            <div class="p-3 bg-gray-50 rounded-xl text-gray-900 font-medium">
+                                {{ order.delivery_date.strftime('%b %d, %Y') if order.delivery_date else 'Not specified' }}
+                            </div>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="block text-sm font-semibold text-gray-700">Days Until Required</label>
+                            <div class="p-3 bg-gray-50 rounded-xl">
+                                {% if order.required_by %}
+                                    {% set days_until = (order.required_by.date() - today.date()).days %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                        {% if days_until < 0 %}bg-red-100 text-red-800
+                                        {% elif days_until <= 3 %}bg-orange-100 text-orange-800
+                                        {% elif days_until <= 7 %}bg-yellow-100 text-yellow-800
+                                        {% else %}bg-green-100 text-green-800{% endif %}">
+                                        {{ days_until }} days
+                                    </span>
+                                {% else %}
+                                    <span class="text-gray-500">Not specified</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Approval Timeline -->
+                    <div class="mt-6">
+                        <h4 class="text-sm font-semibold text-gray-700 mb-4">Approval Timeline</h4>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                                        <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-medium text-gray-900">Requisition Created</div>
+                                        <div class="text-xs text-gray-500">{{ order.created_at.strftime('%b %d, %Y at %H:%M') }}</div>
+                                    </div>
+                                </div>
+                                <span class="px-2 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded-full">Completed</span>
+                            </div>
+
+                            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-full {{ 'bg-green-100' if order.finance_approved else 'bg-yellow-100' }} flex items-center justify-center">
+                                        <svg class="w-4 h-4 {{ 'text-green-600' if order.finance_approved else 'text-yellow-600' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-medium text-gray-900">Finance Approval</div>
+                                        {% if order.finance_approved %}
+                                        <div class="text-xs text-gray-500">
+                                            Approved by {{ order.finance_user.full_name if order.finance_user else 'Unknown' }}
+                                            on {{ order.finance_approved_at.strftime('%b %d, %Y') }}
+                                        </div>
+                                        {% else %}
+                                        <div class="text-xs text-gray-500">Pending approval</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <span class="px-2 py-1 text-xs font-semibold {{ 'bg-green-100 text-green-800' if order.finance_approved else 'bg-yellow-100 text-yellow-800' }} rounded-full">
+                                    {{ 'Approved' if order.finance_approved else 'Pending' }}
+                                </span>
+                            </div>
+
+                            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-full {{ 'bg-green-100' if order.director_approved else 'bg-yellow-100' }} flex items-center justify-center">
+                                        <svg class="w-4 h-4 {{ 'text-green-600' if order.director_approved else 'text-yellow-600' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-medium text-gray-900">Director Approval</div>
+                                        {% if order.director_approved %}
+                                        <div class="text-xs text-gray-500">
+                                            Approved by {{ order.director_user.full_name if order.director_user else 'Unknown' }}
+                                            on {{ order.director_approved_at.strftime('%b %d, %Y') }}
+                                        </div>
+                                        {% else %}
+                                        <div class="text-xs text-gray-500">Pending approval</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <span class="px-2 py-1 text-xs font-semibold {{ 'bg-green-100 text-green-800' if order.director_approved else 'bg-yellow-100 text-yellow-800' }} rounded-full">
+                                    {{ 'Approved' if order.director_approved else 'Pending' }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Custom styling for better visual hierarchy */
+.sticky {
+    position: sticky;
+}
+
+/* Smooth transitions */
+.bg-white {
+    transition: all 0.3s ease;
+}
+
+/* Hover effects for action buttons */
+a:hover {
+    transform: translateY(-1px);
+}
+</style>
+
+<script>
+// Add today's date for calculation
+const today = new Date();
+
+// Function to format currency
+function formatCurrency(amount) {
+    return '{{ currency }} ' + parseFloat(amount).toFixed(2);
+}
+
+// Add any interactive elements if needed
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Requisition details page loaded');
+});
+</script>
+{% endblock %}

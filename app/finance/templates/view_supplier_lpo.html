@@ -397,30 +397,41 @@
 
     <!-- Action Buttons -->
     <div class="p-6 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 print:hidden">
-        <div class="flex flex-col sm:flex-row gap-3 justify-center">
-            <button onclick="window.print()" 
-                    class="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm transition-colors">
-                <i class="fas fa-print"></i>
-                Print LPO
-            </button>
-            <button class="inline-flex items-center gap-2 px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium text-sm transition-colors">
-                <i class="fas fa-download"></i>
-                Download PDF
-            </button>
-            
-            {% if not lpo.finance_approved %}
-            <a href="{{ url_for('finance_web_bp.approve_lpo_action', lpo_id=lpo.id, action='approve') }}" 
-               class="inline-flex items-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium text-sm transition-colors text-center justify-center">
-                <i class="fas fa-check-circle"></i>
-                Approve LPO
-            </a>
-            <a href="{{ url_for('finance_web_bp.approve_lpo_action', lpo_id=lpo.id, action='reject') }}" 
-               class="inline-flex items-center gap-2 px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium text-sm transition-colors text-center justify-center">
-                <i class="fas fa-times-circle"></i>
-                Reject LPO
-            </a>
-            {% endif %}
-        </div>
+<div class="flex flex-col sm:flex-row gap-3 justify-center">
+    <button onclick="window.print()" 
+            class="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm transition-colors">
+        <i class="fas fa-print"></i>
+        Print LPO
+    </button>
+    <button class="inline-flex items-center gap-2 px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium text-sm transition-colors">
+        <i class="fas fa-download"></i>
+        Download PDF
+    </button>
+    
+    <!-- Send LPO to Supplier & Place Order Button -->
+    {% if lpo.status == 'approved' and lpo.finance_approved and lpo.director_approved %}
+    <a href="{{ url_for('finance_web_bp.place_order', lpo_id=lpo.id) }}" 
+            class="inline-flex items-center gap-2 px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-medium text-sm transition-colors">
+        <i class="fas fa-paper-plane"></i>
+        Send LPO to Supplier & Place Order
+    </a>
+    {% endif %}
+    
+    {% if not lpo.finance_approved %}
+    <a href="{{ url_for('finance_web_bp.approve_lpo_action', lpo_id=lpo.id, action='approve') }}" 
+       class="inline-flex items-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium text-sm transition-colors text-center justify-center">
+        <i class="fas fa-check-circle"></i>
+        Approve LPO
+    </a>
+    <a href="{{ url_for('finance_web_bp.approve_lpo_action', lpo_id=lpo.id, action='reject') }}" 
+       class="inline-flex items-center gap-2 px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium text-sm transition-colors text-center justify-center">
+        <i class="fas fa-times-circle"></i>
+        Reject LPO
+    </a>
+    {% endif %}
+</div>
+
+
         
         <div class="mt-4 text-center">
             <p class="text-xs text-gray-500 dark:text-gray-400">

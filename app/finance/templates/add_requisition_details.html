@@ -1,0 +1,383 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 py-8">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-cyan-600 to-teal-700 rounded-2xl p-6 shadow-lg mb-8">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h1 class="text-2xl font-bold text-white">Edit Order Details</h1>
+                    <p class="text-cyan-100 mt-1">Update and verify order information</p>
+                </div>
+                <a href="{{ url_for('finance_web_bp.manage_orders') }}" 
+                   class="flex items-center text-white hover:text-cyan-200 transition-colors">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 15l-3-3m0 0l3-3m-3 3h8M3 12a9 9 0 1118 0 9 9 0 01-18 0z"/>
+                    </svg>
+                    Back to Orders
+                </a>
+            </div>
+        </div>
+
+        <!-- Main Form -->
+        <div class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-4">
+                <!-- Sidebar -->
+                <div class="bg-gradient-to-b from-blue-600 to-purple-700 p-6 text-white lg:col-span-1">
+                    <div class="space-y-6">
+                        <div>
+                            <h3 class="text-lg font-semibold mb-3">Order Summary</h3>
+                            <div class="space-y-3 text-sm text-blue-100">
+                                <div class="flex justify-between">
+                                    <span>Item:</span>
+                                    <span class="font-medium">{{ order.item_name }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>Quantity:</span>
+                                    <span class="font-medium">{{ order.quantity }} {{ order.unit }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>Current Total:</span>
+                                    <span class="font-medium">$<span id="sidebarTotal">{{ "%.2f"|format(order.total_price) }}</span></span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>Status:</span>
+                                    <span class="font-medium capitalize">{{ order.status.replace('_', ' ') }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>Created:</span>
+                                    <span class="font-medium">{{ order.created_at.strftime('%b %d, %Y') }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="pt-4 border-t border-blue-500">
+                            <h3 class="text-lg font-semibold mb-2">Verification Checklist</h3>
+                            <ul class="space-y-2 text-sm text-blue-100">
+                                <li class="flex items-start gap-2">
+                                    <svg class="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4"/>
+                                    </svg>
+                                    <span>Verify supplier information</span>
+                                </li>
+                                <li class="flex items-start gap-2">
+                                    <svg class="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4"/>
+                                    </svg>
+                                    <span>Confirm pricing details</span>
+                                </li>
+                                <li class="flex items-start gap-2">
+                                    <svg class="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4"/>
+                                    </svg>
+                                    <span>Set delivery timeline</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Content -->
+                <div class="p-8 lg:col-span-3">
+                    <form method="POST" class="space-y-8">
+                        <!-- Basic Information -->
+                        <div class="space-y-6">
+                            <div class="flex items-center gap-3 mb-6">
+                                <div class="w-2 h-8 bg-gradient-to-b from-blue-600 to-purple-600 rounded-full"></div>
+                                <h2 class="text-xl font-bold text-gray-900">Basic Information</h2>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Item Name *</label>
+                                    <input type="text" name="item_name" value="{{ order.item_name }}" 
+                                           class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                           required>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Quantity & Unit *</label>
+                                    <div class="flex gap-2">
+                                        <input type="number" name="quantity" value="{{ order.quantity }}" min="1"
+                                               class="w-1/2 p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                               required>
+                                        <input type="text" name="unit" value="{{ order.unit }}" 
+                                               class="w-1/2 p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                               required>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Category *</label>
+                                    <input type="text" name="category" value="{{ order.category }}" 
+                                           class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                           required>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Priority *</label>
+                                    <select name="priority" class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        <option value="low" {% if order.priority == 'low' %}selected{% endif %}>Low</option>
+                                        <option value="medium" {% if order.priority == 'medium' %}selected{% endif %}>Medium</option>
+                                        <option value="high" {% if order.priority == 'high' %}selected{% endif %}>High</option>
+                                        <option value="urgent" {% if order.priority == 'urgent' %}selected{% endif %}>Urgent</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Reason for Request *</label>
+                                <textarea name="reason" class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500" rows="3" required>{{ order.reason }}</textarea>
+                            </div>
+                        </div>
+
+                        <!-- Supplier & Contact Details -->
+                        <div class="space-y-6 pt-6 border-t border-gray-200">
+                            <div class="flex items-center gap-3 mb-6">
+                                <div class="w-2 h-8 bg-gradient-to-b from-blue-600 to-purple-600 rounded-full"></div>
+                                <h2 class="text-xl font-bold text-gray-900">Supplier & Contact Details</h2>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Select Supplier</label>
+                                    <select name="supplier_id" id="supplierSelect" class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        <option value="">-- No Supplier Selected --</option>
+                                        {% for supplier in suppliers %}
+                                        <option value="{{ supplier.id }}" 
+                                                data-contact="{{ supplier.contact }}"
+                                                data-phone="{{ supplier.phone }}"
+                                                data-email="{{ supplier.email }}"
+                                                {% if order.supplier_id == supplier.id %}selected{% endif %}>
+                                            {{ supplier.name }} - {{ supplier.category }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Contact Person</label>
+                                    <input type="text" name="contact_person" id="contactPerson" value="{{ order.contact_person or '' }}" 
+                                           class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                           placeholder="Supplier contact person">
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Phone Number</label>
+                                    <input type="text" name="contact_phone" id="contactPhone" value="{{ order.contact_info or '' }}" 
+                                           class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                           placeholder="Phone number">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Email Address</label>
+                                    <input type="email" name="contact_email" id="contactEmail" 
+                                           class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                           placeholder="Email address">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Financial Details -->
+                        <div class="space-y-6 pt-6 border-t border-gray-200">
+                            <div class="flex items-center gap-3 mb-6">
+                                <div class="w-2 h-8 bg-gradient-to-b from-blue-600 to-purple-600 rounded-full"></div>
+                                <h2 class="text-xl font-bold text-gray-900">Financial Details</h2>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Unit Price ($) *</label>
+                                    <input type="number" name="unit_price" id="unitPrice" value="{{ order.unit_price }}" step="0.01" min="0"
+                                           class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                           required oninput="calculateTotal()">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Tax Rate (%)</label>
+                                    <input type="number" name="tax_rate" id="taxRate" value="{{ order.tax_rate }}" step="0.01" min="0" max="100"
+                                           class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                           oninput="calculateTotal()">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Total Price ($) *</label>
+                                    <input type="number" name="total_price" id="totalPrice" value="{{ order.total_price }}" step="0.01" min="0" readonly
+                                           class="w-full p-3 border border-gray-300 rounded-xl bg-gray-100 font-semibold">
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Required By Date</label>
+                                    <input type="date" name="required_by" 
+                                           value="{{ order.required_by.strftime('%Y-%m-%d') if order.required_by else '' }}" 
+                                           class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Delivery Information -->
+                        <div class="space-y-6 pt-6 border-t border-gray-200">
+                            <div class="flex items-center gap-3 mb-6">
+                                <div class="w-2 h-8 bg-gradient-to-b from-blue-600 to-purple-600 rounded-full"></div>
+                                <h2 class="text-xl font-bold text-gray-900">Delivery Information</h2>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Expected Delivery Date</label>
+                                    <input type="date" name="delivery_date" 
+                                           value="{{ order.delivery_date.strftime('%Y-%m-%d') if order.delivery_date else '' }}" 
+                                           class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                                <div class="flex items-end">
+                                    <div class="w-full">
+                                        <label class="block text-sm font-semibold text-gray-700 mb-2">Current Status</label>
+                                        <div class="p-3 bg-{{ 'yellow' if order.status == 'pending' else 'green' if order.status == 'approved' else 'blue' if order.status == 'processing' else 'gray' }}-100 text-{{ 'yellow' if order.status == 'pending' else 'green' if order.status == 'approved' else 'blue' if order.status == 'processing' else 'gray' }}-800 rounded-xl font-medium capitalize">
+                                            {{ order.status.replace('_', ' ') }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="pt-8 border-t border-gray-200">
+                            <div class="flex flex-col sm:flex-row justify-end gap-4">
+                                <a href="{{ url_for('finance_web_bp.manage_orders') }}" 
+                                   class="flex items-center justify-center px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-300 font-semibold">
+                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                    </svg>
+                                    Cancel
+                                </a>
+                                <button type="submit" 
+                                        class="bg-gradient-to-r from-teal-600 to-cyan-700 text-white px-8 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl hover:from-teal-700 hover:to-cyan-800 transition-all duration-300">
+                                    Save Details
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Supplier data from backend
+const supplierData = {
+    {% for supplier in suppliers %}
+    {{ supplier.id }}: {
+        contact: "{{ supplier.contact }}",
+        phone: "{{ supplier.phone }}",
+        email: "{{ supplier.email }}"
+    },
+    {% endfor %}
+};
+
+// Auto-populate supplier contact details
+document.getElementById('supplierSelect').addEventListener('change', function() {
+    const supplierId = this.value;
+    const supplier = supplierData[supplierId];
+    
+    if (supplier) {
+        document.getElementById('contactPerson').value = supplier.contact || '';
+        document.getElementById('contactPhone').value = supplier.phone || '';
+        document.getElementById('contactEmail').value = supplier.email || '';
+    } else {
+        // Clear fields if no supplier selected
+        document.getElementById('contactPerson').value = '';
+        document.getElementById('contactPhone').value = '';
+        document.getElementById('contactEmail').value = '';
+    }
+});
+
+// Calculate total price automatically
+function calculateTotal() {
+    const unitPrice = parseFloat(document.getElementById('unitPrice').value) || 0;
+    const quantity = parseFloat(document.querySelector('input[name="quantity"]').value) || 0;
+    const taxRate = parseFloat(document.getElementById('taxRate').value) || 0;
+    
+    // Calculate subtotal
+    const subtotal = unitPrice * quantity;
+    
+    // Calculate tax amount
+    const taxAmount = subtotal * (taxRate / 100);
+    
+    // Calculate total
+    const total = subtotal + taxAmount;
+    
+    // Update total price field
+    document.getElementById('totalPrice').value = total.toFixed(2);
+    
+    // Update sidebar total
+    document.getElementById('sidebarTotal').textContent = total.toFixed(2);
+}
+
+// Initialize calculations on page load
+document.addEventListener('DOMContentLoaded', function() {
+    calculateTotal();
+    
+    // Also calculate when quantity changes
+    document.querySelector('input[name="quantity"]').addEventListener('input', calculateTotal);
+});
+
+// Form validation
+document.querySelector('form').addEventListener('submit', function(e) {
+    const unitPrice = parseFloat(document.getElementById('unitPrice').value) || 0;
+    const quantity = parseFloat(document.querySelector('input[name="quantity"]').value) || 0;
+    
+    if (unitPrice <= 0) {
+        e.preventDefault();
+        alert('Please enter a valid unit price greater than 0.');
+        document.getElementById('unitPrice').focus();
+        return;
+    }
+    
+    if (quantity <= 0) {
+        e.preventDefault();
+        alert('Please enter a valid quantity greater than 0.');
+        document.querySelector('input[name="quantity"]').focus();
+        return;
+    }
+    
+    // Show loading state
+    const submitBtn = this.querySelector('button[type="submit"]');
+    submitBtn.innerHTML = `
+        <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        Saving...
+    `;
+    submitBtn.disabled = true;
+});
+</script>
+
+<style>
+/* Custom styling for better visual hierarchy */
+input:read-only {
+    background-color: #f9fafb;
+    color: #6b7280;
+    cursor: not-allowed;
+}
+
+/* Smooth transitions for interactive elements */
+input:not(:read-only), select, textarea:not(:read-only) {
+    transition: all 0.3s ease;
+}
+
+input:not(:read-only):focus, select:focus, textarea:not(:read-only):focus {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.15);
+}
+
+/* Highlight calculated fields */
+#totalPrice {
+    background-color: #f0fdf4;
+    border-color: #bbf7d0;
+    color: #166534;
+    font-weight: 600;
+}
+</style>
+{% endblock %}
