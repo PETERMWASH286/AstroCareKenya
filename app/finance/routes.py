@@ -1804,7 +1804,7 @@ def place_order(lpo_id):
                 "message": "LPO must be fully approved before sending to supplier"
             }), 400
 
-        # Get the external order (requisition)
+        # Get the external order
         external_order = lpo.external_order
         if not external_order:
             return jsonify({
@@ -1812,24 +1812,59 @@ def place_order(lpo_id):
                 "message": "External order not found for this LPO"
             }), 400
 
-        # Generate Compact PDF with the new template
-        html_content = render_template("lpo_pdf.html", lpo=lpo)
-        
-        # Configure PDF options for compact size
-        pdf_options = {
-            'page-size': 'A4',
-            'margin-top': '0.3in',
-            'margin-right': '0.3in',
-            'margin-bottom': '0.3in',
-            'margin-left': '0.3in',
-            'encoding': "UTF-8",
-            'no-outline': None,
-            'quiet': None
-        }
-        
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
-            HTML(string=html_content).write_pdf(tmp_file.name, options=pdf_options)
-            pdf_path = tmp_file.name
+        # Create professional text-based LPO file
+        lpo_content = f"""
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                         MEDICAL CENTER HOSPITAL                             ║
+║                         LOCAL PURCHASE ORDER                                ║
+╠══════════════════════════════════════════════════════════════════════════════╣
+║ LPO Number: {lpo.lpo_number:<60} ║
+║ Date: {datetime.utcnow().strftime('%Y-%m-%d'):<64} ║
+║ Status: APPROVED{' ' * 58} ║
+╠══════════════════════════════════════════════════════════════════════════════╣
+║                           SUPPLIER INFORMATION                              ║
+╠══════════════════════════════════════════════════════════════════════════════╣
+║ Supplier: {lpo.supplier.name if lpo.supplier else 'N/A':<65} ║
+║ Contact: {lpo.contact_person or 'N/A':<67} ║
+║ Email: {(lpo.supplier.email if lpo.supplier else 'N/A')[:65]:<65} ║
+║ Phone: {lpo.contact_info or 'N/A':<66} ║
+╠══════════════════════════════════════════════════════════════════════════════╣
+║                            ORDER DETAILS                                    ║
+╠══════════════════════════════════════════════════════════════════════════════╣
+║ Item: {external_order.item_name:<66} ║
+║ Category: {external_order.category:<63} ║
+║ Quantity: {str(external_order.quantity) + ' ' + external_order.unit:<62} ║
+║ Unit Price: KSh {external_order.unit_price:,.2f}{' ' * (51 - len(f"{external_order.unit_price:,.2f}"))} ║
+║ Tax Rate: {str(external_order.tax_rate) + '%':<63} ║
+║ Delivery: {(external_order.delivery_date.strftime('%Y-%m-%d') if external_order.delivery_date else 'TBC'):<62} ║
+╠══════════════════════════════════════════════════════════════════════════════╣
+║ Total Amount: KSh {external_order.total_price:,.2f}{' ' * (48 - len(f"{external_order.total_price:,.2f}"))} ║
+╠══════════════════════════════════════════════════════════════════════════════╣
+║                          TERMS & CONDITIONS                                 ║
+╠══════════════════════════════════════════════════════════════════════════════╣
+║ 1. Acknowledge receipt within 24 hours                                     ║
+║ 2. Reference LPO number on all invoices                                    ║
+║ 3. Deliver to Medical Center Hospital                                      ║
+║ 4. Contact procurement for clarifications                                  ║
+║ 5. Prices include all taxes and delivery                                   ║
+╠══════════════════════════════════════════════════════════════════════════════╣
+║                         AUTHORIZED SIGNATURE                                ║
+╠══════════════════════════════════════════════════════════════════════════════╣
+║                                                                              ║
+║ _________________________              _________________________            ║
+║ Procurement Manager                     Date: {datetime.utcnow().strftime('%Y-%m-%d'):<10}            ║
+║ Medical Center Hospital                                                     ║
+║                                                                              ║
+╠══════════════════════════════════════════════════════════════════════════════╣
+║           procurement@medicalcenter.co.ke • +254 700 123 457                ║
+║          Computer Generated LPO - No Physical Signature Required            ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+"""
+
+        # Save as text file
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".txt") as tmp_file:
+            tmp_file.write(lpo_content.encode('utf-8'))
+            attachment_path = tmp_file.name
 
         # Send professional email to supplier
         email_sent = False
@@ -1912,14 +1947,13 @@ Medical Center Hospital
                 recipients=[lpo.supplier.email],
                 body=plain_text_body,
                 html_body=html_email_body,
-                attachments=[pdf_path]
+                attachments=[attachment_path]
             )
 
         # Create PurchaseOrder record (if you have this model)
-        # If you don't have PurchaseOrder model, you can skip this part
         try:
             purchase_order = PurchaseOrder(
-                requisition_id=external_order.id,  # Changed from requisition_id
+                requisition_id=external_order.id,
                 supplier_id=external_order.supplier_id,
                 lpo_id=lpo.id,
                 lpo_number=lpo.lpo_number,
@@ -1948,10 +1982,11 @@ Medical Center Hospital
         db.session.commit()
 
         # Clean up temporary file
-        try:
-            os.unlink(pdf_path)
-        except:
-            pass
+        if attachment_path:
+            try:
+                os.unlink(attachment_path)
+            except:
+                pass
 
         # Show appropriate success message
         if email_sent:
@@ -1959,13 +1994,13 @@ Medical Center Hospital
         else:
             flash(f'Purchase order created but email failed to send to supplier.', 'warning')
 
-        return redirect(url_for('finance_web_bp.view_order_lpo', lpo_id=lpo.id))
+        return redirect(url_for('finance_web_bp.view_lpo', lpo_id=lpo.id))
 
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Error creating purchase order or sending LPO: {str(e)}")
         flash('An error occurred while creating the purchase order or sending LPO.', 'error')
-        return redirect(url_for('finance_web_bp.view_order_lpo', lpo_id=lpo_id))
+        return redirect(url_for('finance_web_bp.view_lpo', lpo_id=lpo_id))
 
 @finance_web_bp.route("/orders/<int:order_id>/lpo")
 def view_lpo_for_order(order_id):
