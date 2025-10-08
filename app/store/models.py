@@ -18,13 +18,14 @@ class PurchaseOrder(db.Model):
     
     item_name = db.Column(db.String(255), nullable=False)
     quantity = db.Column(db.Integer, nullable=False)
+    quantity_delivered = db.Column(db.Integer, default=0)  # NEW: Track total delivered quantity
     unit = db.Column(db.String(50), default='pcs')
     unit_price = db.Column(db.Float, nullable=False)
     total_price = db.Column(db.Float, nullable=False)
     currency = db.Column(db.String(10), default='Ksh')
     order_date = db.Column(db.DateTime, default=datetime.utcnow)
-    delivery_date = db.Column(db.DateTime)
-    status = db.Column(db.String(20), default='ordered')  # ordered, shipped, delivered, canceled
+    delivery_date = db.Column(db.DateTime)  # First delivery date or final delivery date
+    status = db.Column(db.String(20), default='ordered')  # ordered, shipped, partially_delivered, delivered, canceled
     created_by = db.Column(db.Integer, db.ForeignKey('user.id'))
     notes = db.Column(db.Text)
     
@@ -32,9 +33,103 @@ class PurchaseOrder(db.Model):
     requisition = db.relationship('ExternalOrder', backref=db.backref('purchase_orders', lazy=True))
     creator = db.relationship('User', backref='created_purchase_orders')
     lpo = db.relationship('LPO', backref=db.backref('purchase_orders', lazy=True))  # Relationship to LPO
+    deliveries = db.relationship('PurchaseOrderDelivery', backref='purchase_order', lazy=True, cascade='all, delete-orphan')  # NEW: Relationship to deliveries
     
     def __repr__(self):
         return f'<PurchaseOrder {self.id}>'
+    
+    @property
+    def pending_quantity(self):
+        """Calculate pending delivery quantity"""
+        return max(0, self.quantity - self.quantity_delivered)
+    
+    @property
+    def delivery_progress(self):
+        """Calculate delivery progress percentage"""
+        if self.quantity == 0:
+            return 0
+        return min(100, (self.quantity_delivered / self.quantity) * 100)
+    
+    @property
+    def is_fully_delivered(self):
+        """Check if order is fully delivered"""
+        return self.quantity_delivered >= self.quantity
+    
+    def update_delivery_status(self):
+        """Update order status based on delivery progress"""
+        if self.quantity_delivered == 0:
+            self.status = 'ordered'
+        elif self.quantity_delivered >= self.quantity:
+            self.status = 'delivered'
+            self.delivery_date = self.delivery_date or datetime.utcnow()
+        else:
+            self.status = 'partially_delivered'
+
+
+class PurchaseOrderDelivery(db.Model):
+    __tablename__ = 'purchase_order_deliveries'
+    __audit_trail__ = True  # Enable auditing
+
+    id = db.Column(db.Integer, primary_key=True)
+    purchase_order_id = db.Column(db.Integer, db.ForeignKey('purchase_orders.id'), nullable=False)
+    
+    # Delivery Information
+    delivery_number = db.Column(db.String(50), unique=True, nullable=True)  # Auto-generated
+    delivery_date = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    quantity_delivered = db.Column(db.Integer, nullable=False)
+    batch_number = db.Column(db.String(50), nullable=False)
+    
+    # Quality & Condition
+    condition = db.Column(db.String(50), default='good')  # good, damaged, partial_damage, expired
+    storage_temp = db.Column(db.String(50), default='room_temp')
+    inspector = db.Column(db.String(100), nullable=True)
+    
+    # Documentation
+    serial_numbers = db.Column(db.Text, nullable=True)  # Comma-separated serial numbers
+    expiration_date = db.Column(db.DateTime, nullable=True)
+    delivery_notes = db.Column(db.Text, nullable=True)
+    attachments = db.Column(db.Text, nullable=True)  # Comma-separated file paths
+    
+    # System Fields
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    creator = db.relationship('User', backref='created_deliveries')
+    
+    def __repr__(self):
+        return f'<PurchaseOrderDelivery {self.delivery_number} for PO {self.purchase_order_id}>'
+    
+    def generate_delivery_number(self):
+        """Generate unique delivery number"""
+        if not self.delivery_number and self.purchase_order_id:
+            base_number = f"DEL-{self.purchase_order_id}"
+            counter = PurchaseOrderDelivery.query.filter(
+                PurchaseOrderDelivery.purchase_order_id == self.purchase_order_id,
+                PurchaseOrderDelivery.delivery_number.like(f"{base_number}-%")
+            ).count() + 1
+            
+            self.delivery_number = f"{base_number}-{counter:03d}"
+    
+    def to_dict(self):
+        """Convert to dictionary for API responses"""
+        return {
+            'id': self.id,
+            'purchase_order_id': self.purchase_order_id,
+            'delivery_number': self.delivery_number,
+            'delivery_date': self.delivery_date.isoformat() if self.delivery_date else None,
+            'quantity_delivered': self.quantity_delivered,
+            'batch_number': self.batch_number,
+            'condition': self.condition,
+            'storage_temp': self.storage_temp,
+            'inspector': self.inspector,
+            'serial_numbers': self.serial_numbers,
+            'expiration_date': self.expiration_date.isoformat() if self.expiration_date else None,
+            'delivery_notes': self.delivery_notes,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'created_by': self.created_by
+        }
 class Supplier(db.Model):
     __tablename__ = 'suppliers'
     __audit_trail__ = True  # Enable auditing
@@ -575,6 +670,7 @@ class SupplierInvoice(db.Model):
     invoice_number = db.Column(db.String(50), unique=True, nullable=False)
     supplier_account_id = db.Column(db.Integer, db.ForeignKey('supplier_accounts.id'), nullable=False)
     purchase_order_id = db.Column(db.Integer, db.ForeignKey('purchase_orders.id'), nullable=False)
+    delivery_id = db.Column(db.Integer, db.ForeignKey('purchase_order_deliveries.id'), nullable=True)  # New column
     
     # Invoice Details
     invoice_date = db.Column(db.DateTime, nullable=False)
@@ -632,6 +728,7 @@ class SupplierInvoice(db.Model):
     
     # Relationships
     purchase_order = db.relationship('PurchaseOrder', backref='supplier_invoices')
+    delivery = db.relationship('PurchaseOrderDelivery', backref='supplier_invoices')  # New relationship
     verifier = db.relationship('User', foreign_keys=[verified_by], backref='verified_supplier_invoices')
     approver = db.relationship('User', foreign_keys=[approved_by], backref='approved_supplier_invoices')
     dispute_resolver = db.relationship('User', foreign_keys=[dispute_resolved_by], backref='resolved_supplier_invoices')
@@ -766,6 +863,8 @@ class SupplierInvoice(db.Model):
             'invoice_number': self.invoice_number,
             'supplier_name': self.supplier_account.supplier.name,
             'purchase_order_number': self.purchase_order.lpo_number,
+            'delivery_id': self.delivery_id,  # Include delivery_id in dictionary
+            'delivery_number': self.delivery.delivery_number if self.delivery else None,  # Include delivery number
             'invoice_date': self.invoice_date.isoformat(),
             'due_date': self.due_date.isoformat() if self.due_date else None,
             'subtotal_amount': self.subtotal_amount,

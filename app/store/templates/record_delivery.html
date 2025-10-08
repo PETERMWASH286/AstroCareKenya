@@ -1,11 +1,197 @@
-{% extends "base.html" %} {% block content %}
+{% extends "base.html" %}
+
+{% block content %}
 <div class="max-w-6xl mx-auto px-4 py-8">
+    
+    <!-- Step 1: LPO Number Input -->
+    {% if not lpo_verified %}
+    <div class="max-w-2xl mx-auto">
+        <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-8">
+            <div class="text-center mb-8">
+                <div class="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                </div>
+                <h1 class="text-3xl font-bold text-gray-800 mb-2">Enter LPO Number</h1>
+                <p class="text-gray-600">Please enter the LPO number to verify delivery details</p>
+            </div>
+
+            <form method="POST" class="space-y-6">
+                <input type="hidden" name="step" value="verify_lpo">
+                
+                <div>
+                    <label for="lpo_number" class="block text-sm font-medium text-gray-700 mb-2">
+                        LPO Number
+                    </label>
+                    <input type="text" 
+                           id="lpo_number" 
+                           name="lpo_number" 
+                           required
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg font-medium"
+                           placeholder="Enter LPO number (e.g., LPO-123)"
+                           value="{{ request.form.lpo_number }}">
+                </div>
+
+                <button type="submit" 
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                    </svg>
+                    Verify LPO & Continue
+                </button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Step 2: LPO Verification & Comparison -->
+    {% if lpo_verified and not show_form %}
+    <div class="max-w-4xl mx-auto">
+        <div class="bg-white rounded-xl shadow-lg border border-gray-200">
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-green-50 to-blue-50 px-6 py-4 border-b border-gray-200">
+                <h1 class="text-2xl font-bold text-gray-800">LPO Verification</h1>
+                <p class="text-gray-600">Compare LPO details with items received</p>
+            </div>
+
+            <div class="p-6">
+                <!-- LPO Details Card -->
+                <div class="bg-gray-50 rounded-lg p-6 mb-6 border border-gray-200">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                        </svg>
+                        LPO Details - {{ lpo.lpo_number }}
+                    </h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-3">
+                            <div>
+                                <label class="text-sm text-gray-500">Supplier</label>
+                                <p class="font-medium">{{ lpo.supplier.name }}</p>
+                            </div>
+                            <div>
+                                <label class="text-sm text-gray-500">Item Name</label>
+                                <p class="font-medium">{{ lpo.item_name }}</p>
+                            </div>
+                            <div>
+                                <label class="text-sm text-gray-500">Category</label>
+                                <p class="font-medium">{{ lpo.category }}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-3">
+                            <div>
+                                <label class="text-sm text-gray-500">Ordered Quantity</label>
+                                <p class="font-medium">{{ lpo.quantity }} {{ lpo.unit }}</p>
+                            </div>
+                            <div>
+                                <label class="text-sm text-gray-500">Unit Price</label>
+                                <p class="font-medium">KSh {{ "%.2f"|format(lpo.unit_price) }}</p>
+                            </div>
+                            <div>
+                                <label class="text-sm text-gray-500">Total Amount</label>
+                                <p class="font-medium text-green-600">KSh {{ "%.2f"|format(lpo.total_price) }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Items Received Comparison -->
+                <div class="bg-white border border-gray-200 rounded-lg p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Items Received Comparison</h3>
+                    
+                    <form method="POST" class="space-y-4">
+                        <input type="hidden" name="step" value="confirm_comparison">
+                        <input type="hidden" name="lpo_number" value="{{ lpo.lpo_number }}">
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Ordered Items -->
+                            <div>
+                                <h4 class="font-medium text-gray-700 mb-3">Ordered (LPO)</h4>
+                                <div class="space-y-2">
+                                    <div class="flex justify-between py-2 border-b">
+                                        <span class="text-gray-600">Item:</span>
+                                        <span class="font-medium">{{ lpo.item_name }}</span>
+                                    </div>
+                                    <div class="flex justify-between py-2 border-b">
+                                        <span class="text-gray-600">Quantity:</span>
+                                        <span class="font-medium">{{ lpo.quantity }} {{ lpo.unit }}</span>
+                                    </div>
+                                    <div class="flex justify-between py-2 border-b">
+                                        <span class="text-gray-600">Unit Price:</span>
+                                        <span class="font-medium">KSh {{ "%.2f"|format(lpo.unit_price) }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Received Items -->
+                            <div>
+                                <h4 class="font-medium text-gray-700 mb-3">Received</h4>
+                                <div class="space-y-3">
+                                    <div>
+                                        <label class="block text-sm text-gray-600 mb-1">Quantity Received</label>
+                                        <input type="number" 
+                                               name="quantity_received" 
+                                               value="{{ lpo.quantity }}"
+                                               min="0"
+                                               max="{{ lpo.quantity * 2 }}"
+                                               class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                               required>
+                                        <p class="text-xs text-gray-500 mt-1">Expected: {{ lpo.quantity }} {{ lpo.unit }}</p>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm text-gray-600 mb-1">Condition</label>
+                                        <select name="preliminary_condition" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                            <option value="good">Good Condition</option>
+                                            <option value="partial_damage">Partial Damage</option>
+                                            <option value="damaged">Damaged</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Comparison Notes -->
+                        <div>
+                            <label class="block text-sm text-gray-600 mb-1">Comparison Notes</label>
+                            <textarea name="comparison_notes" 
+                                      rows="3"
+                                      class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                      placeholder="Note any discrepancies between ordered and received items..."></textarea>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="flex justify-end gap-4 pt-4">
+                            <a href="{{ url_for('store_web_bp.purchase_orders') }}" 
+                               class="px-6 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50 transition-colors">
+                                Cancel
+                            </a>
+                            <button type="submit" 
+                                    class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded transition-colors flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                                Confirm & Continue to Receiving Form
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Step 3: Full Receiving Form (Original Form) -->
+    {% if show_form %}
     <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-bold text-gray-800">Delivery Receiving for Order #{{ order.id }}</h1>
+        <h1 class="text-3xl font-bold text-gray-800">Delivery Receiving for {{ lpo.lpo_number }}</h1>
         <div class="text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded-full flex items-center gap-2">
             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
-            </svg> {{ order.supplier.category|upper }} SUPPLIES
+            </svg> 
+            LPO VERIFIED
         </div>
     </div>
 
@@ -23,17 +209,21 @@
             </div>
             <div class="space-y-3">
                 <div>
+                    <p class="text-sm text-gray-500">LPO Number</p>
+                    <p class="font-medium">{{ lpo.lpo_number }}</p>
+                </div>
+                <div>
                     <p class="text-sm text-gray-500">Item Name</p>
-                    <p class="font-medium">{{ order.item_name }}</p>
+                    <p class="font-medium">{{ lpo.item_name }}</p>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <p class="text-sm text-gray-500">Ordered Qty</p>
-                        <p class="font-medium">{{ order.quantity }} {{ order.unit }}</p>
+                        <p class="font-medium">{{ lpo.quantity }} {{ lpo.unit }}</p>
                     </div>
                     <div>
-                        <p class="text-sm text-gray-500">Unit Price</p>
-                        <p class="font-medium">{{ order.currency }} {{ order.unit_price|format_currency }}</p>
+                        <p class="text-sm text-gray-500">Received Qty</p>
+                        <p class="font-medium text-green-600">{{ quantity_received }} {{ lpo.unit }}</p>
                     </div>
                 </div>
             </div>
@@ -52,20 +242,11 @@
             <div class="space-y-3">
                 <div>
                     <p class="text-sm text-gray-500">Supplier</p>
-                    <p class="font-medium">{{ order.supplier.name }}</p>
+                    <p class="font-medium">{{ lpo.supplier.name }}</p>
                 </div>
                 <div>
                     <p class="text-sm text-gray-500">Contact</p>
-                    <p class="font-medium">{{ order.supplier.contact }} ({{ order.supplier.phone }})</p>
-                </div>
-                <div>
-                    <p class="text-sm text-gray-500">Rating</p>
-                    <div class="flex items-center">
-                        {% for i in range(5) %}
-                        <svg class="w-4 h-4 {% if i < order.supplier.rating %}text-yellow-400{% else %}text-gray-300{% endif %}" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
-                            </svg> {% endfor %}
-                    </div>
+                    <p class="font-medium">{{ lpo.contact_person }} ({{ lpo.contact_info }})</p>
                 </div>
             </div>
         </div>
@@ -82,13 +263,17 @@
             </div>
             <div class="space-y-3">
                 <div>
-                    <p class="text-sm text-gray-500">Order Date</p>
-                    <p class="font-medium">{{ order.order_date.strftime('%d %b %Y') }}</p>
+                    <p class="text-sm text-gray-500">LPO Date</p>
+                    <p class="font-medium">{{ lpo.created_at.strftime('%d %b %Y') }}</p>
                 </div>
                 <div>
                     <p class="text-sm text-gray-500">Planned Delivery</p>
                     <p class="font-medium">
-                        {% if order.delivery_date %} {{ order.delivery_date.strftime('%d %b %Y') }} {% else %} Not specified {% endif %}
+                        {% if lpo.delivery_date %} 
+                            {{ lpo.delivery_date.strftime('%d %b %Y') }} 
+                        {% else %} 
+                            Not specified 
+                        {% endif %}
                     </p>
                 </div>
                 <div>
@@ -107,6 +292,13 @@
         </div>
 
         <form method="POST" enctype="multipart/form-data" class="p-6">
+            <input type="hidden" name="step" value="final_submit">
+            <input type="hidden" name="lpo_number" value="{{ lpo.lpo_number }}">
+            <input type="hidden" name="quantity_received" value="{{ quantity_received }}">
+            <input type="hidden" name="preliminary_condition" value="{{ preliminary_condition }}">
+            <input type="hidden" name="comparison_notes" value="{{ comparison_notes }}">
+
+            <!-- Rest of your original form goes here -->
             <!-- Item Identification Section -->
             <div class="mb-8">
                 <h3 class="text-lg font-medium text-gray-800 mb-4 pb-2 border-b border-gray-200 flex items-center gap-2">
@@ -122,8 +314,8 @@
                             Batch/Lot Number
                         </label>
                         <div class="relative">
-                            <input type="text" id="batch_number" name="batch_number" value="{{ order.id }}-{{ datetime.utcnow().strftime('%Y%m%d') }}" class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter batch number">
-                            <button type="button" onclick="document.getElementById('batch_number').value = '{{ order.id }}-{{ datetime.utcnow().strftime('%Y%m%d') }}'" class="absolute inset-y-0 right-0 px-3 text-sm bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-r-lg transition-colors">
+                            <input type="text" id="batch_number" name="batch_number" value="{{ lpo.lpo_number }}-{{ datetime.utcnow().strftime('%Y%m%d') }}" class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter batch number">
+                            <button type="button" onclick="document.getElementById('batch_number').value = '{{ lpo.lpo_number }}-{{ datetime.utcnow().strftime('%Y%m%d') }}'" class="absolute inset-y-0 right-0 px-3 text-sm bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-r-lg transition-colors">
                                 Generate
                             </button>
                         </div>
@@ -156,17 +348,18 @@
                 </h3>
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <!-- Quantity Received -->
+                    <!-- Quantity Received (pre-filled from previous step) -->
                     <div>
                         <label class="block text-gray-700 mb-2 font-medium" for="quantity_received">
                             Quantity Received
                         </label>
                         <div class="flex">
-                            <input type="number" id="quantity_received" name="quantity_received" value="{{ order.quantity }}" min="1" class="w-full px-4 py-3 border rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <input type="number" id="quantity_received" name="quantity_received" value="{{ quantity_received }}" min="1" class="w-full px-4 py-3 border rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500" readonly>
                             <span class="bg-gray-100 border-t border-r border-b border-gray-300 rounded-r-lg px-4 flex items-center">
-                                {{ order.unit }}
+                                {{ lpo.unit }}
                             </span>
                         </div>
+                        <p class="text-sm text-gray-500 mt-1">Verified in previous step</p>
                     </div>
 
                     <!-- Item Condition -->
@@ -175,10 +368,10 @@
                             Item Condition
                         </label>
                         <select id="condition" name="condition" class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option value="good">Good Condition</option>
-                            <option value="damaged">Damaged</option>
+                            <option value="good" {% if preliminary_condition == 'good' %}selected{% endif %}>Good Condition</option>
+                            <option value="damaged" {% if preliminary_condition == 'damaged' %}selected{% endif %}>Damaged</option>
                             <option value="expired">Expired</option>
-                            <option value="partial_damage">Partial Damage</option>
+                            <option value="partial_damage" {% if preliminary_condition == 'partial_damage' %}selected{% endif %}>Partial Damage</option>
                             <option value="recalled">Recalled</option>
                         </select>
                     </div>
@@ -218,8 +411,6 @@
                         </select>
                     </div>
 
-
-
                     <!-- Inspector -->
                     <div>
                         <label class="block text-gray-700 mb-2 font-medium" for="inspector">
@@ -234,7 +425,7 @@
                     <label class="block text-gray-700 mb-2 font-medium" for="notes">
                         Delivery Notes & Observations
                     </label>
-                    <textarea id="notes" name="notes" rows="3" class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter any observations, special handling instructions, or delivery notes"></textarea>
+                    <textarea id="notes" name="notes" rows="3" class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter any observations, special handling instructions, or delivery notes">{{ comparison_notes }}</textarea>
                 </div>
 
                 <!-- Attachments -->
@@ -275,5 +466,6 @@
             </div>
         </form>
     </div>
+    {% endif %}
 </div>
 {% endblock %}

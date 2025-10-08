@@ -1,4 +1,5 @@
-{% extends "base.html" %} {% block content %}
+{% extends "base.html" %} 
+{% block content %}
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <!-- Header Section -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
@@ -9,109 +10,88 @@
         <button id="openNewOrderModal" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg flex items-center gap-2 transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                 <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
-            </svg> New Order
+            </svg> 
+            New Order
         </button>
-
     </div>
-    <!-- New Order Modal -->
-    <div id="newOrderModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
-        <div class="bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800  dark:bg-gray-900 dark:bg-gray-800 rounded-2xl shadow-2xl w-[95%] max-w-3xl max-h-[90vh] relative animate-fade-in flex flex-col">
-            <!-- Close Button -->
-            <button id="closeNewOrderModal" class="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-            </svg>
-        </button>
 
-            <!-- Modal Header -->
-            <div class="p-8 border-b border-gray-200">
-                <h2 class="text-2xl font-bold text-gray-800">New Medical Supply Order</h2>
+    <!-- Modern Filters Section -->
+    <div class="bg-white/80 backdrop-blur-md border border-gray-200 dark:border-gray-700 dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
+            <!-- Search Filter -->
+            <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </div>
+                <input 
+                    type="text" 
+                    id="searchFilter" 
+                    placeholder="Search items or suppliers..." 
+                    class="pl-10 w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                >
             </div>
 
-            <!-- Scrollable Content -->
-            <form action="/inventory/store/create_order" method="POST" class="flex-1 flex flex-col overflow-hidden">
-                <div class="flex-1 overflow-y-auto p-8 custom-scroll">
-                    <!-- Supplier & Delivery Date -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Medical Supplier</label>
-                            <select name="supplier_id" required class="w-full border border-gray-300 bg-gray-50 dark:bg-gray-700 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500">
-                            {% for supplier in suppliers %}
-                            <option value="{{ supplier.id }}">{{ supplier.name }} - {{ supplier.category }}</option>
-                            {% endfor %}
-                        </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Delivery Date</label>
-                            <input type="date" name="delivery_date" required class="w-full border border-gray-300 bg-gray-50 dark:bg-gray-700 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500">
-                        </div>
-                    </div>
-
-                    <!-- Medical Items Section -->
-                    <div class="border rounded-lg p-4 bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800  dark:bg-gray-900 dark:bg-gray-800">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="font-medium text-gray-700">Medical Items</h3>
-                            <button type="button" onclick="addItemRow()" class="flex items-center text-blue-600 hover:text-blue-800">
-                            <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                            </svg>
-                            Add Item
-                        </button>
-                        </div>
-
-                        <!-- Scrollable Items Container -->
-                        <div id="itemsContainer" class="space-y-4 max-h-[300px] overflow-y-auto custom-scroll pb-2">
-                            <!-- Item rows will be added here -->
-                        </div>
-
-                        <!-- Total Calculation -->
-                        <div class="mt-6 pt-4 border-t border-gray-200">
-                            <div class="flex justify-end">
-                                <div class="w-64">
-                                    <div class="flex justify-between mb-2">
-                                        <span class="font-medium">Subtotal:</span>
-                                        <span id="subtotal">Ksh 0.00</span>
-                                    </div>
-                                    <div class="flex justify-between text-gray-600">
-                                        <span>Tax (16%):</span>
-                                        <span id="tax">Ksh 0.00</span>
-                                    </div>
-                                    <div class="flex justify-between font-bold mt-2 pt-2 border-t">
-                                        <span>Total:</span>
-                                        <span id="totalAmount">Ksh 0.00</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+            <!-- Status Filter -->
+            <div class="relative">
+                <select id="statusFilter" class="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none cursor-pointer transition-all duration-200">
+                    <option value="">All Statuses</option>
+                    <option value="ordered">Ordered</option>
+                    <option value="shipped">Shipped</option>
+                    <option value="partially_delivered">Partially Delivered</option>
+                    <option value="delivered">Delivered</option>
+                    <option value="canceled">Canceled</option>
+                </select>
+                <div class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                    <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
                 </div>
+            </div>
 
-                <!-- Sticky Footer -->
-                <div class="p-8 border-t border-gray-200 bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800  dark:bg-gray-900 dark:bg-gray-800">
-                    <div class="flex justify-end gap-4">
-                        <button type="button" onclick="closeModal()" class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
-                        Cancel
-                    </button>
-                        <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors">
-                        Create Medical Order
-                    </button>
-                    </div>
+            <!-- Date Range Filters -->
+            <div class="grid grid-cols-2 gap-3">
+                <div class="relative">
+                    <input 
+                        type="date" 
+                        id="dateFrom" 
+                        class="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                    >
+                    <label class="absolute -top-2 left-2 bg-white dark:bg-gray-700 px-1 text-xs text-gray-500">From</label>
                 </div>
+                <div class="relative">
+                    <input 
+                        type="date" 
+                        id="dateTo" 
+                        class="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                    >
+                    <label class="absolute -top-2 left-2 bg-white dark:bg-gray-700 px-1 text-xs text-gray-500">To</label>
+                </div>
+            </div>
 
-                <!-- Hidden Inputs -->
-                <input type="hidden" name="items" id="itemsInput">
-                <input type="hidden" name="total_amount" id="totalAmountInput">
-            </form>
+            <!-- Quick Actions -->
+            <div class="flex items-center justify-end gap-2">
+                <button id="clearFilters" class="px-4 py-2.5 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200">
+                    Clear All
+                </button>
+                <div class="text-sm text-gray-500 dark:text-gray-400" id="resultCount">
+                    {{ purchase_orders|length }} orders
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Filters Display -->
+        <div id="activeFilters" class="mt-4 flex flex-wrap gap-2 hidden">
+            <!-- Active filters will appear here -->
         </div>
     </div>
 
-
-
     <!-- Orders Table -->
-    <div class="bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800  dark:bg-gray-900 dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+    <div class="bg-white/80 backdrop-blur-md border border-gray-200 dark:border-gray-700 dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full">
-                <thead class="bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:bg-gray-800">
+                <thead class="bg-gray-50 dark:bg-gray-700/50">
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Order Details</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Supplier & Items</th>
@@ -121,25 +101,33 @@
                         <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-200">
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700" id="ordersTableBody">
                     {% for order in purchase_orders %}
-                    <tr class="hover:bg-gray-50 transition-colors">
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors order-row" 
+                        data-item-name="{{ order.item_name|lower }}"
+                        data-supplier-name="{{ order.supplier.name|lower }}"
+                        data-status="{{ order.status }}"
+                        data-order-date="{{ order.order_date.strftime('%Y-%m-%d') }}"
+                        data-delivery-date="{{ order.delivery_date.strftime('%Y-%m-%d') if order.delivery_date else '' }}">
                         <!-- Order Details -->
                         <td class="px-6 py-4">
                             <div class="flex flex-col">
-                                <div class="text-sm font-medium text-gray-900 flex items-center gap-2">
-                                    <span>#{{ order.id }}</span> {% if order.requisition_id %}
-                                    <span class="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
+                                <div class="text-sm font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                                    <span>#{{ order.id }}</span> 
+                                    {% if order.requisition_id %}
+                                    <span class="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-0.5 rounded-full">
                                         Requisition
-                                    </span> {% endif %}
+                                    </span> 
+                                    {% endif %}
                                 </div>
-                                <div class="text-xs text-gray-500 mt-1 flex items-center">
+                                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1 flex items-center">
                                     <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                    </svg> {{ order.order_date.strftime('%d %b %Y') }}
+                                    </svg> 
+                                    {{ order.order_date.strftime('%d %b %Y') }}
                                 </div>
                                 {% if order.notes %}
-                                <div class="mt-2 text-xs text-gray-500 flex">
+                                <div class="mt-2 text-xs text-gray-500 dark:text-gray-400 flex">
                                     <svg class="w-4 h-4 mr-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
                                     </svg>
@@ -155,15 +143,15 @@
                                 <!-- Supplier Info -->
                                 <div class="flex items-center gap-3">
                                     <div class="flex-shrink-0">
-                                        <div class="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
-                                            <svg class="h-4 w-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <div class="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+                                            <svg class="h-4 w-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0H5m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                                             </svg>
                                         </div>
                                     </div>
                                     <div>
-                                        <div class="font-medium text-gray-900">{{ order.supplier.name }}</div>
-                                        <div class="text-xs text-gray-500 flex items-center gap-1">
+                                        <div class="font-medium text-gray-900 dark:text-white supplier-name">{{ order.supplier.name }}</div>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
                                             <span>{{ order.supplier.category }}</span>
                                             <span>•</span>
                                             <span>{{ order.supplier.rating }}/5</span>
@@ -172,9 +160,9 @@
                                 </div>
 
                                 <!-- Item Details -->
-                                <div class="mt-2 bg-gray-50 rounded-lg p-2">
-                                    <div class="text-sm font-medium">{{ order.item_name }}</div>
-                                    <div class="text-xs text-gray-500 flex justify-between mt-1">
+                                <div class="mt-2 bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
+                                    <div class="text-sm font-medium item-name">{{ order.item_name }}</div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400 flex justify-between mt-1">
                                         <span>{{ order.quantity }} {{ order.unit }}</span>
                                         <span>KES {{ order.unit_price|format_currency }}/{{ order.unit }}</span>
                                     </div>
@@ -190,8 +178,8 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                     </svg>
                                     <div>
-                                        <div class="text-xs text-gray-500">Order Date</div>
-                                        <div>{{ order.order_date.strftime('%d %b %Y') }}</div>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400">Order Date</div>
+                                        <div class="order-date">{{ order.order_date.strftime('%d %b %Y') }}</div>
                                     </div>
                                 </div>
 
@@ -200,8 +188,8 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
                                     <div>
-                                        <div class="text-xs text-gray-500">Delivery Due</div>
-                                        <div>{{ order.delivery_date.strftime('%d %b %Y') if order.delivery_date else 'TBD' }}</div>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400">Delivery Due</div>
+                                        <div class="delivery-date">{{ order.delivery_date.strftime('%d %b %Y') if order.delivery_date else 'TBD' }}</div>
                                     </div>
                                 </div>
                             </div>
@@ -210,50 +198,76 @@
                         <!-- Status -->
                         <td class="px-6 py-4 whitespace-nowrap">
                             {% if order.status == 'ordered' %}
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                <svg class="mr-1.5 h-2 w-2 text-blue-800" fill="currentColor" viewBox="0 0 8 8">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 border border-blue-200 dark:border-blue-700">
+                                <svg class="mr-1.5 h-2 w-2 text-blue-800 dark:text-blue-300" fill="currentColor" viewBox="0 0 8 8">
                                     <circle cx="4" cy="4" r="3" />
                                 </svg>
                                 Ordered
-                            </span> {% elif order.status == 'shipped' %}
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                <svg class="mr-1.5 h-2 w-2 text-yellow-800" fill="currentColor" viewBox="0 0 8 8">
+                            </span>
+                            {% elif order.status == 'shipped' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 border border-yellow-200 dark:border-yellow-700">
+                                <svg class="mr-1.5 h-2 w-2 text-yellow-800 dark:text-yellow-300" fill="currentColor" viewBox="0 0 8 8">
                                     <circle cx="4" cy="4" r="3" />
                                 </svg>
                                 Shipped
-                            </span> {% elif order.status == 'delivered' %}
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                <svg class="mr-1.5 h-2 w-2 text-green-800" fill="currentColor" viewBox="0 0 8 8">
+                            </span>
+                            {% elif order.status == 'partially_delivered' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 border border-orange-200 dark:border-orange-700 animate-pulse">
+                                <svg class="mr-1.5 h-2 w-2 text-orange-800 dark:text-orange-300" fill="currentColor" viewBox="0 0 8 8">
+                                    <circle cx="4" cy="4" r="3" />
+                                </svg>
+                                Partially Delivered
+                            </span>
+                            {% elif order.status == 'delivered' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 border border-green-200 dark:border-green-700">
+                                <svg class="mr-1.5 h-2 w-2 text-green-800 dark:text-green-300" fill="currentColor" viewBox="0 0 8 8">
                                     <circle cx="4" cy="4" r="3" />
                                 </svg>
                                 Delivered
-                            </span> {% elif order.status == 'canceled' %}
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                <svg class="mr-1.5 h-2 w-2 text-red-800" fill="currentColor" viewBox="0 0 8 8">
+                            </span>
+                            {% elif order.status == 'canceled' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 border border-red-200 dark:border-red-700">
+                                <svg class="mr-1.5 h-2 w-2 text-red-800 dark:text-red-300" fill="currentColor" viewBox="0 0 8 8">
                                     <circle cx="4" cy="4" r="3" />
                                 </svg>
                                 Canceled
-                            </span> {% else %}
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                <svg class="mr-1.5 h-2 w-2 text-gray-800" fill="currentColor" viewBox="0 0 8 8">
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 border border-gray-200 dark:border-gray-600">
+                                <svg class="mr-1.5 h-2 w-2 text-gray-800 dark:text-gray-400" fill="currentColor" viewBox="0 0 8 8">
                                     <circle cx="4" cy="4" r="3" />
                                 </svg>
                                 {{ order.status|title }}
-                            </span> {% endif %}
+                            </span>
+                            {% endif %}
 
-                            <div class="mt-2 text-xs text-gray-500">
+                            <!-- Delivery Progress for Partially Delivered Orders -->
+                            {% if order.status == 'partially_delivered' %}
+                            <div class="mt-2">
+                                <div class="flex justify-between text-xs text-gray-600 dark:text-gray-400 mb-1">
+                                    <span>Progress</span>
+                                    <span>{{ order.quantity_delivered }}/{{ order.quantity }} {{ order.unit }}</span>
+                                </div>
+                                <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-1.5">
+                                    <div class="bg-orange-500 h-1.5 rounded-full transition-all duration-300" 
+                                         style="width: {{ (order.quantity_delivered / order.quantity * 100) | round }}%"></div>
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <div class="mt-2 text-xs text-gray-500 dark:text-gray-400">
                                 By: {{ order.creator.username if order.creator else 'System' }}
                             </div>
                         </td>
 
                         <!-- Total -->
                         <td class="px-6 py-4">
-                            <div class="text-sm font-medium text-gray-900">KES {{ order.total_price|format_currency }}</div>
-                            <div class="text-xs text-gray-500 mt-1">
+                            <div class="text-sm font-medium text-gray-900 dark:text-white">KES {{ order.total_price|format_currency }}</div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                 <div>Unit: KES {{ order.unit_price|format_currency }}</div>
                                 <div>Qty: {{ order.quantity }} {{ order.unit }}</div>
                             </div>
-                            <div class="text-xs text-gray-500 mt-1">
+                            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                 Currency: {{ order.currency }}
                             </div>
                         </td>
@@ -263,53 +277,54 @@
                             <div class="flex flex-col gap-2">
                                 <div class="flex gap-2">
                                     <!-- View Button -->
-                                    <a href="{{ url_for('store_web_bp.view_order', id=order.id) }}" class="p-1.5 bg-blue-100 hover:bg-blue-200 rounded-lg transition-colors group relative" data-tooltip="View Details">
-                                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <a href="{{ url_for('store_web_bp.view_order', id=order.id) }}" class="p-1.5 bg-blue-100 dark:bg-blue-900 hover:bg-blue-200 dark:hover:bg-blue-800 rounded-lg transition-colors group relative" data-tooltip="View Details">
+                                        <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M10.5 19.5l3-3m0 0l3-3m-3 3l-3-3"/>
                                         </svg>
                                     </a>
-
-                                    <!-- Edit Button -->
-                                    <a href="{{ url_for('store_web_bp.edit_order', id=order.id) }}" class="p-1.5 bg-green-100 hover:bg-green-200 rounded-lg transition-colors group relative" data-tooltip="Edit Order">
-                                        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
-                                        </svg>
-                                    </a>
-
-                                    <!-- Delete Button -->
-                                    <form action="{{ url_for('store_web_bp.delete_order', id=order.id) }}" method="POST" class="inline">
-                                        <button type="submit" class="p-1.5 bg-red-100 hover:bg-red-200 rounded-lg transition-colors group relative" data-tooltip="Delete Order">
-                                            <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                            </svg>
-                                        </button>
-                                    </form>
                                 </div>
 
                                 <!-- Status Update Buttons -->
                                 <div class="flex gap-2 mt-2">
-                                    {% if order.status != 'delivered' and order.status != 'canceled' %}
-                                    <form action="{{ url_for('store_web_bp.update_status', id=order.id) }}?status=shipped" method="POST" class="inline">
-                                        <button type="submit" class="text-xs px-2 py-1 bg-yellow-100 hover:bg-yellow-200 text-yellow-800 rounded transition-colors" data-tooltip="Mark as Shipped">
-                                            Shipped
-                                        </button>
-                                    </form>
-                                    {% endif %} {% if order.status == 'delivered' %}
-                                    <!-- Changed "Delivered" button to "Record Delivery" -->
-                                    <a href="{{ url_for('store_web_bp.record_delivery', id=order.id) }}" class="text-xs px-2 py-1 bg-green-100 hover:bg-green-200 text-green-800 rounded transition-colors" data-tooltip="Record Delivery Details">
-                                        Record Delivery
-                                    </a> {% endif %} {% if order.status == 'shipped' %}
+                                    <!-- Quick Deliver Button for non-delivered orders -->
+                                    {% if order.status == 'ordered' %}
                                     <form action="{{ url_for('store_web_bp.update_status', id=order.id) }}?status=delivered" method="POST" class="inline">
-                                        <button type="submit" class="text-xs px-2 py-1 bg-green-100 hover:bg-green-200 text-green-800 rounded transition-colors" data-tooltip="Mark as Delivered">
-                                            Delivered
+                                        <button type="submit" class="text-xs px-2 py-1 bg-green-100 dark:bg-green-900 hover:bg-green-200 dark:hover:bg-green-800 text-green-800 dark:text-green-200 rounded transition-colors" data-tooltip="Mark as Fully Delivered">
+                                            Quick Deliver
                                         </button>
                                     </form>
-                                    {% endif %} {% if order.status != 'delivered' and order.status != 'canceled' %}
-                                    <form action="{{ url_for('store_web_bp.update_status', id=order.id) }}?status=canceled" method="POST" class="inline">
-                                        <button type="submit" class="text-xs px-2 py-1 bg-red-100 hover:bg-red-200 text-red-800 rounded transition-colors" data-tooltip="Cancel Order">
-                                            Cancel
-                                        </button>
-                                    </form>
+                                    {% endif %} 
+                                    
+                                    <!-- Record Delivery Options -->
+                                    {% if order.status != 'canceled' and not order.is_fully_delivered %}
+                                        {% if not stock_exists.get(order.id, False) %}
+                                        <a href="{{ url_for('store_web_bp.record_delivery') }}?lpo_number={{ order.lpo_number }}" class="text-xs px-2 py-1 bg-green-100 dark:bg-green-900 hover:bg-green-200 dark:hover:bg-green-800 text-green-800 dark:text-green-200 rounded transition-colors" data-tooltip="Record Delivery Details">
+                                            {% if order.status == 'ordered' %}
+                                            Record Delivery
+                                            {% else %}
+                                            Continue Delivery
+                                            {% endif %}
+                                        </a>
+                                        {% else %}
+                                        <a href="{{ url_for('store_web_bp.record_delivery') }}?lpo_number={{ order.lpo_number }}" class="text-xs px-2 py-1 bg-yellow-100 dark:bg-yellow-900 hover:bg-yellow-200 dark:hover:bg-yellow-800 text-yellow-800 dark:text-yellow-200 rounded transition-colors" data-tooltip="Record Additional Delivery">
+                                            Add Delivery
+                                        </a>
+                                        {% endif %}
+                                    {% endif %}
+                                    
+                                    <!-- Status Badges -->
+                                    {% if order.status == 'delivered' and order.is_fully_delivered %}
+                                    <span class="text-xs px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded flex items-center" data-tooltip="Fully Delivered">
+                                        <i class="fas fa-check-circle mr-1"></i> Complete
+                                    </span>
+                                    {% elif order.status == 'partially_delivered' %}
+                                    <span class="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded" data-tooltip="Partially Delivered - {{ order.quantity_delivered }}/{{ order.quantity }} {{ order.unit }}">
+                                        {{ order.quantity_delivered }}/{{ order.quantity }}
+                                    </span>
+                                    {% elif order.status == 'canceled' %}
+                                    <span class="text-xs px-2 py-1 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 rounded">
+                                        Canceled
+                                    </span>
                                     {% endif %}
                                 </div>
                             </div>
@@ -322,30 +337,31 @@
     </div>
 
     <!-- Empty State -->
-    {% if not purchase_orders %}
-    <div class="mt-16 text-center">
+    <div id="emptyState" class="mt-16 text-center hidden">
         <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
         </svg>
-        <h3 class="mt-2 text-sm font-medium text-gray-900">No purchase orders</h3>
-        <p class="mt-1 text-sm text-gray-500">Get started by creating a new purchase order</p>
+        <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">No purchase orders found</h3>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Try adjusting your filters or create a new purchase order</p>
+        <button id="clearFiltersEmpty" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+            Clear All Filters
+        </button>
     </div>
-    {% endif %}
 </div>
+
+<!-- Include the modal and existing scripts from your original code -->
+<!-- ... your existing modal and scripts ... -->
+
 <style>
     .custom-scroll {
         scrollbar-width: none;
-        /* Firefox */
         -ms-overflow-style: none;
-        /* IE/Edge */
     }
     
     .custom-scroll::-webkit-scrollbar {
         display: none;
-        /* Chrome/Safari/Opera */
     }
-</style>
-<style>
+
     [data-tooltip]::after {
         content: attr(data-tooltip);
         position: absolute;
@@ -361,14 +377,231 @@
         opacity: 0;
         visibility: hidden;
         transition: opacity 0.2s;
+        z-index: 1000;
     }
     
     [data-tooltip]:hover::after {
         opacity: 1;
         visibility: visible;
     }
+
+    .filter-badge {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 12px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
 </style>
+
 <script>
+// Modern Filtering System
+document.addEventListener('DOMContentLoaded', function() {
+    const searchFilter = document.getElementById('searchFilter');
+    const statusFilter = document.getElementById('statusFilter');
+    const dateFrom = document.getElementById('dateFrom');
+    const dateTo = document.getElementById('dateTo');
+    const clearFilters = document.getElementById('clearFilters');
+    const clearFiltersEmpty = document.getElementById('clearFiltersEmpty');
+    const resultCount = document.getElementById('resultCount');
+    const activeFilters = document.getElementById('activeFilters');
+    const emptyState = document.getElementById('emptyState');
+    const ordersTableBody = document.getElementById('ordersTableBody');
+    
+    let timeoutId;
+
+    // Initialize filters from URL parameters
+    function initializeFiltersFromURL() {
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        if (urlParams.has('search')) {
+            searchFilter.value = urlParams.get('search');
+        }
+        if (urlParams.has('status')) {
+            statusFilter.value = urlParams.get('status');
+        }
+        if (urlParams.has('dateFrom')) {
+            dateFrom.value = urlParams.get('dateFrom');
+        }
+        if (urlParams.has('dateTo')) {
+            dateTo.value = urlParams.get('dateTo');
+        }
+        
+        // Apply filters on page load
+        applyFilters();
+    }
+
+    // Update URL with current filters
+    function updateURL() {
+        const urlParams = new URLSearchParams();
+        
+        if (searchFilter.value) urlParams.set('search', searchFilter.value);
+        if (statusFilter.value) urlParams.set('status', statusFilter.value);
+        if (dateFrom.value) urlParams.set('dateFrom', dateFrom.value);
+        if (dateTo.value) urlParams.set('dateTo', dateTo.value);
+        
+        const newURL = urlParams.toString() ? `${window.location.pathname}?${urlParams.toString()}` : window.location.pathname;
+        window.history.replaceState({}, '', newURL);
+    }
+
+    // Apply filters with debouncing
+    function applyFilters() {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+            const searchTerm = searchFilter.value.toLowerCase();
+            const statusValue = statusFilter.value;
+            const dateFromValue = dateFrom.value;
+            const dateToValue = dateTo.value;
+            
+            let visibleCount = 0;
+            const rows = ordersTableBody.querySelectorAll('.order-row');
+            
+            rows.forEach(row => {
+                const itemName = row.getAttribute('data-item-name');
+                const supplierName = row.getAttribute('data-supplier-name');
+                const status = row.getAttribute('data-status');
+                const orderDate = row.getAttribute('data-order-date');
+                const deliveryDate = row.getAttribute('data-delivery-date');
+                
+                let matchesSearch = true;
+                let matchesStatus = true;
+                let matchesDate = true;
+                
+                // Search filter
+                if (searchTerm) {
+                    matchesSearch = itemName.includes(searchTerm) || supplierName.includes(searchTerm);
+                }
+                
+                // Status filter
+                if (statusValue) {
+                    matchesStatus = status === statusValue;
+                }
+                
+                // Date filter
+                if (dateFromValue || dateToValue) {
+                    const rowDate = deliveryDate || orderDate;
+                    if (rowDate) {
+                        if (dateFromValue && rowDate < dateFromValue) {
+                            matchesDate = false;
+                        }
+                        if (dateToValue && rowDate > dateToValue) {
+                            matchesDate = false;
+                        }
+                    } else {
+                        matchesDate = !dateFromValue && !dateToValue;
+                    }
+                }
+                
+                if (matchesSearch && matchesStatus && matchesDate) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            
+            // Update result count
+            resultCount.textContent = `${visibleCount} ${visibleCount === 1 ? 'order' : 'orders'}`;
+            
+            // Show/hide empty state
+            if (visibleCount === 0) {
+                emptyState.classList.remove('hidden');
+                ordersTableBody.parentElement.parentElement.classList.add('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                ordersTableBody.parentElement.parentElement.classList.remove('hidden');
+            }
+            
+            // Update active filters display
+            updateActiveFilters();
+            
+            // Update URL
+            updateURL();
+        }, 300);
+    }
+
+    // Update active filters badges
+    function updateActiveFilters() {
+        activeFilters.innerHTML = '';
+        let hasActiveFilters = false;
+        
+        if (searchFilter.value) {
+            hasActiveFilters = true;
+            const badge = createFilterBadge('Search', searchFilter.value, () => {
+                searchFilter.value = '';
+                applyFilters();
+            });
+            activeFilters.appendChild(badge);
+        }
+        
+        if (statusFilter.value) {
+            hasActiveFilters = true;
+            const badge = createFilterBadge('Status', statusFilter.options[statusFilter.selectedIndex].text, () => {
+                statusFilter.value = '';
+                applyFilters();
+            });
+            activeFilters.appendChild(badge);
+        }
+        
+        if (dateFrom.value || dateTo.value) {
+            hasActiveFilters = true;
+            const dateText = `${dateFrom.value || 'Any'} to ${dateTo.value || 'Any'}`;
+            const badge = createFilterBadge('Date Range', dateText, () => {
+                dateFrom.value = '';
+                dateTo.value = '';
+                applyFilters();
+            });
+            activeFilters.appendChild(badge);
+        }
+        
+        if (hasActiveFilters) {
+            activeFilters.classList.remove('hidden');
+        } else {
+            activeFilters.classList.add('hidden');
+        }
+    }
+
+    // Create filter badge
+    function createFilterBadge(label, value, onClick) {
+        const badge = document.createElement('div');
+        badge.className = 'filter-badge';
+        badge.innerHTML = `
+            <span>${label}: ${value}</span>
+            <button type="button" class="hover:bg-white/20 rounded p-0.5">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        `;
+        
+        badge.querySelector('button').addEventListener('click', onClick);
+        return badge;
+    }
+
+    // Clear all filters
+    function clearAllFilters() {
+        searchFilter.value = '';
+        statusFilter.value = '';
+        dateFrom.value = '';
+        dateTo.value = '';
+        applyFilters();
+    }
+
+    // Event listeners
+    searchFilter.addEventListener('input', applyFilters);
+    statusFilter.addEventListener('change', applyFilters);
+    dateFrom.addEventListener('change', applyFilters);
+    dateTo.addEventListener('change', applyFilters);
+    clearFilters.addEventListener('click', clearAllFilters);
+    clearFiltersEmpty.addEventListener('click', clearAllFilters);
+
+    // Initialize
+    initializeFiltersFromURL();
+
+    // Your existing modal and item management scripts
     let itemCounter = 0;
 
     function addItemRow() {
@@ -455,12 +688,7 @@
         document.getElementById('itemsInput').value = JSON.stringify(items);
     }
 
-    // Initialize first item row when modal opens
-    document.getElementById('newOrderModal').addEventListener('shown', () => {
-        if (itemCounter === 0) addItemRow();
-    });
-</script>
-<script>
+    // Modal functionality
     document.getElementById('openNewOrderModal').addEventListener('click', function() {
         document.getElementById('newOrderModal').classList.remove('hidden');
     });
@@ -475,5 +703,11 @@
             modal.classList.add('hidden');
         }
     });
+
+    // Initialize first item row when modal opens
+    document.getElementById('newOrderModal').addEventListener('shown', () => {
+        if (itemCounter === 0) addItemRow();
+    });
+});
 </script>
 {% endblock %}

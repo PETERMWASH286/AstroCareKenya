@@ -1792,7 +1792,7 @@ def send_order_lpo(order_id):
     lpo = external_order.lpos[0]
     return place_order(lpo.id)  # Call the existing place_order function
 
-@finance_web_bp.route("/lpos/<int:lpo_id>/send-to-supplier", methods=["POST"])
+@finance_web_bp.route("/lpos/<int:lpo_id>/send-to-supplier", methods=["POST", 'GET'])
 def place_order(lpo_id):
     try:
         lpo = LPO.query.get_or_404(lpo_id)

@@ -14,7 +14,7 @@ from app.lab.models import LabInventory
 from app.patients.models import Service
 from app.pharmacy.models import PharmacyInventory
 from app.radiology.models import RadiologyInventory
-from app.store.models import LPO, ExternalOrder, PurchaseOrder, Stock, StockDetail, StockFlow, StockRequest, Supplier, SupplierAccount, SupplierInvoice, SupplierTransaction
+from app.store.models import LPO, ExternalOrder, PurchaseOrder, PurchaseOrderDelivery, Stock, StockDetail, StockFlow, StockRequest, Supplier, SupplierAccount, SupplierInvoice, SupplierTransaction
 from app.utils.notifications import notification_manager
 
 from . import store_web_bp
@@ -53,12 +53,26 @@ def purchase_orders():
                          .order_by(PurchaseOrder.order_date.desc()) \
                          .all()
     
+    # Get stock information for each purchase order
+    order_ids = [order.id for order in orders]
+    stock_entries = Stock.query.filter(Stock.purchase_order_id.in_(order_ids)).all()
+    
+    # Create a dictionary mapping purchase_order_id to stock existence
+    stock_exists = {}
+    for stock in stock_entries:
+        stock_exists[stock.purchase_order_id] = True
+    
+    # Ensure all orders have quantity_delivered set
+    for order in orders:
+        if order.quantity_delivered is None:
+            order.quantity_delivered = 0
+    
     suppliers = Supplier.query.filter_by(is_active=True).order_by(Supplier.name).all()
     
     return render_template('purchase_orders.html', 
                          purchase_orders=orders,
-                         suppliers=suppliers)
-
+                         suppliers=suppliers,
+                         stock_exists=stock_exists)
 # New create_order route
 @store_web_bp.route('/store/create_order', methods=['POST'])
 def create_order():
@@ -1032,201 +1046,343 @@ def delete_external_order(order_id):
 
 
 
-@store_web_bp.route('/purchase-orders/<int:id>/record-delivery', methods=['GET', 'POST'])
-def record_delivery(id):
-    order = PurchaseOrder.query.get_or_404(id)
+@store_web_bp.route('/record-delivery', methods=['GET', 'POST'])
+def record_delivery():
     
-    if request.method == 'POST':
-        try:
-            # Extract form data
-            batch_number = request.form.get('batch_number')
-            expiration_date = request.form.get('expiration_date')
-            serial_numbers = request.form.get('serial_numbers')
+    if request.method == "POST":
+        step = request.form.get('step')
+        
+        # Step 1: Verify LPO
+        if step == 'verify_lpo':
+            lpo_number = request.form.get('lpo_number')
+            lpo = LPO.query.filter_by(lpo_number=lpo_number).first()
+            
+            if not lpo:
+                flash('LPO number not found. Please check and try again.', 'error')
+                return render_template('record_delivery.html', lpo_verified=False)
+            
+            # Check if there's a purchase order for this LPO
+            purchase_order = PurchaseOrder.query.filter_by(lpo_id=lpo.id).first()
+            if not purchase_order:
+                flash('No purchase order found for this LPO. Please contact procurement.', 'error')
+                return render_template('record_delivery.html', lpo_verified=False)
+            
+            # FIXED: Ensure quantity_delivered is not None
+            if purchase_order.quantity_delivered is None:
+                purchase_order.quantity_delivered = 0
+                db.session.commit()
+            
+            # Check if order is already fully delivered
+            if purchase_order.is_fully_delivered:
+                flash('This purchase order has been fully delivered. No further deliveries can be recorded.', 'warning')
+                return render_template('record_delivery.html', lpo_verified=False)
+
+            return render_template('record_delivery.html',
+                                 lpo_verified=True,
+                                 lpo=lpo,
+                                 purchase_order=purchase_order,
+                                 show_form=False)
+        
+        # Step 2: Confirm comparison
+        elif step == 'confirm_comparison':
+            lpo_number = request.form.get('lpo_number')
             quantity_received = int(request.form.get('quantity_received'))
-            condition = request.form.get('condition')
-            storage_temp = request.form.get('storage_temp')
-            location = request.form.get('location')
-            certification = request.form.get('certification')
-            inspector = request.form.get('inspector')
-            notes = request.form.get('notes')
+            preliminary_condition = request.form.get('preliminary_condition')
+            comparison_notes = request.form.get('comparison_notes')
             
-            # Handle file uploads
-            attachment_paths = []
-            for file in request.files.getlist('attachments'):
-                if file.filename:
-                    filename = secure_filename(file.filename)
-                    file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
-                    file.save(file_path)
-                    attachment_paths.append(file_path)
+            lpo = LPO.query.filter_by(lpo_number=lpo_number).first()
+            purchase_order = PurchaseOrder.query.filter_by(lpo_id=lpo.id).first()
             
-            # Get category from requisition if exists, otherwise default to supplier category
-            category = order.supplier.category
-            if order.requisition:
-                category = order.requisition.category
+            if not lpo or not purchase_order:
+                flash('LPO or purchase order not found. Please start over.', 'error')
+                return redirect(url_for('store_web_bp.record_delivery'))
             
-            # Check if stock item already exists for this batch and PO
-            existing_stock = Stock.query.filter_by(
-                batch_number=batch_number,
-                purchase_order_id=order.id,
-                name=order.item_name
-            ).first()
+            # FIXED: Ensure quantity_delivered is not None
+            if purchase_order.quantity_delivered is None:
+                purchase_order.quantity_delivered = 0
             
-            if existing_stock:
-                # Update existing stock
-                existing_stock.quantity += quantity_received
-                existing_stock.current_stock += quantity_received
-                existing_stock.last_restocked = datetime.utcnow()
+            # Validate quantity doesn't exceed pending quantity
+            if quantity_received > purchase_order.pending_quantity:
+                flash(f'Quantity received ({quantity_received}) exceeds pending quantity ({purchase_order.pending_quantity}). Please adjust.', 'error')
+                return render_template('record_delivery.html',
+                                     lpo_verified=True,
+                                     lpo=lpo,
+                                     purchase_order=purchase_order,
+                                     show_form=False)
+            
+            return render_template('record_delivery.html',
+                                 lpo_verified=True,
+                                 show_form=True,
+                                 lpo=lpo,
+                                 purchase_order=purchase_order,
+                                 quantity_received=quantity_received,
+                                 preliminary_condition=preliminary_condition,
+                                 comparison_notes=comparison_notes)
+        
+        # Step 3: Final submission - process delivery
+        elif step == 'final_submit':
+            try:
+                # Get data from previous steps
+                lpo_number = request.form.get('lpo_number')
+                quantity_received = int(request.form.get('quantity_received'))
+                preliminary_condition = request.form.get('preliminary_condition')
+                comparison_notes = request.form.get('comparison_notes')
                 
-                # Update stock detail or create if doesn't exist
-                existing_detail = StockDetail.query.filter_by(stock_id=existing_stock.id).first()
-                if existing_detail:
-                    existing_detail.condition = condition
-                    existing_detail.storage_temp = storage_temp
-                    existing_detail.certification = certification
-                    existing_detail.inspector = inspector
-                    existing_detail.delivery_notes = notes
-                    existing_detail.serial_numbers = serial_numbers
-                    if attachment_paths:
-                        existing_attachments = existing_detail.attachments.split(',') if existing_detail.attachments else []
-                        existing_attachments.extend(attachment_paths)
-                        existing_detail.attachments = ",".join(existing_attachments)
+                # Get LPO and PurchaseOrder
+                lpo = LPO.query.filter_by(lpo_number=lpo_number).first()
+                order = PurchaseOrder.query.filter_by(lpo_id=lpo.id).first()
+                
+                if not lpo or not order:
+                    flash('LPO or purchase order not found. Please start over.', 'error')
+                    return redirect(url_for('store_web_bp.record_delivery'))
+                
+                # FIXED: Ensure quantity_delivered is not None
+                if order.quantity_delivered is None:
+                    order.quantity_delivered = 0
+                
+                # Extract form data from final submission
+                batch_number = request.form.get('batch_number')
+                expiration_date = request.form.get('expiration_date')
+                serial_numbers = request.form.get('serial_numbers')
+                condition = request.form.get('condition')
+                storage_temp = request.form.get('storage_temp')
+                location = request.form.get('location')
+                inspector = request.form.get('inspector')
+                notes = request.form.get('notes')
+                
+                # Combine notes from comparison and final form
+                combined_notes = f"Comparison Notes: {comparison_notes}\n\nDelivery Notes: {notes}"
+                
+                # Handle file uploads
+                attachment_paths = []
+                for file in request.files.getlist('attachments'):
+                    if file.filename:
+                        filename = secure_filename(file.filename)
+                        file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+                        file.save(file_path)
+                        attachment_paths.append(file_path)
+                
+                # 1. Create PurchaseOrderDelivery record
+                delivery = PurchaseOrderDelivery(
+                    purchase_order_id=order.id,
+                    delivery_date=datetime.utcnow(),
+                    quantity_delivered=quantity_received,
+                    batch_number=batch_number,
+                    condition=condition,
+                    storage_temp=storage_temp,
+                    inspector=inspector,
+                    serial_numbers=serial_numbers,
+                    expiration_date=datetime.strptime(expiration_date, '%Y-%m-%d') if expiration_date else None,
+                    delivery_notes=combined_notes,
+                    attachments=",".join(attachment_paths) if attachment_paths else None,
+                    created_by=current_user.id
+                )
+                
+                # Generate delivery number
+                delivery.generate_delivery_number()
+                db.session.add(delivery)
+                
+                # 2. Update PurchaseOrder delivered quantity and status
+                order.quantity_delivered += quantity_received
+                order.update_delivery_status()
+                
+                # If this is the first delivery, set the delivery date
+                if order.quantity_delivered == quantity_received:  # First delivery
+                    order.delivery_date = datetime.utcnow()
+                
+                # Get category from requisition if exists, otherwise default to supplier category
+                category = order.supplier.category
+                if order.requisition:
+                    category = order.requisition.category
+                
+                # 3. Update or Create Stock entry
+                existing_stock = Stock.query.filter_by(
+                    batch_number=batch_number,
+                    purchase_order_id=order.id,
+                    name=order.item_name
+                ).first()
+                
+                if existing_stock:
+                    # Update existing stock
+                    existing_stock.quantity += quantity_received
+                    existing_stock.current_stock += quantity_received
+                    existing_stock.last_restocked = datetime.utcnow()
+                    
+                    # Update stock detail or create if doesn't exist
+                    existing_detail = StockDetail.query.filter_by(stock_id=existing_stock.id).first()
+                    if existing_detail:
+                        existing_detail.condition = condition
+                        existing_detail.storage_temp = storage_temp
+                        existing_detail.inspector = inspector
+                        existing_detail.delivery_notes = combined_notes
+                        existing_detail.serial_numbers = serial_numbers
+                        if attachment_paths:
+                            existing_attachments = existing_detail.attachments.split(',') if existing_detail.attachments else []
+                            existing_attachments.extend(attachment_paths)
+                            existing_detail.attachments = ",".join(existing_attachments)
+                    else:
+                        existing_detail = StockDetail(
+                            stock=existing_stock,
+                            condition=condition,
+                            storage_temp=storage_temp,
+                            inspector=inspector,
+                            delivery_notes=combined_notes,
+                            serial_numbers=serial_numbers,
+                            attachments=",".join(attachment_paths) if attachment_paths else None
+                        )
+                        db.session.add(existing_detail)
+                    
                 else:
-                    existing_detail = StockDetail(
-                        stock=existing_stock,
+                    # Create new stock entry
+                    stock_item = Stock(
+                        name=order.item_name,
+                        category=category,
+                        quantity=quantity_received,
+                        unit_price=order.unit_price,
+                        batch_number=batch_number,
+                        expiration_date=datetime.strptime(expiration_date, '%Y-%m-%d') if expiration_date else None,
+                        location=location,
+                        supplier_id=order.supplier.id,
+                        purchase_order_id=order.id,
+                        reorder_level=max(50, quantity_received // 2),
+                        current_stock=quantity_received
+                    )
+                    
+                    # Generate derived fields
+                    stock_item.sku = stock_item.generate_sku()
+                    if not expiration_date:
+                        stock_item.expiration_date = stock_item.calculate_expiration()
+                    
+                    # Create stock detail entry
+                    stock_detail = StockDetail(
+                        stock=stock_item,
                         condition=condition,
                         storage_temp=storage_temp,
-                        certification=certification,
                         inspector=inspector,
-                        delivery_notes=notes,
+                        delivery_notes=combined_notes,
                         serial_numbers=serial_numbers,
                         attachments=",".join(attachment_paths) if attachment_paths else None
                     )
-                    db.session.add(existing_detail)
+                    
+                    db.session.add(stock_item)
+                    db.session.add(stock_detail)
                 
-                stock_item = existing_stock
-                stock_detail = existing_detail
+                # 4. Create Supplier Account, Invoice, and Transaction
+                supplier_account = SupplierAccount.query.filter_by(supplier_id=order.supplier.id).first()
+                if not supplier_account:
+                    supplier_account = SupplierAccount(
+                        supplier_id=order.supplier.id,
+                        account_type='regular',
+                        credit_limit=100000.00,
+                        current_balance=0.0
+                    )
+                    db.session.add(supplier_account)
+                    db.session.flush()
+                    supplier_account.generate_account_number()
+
+                # CORRECTED: Calculate amount for this delivery ONLY (not proportional to total order)
+                # Invoice should be for the quantity delivered in this specific delivery
+                delivery_amount = quantity_received * order.unit_price
                 
-            else:
-                # Create new stock entry
-                stock_item = Stock(
-                    name=order.item_name,
-                    category=category,
-                    quantity=quantity_received,
-                    unit_price=order.unit_price,
-                    batch_number=batch_number,
-                    expiration_date=datetime.strptime(expiration_date, '%Y-%m-%d') if expiration_date else None,
-                    location=location,
-                    supplier_id=order.supplier.id,
+                # If there's tax, calculate it for this delivery
+                tax_amount = 0.0
+                if hasattr(order, 'tax_rate') and order.tax_rate:
+                    tax_amount = (delivery_amount * order.tax_rate) / 100
+                
+                total_amount = delivery_amount + tax_amount
+                
+                invoice = SupplierInvoice(
+                    supplier_account_id=supplier_account.id,
                     purchase_order_id=order.id,
-                    reorder_level=max(50, quantity_received // 2),
-                    current_stock=quantity_received
+                    delivery_id=delivery.id,  # Link to specific delivery
+                    invoice_date=datetime.utcnow(),
+                    delivery_date=datetime.utcnow(),
+                    subtotal_amount=delivery_amount,  # Amount for this delivery only
+                    tax_amount=tax_amount,  # Tax for this delivery only
+                    total_amount=total_amount,  # Total for this delivery only
+                    balance_due=total_amount,  # Balance due for this delivery only
+                    payment_terms=order.supplier.payment_terms or 'Net 30',
+                    status='issued',
+                    items_delivered={
+                        'item_name': order.item_name,
+                        'quantity_delivered': quantity_received,
+                        'unit_price': order.unit_price,
+                        'subtotal_amount': delivery_amount,
+                        'tax_amount': tax_amount,
+                        'total_amount': total_amount,
+                        'batch_number': batch_number,
+                        'delivery_condition': condition,
+                        'comparison_notes': comparison_notes,
+                        'delivery_number': delivery.delivery_number,
+                        'tax_rate': getattr(order, 'tax_rate', 0)
+                    }
                 )
-                
-                # Generate derived fields
-                stock_item.sku = stock_item.generate_sku()
-                if not expiration_date:
-                    stock_item.expiration_date = stock_item.calculate_expiration()
-                
-                # Create stock detail entry
-                stock_detail = StockDetail(
-                    stock=stock_item,
-                    condition=condition,
-                    storage_temp=storage_temp,
-                    certification=certification,
-                    inspector=inspector,
-                    delivery_notes=notes,
-                    serial_numbers=serial_numbers,
-                    attachments=",".join(attachment_paths) if attachment_paths else None
-                )
-                
-                db.session.add(stock_item)
-                db.session.add(stock_detail)
-            
-            # 🔥 NEW: Create or Update Supplier Account
-            supplier_account = SupplierAccount.query.filter_by(supplier_id=order.supplier.id).first()
-            if not supplier_account:
-                supplier_account = SupplierAccount(
-                    supplier_id=order.supplier.id,
-                    account_type='regular',
-                    credit_limit=100000.00,
-                    current_balance=0.0
-                )
-                db.session.add(supplier_account)
-                db.session.flush()
-                supplier_account.generate_account_number()
 
-            # 🔥 NEW: Create Invoice
-            invoice = SupplierInvoice(
-                supplier_account_id=supplier_account.id,
-                purchase_order_id=order.id,
-                invoice_date=datetime.utcnow(),
-                delivery_date=datetime.utcnow(),
-                subtotal_amount=order.total_price,
-                tax_amount= 0.0,  # Assuming tax is included in total_price
-                total_amount=order.total_price,
-                balance_due=order.total_price,
-                payment_terms=order.supplier.payment_terms or 'Net 30',
-                status='issued',
-                items_delivered={
-                    'item_name': order.item_name,
-                    'quantity_delivered': quantity_received,
-                    'unit_price': order.unit_price,
-                    'total_amount': order.total_price,
-                    'batch_number': batch_number,
-                    'delivery_condition': condition
-                }
-            )
-
-            # Generate invoice number using the safe method
-            invoice.generate_invoice_number()
-            invoice.calculate_due_date()
-
-            db.session.add(invoice)
-            db.session.flush()
-
-            # Update to final invoice number if temporary was used
-            if 'TEMP' in invoice.invoice_number:
                 invoice.generate_invoice_number()
+                invoice.calculate_due_date()
+                db.session.add(invoice)
+                db.session.flush()
 
-            # 🔥 NEW: Create Supplier Transaction
-            transaction = SupplierTransaction(
-                supplier_account_id=supplier_account.id,
-                invoice_id=invoice.id,
-                transaction_type='invoice',
-                amount=invoice.total_amount,
-                balance_after=supplier_account.current_balance + invoice.total_amount,
-                description=f"Invoice for {order.item_name} - Qty: {quantity_received}",
-                reference=invoice.invoice_number
-            )
-            
-            # Update supplier account balance
-            supplier_account.current_balance += invoice.total_amount
-            supplier_account.total_orders += 1
-            supplier_account.total_order_value += order.total_price
-            supplier_account.last_order_date = datetime.utcnow()
-            
-            # Update order status
-            order.status = 'delivered'
-            order.delivery_date = datetime.utcnow()
-            
-            # Update supplier
-            order.supplier.last_order_date = datetime.utcnow()
-            
-            # Update requisition status if exists
-            if order.requisition:
-                order.requisition.status = 'completed'
-            
-            # Save to database
-            db.session.add(invoice)
-            db.session.add(transaction)
-            db.session.commit()
-            
-            flash('Delivery recorded, stock updated, and invoice created successfully!', 'success')
-            return redirect(url_for('store_web_bp.purchase_orders'))
-            
-        except Exception as e:
-            db.session.rollback()
-            current_app.logger.error(f"Error recording delivery: {str(e)}")
-            flash(f'Error recording delivery: {str(e)}', 'danger')
+                if 'TEMP' in invoice.invoice_number:
+                    invoice.generate_invoice_number()
+
+                transaction = SupplierTransaction(
+                    supplier_account_id=supplier_account.id,
+                    invoice_id=invoice.id,
+                    transaction_type='invoice',
+                    amount=invoice.total_amount,
+                    balance_after=supplier_account.current_balance + invoice.total_amount,
+                    description=f"Delivery Invoice for {order.item_name} - Qty: {quantity_received} (Delivery: {delivery.delivery_number})",
+                    reference=invoice.invoice_number
+                )
+                
+                # Update supplier account balance with this delivery's amount only
+                supplier_account.current_balance += invoice.total_amount
+                supplier_account.total_orders += 1
+                supplier_account.total_order_value += invoice.total_amount
+                supplier_account.last_order_date = datetime.utcnow()
+                
+                # Update LPO status if fully delivered
+                if order.is_fully_delivered:
+                    lpo.status = 'delivered'
+                    lpo.updated_at = datetime.utcnow()
+                
+                # Update supplier
+                order.supplier.last_order_date = datetime.utcnow()
+                
+                # Update requisition status if exists and fully delivered
+                if order.requisition and order.is_fully_delivered:
+                    order.requisition.status = 'completed'
+                
+                # Update external order status if exists and fully delivered
+                if lpo.external_order and order.is_fully_delivered:
+                    lpo.external_order.status = 'delivered'
+                    lpo.external_order.updated_at = datetime.utcnow()
+                
+                # Save to database
+                db.session.add(invoice)
+                db.session.add(transaction)
+                db.session.commit()
+                
+                if order.is_fully_delivered:
+                    flash(f'Final delivery recorded! Order fully delivered. Stock updated and invoice for {quantity_received} {order.unit} created.', 'success')
+                else:
+                    flash(f'Partial delivery recorded! {order.pending_quantity} {order.unit} remaining. Stock updated and invoice for {quantity_received} {order.unit} created.', 'success')
+                
+                return redirect(url_for('store_web_bp.purchase_orders'))
+                
+            except Exception as e:
+                db.session.rollback()
+                current_app.logger.error(f"Error recording delivery: {str(e)}")
+                flash(f'Error recording delivery: {str(e)}', 'danger')
+                return redirect(url_for('store_web_bp.record_delivery'))
     
-    return render_template('record_delivery.html', order=order, datetime=datetime)
+    # Initial GET request - show LPO input form
+    return render_template('record_delivery.html', lpo_verified=False)
+
+# Keep the old route for backward compatibility, but redirect to new flow
+@store_web_bp.route('/purchase-orders/<int:id>/record-delivery', methods=['GET'])
+def old_record_delivery(id):
+    # Redirect to the new LPO-based flow
+    flash('Please use the new delivery recording process by entering the LPO number.', 'info')
+    return redirect(url_for('store_web_bp.record_delivery'))
