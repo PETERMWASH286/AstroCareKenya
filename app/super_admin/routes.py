@@ -202,6 +202,33 @@ def create_hospital():
             ('inventory:suppliers', 'Inventory', 'Manage Suppliers'),
             ('inventory:purchase_orders', 'Inventory', 'Manage Purchase Orders'),
             ('inventory:reports', 'Inventory', 'Generate Inventory Reports'),
+                    ('inventory:inventory_logs', 'Inventory', 'View Inventory Audit Logs'),
+    # Stock Level Reports
+    ('inventory:reports:stock', 'Inventory Reports', 'View Stock Level Reports'),
+    
+    # Purchase & Procurement Reports  
+    ('inventory:reports:purchase', 'Inventory Reports', 'View Purchase & Procurement Reports'),
+    
+    # Delivery & Receiving Reports
+    ('inventory:reports:delivery', 'Inventory Reports', 'View Delivery & Receiving Reports'),
+    
+    # Financial Reports
+    ('inventory:reports:financial', 'Inventory Reports', 'View Financial Reports'),
+    
+    # Stock Request & Issuance Reports
+    ('inventory:reports:requests', 'Inventory Reports', 'View Stock Request Reports'),
+    
+    # Expiry & Batch Reports
+    ('inventory:reports:expiry', 'Inventory Reports', 'View Expiry & Batch Reports'),
+    
+    # Audit & Compliance Reports
+    ('inventory:reports:audit', 'Inventory Reports', 'View Audit & Compliance Reports'),
+    
+    # Requisition & Approval Reports
+    ('inventory:reports:requisitions', 'Inventory Reports', 'View Requisition Reports'),
+    
+    # Additional Analysis Reports
+    ('inventory:reports:analysis', 'Inventory Reports', 'View Analysis Reports'),
             ('finance:dashboard', 'Finance', 'View Financial Dashboard'),
             ('finance:invoices', 'Finance', 'Manage Invoices & Receivables'),
             ('finance:payments', 'Finance', 'Process Payments'),

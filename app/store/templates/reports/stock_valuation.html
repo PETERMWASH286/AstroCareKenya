@@ -1,0 +1,537 @@
+{% extends "base.html" %}
+
+{% block title %}Stock Valuation Report - Inventory Management{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50/30 dark:bg-gray-900 py-6">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header Section -->
+        <div class="mb-8">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                <div class="flex items-center space-x-4">
+                    <div class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-2xl">
+                        <i class="fas fa-chart-bar text-2xl text-blue-600 dark:text-blue-400"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Stock Valuation Report</h1>
+                        <p class="text-gray-600 dark:text-gray-400 mt-1">Total inventory value by category and item analysis</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-3 mt-4 sm:mt-0">
+                    <div class="bg-white dark:bg-gray-800 rounded-xl px-4 py-3 border border-gray-200 dark:border-gray-700">
+                        <div class="text-2xl font-bold text-green-600 dark:text-green-400">
+                            KSh {{ "%.2f"|format(data|sum(attribute='total_value')|default(0)) }}
+                        </div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">Total Value</div>
+                    </div>
+                    <button onclick="window.print()" class="inline-flex items-center px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                        <i class="fas fa-print mr-2"></i>
+                        Print Report
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <!-- Total Inventory Value -->
+            <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 border-l-4 border-green-500 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Value</p>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+                            KSh {{ "%.2f"|format(data|sum(attribute='total_value')|default(0)) }}
+                        </p>
+                    </div>
+                    <div class="p-3 bg-green-50 dark:bg-green-900/20 rounded-xl">
+                        <i class="fas fa-money-bill-wave text-green-600 dark:text-green-400"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Total Quantity -->
+            <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 border-l-4 border-blue-500 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Items</p>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+                            {{ data|sum(attribute='total_quantity')|default(0)|int }}
+                        </p>
+                    </div>
+                    <div class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
+                        <i class="fas fa-boxes text-blue-600 dark:text-blue-400"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Categories Count -->
+            <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 border-l-4 border-purple-500 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Categories</p>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+                            {{ data|length }}
+                        </p>
+                    </div>
+                    <div class="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-xl">
+                        <i class="fas fa-tags text-purple-600 dark:text-purple-400"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Average Value per Item -->
+<!-- Average Value per Item -->
+<div class="bg-white dark:bg-gray-800 rounded-2xl p-6 border-l-4 border-orange-500 shadow-sm">
+    <div class="flex items-center justify-between">
+        <div>
+            <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Avg Value/Item</p>
+            <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+                {% set total_value = data|sum(attribute='total_value')|default(0) %}
+                {% set total_quantity = data|sum(attribute='total_quantity')|default(0) %}
+                {% set avg_value = total_value / total_quantity if total_quantity > 0 else 0 %}
+                KSh {{ "%.2f"|format(avg_value) }}
+            </p>
+        </div>
+        <div class="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-xl">
+            <i class="fas fa-calculator text-orange-600 dark:text-orange-400"></i>
+        </div>
+    </div>
+</div>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+            <!-- Category Breakdown Table -->
+            <div class="lg:col-span-2">
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                    <!-- Table Header -->
+                    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/20">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Valuation by Category</h2>
+                            <div class="flex items-center space-x-3 mt-2 sm:mt-0">
+                                <div class="relative">
+                                    <input type="text" id="categorySearch" placeholder="Search categories..." 
+                                           class="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                                    <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Table -->
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="bg-gray-50/80 dark:bg-gray-900/40 border-b border-gray-200 dark:border-gray-700">
+                                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Category</th>
+                                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Quantity</th>
+                                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Total Value</th>
+                                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Percentage</th>
+                                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                                {% set grand_total = data|sum(attribute='total_value')|default(0) %}
+                                {% for item in data %}
+                                {% set percentage = (item.total_value / grand_total * 100) if grand_total > 0 else 0 %}
+                                <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition-colors">
+                                    <!-- Category -->
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center space-x-3">
+                                            <div class="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900/30 dark:to-blue-800/30 rounded-xl flex items-center justify-center">
+                                                <i class="fas fa-tag text-blue-600 dark:text-blue-400 text-sm"></i>
+                                            </div>
+                                            <div>
+                                                <div class="text-sm font-semibold text-gray-900 dark:text-white">{{ item.category }}</div>
+                                                <div class="text-xs text-gray-500 dark:text-gray-400">
+                                                    {{ "%.1f"|format(percentage) }}% of total
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+
+                                    <!-- Quantity -->
+                                    <td class="px-6 py-4">
+                                        <div class="text-sm font-semibold text-gray-900 dark:text-white">{{ item.total_quantity|int }}</div>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400">items</div>
+                                    </td>
+
+                                    <!-- Total Value -->
+                                    <td class="px-6 py-4">
+                                        <div class="text-sm font-semibold text-gray-900 dark:text-white">
+                                            KSh {{ "%.2f"|format(item.total_value) }}
+                                        </div>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400">
+                                            Avg: KSh {{ "%.2f"|format(item.total_value / item.total_quantity if item.total_quantity > 0 else 0) }}
+                                        </div>
+                                    </td>
+
+                                    <!-- Percentage Bar -->
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center space-x-3">
+                                            <div class="w-20 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                                <div class="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full transition-all duration-500 ease-out" 
+                                                     style="width: {{ percentage|round|int }}%"></div>
+                                            </div>
+                                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300 w-12">
+                                                {{ "%.1f"|format(percentage) }}%
+                                            </span>
+                                        </div>
+                                    </td>
+
+                                    <!-- Actions -->
+                                    <td class="px-6 py-4">
+                                        <button onclick="viewCategoryDetails('{{ item.category }}')" 
+                                                class="inline-flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-xl transition-colors">
+                                            <i class="fas fa-eye mr-1"></i> View
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="5" class="px-6 py-12 text-center">
+                                        <div class="flex flex-col items-center justify-center space-y-3">
+                                            <div class="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-2xl flex items-center justify-center">
+                                                <i class="fas fa-chart-bar text-gray-400 text-xl"></i>
+                                            </div>
+                                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">No Stock Data Available</h3>
+                                            <p class="text-gray-500 dark:text-gray-400 max-w-md">
+                                                There is no stock data available for valuation analysis.
+                                            </p>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/20">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between text-sm text-gray-500 dark:text-gray-400">
+                            <div>
+                                Report generated on {{ now.strftime('%B %d, %Y at %I:%M %p') }}
+                            </div>
+                            <div class="mt-2 sm:mt-0">
+                                Showing <span class="font-semibold text-gray-900 dark:text-white">{{ data|length }}</span> categories
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts and Insights Sidebar -->
+            <div class="space-y-6">
+                <!-- Value Distribution Pie Chart -->
+                <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Value Distribution</h3>
+                    <div class="relative h-64">
+                        <canvas id="valueDistributionChart"></canvas>
+                    </div>
+                    <div id="chartLegend" class="mt-4 space-y-2 max-h-32 overflow-y-auto">
+                        {% for item in data %}
+                        {% set percentage = (item.total_value / grand_total * 100) if grand_total > 0 else 0 %}
+                        <div class="flex items-center justify-between text-sm">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-3 h-3 rounded-full category-color-{{ loop.index }}"></div>
+                                <span class="text-gray-700 dark:text-gray-300 truncate max-w-[120px]">{{ item.category }}</span>
+                            </div>
+                            <span class="font-medium text-gray-900 dark:text-white">{{ "%.1f"|format(percentage) }}%</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Top Categories -->
+<!-- Top Categories -->
+<div class="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Top 5 Categories</h3>
+    <div class="space-y-4">
+        {% for item in top_categories %}
+        {% set percentage = (item.total_value / grand_total * 100) if grand_total > 0 else 0 %}
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900/30 dark:to-blue-800/30 rounded-lg flex items-center justify-center">
+                    <span class="text-xs font-bold text-blue-600 dark:text-blue-400">{{ loop.index }}</span>
+                </div>
+                <div>
+                    <div class="text-sm font-medium text-gray-900 dark:text-white">{{ item.category }}</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400">{{ item.total_quantity|int }} items</div>
+                </div>
+            </div>
+            <div class="text-right">
+                <div class="text-sm font-semibold text-gray-900 dark:text-white">KSh {{ "%.2f"|format(item.total_value) }}</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">{{ "%.1f"|format(percentage) }}%</div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+                <!-- Quick Insights -->
+<!-- Quick Insights -->
+<div class="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Insights</h3>
+    <div class="space-y-3">
+        {% if data %}
+        <div class="flex items-start space-x-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-xl">
+            <i class="fas fa-trophy text-green-600 dark:text-green-400 mt-0.5"></i>
+            <div>
+                <div class="text-sm font-medium text-green-800 dark:text-green-300">Highest Value</div>
+                <div class="text-xs text-green-700 dark:text-green-400">{{ highest_category.category }} - KSh {{ "%.2f"|format(highest_category.total_value) }}</div>
+            </div>
+        </div>
+        
+        <div class="flex items-start space-x-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
+            <i class="fas fa-chart-line text-blue-600 dark:text-blue-400 mt-0.5"></i>
+            <div>
+                <div class="text-sm font-medium text-blue-800 dark:text-blue-300">Portfolio Diversity</div>
+                <div class="text-xs text-blue-700 dark:text-blue-400">{{ data|length }} categories with varied investments</div>
+            </div>
+        </div>
+        
+        <div class="flex items-start space-x-3 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-xl">
+            <i class="fas fa-balance-scale text-purple-600 dark:text-purple-400 mt-0.5"></i>
+            <div>
+                <div class="text-sm font-medium text-purple-800 dark:text-purple-300">Value Concentration</div>
+                <div class="text-xs text-purple-700 dark:text-purple-400">
+                    Top 3 categories hold {{ "%.1f"|format(top_3_percentage) }}% of total value
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div> 
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h3>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <button onclick="exportValuationReport()" class="flex items-center space-x-3 p-4 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                    <div class="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                        <i class="fas fa-file-export text-green-600 dark:text-green-400"></i>
+                    </div>
+                    <div class="text-left">
+                        <div class="font-medium text-gray-900 dark:text-white">Export Report</div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">Download as CSV or PDF</div>
+                    </div>
+                </button>
+                
+                <button onclick="generateInventoryAudit()" class="flex items-center space-x-3 p-4 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                    <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                        <i class="fas fa-clipboard-check text-blue-600 dark:text-blue-400"></i>
+                    </div>
+                    <div class="text-left">
+                        <div class="font-medium text-gray-900 dark:text-white">Inventory Audit</div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">Start physical count</div>
+                    </div>
+                </button>
+                
+                <button onclick="adjustValuationParameters()" class="flex items-center space-x-3 p-4 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                    <div class="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                        <i class="fas fa-sliders-h text-purple-600 dark:text-purple-400"></i>
+                    </div>
+                    <div class="text-left">
+                        <div class="font-medium text-gray-900 dark:text-white">Adjust Parameters</div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">Valuation settings</div>
+                    </div>
+                </button>
+                
+                <button onclick="scheduleReport()" class="flex items-center space-x-3 p-4 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                    <div class="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+                        <i class="fas fa-clock text-orange-600 dark:text-orange-400"></i>
+                    </div>
+                    <div class="text-left">
+                        <div class="font-medium text-gray-900 dark:text-white">Schedule Report</div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">Automate reporting</div>
+                    </div>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Chart colors for different categories
+const chartColors = [
+    '#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6',
+    '#EC4899', '#06B6D4', '#84CC16', '#F97316', '#6366F1',
+    '#14B8A6', '#F43F5E', '#8B5CF6', '#06B6D4', '#84CC16'
+];
+
+// Initialize the pie chart
+function initializeChart() {
+    const ctx = document.getElementById('valueDistributionChart').getContext('2d');
+    const categories = {{ data|map(attribute='category')|list|tojson }};
+    const values = {{ data|map(attribute='total_value')|list|tojson }};
+    
+    // Add color classes to legend items
+    document.querySelectorAll('#chartLegend [class*="category-color-"]').forEach((item, index) => {
+        item.style.backgroundColor = chartColors[index % chartColors.length];
+    });
+
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: categories,
+            datasets: [{
+                data: values,
+                backgroundColor: chartColors,
+                borderColor: '#ffffff',
+                borderWidth: 2,
+                hoverOffset: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.raw || 0;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((value / total) * 100).toFixed(1);
+                            return `${label}: KSh ${value.toLocaleString()} (${percentage}%)`;
+                        }
+                    }
+                }
+            },
+            cutout: '65%',
+            animation: {
+                animateScale: true,
+                animateRotate: true
+            }
+        }
+    });
+}
+
+// Search functionality
+document.addEventListener('DOMContentLoaded', function() {
+    initializeChart();
+    
+    const searchInput = document.getElementById('categorySearch');
+    if (searchInput) {
+        searchInput.addEventListener('input', filterTable);
+    }
+    
+    function filterTable() {
+        const searchTerm = searchInput.value.toLowerCase();
+        
+        document.querySelectorAll('tbody tr').forEach(row => {
+            const categoryName = row.querySelector('.text-sm.font-semibold').textContent.toLowerCase();
+            const matchesSearch = categoryName.includes(searchTerm);
+            
+            if (matchesSearch) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+});
+
+// Action functions
+function viewCategoryDetails(category) {
+    console.log('Viewing details for category:', category);
+    window.location.href = `/store/stock?category=${encodeURIComponent(category)}`;
+}
+
+function exportValuationReport() {
+    console.log('Exporting valuation report');
+    // Implement CSV/PDF export
+    alert('Export functionality will be implemented soon!');
+}
+
+function generateInventoryAudit() {
+    console.log('Generating inventory audit');
+    window.location.href = '/store/inventory/audit';
+}
+
+function adjustValuationParameters() {
+    console.log('Adjusting valuation parameters');
+    window.location.href = '/store/settings/valuation';
+}
+
+function scheduleReport() {
+    console.log('Scheduling report');
+    alert('Report scheduling will be implemented soon!');
+}
+
+// Print styles
+function beforePrint() {
+    document.body.classList.add('printing');
+}
+
+function afterPrint() {
+    document.body.classList.remove('printing');
+}
+
+window.addEventListener('beforeprint', beforePrint);
+window.addEventListener('afterprint', afterPrint);
+</script>
+
+<style>
+/* Print styles */
+@media print {
+    .bg-gray-50\/30 {
+        background: white !important;
+    }
+    .dark\:bg-gray-900 {
+        background: white !important;
+    }
+    .bg-white, .dark\:bg-gray-800 {
+        background: white !important;
+        border: 1px solid #e5e7eb !important;
+    }
+    .text-gray-900, .dark\:text-white {
+        color: black !important;
+    }
+    .text-gray-600, .dark\:text-gray-400 {
+        color: #4b5563 !important;
+    }
+    .shadow-sm, .rounded-2xl {
+        box-shadow: none !important;
+        border-radius: 0 !important;
+    }
+    button, .flex.items-center.space-x-3 {
+        display: none !important;
+    }
+    .border-l-4 {
+        border-left: 2px solid #ccc !important;
+    }
+    .lg\:col-span-2 {
+        grid-column: span 3 !important;
+    }
+    .space-y-6 > * {
+        margin-bottom: 1rem !important;
+    }
+}
+
+/* Custom animations */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.slide-in {
+    animation: slideIn 0.6s ease-out;
+}
+</style>
+{% endblock %}

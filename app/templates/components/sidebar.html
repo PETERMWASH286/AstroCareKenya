@@ -1089,15 +1089,137 @@
                             <span>External Orders</span>
                         </a>
                     </li>
-                    {% endif %} {# Inventory Reports #} {% if has_privilege('inventory:reports') %}
+                    {% endif %} {% if has_privilege('inventory:inventory_logs') %}
                     <li>
-                        <a href="{{ url_for('store_web_bp.inventory_reports') }}" class="flex items-center space-x-3 p-2 text-sm rounded-lg hover:bg-indigo-100
+                        <a href="{{ url_for('store_web_bp.inventory_logs') }}" class="flex items-center space-x-3 p-2 text-sm rounded-lg hover:bg-indigo-100
                             dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 transition-all">
                             <i class="fas fa-chart-line text-teal-500"></i>
-                            <span>Inventory Reports</span>
+                            <span>Inventory Logs</span>
                         </a>
                     </li>
-                    {% endif %}
+                    {% endif %}{# Inventory Reports #} 
+                {% if has_privilege('inventory:reports:stock') or has_privilege('inventory:reports:purchase') or has_privilege('inventory:reports:delivery') 
+                    or has_privilege('inventory:reports:financial') or has_privilege('inventory:reports:requests') or has_privilege('inventory:reports:expiry')
+                    or has_privilege('inventory:reports:audit') or has_privilege('inventory:reports:requisitions') %}
+                <li class="dropdown-subgroup">
+                    <button class="dropdown-sub-btn flex items-center justify-between w-full p-2 text-sm rounded-lg hover:bg-blue-200 transition-all dark:hover:bg-gray-600 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        <div class="flex items-center space-x-3">
+                            <i class="fas fa-chart-line text-teal-600 dark:text-teal-400"></i>
+                            <span class="sidebar-text transition-opacity duration-300">Inventory Reports</span>
+                        </div>
+                        <i class="fas fa-chevron-down text-xs transition-transform duration-200 text-gray-400 dark:text-gray-500"></i>
+                    </button>
+                            <ul class="dropdown-subcontent ml-4 pl-3 border-l-2 border-blue-400 dark:border-blue-600 space-y-1 mt-1">
+                        {# Stock Level Reports #}
+                        {% if has_privilege('inventory:reports:stock') %}
+                        <li>
+                            <a href="{{ url_for('store_web_bp.low_stock_report') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-blue-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                                <i class="fas fa-exclamation-triangle text-red-600 dark:text-red-400"></i>
+                                <span class="sidebar-text transition-opacity duration-300">Low Stock Alert</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('store_web_bp.stock_valuation') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-blue-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                                <i class="fas fa-dollar-sign text-green-600 dark:text-green-400"></i>
+                                <span class="sidebar-text transition-opacity duration-300">Stock Valuation</span>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {# Purchase & Procurement Reports #}
+                        {% if has_privilege('inventory:reports:purchase') %}
+
+                        <li>
+                            <a href="{{ url_for('store_web_bp.supplier_performance') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-blue-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                                <i class="fas fa-trophy text-amber-600 dark:text-amber-400"></i>
+                                <span class="sidebar-text transition-opacity duration-300">Supplier Performance</span>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {# Delivery & Receiving Reports #}
+                        {% if has_privilege('inventory:reports:delivery') %}
+                        <li>
+                            <a href="{{ url_for('store_web_bp.delivery_tracking') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-blue-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                                <i class="fas fa-truck text-purple-600 dark:text-purple-400"></i>
+                                <span class="sidebar-text transition-opacity duration-300">Delivery Tracking</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('store_web_bp.quality_inspection') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-blue-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                                <i class="fas fa-clipboard-check text-teal-600 dark:text-teal-400"></i>
+                                <span class="sidebar-text transition-opacity duration-300">Quality Inspection</span>
+                            </a>
+                        </li>
+                        {% endif %}
+
+
+
+                        {# Stock Request & Issuance Reports #}
+                        {% if has_privilege('inventory:reports:requests') %}
+                        <li>
+                            <a href="{{ url_for('store_web_bp.stock_requests_report') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-blue-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                                <i class="fas fa-hand-paper text-orange-600 dark:text-orange-400"></i>
+                                <span class="sidebar-text transition-opacity duration-300">Stock Requests</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('store_web_bp.department_consumption') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-blue-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                                <i class="fas fa-chart-pie text-pink-600 dark:text-pink-400"></i>
+                                <span class="sidebar-text transition-opacity duration-300">Department Consumption</span>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {# Expiry & Batch Reports #}
+                        {% if has_privilege('inventory:reports:expiry') %}
+                        <li>
+                            <a href="{{ url_for('store_web_bp.expiry_alerts') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-blue-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                                <i class="fas fa-calendar-times text-red-600 dark:text-red-400"></i>
+                                <span class="sidebar-text transition-opacity duration-300">Expiry Alerts</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('store_web_bp.batch_tracking') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-blue-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                                <i class="fas fa-boxes text-cyan-600 dark:text-cyan-400"></i>
+                                <span class="sidebar-text transition-opacity duration-300">Batch Tracking</span>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {# Audit & Compliance Reports #}
+                        {% if has_privilege('inventory:reports:audit') %}
+
+                            <a href="{{ url_for('store_web_bp.stock_movement') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-blue-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                                <i class="fas fa-exchange-alt text-blue-600 dark:text-blue-400"></i>
+                                <span class="sidebar-text transition-opacity duration-300">Stock Movement</span>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {# Requisition & Approval Reports #}
+                        {% if has_privilege('inventory:reports:requisitions') %}
+                        <li>
+                            <a href="{{ url_for('store_web_bp.external_orders_report') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-blue-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                                <i class="fas fa-file-signature text-indigo-600 dark:text-indigo-400"></i>
+                                <span class="sidebar-text transition-opacity duration-300">External Orders</span>
+                            </a>
+                        </li>
+
+                        {% endif %}
+
+                        {# Additional Analysis Reports #}
+                        {% if has_privilege('inventory:reports:analysis') %}
+                        <li>
+                            <a href="{{ url_for('store_web_bp.inventory_turnover') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-blue-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                                <i class="fas fa-sync-alt text-purple-600 dark:text-purple-400"></i>
+                                <span class="sidebar-text transition-opacity duration-300">Inventory Turnover</span>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </li>
+                {% endif %}
 
                 </ul>
             </li>
@@ -1821,18 +1943,53 @@
         opacity: 1;
     }
     
-    .dropdown-subcontent {
-        max-height: 0;
-        opacity: 0;
-        overflow: hidden;
-        transition: all 0.3s ease-in-out;
-        will-change: max-height, opacity;
+.dropdown-subcontent {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition: all 0.3s ease-in-out;
+    will-change: max-height, opacity;
+}
+
+.dropdown-subcontent.active {
+    max-height: 16rem; /* 64px = 16rem */
+    opacity: 1;
+    overflow-y: auto;
+}
+
+/* Optional: Custom scrollbar styling */
+.dropdown-subcontent::-webkit-scrollbar {
+    width: 4px;
+}
+
+.dropdown-subcontent::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.dropdown-subcontent::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.dropdown-subcontent::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Dark mode scrollbar */
+@media (prefers-color-scheme: dark) {
+    .dropdown-subcontent::-webkit-scrollbar-track {
+        background: #374151;
     }
     
-    .dropdown-subcontent.active {
-        max-height: 300px;
-        opacity: 1;
+    .dropdown-subcontent::-webkit-scrollbar-thumb {
+        background: #6b7280;
     }
+    
+    .dropdown-subcontent::-webkit-scrollbar-thumb:hover {
+        background: #9ca3af;
+    }
+}
     
     .rotate-chevron {
         transform: rotate(180deg);

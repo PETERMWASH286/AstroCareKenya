@@ -1,5 +1,6 @@
 import uuid
 from flask import current_app
+from sqlalchemy import JSON
 from app.extensions import db
 from datetime import datetime, timedelta
 from sqlalchemy.dialects.postgresql import UUID
@@ -1268,3 +1269,95 @@ class PaymentRequest(db.Model):
             'paid_at': self.paid_at.isoformat() if self.paid_at else None,
             'notes': self.notes
         }
+        
+        
+        
+class InventoryAuditLog(db.Model):
+    __tablename__ = 'inventory_audit_logs'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    
+    # User Information
+    user_id = db.Column(db.Integer, nullable=False)
+    username = db.Column(db.String(100), nullable=False)
+    
+    # Action Details - Change resource_id to String to support UUIDs
+    action = db.Column(db.String(50), nullable=False)
+    resource_type = db.Column(db.String(50), nullable=False)
+    resource_id = db.Column(db.String(36), nullable=False)  # Changed to String for UUID support
+    
+    # Description
+    description = db.Column(db.Text, nullable=False)
+    
+    # Change Details
+    old_values = db.Column(db.Text)  # Store as JSON string
+    new_values = db.Column(db.Text)  # Store as JSON string
+    changed_fields = db.Column(db.Text)
+    
+    # Context
+    module = db.Column(db.String(50))
+    ip_address = db.Column(db.String(45))
+    
+    # Metadata
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    branch_id = db.Column(db.Integer, nullable=True)
+
+    def __repr__(self):
+        return f'<InventoryAuditLog {self.action} {self.resource_type} {self.resource_id} by {self.username}>'
+
+    def to_dict(self):
+        """Convert to dictionary for API responses"""
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'username': self.username,
+            'action': self.action,
+            'resource_type': self.resource_type,
+            'resource_id': self.resource_id,  # Now returns string
+            'description': self.description,
+            'old_values': json.loads(self.old_values) if self.old_values else None,
+            'new_values': json.loads(self.new_values) if self.new_values else None,
+            'changed_fields': self.changed_fields.split(',') if self.changed_fields else [],
+            'module': self.module,
+            'ip_address': self.ip_address,
+            'timestamp': self.timestamp.isoformat(),
+            'branch_id': self.branch_id
+        }
+
+    @classmethod
+    def log_action(cls, user_id, username, action, resource_type, resource_id, 
+                   description, old_values=None, new_values=None, changed_fields=None,
+                   module=None, ip_address=None, branch_id=None):
+        """
+        SIMPLE method to log inventory actions
+        """
+        # Convert resource_id to string to support both integers and UUIDs
+        resource_id_str = str(resource_id)
+        
+        # Convert dict values to JSON strings
+        if old_values and isinstance(old_values, dict):
+            old_values = json.dumps(old_values, default=str)
+        if new_values and isinstance(new_values, dict):
+            new_values = json.dumps(new_values, default=str)
+        
+        # Convert changed_fields list to string
+        if changed_fields and isinstance(changed_fields, list):
+            changed_fields = ','.join(changed_fields)
+        
+        log_entry = cls(
+            user_id=user_id,
+            username=username,
+            action=action,
+            resource_type=resource_type,
+            resource_id=resource_id_str,  # Use string version
+            description=description,
+            old_values=old_values,
+            new_values=new_values,
+            changed_fields=changed_fields,
+            module=module,
+            ip_address=ip_address,
+            branch_id=branch_id
+        )
+        
+        db.session.add(log_entry)
+        return log_entry

@@ -1,0 +1,447 @@
+{% extends "base.html" %}
+
+{% block title %}Low Stock Report - Inventory Management{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50/30 dark:bg-gray-900 py-6">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header Section -->
+        <div class="mb-8">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                <div class="flex items-center space-x-4">
+                    <div class="p-3 bg-red-50 dark:bg-red-900/20 rounded-2xl">
+                        <i class="fas fa-exclamation-triangle text-2xl text-red-600 dark:text-red-400"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Low Stock Alert</h1>
+                        <p class="text-gray-600 dark:text-gray-400 mt-1">Items below reorder level requiring attention</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-3 mt-4 sm:mt-0">
+                    <div class="bg-white dark:bg-gray-800 rounded-xl px-4 py-3 border border-gray-200 dark:border-gray-700">
+                        <div class="text-2xl font-bold text-red-600 dark:text-red-400">{{ items|length }}</div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">Critical Items</div>
+                    </div>
+                    <button onclick="window.print()" class="inline-flex items-center px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                        <i class="fas fa-print mr-2"></i>
+                        Print Report
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <!-- Critical Items -->
+            <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 border-l-4 border-red-500 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Critical Items</p>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+                            {{ items|selectattr('current_stock', '<=', 10)|list|length }}
+                        </p>
+                    </div>
+                    <div class="p-3 bg-red-50 dark:bg-red-900/20 rounded-xl">
+                        <i class="fas fa-fire text-red-600 dark:text-red-400"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Warning Items -->
+            <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 border-l-4 border-orange-500 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Warning Items</p>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+                            {{ items|selectattr('current_stock', '>', 10)|selectattr('current_stock', '<=', 20)|list|length }}
+                        </p>
+                    </div>
+                    <div class="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-xl">
+                        <i class="fas fa-exclamation-circle text-orange-600 dark:text-orange-400"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Total Value at Risk -->
+            <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 border-l-4 border-blue-500 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Value at Risk</p>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+                            KSh {{ "%.2f"|format(items|sum(attribute='total_value_at_risk')|default(0)) }}
+                        </p>
+                    </div>
+                    <div class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
+                        <i class="fas fa-money-bill-wave text-blue-600 dark:text-blue-400"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Categories Affected -->
+            <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 border-l-4 border-green-500 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Categories</p>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+                            {{ items|map(attribute='category')|unique|list|length }}
+                        </p>
+                    </div>
+                    <div class="p-3 bg-green-50 dark:bg-green-900/20 rounded-xl">
+                        <i class="fas fa-tags text-green-600 dark:text-green-400"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <!-- Table Header -->
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/20">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Low Stock Items</h2>
+                    <div class="flex items-center space-x-3 mt-2 sm:mt-0">
+                        <div class="relative">
+                            <input type="text" placeholder="Search items..." 
+                                   class="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                            <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        </div>
+                        <select class="border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="">All Categories</option>
+                            {% for category in items|map(attribute='category')|unique %}
+                            <option value="{{ category }}">{{ category }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="bg-gray-50/80 dark:bg-gray-900/40 border-b border-gray-200 dark:border-gray-700">
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Item Details</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Stock Levels</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Value at Risk</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                        {% for item in items %}
+                        <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition-colors">
+                            <!-- Item Details -->
+                            <td class="px-6 py-4">
+                                <div class="flex items-center space-x-4">
+                                    <div class="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-red-100 to-red-200 dark:from-red-900/30 dark:to-red-800/30 rounded-xl flex items-center justify-center">
+                                        <i class="fas fa-box text-red-600 dark:text-red-400"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-semibold text-gray-900 dark:text-white">{{ item.name }}</div>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                            <span class="font-mono">{{ item.sku }}</span> • {{ item.category }}
+                                        </div>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400">
+                                            Batch: {{ item.batch_number }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <!-- Stock Levels -->
+                            <td class="px-6 py-4">
+                                <div class="space-y-2">
+                                    <div class="flex justify-between text-sm">
+                                        <span class="text-gray-600 dark:text-gray-400">Current:</span>
+                                        <span class="font-semibold text-gray-900 dark:text-white">{{ item.current_stock }}</span>
+                                    </div>
+                                    <div class="flex justify-between text-sm">
+                                        <span class="text-gray-600 dark:text-gray-400">Reorder Level:</span>
+                                        <span class="font-semibold text-orange-600 dark:text-orange-400">{{ item.reorder_level }}</span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                        {% set stock_percentage = (item.current_stock / item.reorder_level * 100)|round|int %}
+                                        <div class="bg-red-500 h-2 rounded-full transition-all duration-500 ease-out" 
+                                             style="width: {{ [stock_percentage, 100]|min }}%"></div>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <!-- Status -->
+                            <td class="px-6 py-4">
+                                {% if item.current_stock <= 10 %}
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">
+                                    <i class="fas fa-fire mr-1"></i> Critical
+                                </span>
+                                {% elif item.current_stock <= 20 %}
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300">
+                                    <i class="fas fa-exclamation-circle mr-1"></i> Warning
+                                </span>
+                                {% else %}
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
+                                    <i class="fas fa-info-circle mr-1"></i> Low
+                                </span>
+                                {% endif %}
+                                
+                                {% if item.expiration_date and item.expiration_date < now %}
+                                <div class="mt-2">
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">
+                                        <i class="fas fa-clock mr-1"></i> Expired
+                                    </span>
+                                </div>
+                                {% elif item.expiration_date and (item.expiration_date - now).days <= 30 %}
+                                <div class="mt-2">
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300">
+                                        <i class="fas fa-hourglass-half mr-1"></i> Expiring Soon
+                                    </span>
+                                </div>
+                                {% endif %}
+                            </td>
+
+                            <!-- Value at Risk -->
+                            <td class="px-6 py-4">
+                                <div class="text-sm font-semibold text-gray-900 dark:text-white">
+                                    KSh {{ "%.2f"|format(item.unit_price * item.current_stock) }}
+                                </div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    Unit: KSh {{ "%.2f"|format(item.unit_price) }}
+                                </div>
+                            </td>
+
+                            <!-- Actions -->
+                            <td class="px-6 py-4">
+                                <div class="flex items-center space-x-2">
+                                    <button onclick="createPurchaseOrder('{{ item.id }}')" 
+                                            class="inline-flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-xl transition-colors">
+                                        <i class="fas fa-cart-plus mr-1"></i> Order
+                                    </button>
+                                    <button onclick="viewItemDetails('{{ item.id }}')" 
+                                            class="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 text-xs font-medium rounded-xl transition-colors">
+                                        <i class="fas fa-eye mr-1"></i> View
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="px-6 py-12 text-center">
+                                <div class="flex flex-col items-center justify-center space-y-3">
+                                    <div class="w-16 h-16 bg-green-100 dark:bg-green-900/20 rounded-2xl flex items-center justify-center">
+                                        <i class="fas fa-check text-green-600 dark:text-green-400 text-xl"></i>
+                                    </div>
+                                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">All Stock Levels are Good!</h3>
+                                    <p class="text-gray-500 dark:text-gray-400 max-w-md">
+                                        No items are currently below their reorder levels. Great job managing your inventory!
+                                    </p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Footer -->
+            <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/20">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between text-sm text-gray-500 dark:text-gray-400">
+                    <div>
+                        Report generated on {{ now.strftime('%B %d, %Y at %I:%M %p') }}
+                    </div>
+                    <div class="mt-2 sm:mt-0">
+                        Showing <span class="font-semibold text-gray-900 dark:text-white">{{ items|length }}</span> items requiring attention
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        {% if items %}
+        <div class="mt-8 bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <button onclick="createBulkOrder()" class="flex items-center space-x-3 p-4 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                    <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                        <i class="fas fa-cart-arrow-down text-blue-600 dark:text-blue-400"></i>
+                    </div>
+                    <div class="text-left">
+                        <div class="font-medium text-gray-900 dark:text-white">Bulk Purchase Order</div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">Create order for all critical items</div>
+                    </div>
+                </button>
+                
+                <button onclick="exportReport()" class="flex items-center space-x-3 p-4 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                    <div class="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                        <i class="fas fa-file-export text-green-600 dark:text-green-400"></i>
+                    </div>
+                    <div class="text-left">
+                        <div class="font-medium text-gray-900 dark:text-white">Export Report</div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">Download as CSV or PDF</div>
+                    </div>
+                </button>
+                
+                <button onclick="adjustReorderLevels()" class="flex items-center space-x-3 p-4 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                    <div class="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                        <i class="fas fa-sliders-h text-purple-600 dark:text-purple-400"></i>
+                    </div>
+                    <div class="text-left">
+                        <div class="font-medium text-gray-900 dark:text-white">Adjust Levels</div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">Update reorder thresholds</div>
+                    </div>
+                </button>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Set current datetime for the report
+const now = new Date();
+
+// Calculate total value at risk for all items
+function calculateTotalValueAtRisk() {
+    let total = 0;
+    document.querySelectorAll('tbody tr').forEach(row => {
+        const valueText = row.querySelector('td:nth-child(4) .text-sm').textContent;
+        const value = parseFloat(valueText.replace('KSh', '').replace(',', '').trim());
+        if (!isNaN(value)) {
+            total += value;
+        }
+    });
+    return total;
+}
+
+// Action functions
+function createPurchaseOrder(itemId) {
+    // Implement purchase order creation
+    console.log('Creating purchase order for item:', itemId);
+    // You can redirect to purchase order creation page or show a modal
+    window.location.href = `/store/purchase-orders/create?item_id=${itemId}`;
+}
+
+function viewItemDetails(itemId) {
+    // Implement item details view
+    console.log('Viewing details for item:', itemId);
+    window.location.href = `/store/stock/${itemId}`;
+}
+
+function createBulkOrder() {
+    // Implement bulk order creation
+    console.log('Creating bulk purchase order');
+    const criticalItems = Array.from(document.querySelectorAll('tbody tr'))
+        .filter(row => row.querySelector('.bg-red-100') !== null)
+        .map(row => {
+            // Extract item ID from row (you might need to store it in data attribute)
+            return row.getAttribute('data-item-id');
+        });
+    
+    if (criticalItems.length > 0) {
+        window.location.href = `/store/purchase-orders/bulk-create?items=${criticalItems.join(',')}`;
+    } else {
+        alert('No critical items selected for bulk ordering.');
+    }
+}
+
+function exportReport() {
+    // Implement report export
+    console.log('Exporting report');
+    // You can implement CSV/PDF export here
+    alert('Export functionality will be implemented soon!');
+}
+
+function adjustReorderLevels() {
+    // Implement reorder level adjustment
+    console.log('Adjusting reorder levels');
+    window.location.href = '/store/stock/settings';
+}
+
+// Search functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.querySelector('input[type="text"]');
+    const categorySelect = document.querySelector('select');
+    
+    if (searchInput) {
+        searchInput.addEventListener('input', filterTable);
+    }
+    
+    if (categorySelect) {
+        categorySelect.addEventListener('change', filterTable);
+    }
+    
+    function filterTable() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const selectedCategory = categorySelect.value;
+        
+        document.querySelectorAll('tbody tr').forEach(row => {
+            const itemName = row.querySelector('.text-sm.font-semibold').textContent.toLowerCase();
+            const itemCategory = row.querySelector('.text-xs.text-gray-500').textContent;
+            const matchesSearch = itemName.includes(searchTerm);
+            const matchesCategory = !selectedCategory || itemCategory.includes(selectedCategory);
+            
+            if (matchesSearch && matchesCategory) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+});
+
+// Print styles
+function beforePrint() {
+    document.body.classList.add('printing');
+}
+
+function afterPrint() {
+    document.body.classList.remove('printing');
+}
+
+window.addEventListener('beforeprint', beforePrint);
+window.addEventListener('afterprint', afterPrint);
+</script>
+
+<style>
+/* Print styles */
+@media print {
+    .bg-gray-50\/30 {
+        background: white !important;
+    }
+    .dark\:bg-gray-900 {
+        background: white !important;
+    }
+    .bg-white, .dark\:bg-gray-800 {
+        background: white !important;
+        border: 1px solid #e5e7eb !important;
+    }
+    .text-gray-900, .dark\:text-white {
+        color: black !important;
+    }
+    .text-gray-600, .dark\:text-gray-400 {
+        color: #4b5563 !important;
+    }
+    .shadow-sm, .rounded-2xl {
+        box-shadow: none !important;
+        border-radius: 0 !important;
+    }
+    button, .flex.items-center.space-x-3 {
+        display: none !important;
+    }
+    .border-l-4 {
+        border-left: 2px solid #ccc !important;
+    }
+}
+
+/* Custom animations */
+@keyframes pulse-gentle {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+}
+
+.pulse-gentle {
+    animation: pulse-gentle 2s ease-in-out infinite;
+}
+</style>
+{% endblock %}
