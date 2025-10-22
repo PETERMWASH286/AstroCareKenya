@@ -25,6 +25,8 @@ class Service(db.Model):
     # General Service Information
     description = db.Column(db.Text)
     price = db.Column(db.Float, nullable=False, default=0.0)
+    walkin_price = db.Column(db.Float, nullable=False, default=0.0)  # New column for walk-in price
+    special_clinic_price = db.Column(db.Float, nullable=False, default=0.0)  # New column for special clinic price
     duration = db.Column(db.Integer)  # In minutes for services, days supply for medications
     
     # Pharmacy-Specific Fields (nullable for non-pharmacy services)
@@ -54,7 +56,7 @@ class Service(db.Model):
         default=list  # This sets the default in Python, not in SQL
     )
 
-        # Add this relationship
+    # Add this relationship
     insurance_plans = db.relationship(
         'InsuranceService',
         back_populates='service',
@@ -74,6 +76,7 @@ class Service(db.Model):
         db.Index('ix_ndc', 'ndc'),
         db.Index('ix_barcode', 'barcode'),
     )
+    
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         if self.predefined_results is None:
@@ -99,13 +102,11 @@ class Service(db.Model):
             return False  # or True, depending on your logic
         return self.quantity_in_stock <= self.min_stock_level
 
-
     def validate_prescription(self, prescription):
         """Check if prescription is required and valid"""
         if self.requires_prescription and not prescription:
             return False
         return True
-
 
     
 class Transaction(db.Model):
@@ -216,6 +217,10 @@ class Visit(db.Model):
     visit_type_category = db.Column(db.String(50), nullable=False, default='general_consultation')
     # You might also want to store the 'other' detailed description if chosen
     visit_type_other_details = db.Column(db.String(255), nullable=True)
+    
+    # NEW: Patient category for pricing
+    patient_category = db.Column(db.String(20), nullable=False, default='general')  # general, walkin, special_clinic
+    
     # Billing
     is_paid = db.Column(db.Boolean, default=False)
     payment_status = db.Column(db.String(20), default='pending')  # pending, paid, failed
@@ -241,7 +246,6 @@ class Visit(db.Model):
 
     def __repr__(self):
         return f"<Visit {self.id} Patient:{self.patient_id} Status:{self.visit_status} WalkIn:{self.is_walk_in}>"
-
 
 
 

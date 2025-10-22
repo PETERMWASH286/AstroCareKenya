@@ -11,7 +11,7 @@ from sqlalchemy import func
 from app.finance.models import Expense, ExpenseCategory, Insurance, InsuranceClaim, InsuranceService, Invoice, InvoiceItem, Payment
 from sqlalchemy.exc import IntegrityError
 
-from app.store.models import LPO, ExternalOrder, PaymentRequest, PurchaseOrder, Supplier, SupplierAccount, SupplierInvoice
+from app.store.models import LPO, ExternalOrder, PaymentRequest, PurchaseOrder, Requisition, Supplier, SupplierAccount, SupplierInvoice
 from app.user_management.models import Department
 
 from . import finance_web_bp
@@ -1312,6 +1312,8 @@ def add_service_price():
         category = request.form.get('category', '').strip()
         description = request.form.get('description', '').strip()
         price = request.form.get('price', '').strip()
+        walkin_price = request.form.get('walkin_price', '').strip()  # New field
+        special_clinic_price = request.form.get('special_clinic_price', '').strip()  # New field
         duration = request.form.get('duration', '').strip()
         is_active = request.form.get('is_active') == 'on'
 
@@ -1326,6 +1328,20 @@ def add_service_price():
             flash('Price must be a valid number.', 'danger')
             return redirect(url_for('finance_web_bp.add_service_price'))
 
+        # Validate walkin_price
+        try:
+            walkin_price_val = float(walkin_price) if walkin_price else 0.0
+        except ValueError:
+            flash('Walk-in price must be a valid number.', 'danger')
+            return redirect(url_for('finance_web_bp.add_service_price'))
+
+        # Validate special_clinic_price
+        try:
+            special_clinic_price_val = float(special_clinic_price) if special_clinic_price else 0.0
+        except ValueError:
+            flash('Special clinic price must be a valid number.', 'danger')
+            return redirect(url_for('finance_web_bp.add_service_price'))
+
         try:
             duration_val = int(duration) if duration else None
         except ValueError:
@@ -1337,6 +1353,8 @@ def add_service_price():
             category=category,
             description=description or None,
             price=price_val,
+            walkin_price=walkin_price_val,  # New field
+            special_clinic_price=special_clinic_price_val,  # New field
             duration=duration_val,
             is_active=is_active
         )
@@ -1385,6 +1403,8 @@ def edit_service_price(service_id):
         category = request.form.get('category', '').strip()
         description = request.form.get('description', '').strip()
         price = request.form.get('price', '').strip()
+        walkin_price = request.form.get('walkin_price', '').strip()  # New field
+        special_clinic_price = request.form.get('special_clinic_price', '').strip()  # New field
         duration = request.form.get('duration', '').strip()
         is_active = request.form.get('is_active') == 'on'
 
@@ -1405,6 +1425,26 @@ def edit_service_price(service_id):
                 service_id=service.id
             ))
 
+        # Validate walkin_price
+        try:
+            walkin_price_val = float(walkin_price) if walkin_price else 0.0
+        except ValueError:
+            flash('Walk-in price must be a valid number.', 'danger')
+            return redirect(url_for(
+                'finance_web_bp.edit_service_price',
+                service_id=service.id
+            ))
+
+        # Validate special_clinic_price
+        try:
+            special_clinic_price_val = float(special_clinic_price) if special_clinic_price else 0.0
+        except ValueError:
+            flash('Special clinic price must be a valid number.', 'danger')
+            return redirect(url_for(
+                'finance_web_bp.edit_service_price',
+                service_id=service.id
+            ))
+
         try:
             duration_val = int(duration) if duration else None
         except ValueError:
@@ -1419,6 +1459,8 @@ def edit_service_price(service_id):
         service.category = category
         service.description = description or None
         service.price = price_val
+        service.walkin_price = walkin_price_val  # New field
+        service.special_clinic_price = special_clinic_price_val  # New field
         service.duration = duration_val
         service.is_active = is_active
 
@@ -1480,58 +1522,80 @@ def delete_service_price(service_id):
 
 
 
-# NEW: Manage Orders Route
 @finance_web_bp.route('/manage-orders')
 def manage_orders():
     try:
-        # Fetch pending orders ordered by urgency (required_by date)
-        pending_orders = (
-            ExternalOrder.query
-            .filter(ExternalOrder.status.in_(['pending', 'rejected', 'completed', 'director_approved', 'finance_approved', 'lpo_generated', 'order_placed']))
+        # Fetch requisitions with their orders, ordered by urgency
+        requisitions = (
+            Requisition.query
             .options(
-                joinedload(ExternalOrder.supplier),
-                joinedload(ExternalOrder.user)
+                db.joinedload(Requisition.external_orders)
+                .joinedload(ExternalOrder.supplier),
+                db.joinedload(Requisition.external_orders)
+                .joinedload(ExternalOrder.user),
+                db.joinedload(Requisition.user)
             )
-            .order_by(ExternalOrder.required_by.asc(), ExternalOrder.created_at.desc())
+            .order_by(Requisition.created_at.desc())
             .all()
         )
         
-        # Calculate days until required for each order
+        # Calculate days until required for each order and attach to requisition
         now = datetime.utcnow()
-        orders_with_info = []
+        requisitions_with_info = []
         
-        for order in pending_orders:
-            if order.required_by:  # Only calculate if it's not None
-                delta = order.required_by - now
-                days_until = delta.days
-                is_overdue = days_until < 0
+        for requisition in requisitions:
+            # Process each order in the requisition
+            orders_with_info = []
+            supplier_groups = {}
+            
+            for order in requisition.external_orders:
+                if order.required_by:
+                    delta = order.required_by - now
+                    days_until = delta.days
+                    is_overdue = days_until < 0
 
-                if days_until < 0:
-                    days_text = f"{abs(days_until)} days overdue"
-                elif days_until == 0:
-                    days_text = "Today"
-                elif days_until == 1:
-                    days_text = "Tomorrow"
+                    if days_until < 0:
+                        days_text = f"{abs(days_until)} days overdue"
+                    elif days_until == 0:
+                        days_text = "Today"
+                    elif days_until == 1:
+                        days_text = "Tomorrow"
+                    else:
+                        days_text = f"{days_until} days"
                 else:
-                    days_text = f"{days_until} days"
-            else:
-                # Handle missing required_by
-                days_until = None
-                is_overdue = False
-                days_text = "Not specified"
+                    days_until = None
+                    is_overdue = False
+                    days_text = "Not specified"
 
-            # Attach attributes
-            order.days_until = days_until
-            order.is_overdue = is_overdue
-            order.days_text = days_text
-            orders_with_info.append(order)
-
+                # Attach attributes to order
+                order.days_until = days_until
+                order.is_overdue = is_overdue
+                order.days_text = days_text
+                orders_with_info.append(order)
+                
+                # Group by supplier for LPO generation
+                supplier_id = order.supplier_id if order.supplier else None
+                if supplier_id not in supplier_groups:
+                    supplier_groups[supplier_id] = {
+                        'supplier': order.supplier,
+                        'orders': [],
+                        'total_amount': 0,
+                        'item_count': 0
+                    }
+                supplier_groups[supplier_id]['orders'].append(order)
+                supplier_groups[supplier_id]['total_amount'] += order.total_price
+                supplier_groups[supplier_id]['item_count'] += 1
+            
+            # Attach processed orders and supplier groups to requisition
+            requisition.processed_orders = orders_with_info
+            requisition.supplier_groups = supplier_groups
+            requisitions_with_info.append(requisition)
         
         # Get currency from config
         currency = current_app.config.get('CURRENCY', 'Ksh')
         
         return render_template('manage_orders.html', 
-                              orders=orders_with_info,
+                              requisitions=requisitions_with_info,
                               currency=currency,
                               now=now)
     
@@ -1539,6 +1603,7 @@ def manage_orders():
         current_app.logger.error(f"Database error fetching orders: {str(e)}")
         flash('An error occurred while fetching orders. Please try again.', 'error')
         return redirect(url_for('finance_web_bp.financial_dashboard'))
+
 
 
 
@@ -1776,6 +1841,125 @@ def generate_lpo(order_id):
         db.session.rollback()
         flash(f"Error generating LPO: {str(e)}", "error")
         return redirect(url_for('finance_web_bp.external_orders'))
+    
+    
+@finance_web_bp.route('/generate-bulk-lpo/<int:requisition_id>/<int:supplier_id>')
+@login_required
+def generate_bulk_lpo(requisition_id, supplier_id):
+    """
+    Generate a single LPO for all items from a specific supplier in a requisition
+    """
+    try:
+        requisition = Requisition.query.get_or_404(requisition_id)
+        supplier = Supplier.query.get_or_404(supplier_id)
+        
+        # Get all director_approved orders for this supplier in this requisition
+        orders = ExternalOrder.query.filter(
+            ExternalOrder.requisition_id == requisition_id,
+            ExternalOrder.supplier_id == supplier_id,
+            ExternalOrder.status == 'director_approved'
+        ).all()
+        
+        if not orders:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'success': False, 'error': 'No approved orders found'}), 400
+            flash('No approved orders found for this supplier in the requisition.', 'warning')
+            return redirect(url_for('finance_web_bp.manage_orders'))
+
+        # ✅ Check for existing LPOs
+        existing_lpos = []
+        for order in orders:
+            if order.lpos:
+                existing_lpos.append(f"Order #{order.id} already has LPO: {order.lpos[0].lpo_number}")
+        
+        if existing_lpos:
+            error_msg = "Some orders already have LPOs: " + ", ".join(existing_lpos)
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'success': False, 'error': error_msg}), 400
+            flash(error_msg, 'warning')
+            return redirect(url_for('finance_web_bp.manage_orders'))
+
+        # Use the first order as the base for the LPO relationship
+        first_order = orders[0]
+        total_amount = sum(order.total_price for order in orders)
+        
+        # ✅ Create bulk LPO record
+        new_lpo = LPO(
+            # Main order relationship (link to first order)
+            external_order_id=first_order.id,
+            
+            # Bulk order specific fields
+            requisition_id=requisition_id,
+            is_bulk_order=True,
+            bulk_order_count=len(orders),
+            
+            # LPO details (combined information)
+            item_name=f"Bulk Order - {supplier.name}",
+            category="bulk",
+            unit="multiple",
+            quantity=len(orders),
+            unit_price=total_amount / len(orders) if orders else 0,
+            tax_rate=0,  # You might want to calculate this based on individual orders
+            total_price=total_amount,
+            supplier_id=supplier_id,
+            contact_person=first_order.contact_person or supplier.contact_person,
+            contact_info=first_order.contact_info or supplier.contact_info,
+            delivery_date=min([order.delivery_date for order in orders if order.delivery_date], default=None),
+            
+            # Status and approvals
+            status="approved",
+            finance_approved=True,
+            finance_approved_at=datetime.utcnow(),
+            finance_approved_by=current_user.id,
+            director_approved=True,
+            director_approved_at=datetime.utcnow(),
+            director_approved_by=first_order.director_approved_by or current_user.id,
+            
+            # Meta
+            created_by=current_user.id,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow(),
+        )
+
+        db.session.add(new_lpo)
+        db.session.flush()
+
+        # Generate bulk LPO number
+        new_lpo.lpo_number = f"LPO-BULK-{new_lpo.id}"
+
+        # ✅ Update ALL orders to mark as processed
+        for order in orders:
+            order.status = "lpo_generated"
+            order.updated_at = datetime.utcnow()
+            # Note: Only the first order is directly linked to the LPO via external_order_id
+            # Other orders are associated through requisition_id and is_bulk_order flag
+
+        db.session.commit()
+
+        current_app.logger.info(f"Generated bulk LPO #{new_lpo.id} for {len(orders)} items from supplier {supplier.name}")
+        
+        # Return JSON response for AJAX requests
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({
+                'success': True,
+                'message': f'Successfully generated LPO for {len(orders)} items from {supplier.name}',
+                'lpo_id': new_lpo.id,
+                'redirect_url': url_for('finance_web_bp.view_order_lpo', lpo_id=new_lpo.id)
+            })
+        
+        flash(f'Successfully generated LPO for {len(orders)} items from {supplier.name}', 'success')
+        return redirect(url_for('finance_web_bp.view_order_lpo', lpo_id=new_lpo.id))
+        
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error generating bulk LPO: {str(e)}")
+        
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'success': False, 'error': str(e)}), 500
+        
+        flash(f'An error occurred while generating the LPO: {str(e)}', 'error')
+        return redirect(url_for('finance_web_bp.manage_orders'))
+    
     
 @finance_web_bp.route("/orders/<int:order_id>/send-lpo", methods=["POST", 'GET'])
 def send_order_lpo(order_id):

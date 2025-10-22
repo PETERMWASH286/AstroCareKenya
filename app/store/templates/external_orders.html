@@ -32,25 +32,212 @@
                     <i class="fas fa-times text-xl"></i>
                 </button>
             </div>
-            <form action="{{ url_for('store_web_bp.create_external_order') }}" method="POST" class="p-6" id="requisitionForm" enctype="multipart/form-data">
+<form action="{{ url_for('store_web_bp.create_external_order') }}" method="POST" class="p-6" id="requisitionForm" enctype="multipart/form-data">
+    <!-- Items Container -->
+    <div id="items-container">
+        <!-- Initial Item -->
+        <div class="item-form mb-6 p-4 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Item #1</h3>
+                <button type="button" class="remove-item text-red-600 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors" style="display: none;">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Item Details -->
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Item Details</label>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Item Name *</label>
+                            <input type="text" name="items[0][item_name]" required 
+                                   class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" 
+                                   placeholder="Enter item name">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Quantity *</label>
+                            <input type="number" name="items[0][quantity]" min="1" required 
+                                   class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Unit</label>
+                            <select name="items[0][unit]" class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                <option value="pcs">Pieces</option>
+                                <option value="kg">Kilograms</option>
+                                <option value="m">Meters</option>
+                                <option value="l">Liters</option>
+                                <option value="set">Set</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Additional Important Information -->
+                <div class="md:col-span-2">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Priority Level *</label>
+                            <select name="items[0][priority]" required class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                <option value="low">Low Priority</option>
+                                <option value="medium" selected>Medium Priority</option>
+                                <option value="high">High Priority</option>
+                                <option value="urgent">Urgent</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category *</label>
+                            <select name="items[0][category]" required class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                <option value="" disabled selected>Select category</option>
+                                <option value="medication">Medication & Pharmaceuticals</option>
+                                <option value="medical_supplies">Medical Supplies</option>
+                                <option value="equipment">Medical Equipment</option>
+                                <option value="surgical">Surgical Instruments</option>
+                                <option value="lab">Laboratory Supplies</option>
+                                <option value="office">Office Supplies</option>
+                                <option value="furniture">Furniture & Fixtures</option>
+                                <option value="it">IT Equipment & Software</option>
+                                <option value="maintenance">Maintenance & Repairs</option>
+                                <option value="consumables">Hospital Consumables</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Required By Date *</label>
+                            <input type="date" name="items[0][required_by]" required 
+                                   class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notes and Attachments -->
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Reason / Notes *</label>
+                    <textarea name="items[0][reason]" rows="4" required 
+                              class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" 
+                              placeholder="Explain why this item is needed..."></textarea>
+                </div>
+                
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Attachments (Max 3 files)</label>
+                    <div class="flex items-center justify-center w-full">
+                        <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer border-gray-300 dark:border-gray-600 hover:border-indigo-500 bg-gray-50 dark:bg-gray-750">
+                            <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                                <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Drag & drop files or click to browse</p>
+                                <p class="text-xs text-gray-400 mt-1">PDF, DOC, JPG, PNG (Max 5MB each)</p>
+                            </div>
+                            <input type="file" name="items[0][attachments]" class="hidden" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"/>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Item Button -->
+    <div class="mb-6">
+        <button type="button" id="add-item-btn" class="w-full py-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all duration-300 group">
+            <div class="flex items-center justify-center space-x-2 text-gray-600 dark:text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
+                <i class="fas fa-plus-circle text-xl"></i>
+                <span class="font-medium">Add Another Item</span>
+            </div>
+        </button>
+    </div>
+
+    <!-- Summary Section -->
+    <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 mb-6">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <i class="fas fa-clipboard-list text-blue-600 dark:text-blue-400 text-xl"></i>
+                <div>
+                    <h4 class="font-semibold text-blue-800 dark:text-blue-300">Requisition Summary</h4>
+                    <p class="text-sm text-blue-600 dark:text-blue-400" id="items-count">1 item added</p>
+                </div>
+            </div>
+            <div class="text-right">
+                <p class="text-sm text-blue-600 dark:text-blue-400">Total Items: <span id="total-items-count" class="font-bold">1</span></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form Actions -->
+    <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <button type="button" id="cancelOrderFormBtn" class="px-6 py-3 rounded-xl border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 font-medium transition-colors">Cancel</button>
+        <button type="submit" class="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-6 py-3 rounded-xl font-medium shadow-md transition-all duration-300 transform hover:-translate-y-0.5 focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500">
+            <i class="fas fa-paper-plane mr-2"></i>Submit Requisition
+        </button>
+    </div>
+</form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let itemCount = 1;
+    const itemsContainer = document.getElementById('items-container');
+    const addItemBtn = document.getElementById('add-item-btn');
+    const itemsCountDisplay = document.getElementById('items-count');
+    const totalItemsCountDisplay = document.getElementById('total-items-count');
+
+    // Add new item form
+    addItemBtn.addEventListener('click', function() {
+        itemCount++;
+        const newItemForm = createItemForm(itemCount);
+        itemsContainer.appendChild(newItemForm);
+        updateSummary();
+        
+        // Show remove buttons when there's more than one item
+        document.querySelectorAll('.remove-item').forEach(btn => {
+            btn.style.display = 'block';
+        });
+    });
+
+    // Remove item form
+    itemsContainer.addEventListener('click', function(e) {
+        if (e.target.closest('.remove-item')) {
+            const itemForm = e.target.closest('.item-form');
+            if (document.querySelectorAll('.item-form').length > 1) {
+                itemForm.remove();
+                renumberItems();
+                updateSummary();
+                
+                // Hide remove button if only one item remains
+                if (document.querySelectorAll('.item-form').length === 1) {
+                    document.querySelector('.remove-item').style.display = 'none';
+                }
+            }
+        }
+    });
+
+    function createItemForm(index) {
+        const template = `
+            <div class="item-form mb-6 p-4 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 animate-fade-in">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Item #${index}</h3>
+                    <button type="button" class="remove-item text-red-600 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+                
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Item Details - Free text input instead of select -->
+                    <!-- Item Details -->
                     <div class="md:col-span-2">
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Item Details</label>
                         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <div class="md:col-span-2">
-                                <label for="item_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Item Name *</label>
-                                <input type="text" name="item_name" id="item_name" required class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Enter item name"
-                                />
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Item Name *</label>
+                                <input type="text" name="items[${index}][item_name]" required 
+                                       class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" 
+                                       placeholder="Enter item name">
                             </div>
                             <div>
-                                <label for="quantity" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Quantity *</label>
-                                <input type="number" name="quantity" id="quantity" min="1" required class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                                    oninput="calculateTotal()" />
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Quantity *</label>
+                                <input type="number" name="items[${index}][quantity]" min="1" required 
+                                       class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
                             </div>
                             <div>
-                                <label for="unit" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Unit</label>
-                                <select name="unit" id="unit" class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Unit</label>
+                                <select name="items[${index}][unit]" class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
                                     <option value="pcs">Pieces</option>
                                     <option value="kg">Kilograms</option>
                                     <option value="m">Meters</option>
@@ -61,58 +248,12 @@
                         </div>
                     </div>
 
-                    <!-- Pricing Section -->
-<div class="md:col-span-2" style="display: none;">
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
-            <label for="unit_price" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Unit Price ({{ currency }}) *</label>
-            <input type="number" name="unit_price" id="unit_price" min="0" step="0.01" value="0" class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
-        </div>
-        <div>
-            <label for="tax_rate" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tax Rate (%)</label>
-            <input type="number" name="tax_rate" id="tax_rate" min="0" max="100" value="0" class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
-        </div>
-        <div>
-            <label for="total_price" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Total Price ({{ currency }})</label>
-            <input type="text" name="total_price" id="total_price" value="0" readonly class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100 bg-gray-100 dark:bg-gray-750 font-semibold" />
-        </div>
-    </div>
-</div>
-
-                    <!-- Supplier Information -->
-                    <div class="md:col-span-2" style="display: none;">
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Supplier Details</label>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                                <label for="supplier" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Supplier *</label>
-                                <select name="supplier_id" id="supplier" class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                <option value="" disabled selected>Select supplier</option>
-                {% for supplier in suppliers %}
-                <option value="{{ supplier.id }}" 
-                        data-contact="{{ supplier.contact }}" 
-                        data-phone="{{ supplier.phone }}" 
-                        data-email="{{ supplier.email }}">
-                    {{ supplier.name }} - {{ supplier.category }}
-                </option>
-                {% endfor %}
-            </select>
-                            </div>
-                            <div>
-                                <label for="contact" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Contact Person</label>
-                                <input type="text" name="contact" id="contact" readonly class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100 bg-gray-100 dark:bg-gray-750" />
-                            </div>
-                            <div>
-                                <label for="contact_info" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Contact Info</label>
-                                <input type="text" name="contact_info" id="contact_info" readonly class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100 bg-gray-100 dark:bg-gray-750" />
-                            </div>
-                        </div>
-                    </div>
                     <!-- Additional Important Information -->
                     <div class="md:col-span-2">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label for="priority" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Priority Level *</label>
-                                <select name="priority" id="priority" required class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Priority Level *</label>
+                                <select name="items[${index}][priority]" required class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
                                     <option value="low">Low Priority</option>
                                     <option value="medium" selected>Medium Priority</option>
                                     <option value="high">High Priority</option>
@@ -121,37 +262,38 @@
                             </div>
 
                             <div>
-                                <label for="category" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category *</label>
-                                <select name="category" id="category" required class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                <option value="" disabled selected>Select category</option>
-                <option value="medication">Medication & Pharmaceuticals</option>
-                <option value="medical_supplies">Medical Supplies</option>
-                <option value="equipment">Medical Equipment</option>
-                <option value="surgical">Surgical Instruments</option>
-                <option value="lab">Laboratory Supplies</option>
-                <option value="office">Office Supplies</option>
-                <option value="furniture">Furniture & Fixtures</option>
-                <option value="it">IT Equipment & Software</option>
-                <option value="maintenance">Maintenance & Repairs</option>
-                <option value="consumables">Hospital Consumables</option>
-            </select>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category *</label>
+                                <select name="items[${index}][category]" required class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                    <option value="" disabled selected>Select category</option>
+                                    <option value="medication">Medication & Pharmaceuticals</option>
+                                    <option value="medical_supplies">Medical Supplies</option>
+                                    <option value="equipment">Medical Equipment</option>
+                                    <option value="surgical">Surgical Instruments</option>
+                                    <option value="lab">Laboratory Supplies</option>
+                                    <option value="office">Office Supplies</option>
+                                    <option value="furniture">Furniture & Fixtures</option>
+                                    <option value="it">IT Equipment & Software</option>
+                                    <option value="maintenance">Maintenance & Repairs</option>
+                                    <option value="consumables">Hospital Consumables</option>
+                                </select>
                             </div>
-                                                        <div>
-                                <label for="required_by" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Required By Date *</label>
-                                <input type="date" name="required_by" id="required_by" required class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                                />
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Required By Date *</label>
+                                <input type="date" name="items[${index}][required_by]" required 
+                                       class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
                             </div>
                         </div>
                     </div>
 
-
-
-
                     <!-- Notes and Attachments -->
                     <div class="md:col-span-2">
-                        <label for="reason" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Reason / Notes *</label>
-                        <textarea name="reason" id="reason" rows="4" required class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Explain why this item is needed..."></textarea>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Reason / Notes *</label>
+                        <textarea name="items[${index}][reason]" rows="4" required 
+                                  class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" 
+                                  placeholder="Explain why this item is needed..."></textarea>
                     </div>
+                    
                     <div class="md:col-span-2">
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Attachments (Max 3 files)</label>
                         <div class="flex items-center justify-center w-full">
@@ -161,18 +303,65 @@
                                     <p class="text-sm text-gray-500 dark:text-gray-400">Drag & drop files or click to browse</p>
                                     <p class="text-xs text-gray-400 mt-1">PDF, DOC, JPG, PNG (Max 5MB each)</p>
                                 </div>
-                                <input type="file" class="hidden" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"/>
+                                <input type="file" name="items[${index}][attachments]" class="hidden" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"/>
                             </label>
                         </div>
                     </div>
                 </div>
-                <div class="mt-8 flex justify-end space-x-3">
-                    <button type="button" id="cancelOrderFormBtn" class="px-6 py-3 rounded-xl border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 font-medium transition-colors">Cancel</button>
-                    <button type="submit" class="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-6 py-3 rounded-xl font-medium shadow-md transition-all duration-300 transform hover:-translate-y-0.5 focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500">
-                        <i class="fas fa-paper-plane mr-2"></i>Submit Requisition
-                    </button>
-                </div>
-            </form>
+            </div>
+        `;
+        
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = template;
+        return tempDiv.firstElementChild;
+    }
+
+    function renumberItems() {
+        const itemForms = document.querySelectorAll('.item-form');
+        itemForms.forEach((form, index) => {
+            const header = form.querySelector('h3');
+            header.textContent = `Item #${index + 1}`;
+            
+            // Update all input names
+            form.querySelectorAll('[name]').forEach(input => {
+                const oldName = input.getAttribute('name');
+                const newName = oldName.replace(/items\[\d+\]/, `items[${index}]`);
+                input.setAttribute('name', newName);
+            });
+        });
+        itemCount = itemForms.length;
+    }
+
+    function updateSummary() {
+        const itemCount = document.querySelectorAll('.item-form').length;
+        itemsCountDisplay.textContent = `${itemCount} ${itemCount === 1 ? 'item' : 'items'} added`;
+        totalItemsCountDisplay.textContent = itemCount;
+    }
+
+    // Initialize summary
+    updateSummary();
+});
+</script>
+
+<style>
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
+}
+
+.item-form {
+    transition: all 0.3s ease;
+}
+
+.item-form:hover {
+    border-color: #6366f1;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+</style>
 
             <script>
                 // Calculate total price
@@ -225,72 +414,106 @@
         </div>
         <div class="overflow-x-auto">
 <div class="overflow-x-auto modern-scrollbar">
-    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead class="bg-gray-50 dark:bg-gray-750">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ID</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Item & Supplier</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Quantity</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Department</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Requested By</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Date</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                    {% for order in external_orders %}
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors">
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm font-medium text-indigo-600 dark:text-indigo-400">#REQ-{{ order.id }}</div>
-                            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                {{ order.category|replace('_', ' ')|title }}
+<table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+    <thead class="bg-gray-50 dark:bg-gray-750">
+        <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Requisition</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Items</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Quantity</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Priority</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Requested By</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Date</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+        </tr>
+    </thead>
+    <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+        {% for requisition in requisitions %}
+        <!-- Requisition Header Row -->
+        <tr class="bg-gray-50 dark:bg-gray-750 border-t-2 border-gray-200 dark:border-gray-700">
+            <td class="px-6 py-4 whitespace-nowrap" colspan="8">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <div class="bg-indigo-100 dark:bg-indigo-900/30 rounded-lg p-2">
+                            <i class="fas fa-file-alt text-indigo-600 dark:text-indigo-400"></i>
+                        </div>
+                        <div>
+                            <div class="text-lg font-bold text-gray-900 dark:text-white">{{ requisition.requisition_number }}</div>
+                            <div class="text-sm text-gray-500 dark:text-gray-400">
+                                {{ requisition.external_orders|length }} item(s) • 
+                                {{ requisition.created_at.strftime('%d %b %Y') }}
                             </div>
-                        </td>
-                        <td class="px-6 py-4">
-                            <div class="text-sm font-medium text-gray-900 dark:text-white">{{ order.item_name }}</div>
-                            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                <span class="font-medium">Supplier:</span> {{ order.supplier.name if order.supplier else 'Not specified' }}
-                            </div>
-                            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                <span class="font-medium">Total:</span> {{ currency }} {{ "%.2f"|format(order.total_price) }}
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm text-gray-900 dark:text-gray-100">{{ order.quantity }} {{ order.unit }}</div>
-                            <div class="text-xs text-gray-500 dark:text-gray-400">
-                                {{ currency }} {{ "%.2f"|format(order.unit_price) }} per unit
-                            </div>
-                        </td>
-                        <td class="px-6 py-4">
-                            <div class="text-sm text-gray-900 dark:text-gray-100">{{ order.department|title }}</div>
-                            {% if order.budget_code %}
-                            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                {{ order.budget_code }}
-                            </div>
-                            {% endif %}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="flex items-center">
-                                <div class="bg-gray-200 border-2 border-dashed rounded-xl w-8 h-8 flex items-center justify-center mr-3">
-                                    <span class="text-xs text-gray-500">{{ order.user.username|first|upper }}</span>
-                                </div>
-                                <div>
-                                    <div class="text-sm font-medium text-gray-900 dark:text-white">{{ order.user.username }}</div>
-                                    <div class="text-xs text-gray-500 dark:text-gray-400">
-                                        {% if order.priority == 'urgent' %}
-                                        <span class="text-rose-600">Urgent</span> {% elif order.priority == 'high' %}
-                                        <span class="text-amber-600">High</span> {% elif order.priority == 'medium' %}
-                                        <span class="text-indigo-600">Medium</span> {% else %}
-                                        <span class="text-gray-600">Low</span> {% endif %}
-                                    </div>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm text-gray-900 dark:text-gray-100">{{ order.created_at.strftime('%d %b %Y') }}</div>
-
-                        </td>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-sm font-medium text-gray-900 dark:text-white">
+                            Overall Priority: 
+                            <span class="{% if requisition.overall_priority == 'urgent' %}text-red-600{% elif requisition.overall_priority == 'high' %}text-orange-600{% elif requisition.overall_priority == 'medium' %}text-blue-600{% else %}text-gray-600{% endif %}">
+                                {{ requisition.overall_priority|title }}
+                            </span>
+                        </div>
+                        {% if requisition.overall_reason %}
+                        <div class="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-md truncate">
+                            {{ requisition.overall_reason }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </td>
+        </tr>
+        
+        <!-- Individual Items -->
+        {% for order in requisition.external_orders %}
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors {% if not loop.last %}border-b border-gray-100 dark:border-gray-700{% endif %}">
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="pl-8 text-sm text-gray-500 dark:text-gray-400">
+                    Item {{ loop.index }}
+                </div>
+            </td>
+            <td class="px-6 py-4">
+                <div class="text-sm font-medium text-gray-900 dark:text-white">{{ order.item_name }}</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    <span class="font-medium">Category:</span> {{ order.category|replace('_', ' ')|title }}
+                </div>
+                {% if order.supplier %}
+                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    <span class="font-medium">Supplier:</span> {{ order.supplier.name }}
+                </div>
+                {% endif %}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900 dark:text-gray-100">{{ order.quantity }} {{ order.unit }}</div>
+                {% if order.unit_price > 0 %}
+                <div class="text-xs text-gray-500 dark:text-gray-400">
+                    {{ currency }} {{ "%.2f"|format(order.unit_price) }} per unit
+                </div>
+                {% endif %}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                    {% if order.priority == 'urgent' %}bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300
+                    {% elif order.priority == 'high' %}bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300
+                    {% elif order.priority == 'medium' %}bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300
+                    {% else %}bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300{% endif %}">
+                    {{ order.priority|title }}
+                </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                    <div class="bg-gray-200 border-2 border-dashed rounded-xl w-8 h-8 flex items-center justify-center mr-3">
+                        <span class="text-xs text-gray-500">{{ order.user.username|first|upper }}</span>
+                    </div>
+                    <div>
+                        <div class="text-sm font-medium text-gray-900 dark:text-white">{{ order.user.username }}</div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">
+                            Required by: {{ order.required_by.strftime('%d %b %Y') }}
+                        </div>
+                    </div>
+                </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900 dark:text-gray-100">{{ order.created_at.strftime('%d %b %Y') }}</div>
+            </td>
 <td class="px-6 py-4 whitespace-nowrap">
     {% if order.status == 'pending' %}
         <span class="px-3 py-1 inline-flex text-xs font-semibold rounded-full bg-amber-100 text-amber-800">
@@ -331,89 +554,68 @@
     {% endif %}
 </td>
 
+            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <div class="flex justify-end space-x-2">
+                    <!-- View Item -->
+                    <a href="{{ url_for('store_web_bp.view_external_order', order_id=order.id) }}" 
+                       class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 p-2 rounded-lg hover:bg-indigo-50 dark:hover:bg-gray-700 transition-colors" 
+                       title="View Item Details">
+                        <i class="fas fa-eye"></i>
+                    </a>
 
+                    <!-- Edit (only if pending) -->
+                    {% if order.status == 'pending' %}
+                        <a href="{{ url_for('store_web_bp.edit_external_order', order_id=order.id) }}" 
+                           class="text-amber-600 hover:text-amber-900 dark:text-amber-400 dark:hover:text-amber-300 p-2 rounded-lg hover:bg-amber-50 dark:hover:bg-gray-700 transition-colors" 
+                           title="Edit Item">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                    {% endif %}
 
-<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-    <div class="flex justify-end space-x-2">
-        <!-- Always: View -->
-        <a href="{{ url_for('store_web_bp.view_external_order', order_id=order.id) }}" 
-           class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 p-2 rounded-lg hover:bg-indigo-50 dark:hover:bg-gray-700 transition-colors" 
-           title="View Details">
-            <i class="fas fa-eye"></i>
-        </a>
-
-        <!-- Pending: Editable + Cancel -->
-        {% if order.status == 'pending' %}
-            <a href="{{ url_for('store_web_bp.edit_external_order', order_id=order.id) }}" 
-               class="text-amber-600 hover:text-amber-900 dark:text-amber-400 dark:hover:text-amber-300 p-2 rounded-lg hover:bg-amber-50 dark:hover:bg-gray-700 transition-colors" 
-               title="Edit Order">
-                <i class="fas fa-edit"></i>
-            </a>
-            <form action="{{ url_for('store_web_bp.cancel_external_order', order_id=order.id) }}" method="POST" class="inline">
-                <button type="submit" 
-                        class="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                        title="Cancel Order">
-                    <i class="fas fa-ban"></i>
-                </button>
-            </form>
+                    <!-- Approve/Reject actions for managers -->
+                    {% if current_user.has_privilege('inventory:approve_requisitions') %}
+                        {% if order.status == 'pending' %}
+                            <button onclick="approveItem({{ order.id }}, 'finance')" 
+                                    class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 p-2 rounded-lg hover:bg-green-50 dark:hover:bg-gray-700 transition-colors"
+                                    title="Approve Item">
+                                <i class="fas fa-check"></i>
+                            </button>
+                            <button onclick="rejectItem({{ order.id }})" 
+                                    class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-gray-700 transition-colors"
+                                    title="Reject Item">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </td>
+        </tr>
+        {% endfor %}
+        
+        <!-- Empty state for requisition with no items -->
+        {% if requisition.external_orders|length == 0 %}
+        <tr>
+            <td class="px-6 py-4 text-center text-gray-500 dark:text-gray-400" colspan="8">
+                No items in this requisition
+            </td>
+        </tr>
         {% endif %}
-
-        <!-- Finance Approved: View + Edit + Cancel -->
-        {% if order.status == 'finance_approved' %}
-
+        {% endfor %}
+        
+        <!-- Empty state when no requisitions -->
+        {% if requisitions|length == 0 %}
+        <tr>
+            <td colspan="8" class="px-6 py-8 text-center">
+                <div class="text-gray-400 dark:text-gray-500">
+                    <i class="fas fa-inbox text-4xl mb-3"></i>
+                    <p class="text-lg font-medium">No requisitions found</p>
+                    <p class="mt-1">Get started by creating a new requisition</p>
+                </div>
+            </td>
+        </tr>
         {% endif %}
-
-        <!-- Director Approved: Place Order + Generate LPO -->
-        {% if order.status == 'director_approved' %}
-
-        {% endif %}
-        <!-- Director Approved: Place Order + Generate LPO -->
-        {% if order.status == 'completed' %}
-            <!-- Place Order -->
-            <a href="{{ url_for('store_web_bp.place_order', order_id=order.id) }}" 
-               class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-gray-700 transition-colors" 
-               title="Place Order and send LPO">
-                <i class="fas fa-paper-plane"></i>
-            </a>
-
-        {% endif %}
-
-        <!-- LPO Generated: View LPO -->
-        {% if order.status == 'lpo_generated' %}
-            <a href="{{ url_for('store_web_bp.view_lpo', order_id=order.id) }}" 
-               class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 p-2 rounded-lg hover:bg-green-50 dark:hover:bg-gray-700 transition-colors" 
-               title="View LPO">
-                <i class="fas fa-file-invoice-dollar"></i>
-            </a>
-        {% endif %}
-
-        <!-- Placed: Mark as Completed -->
-        {% if order.status == 'order_placed' %}
-            <form action="" method="POST" class="inline">
-                <button type="submit" 
-                        class="text-emerald-600 hover:text-emerald-900 dark:text-emerald-400 dark:hover:text-emerald-300 p-2 rounded-lg hover:bg-emerald-50 dark:hover:bg-gray-700 transition-colors"
-                        title="Mark as Completed">
-                    <i class="fas fa-check-double"></i>
-                </button>
-            </form>
-        {% endif %}
-    </div>
-</td>
-
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="8" class="px-6 py-8 text-center">
-                            <div class="text-gray-400 dark:text-gray-500">
-                                <i class="fas fa-inbox text-4xl mb-3"></i>
-                                <p class="text-lg font-medium">No requisitions found</p>
-                                <p class="mt-1">Get started by creating a new requisition</p>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    </tbody>
+</table>
             </table></div>
         </div>
         <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">

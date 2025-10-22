@@ -73,6 +73,27 @@
                         <i class="fas fa-times-circle mr-1"></i> Clear Selected
                      </button>
                 </div>
+                <!-- Patient Category Filter -->
+                <div class="mb-6 p-4 bg-blue-50 dark:bg-gray-700 rounded-lg border border-blue-200 dark:border-gray-600">
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Patient Category:</label>
+                    <div class="flex flex-wrap gap-3">
+                        <label class="inline-flex items-center">
+                            <input type="radio" name="patientCategory" value="general" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300" checked>
+                            <span class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">General</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                            <input type="radio" name="patientCategory" value="walkin" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300">
+                            <span class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">Walk-in</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                            <input type="radio" name="patientCategory" value="special_clinic" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300">
+                            <span class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">Special Clinic</span>
+                        </label>
+                    </div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                        Prices will automatically update based on selected category
+                    </p>
+                </div>
 
                 <div class="mb-6">
                     <label for="serviceSearch" class="sr-only">Search Services</label>
@@ -87,35 +108,48 @@
 
                 <!-- Services List -->
                 <div id="servicesList" class="space-y-6">
-                    {% if all_services %} {% set sorted_services = all_services|sort(attribute='category') %} {% set categories = sorted_services | groupby('category') %} {% for category, services in categories %}
+                    {% if all_services %} 
+                    {% set sorted_services = all_services|sort(attribute='category') %} 
+                    {% set categories = sorted_services | groupby('category') %} 
+                    {% for category, services in categories %}
                     <section>
                         <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-4 flex items-center">
                             {% if category == 'Consultation' %}
-                            <i class="fas fa-stethoscope mr-2 text-green-500"></i> {% elif category == 'Laboratory' %}
-                            <i class="fas fa-flask mr-2 text-orange-500"></i> {% elif category == 'Radiology' %}
-                            <i class="fas fa-x-ray mr-2 text-purple-500"></i> {% elif category == 'Pharmacy' %}
-                            <i class="fas fa-pills mr-2 text-red-500"></i> {% else %}
-                            <i class="fas fa-briefcase-medical mr-2 text-blue-500"></i> {% endif %} {{ category }}
+                            <i class="fas fa-stethoscope mr-2 text-green-500"></i> 
+                            {% elif category == 'Laboratory' %}
+                            <i class="fas fa-flask mr-2 text-orange-500"></i> 
+                            {% elif category == 'Radiology' %}
+                            <i class="fas fa-x-ray mr-2 text-purple-500"></i> 
+                            {% elif category == 'Pharmacy' %}
+                            <i class="fas fa-pills mr-2 text-red-500"></i> 
+                            {% else %}
+                            <i class="fas fa-briefcase-medical mr-2 text-blue-500"></i> 
+                            {% endif %} 
+                            {{ category }}
                         </h3>
                         <div class="space-y-3">
                             {% for service in services %}
                             <label class="service-item flex items-center p-3 rounded-lg border dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors">
-                            <input type="checkbox" 
-                                   class="service-checkbox h-5 w-5 text-blue-600 rounded border-gray-300 dark:bg-gray-600 focus:ring-blue-500"
-                                   data-price="{{ service.price }}" 
-                                   data-service-id="{{ service.id }}" 
-                                   data-service-name="{{ service.name }}">
-                            <div class="ml-3 flex-1">
-                                <div class="font-medium text-gray-900 dark:text-gray-200">{{ service.name }}</div>
-                                <div class="text-sm text-gray-500 dark:text-gray-400">{{ service.desc }}</div>
-                            </div>
-                            <div class="text-lg font-semibold text-blue-600 dark:text-blue-400">
-                                Ksh {{ "{:,.0f}".format(service.price) }}
-                            </div>
-                        </label> {% endfor %}
+                                <input type="checkbox" 
+                                       class="service-checkbox h-5 w-5 text-blue-600 rounded border-gray-300 dark:bg-gray-600 focus:ring-blue-500"
+                                       data-price="{{ service.price }}" 
+                                       data-walkin-price="{{ service.walkin_price if service.walkin_price is not none else service.price }}"
+                                       data-special-price="{{ service.special_clinic_price if service.special_clinic_price is not none else service.price }}"
+                                       data-service-id="{{ service.id }}" 
+                                       data-service-name="{{ service.name }}">
+                                <div class="ml-3 flex-1">
+                                    <div class="font-medium text-gray-900 dark:text-gray-200">{{ service.name }}</div>
+                                    <div class="text-sm text-gray-500 dark:text-gray-400">{{ service.desc }}</div>
+                                </div>
+                                <div class="text-lg font-semibold text-blue-600 dark:text-blue-400 service-price">
+                                    Ksh {{ "{:,.0f}".format(service.price) }}
+                                </div>
+                            </label> 
+                            {% endfor %}
                         </div>
                     </section>
-                    {% endfor %} {% else %}
+                    {% endfor %} 
+                    {% else %}
                     <div class="text-center text-gray-500 dark:text-gray-400 mt-8">
                         No services available at this time.
                     </div>
@@ -254,7 +288,8 @@
                     <input type="hidden" name="paymentMethod" id="paymentMethod" value="stk"> {# Hidden field to submit selected method #}
                     <input type="hidden" name="patientRegNo" value="{{ patient.reg_no }}"> {# Pass patient info #}
                     <input type="hidden" name="selectedServiceIds" id="selectedServiceIds"> {# To store selected service IDs #}
-
+                    <!-- ADD THE MISSING HIDDEN INPUT FOR PATIENT CATEGORY -->
+                    <input type="hidden" name="patientCategory" id="patientCategory" value="general">
 
                     <div class="mt-6">
                         <button type="submit" id="completePaymentBtn" class="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white py-3 px-6 rounded-lg font-semibold transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed">
@@ -304,7 +339,157 @@
 
 .fade-in { animation: fadeIn 0.5s ease forwards; }
 </style>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded - patient category script starting');
 
+    // Patient Category functionality
+    const patientCategoryRadios = document.querySelectorAll('input[name="patientCategory"]');
+    const patientCategoryInput = document.getElementById('patientCategory');
+    
+    // Service price update function - FIXED VERSION
+    function updateServicePrices() {
+        console.log('updateServicePrices called');
+        
+        const selectedRadio = document.querySelector('input[name="patientCategory"]:checked');
+        if (!selectedRadio) return;
+        
+        const selectedCategory = selectedRadio.value;
+        console.log('Selected category:', selectedCategory);
+        
+        const serviceItems = document.querySelectorAll('.service-item');
+        console.log('Found service items:', serviceItems.length);
+        
+        serviceItems.forEach((item, index) => {
+            const checkbox = item.querySelector('.service-checkbox');
+            const priceDisplay = item.querySelector('.service-price');
+            
+            if (!checkbox || !priceDisplay) return;
+            
+            let price = 0;
+            
+            switch(selectedCategory) {
+                case 'walkin':
+                    price = parseFloat(checkbox.getAttribute('data-walkin-price')) || 0;
+                    break;
+                case 'special_clinic':
+                    price = parseFloat(checkbox.getAttribute('data-special-price')) || 0;
+                    break;
+                default: // general
+                    price = parseFloat(checkbox.getAttribute('data-price')) || 0;
+            }
+            
+            console.log(`Updating service ${index}: ${checkbox.getAttribute('data-service-name')} to Ksh ${price}`);
+            
+            // FIX: Force DOM update by recreating the text content
+            priceDisplay.textContent = 'Ksh ' + price.toLocaleString('en-US', {maximumFractionDigits: 0});
+            
+            // FIX: Also update the innerHTML to ensure visual update
+            priceDisplay.innerHTML = 'Ksh ' + price.toLocaleString('en-US', {maximumFractionDigits: 0});
+            
+            // Update the data-price attribute for total calculation
+            checkbox.setAttribute('data-price', price.toString());
+            
+            // FIX: Force a reflow by accessing offsetHeight
+            priceDisplay.offsetHeight;
+        });
+        
+        // Update patient category hidden input
+        if (patientCategoryInput) {
+            patientCategoryInput.value = selectedCategory;
+            console.log('Updated patient category input to:', selectedCategory);
+        }
+        
+        // FIX: Add a small delay to ensure DOM updates are processed
+        setTimeout(updateTotal, 10);
+    }
+    
+    // Add event listeners to patient category radios
+    patientCategoryRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            console.log('Patient category changed to:', this.value);
+            updateServicePrices();
+            
+            // FIX: Force a visual refresh
+            document.body.style.zoom = '100%';
+        });
+    });
+    
+    // Existing total update function
+    function updateTotal() {
+        console.log('updateTotal called');
+        
+        let total = 0;
+        const checkedBoxes = document.querySelectorAll('.service-checkbox:checked');
+        
+        checkedBoxes.forEach(checkbox => {
+            total += parseFloat(checkbox.getAttribute('data-price')) || 0;
+        });
+        
+        const totalDisplay = document.getElementById('totalAmountDisplay');
+        const totalValueInput = document.getElementById('totalAmountValue');
+        
+        if (totalDisplay) {
+            totalDisplay.textContent = 'Ksh ' + total.toLocaleString('en-US', {maximumFractionDigits: 0});
+            totalDisplay.innerHTML = 'Ksh ' + total.toLocaleString('en-US', {maximumFractionDigits: 0});
+        }
+        
+        if (totalValueInput) {
+            totalValueInput.value = total;
+        }
+        
+        console.log('Total updated to:', total);
+        
+        // Update summary list
+        updateSummaryList();
+    }
+    
+    function updateSummaryList() {
+        const summaryList = document.getElementById('summaryList');
+        if (!summaryList) return;
+        
+        summaryList.innerHTML = '';
+        
+        document.querySelectorAll('.service-checkbox:checked').forEach(checkbox => {
+            const serviceName = checkbox.getAttribute('data-service-name');
+            const price = parseFloat(checkbox.getAttribute('data-price')) || 0;
+            const listItem = document.createElement('li');
+            listItem.className = 'flex justify-between';
+            listItem.innerHTML = `
+                <span>${serviceName}</span>
+                <span class="font-semibold">Ksh ${price.toLocaleString('en-US', {maximumFractionDigits: 0})}</span>
+            `;
+            summaryList.appendChild(listItem);
+        });
+    }
+    
+    // Add event listeners to service checkboxes
+    document.querySelectorAll('.service-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', updateTotal);
+    });
+    
+    // Clear services button
+    const clearServicesBtn = document.getElementById('clearServicesBtn');
+    if (clearServicesBtn) {
+        clearServicesBtn.addEventListener('click', function() {
+            document.querySelectorAll('.service-checkbox').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            updateTotal();
+        });
+    }
+    
+    // Initialize
+    console.log('Initializing patient category functionality');
+    updateServicePrices();
+    
+    // FIX: Add a test function to manually check if prices update
+    window.testPriceUpdate = function() {
+        console.log('Manual test: Forcing price update');
+        updateServicePrices();
+    };
+});
+</script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const messageContainer = document.getElementById('dynamicMessages');

@@ -1,5 +1,6 @@
 from datetime import date, datetime, timedelta
 import io
+import json
 import math
 import os
 import re
@@ -12,7 +13,7 @@ from app.auth.models import User
 from app.lab.forms import LabConsumableForm, LabStockRequestForm, NewItemRequestForm
 from app.lab.models import BloodInventory, DailyLogEntry, LabConsumable, LabEquipment, LabInventory, LabTestResult, LaboratoryTest, PanelTest, ParameterOption, ParameterRange, QualityControl, Sample, ScheduledMaintenanceLog, TestPanel, TestParameter, UploadedFile
 from app.patients.models import Consultation, LabTest, Patient, Service, Visit
-from app.store.models import ItemPurchaseRequest, Stock, StockRequest, Supplier
+from app.store.models import BulkRequest, ItemPurchaseRequest, Stock, StockRequest, Supplier
 from . import lab_web_bp
 from sqlalchemy import func, or_, and_
 from sqlalchemy.orm import joinedload
@@ -3034,7 +3035,7 @@ def request_stocks():
         
         # Base query for lab stock requests with stock relationship joined
         query = StockRequest.query.filter_by(department='lab').options(
-            joinedload(StockRequest.stock)  # Eager load the stock relationship
+            joinedload(StockRequest.stock)
         )
         
         # Apply status filter
@@ -3050,21 +3051,31 @@ def request_stocks():
             page=page, per_page=15, error_out=False
         )
         
-        # Get status counts for filter badges
+        # Get bulk requests separately for grouping
+        bulk_requests = BulkRequest.query.filter_by(department='lab').order_by(
+            BulkRequest.created_at.desc()
+        ).all()
+        
+        # Get status counts for filter badges (include both individual and bulk)
         status_counts = {
-            'all': StockRequest.query.filter_by(department='lab').count(),
-            'pending': StockRequest.query.filter_by(department='lab', status='submitted').count(),
-            'approved': StockRequest.query.filter_by(department='lab', status='approved').count(),
-            'fulfilled': StockRequest.query.filter_by(department='lab', status='fulfilled').count(),
-            'rejected': StockRequest.query.filter_by(department='lab', status='rejected').count(),
+            'all': StockRequest.query.filter_by(department='lab').count() + len(bulk_requests),
+            'submitted': StockRequest.query.filter_by(department='lab', status='submitted').count() + 
+                         len([b for b in bulk_requests if b.status == 'submitted']),
+            'approved': StockRequest.query.filter_by(department='lab', status='approved').count() + 
+                       len([b for b in bulk_requests if b.status == 'approved']),
+            'fulfilled': StockRequest.query.filter_by(department='lab', status='fulfilled').count() + 
+                        len([b for b in bulk_requests if b.status == 'fulfilled']),
+            'rejected': StockRequest.query.filter_by(department='lab', status='rejected').count() + 
+                       len([b for b in bulk_requests if b.status == 'rejected']),
         }
         
         # Get priority options for filter dropdown
-        priorities = ['low', 'medium', 'high', 'critical']
+        priorities = ['routine', 'urgent', 'emergency']
         
         return render_template(
             'lab-inventory/request_stocks.html',
             requests=paginated_requests.items,
+            bulk_requests=bulk_requests,  # Pass bulk requests separately
             pagination=paginated_requests,
             status_counts=status_counts,
             current_status=status,
@@ -3077,11 +3088,22 @@ def request_stocks():
         flash(f'Error loading stock requests: {str(e)}', 'danger')
         return redirect(url_for('lab_web.inventory_management'))
 
+@lab_web_bp.route('/inventory/bulk-requests/<bulk_id>')
+@login_required
+def bulk_request_detail(bulk_id):
+    """View details of a specific bulk request"""
+    bulk_request = BulkRequest.query.get_or_404(bulk_id)
+    stock_requests = bulk_request.stock_requests.all()
+    
+    return render_template('lab-inventory/bulk_request_detail.html',
+                         bulk_request=bulk_request,
+                         stock_requests=stock_requests,
+                         title=f"Bulk Request {bulk_request.bulk_code}")
 
 @lab_web_bp.route('/inventory/request-stocks/new', methods=['GET', 'POST'])
 @login_required
 def create_stock_request():
-    """Create new laboratory stock request"""
+    """Create new laboratory stock request - supports both single and bulk requests"""
     # Get lab inventory items with details
     lab_items = Stock.query.filter_by(is_active=True).all()
     
@@ -3092,52 +3114,161 @@ def create_stock_request():
     # Map form priorities to model enum values
     priority_map = {
         'low': 'routine',
-        'medium': 'urgent',
+        'medium': 'urgent', 
         'high': 'emergency',
-        'critical': 'emergency'  # Map critical to emergency as well
+        'critical': 'emergency'
     }
     form.priority.choices = [('low', 'Low'), ('medium', 'Medium'), 
                             ('high', 'High'), ('critical', 'Critical')]
     
-    if form.validate_on_submit():
-        try:
-            # Get the selected stock item
-            stock_item = Stock.query.get(form.item_id.data)
-            if not stock_item:
-                flash('Selected item not found', 'danger')
-                return redirect(url_for('lab_web.create_stock_request'))
-            
-            # Map form priority to model priority
-            model_priority = priority_map.get(form.priority.data, 'routine')
-            
-            # Create new request using model-compatible fields
-            new_request = StockRequest(
-                stock_id=form.item_id.data,
-                quantity_requested=form.quantity.data,
-                priority=model_priority,
-                approval_notes=form.reason.data,
-                department='lab',
-                requester_id=current_user.id,
-                status='submitted',
-                batch_number=stock_item.batch_number or 'N/A',
-                expiration_date=stock_item.expiration_date or datetime.utcnow() + timedelta(days=365),
-                location=stock_item.location or 'Main Lab Storage'
-            )
-            
-            db.session.add(new_request)
-            db.session.commit()
-            
-            flash('Stock request created successfully!', 'success')
-            return redirect(url_for('lab_web.request_stocks'))
+    if request.method == 'POST':
+        # Check if this is a bulk request FIRST
+        bulk_items_data = request.form.get('bulk_items')
         
-        except Exception as e:
-            db.session.rollback()
-            flash(f'Error creating request: {str(e)}', 'danger')
+        if bulk_items_data:
+            # Process bulk request (skip form validation for single request)
+            print("Processing bulk request")  # Debug
+            try:
+                return process_bulk_request(bulk_items_data, current_user, priority_map)
+            except Exception as e:
+                db.session.rollback()
+                print(f"Bulk request error: {str(e)}")  # Debug
+                flash(f'Error creating bulk request: {str(e)}', 'danger')
+        elif form.validate_on_submit():
+            # Process single request (only if form validates)
+            print("Processing single request")  # Debug
+            try:
+                return process_single_request(form, current_user, priority_map)
+            except Exception as e:
+                db.session.rollback()
+                print(f"Single request error: {str(e)}")  # Debug
+                flash(f'Error creating request: {str(e)}', 'danger')
+        else:
+            # Form validation failed for single request
+            print(f"Form validation failed: {form.errors}")  # Debug
+            flash('Please correct the form errors for single item request', 'danger')
     
     return render_template('lab-inventory/create_stock_request.html', 
                           form=form, 
                           lab_items=lab_items,
                           title="New Lab Stock Request")
+    
+def process_single_request(form, current_user, priority_map):
+    """Process single stock request"""
+    stock_item = Stock.query.get(form.item_id.data)
+    if not stock_item:
+        flash('Selected item not found', 'danger')
+        return redirect(url_for('lab_web.create_stock_request'))
+    
+    model_priority = priority_map.get(form.priority.data, 'routine')
+    
+    new_request = StockRequest(
+        stock_id=form.item_id.data,
+        quantity_requested=form.quantity.data,
+        priority=model_priority,
+        approval_notes=form.reason.data,
+        department='lab',
+        requester_id=current_user.id,
+        status='submitted',
+        batch_number=stock_item.batch_number or 'N/A',
+        expiration_date=stock_item.expiration_date or datetime.utcnow() + timedelta(days=365),
+        location=stock_item.location or 'Main Lab Storage',
+        is_bulk=False
+    )
+    
+    db.session.add(new_request)
+    db.session.commit()
+    
+    flash('Stock request created successfully!', 'success')
+    return redirect(url_for('lab_web.request_stocks'))
+
+
+def process_bulk_request(bulk_items_data, current_user, priority_map):
+    """Process bulk stock request with same bulk code"""
+    try:
+        print(f"Raw bulk data: {bulk_items_data}")  # Debug
+        
+        bulk_items = json.loads(bulk_items_data)
+        print(f"Parsed bulk items: {bulk_items}")  # Debug
+        
+        if not bulk_items:
+            flash('No items in bulk request', 'danger')
+            return redirect(url_for('lab_web.create_stock_request'))
+        
+        # Create bulk request record
+        bulk_request = BulkRequest(
+            requester_id=current_user.id,
+            department='lab',
+            total_items=len(bulk_items),
+            total_quantity=sum(item['quantity'] for item in bulk_items),
+            notes=request.form.get('notes', ''),
+            status='submitted'
+        )
+        
+        # Generate bulk code
+        bulk_request.bulk_code = bulk_request.generate_bulk_code()
+        print(f"Generated bulk code: {bulk_request.bulk_code}")  # Debug
+        
+        # Determine overall priority (highest priority in the batch)
+        priority_order = {'urgent': 3, 'high': 2, 'medium': 1, 'low': 0}
+        highest_priority_item = max(bulk_items, 
+                                  key=lambda x: priority_order.get(x['priority'], 0))
+        bulk_request.overall_priority = priority_map.get(highest_priority_item['priority'], 'routine')
+        
+        db.session.add(bulk_request)
+        db.session.flush()  # Get the bulk_request ID without committing
+        
+        # Create individual stock requests
+        successful_items = 0
+        for item_data in bulk_items:
+            stock_item = Stock.query.get(item_data['id'])
+            if not stock_item:
+                print(f"Item not found: {item_data['id']}")  # Debug
+                flash(f"Item '{item_data.get('name', 'Unknown')}' not found", 'warning')
+                continue
+            
+            model_priority = priority_map.get(item_data['priority'], 'routine')
+            
+            stock_request = StockRequest(
+                stock_id=item_data['id'],
+                quantity_requested=item_data['quantity'],
+                priority=model_priority,
+                approval_notes=item_data['reason'],
+                department='lab',
+                requester_id=current_user.id,
+                status='submitted',
+                batch_number=stock_item.batch_number or 'N/A',
+                expiration_date=stock_item.expiration_date or datetime.utcnow() + timedelta(days=365),
+                location=stock_item.location or 'Main Lab Storage',
+                is_bulk=True,
+                bulk_request_id=bulk_request.id
+            )
+            
+            db.session.add(stock_request)
+            successful_items += 1
+        
+        if successful_items == 0:
+            db.session.rollback()
+            flash('No valid items found in bulk request', 'danger')
+            return redirect(url_for('lab_web.create_stock_request'))
+        
+        db.session.commit()
+        
+        flash(f'Bulk stock request created successfully! {successful_items} items added. Bulk Code: {bulk_request.bulk_code}', 'success')
+        return redirect(url_for('lab_web.request_stocks'))
+        
+    except json.JSONDecodeError as e:
+        db.session.rollback()
+        print(f"JSON decode error: {str(e)}")  # Debug
+        flash('Invalid bulk request data format', 'danger')
+        return redirect(url_for('lab_web.create_stock_request'))
+    except Exception as e:
+        db.session.rollback()
+        print(f"Unexpected error in bulk request: {str(e)}")  # Debug
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")  # Debug
+        flash(f'Error creating bulk request: {str(e)}', 'danger')
+        return redirect(url_for('lab_web.create_stock_request'))
 
 
 @lab_web_bp.route('/inventory/request-new-item', methods=['GET', 'POST'])

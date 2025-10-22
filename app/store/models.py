@@ -307,6 +307,10 @@ class StockRequest(db.Model):
     collected_at = db.Column(db.DateTime, nullable=True)     # Date/time of collection
     collection_notes = db.Column(db.Text)
 
+    # ✅ Bulk Request Support (NEW)
+    bulk_request_id = db.Column(db.String(36), db.ForeignKey('bulk_requests.id'), nullable=True)
+    is_bulk = db.Column(db.Boolean, default=False)
+
     # Relationships
     stock = db.relationship('Stock', backref='requests')
     requester = db.relationship(
@@ -356,9 +360,13 @@ class StockRequest(db.Model):
             # ✅ Include issuance info
             'issued_by': self.issuer.full_name if self.issuer else None,
             'issue_date': self.issue_date.isoformat() if self.issue_date else None,
-            'issue_reference': self.issue_reference
+            'issue_reference': self.issue_reference,
+            # ✅ Bulk request info
+            'is_bulk': self.is_bulk,
+            'bulk_request_id': self.bulk_request_id
         }
-
+        
+        
     def validate_stock_availability(self):
         """Check if requested stock is available, considering existing requests"""
         pending_requests = sum(
@@ -381,7 +389,54 @@ class StockRequest(db.Model):
             self.stock.current_stock -= self.quantity_issued
             db.session.commit()
             
-            
+class BulkRequest(db.Model):
+    __tablename__ = 'bulk_requests'
+    
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Requester Information
+    requester_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    department = db.Column(db.String(100), nullable=False)
+    
+    # Bulk Request Details
+    bulk_code = db.Column(db.String(50), unique=True, nullable=False, index=True)
+    total_items = db.Column(db.Integer, nullable=False)
+    total_quantity = db.Column(db.Integer, nullable=False)
+    overall_priority = db.Column(db.Enum('routine', 'urgent', 'emergency', name='request_priority'), default='routine')
+    notes = db.Column(db.Text)
+    
+    # Status Tracking
+    status = db.Column(db.Enum(
+        'draft', 'submitted', 'approved', 'rejected', 'processing', 
+        'partially_issued', 'fulfilled', 'cancelled', name='request_status'
+    ), default='draft', nullable=False)
+    
+    # Relationships
+    requester = db.relationship('User', foreign_keys=[requester_id], backref='bulk_requests')
+    stock_requests = db.relationship('StockRequest', backref='bulk_request', lazy='dynamic')
+    
+    def generate_bulk_code(self):
+        """Generate unique bulk request code"""
+        prefix = self.department[:3].upper()
+        date_str = datetime.utcnow().strftime("%y%m%d")
+        random_str = str(uuid.uuid4())[:6].upper()
+        return f"{prefix}-BULK-{date_str}-{random_str}"
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'bulk_code': self.bulk_code,
+            'created_at': self.created_at.isoformat(),
+            'department': self.department,
+            'total_items': self.total_items,
+            'total_quantity': self.total_quantity,
+            'overall_priority': self.overall_priority,
+            'status': self.status,
+            'notes': self.notes,
+            'requester': self.requester.full_name
+        }            
             
 class ItemPurchaseRequest(db.Model):
     __tablename__ = 'item_purchase_requests'
@@ -472,13 +527,70 @@ class StockFlow(db.Model):
     service = db.relationship('Service', backref='flows')
     request = db.relationship('StockRequest', backref='flows')
 
-
+class Requisition(db.Model):
+    __tablename__ = 'requisitions'
+    __audit_trail__ = True
+    
+    id = db.Column(db.Integer, primary_key=True)
+    requisition_number = db.Column(db.String(50), unique=True, nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    department = db.Column(db.String(100), nullable=True)
+    budget_code = db.Column(db.String(50), nullable=True)
+    overall_priority = db.Column(db.String(20), default='medium')
+    overall_reason = db.Column(db.Text, nullable=True)
+    
+    # Status for the overall requisition
+    status = db.Column(db.String(20), default='pending')  # pending, submitted, approved, rejected, completed
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    user = db.relationship('User', backref='requisitions')
+    external_orders = db.relationship('ExternalOrder', backref='requisition', lazy=True)
+    
+    def __repr__(self):
+        return f'<Requisition {self.requisition_number}>'
+    
+    def generate_requisition_number(self):
+        """Generate unique requisition number"""
+        if not self.requisition_number:
+            date_str = datetime.utcnow().strftime("%Y%m%d")
+            # Find the next number for today
+            last_req = Requisition.query.filter(
+                Requisition.requisition_number.like(f"REQ-{date_str}-%")
+            ).order_by(Requisition.requisition_number.desc()).first()
+            
+            if last_req:
+                last_num = int(last_req.requisition_number.split('-')[-1])
+                new_num = last_num + 1
+            else:
+                new_num = 1
+                
+            self.requisition_number = f"REQ-{date_str}-{new_num:03d}"
+    
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "requisition_number": self.requisition_number,
+            "user_id": self.user_id,
+            "department": self.department,
+            "overall_priority": self.overall_priority,
+            "status": self.status,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "item_count": len(self.external_orders),
+            "items": [order.to_dict() for order in self.external_orders]
+        }
 class ExternalOrder(db.Model):
     __tablename__ = 'external_orders'
     __audit_trail__ = True
     
     id = db.Column(db.Integer, primary_key=True)
-
+    
+    # Link to requisition
+    requisition_id = db.Column(db.Integer, db.ForeignKey('requisitions.id'), nullable=True)
+    
     # --- existing fields ---
     item_name = db.Column(db.String(255), nullable=False)
     quantity = db.Column(db.Integer, nullable=False)
@@ -504,7 +616,7 @@ class ExternalOrder(db.Model):
 
     reason = db.Column(db.Text, nullable=False)
 
-    # 👇 Change: instead of one status, track approvals separately
+    # Individual item approval fields
     finance_approved = db.Column(db.Boolean, default=False)
     finance_approved_at = db.Column(db.DateTime, nullable=True)
     finance_approved_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
@@ -515,7 +627,8 @@ class ExternalOrder(db.Model):
     rejection_reason = db.Column(db.Text, nullable=True)
     rejected_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     rejected_at = db.Column(db.DateTime, nullable=True)
-    # Final status (depends on both approvals)
+    
+    # Individual item status
     status = db.Column(db.String(20), default='pending')  
     # pending / finance_approved / director_approved / rejected / completed
 
@@ -531,10 +644,11 @@ class ExternalOrder(db.Model):
     def __repr__(self):
         return f'<ExternalOrder {self.item_name} x {self.quantity}>'
 
-    
     def to_dict(self):
         return {
             "id": self.id,
+            "requisition_id": self.requisition_id,
+            "requisition_number": self.requisition.requisition_number if self.requisition else None,
             "item_name": self.item_name,
             "quantity": self.quantity,
             "unit": self.unit,
@@ -551,6 +665,8 @@ class ExternalOrder(db.Model):
             "budget_code": self.budget_code,
             "required_by": self.required_by.isoformat() if self.required_by else None,
             "reason": self.reason,
+            "finance_approved": self.finance_approved,
+            "director_approved": self.director_approved,
             "status": self.status,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
@@ -568,6 +684,13 @@ class LPO(db.Model):
     external_order_id = db.Column(db.Integer, db.ForeignKey("external_orders.id"), nullable=False)
     external_order = db.relationship("ExternalOrder", backref="lpos")
 
+    # 🔗 New: Link to requisition (for bulk orders)
+    requisition_id = db.Column(db.Integer, db.ForeignKey("requisitions.id"), nullable=True)
+    requisition = db.relationship("Requisition", backref="lpos")
+    
+    # 🔗 New: Track if this is a bulk LPO
+    is_bulk_order = db.Column(db.Boolean, default=False)
+    bulk_order_count = db.Column(db.Integer, default=1)  # Number of items in bulk order
     # Order details (can mirror external order, but kept here for LPO copy)
     item_name = db.Column(db.String(255), nullable=False)
     category = db.Column(db.String(100))
@@ -607,7 +730,11 @@ class LPO(db.Model):
 
     def __repr__(self):
         return f"<LPO {self.lpo_number or 'Unassigned'} for Order {self.external_order_id}>"
-
+    
+    def __repr__(self):
+        order_type = "Bulk" if self.is_bulk_order else "Single"
+        return f"<LPO {self.lpo_number} ({order_type})>"
+    
     def to_dict(self):
         return {
             "id": self.id,

@@ -15,7 +15,7 @@ from app.patients.models import Service
 from app.pharmacy.models import PharmacyInventory
 from app.radiology.models import RadiologyInventory
 from app.store.audit_log import log_inventory_action
-from app.store.models import LPO, ExternalOrder, InventoryAuditLog, PaymentRequest, PurchaseOrder, PurchaseOrderDelivery, Stock, StockDetail, StockFlow, StockRequest, Supplier, SupplierAccount, SupplierInvoice, SupplierTransaction
+from app.store.models import LPO, ExternalOrder, InventoryAuditLog, PaymentRequest, PurchaseOrder, PurchaseOrderDelivery, Requisition, Stock, StockDetail, StockFlow, StockRequest, Supplier, SupplierAccount, SupplierInvoice, SupplierTransaction
 from app.utils.notifications import notification_manager
 
 from . import store_web_bp
@@ -840,14 +840,16 @@ def external_orders():
     # Fetch active suppliers
     suppliers = Supplier.query.filter_by(is_active=True).order_by(Supplier.name).all()
     
-    # Fetch external orders (modify this query based on your actual model)
-    external_orders = ExternalOrder.query.order_by(ExternalOrder.created_at.desc()).all()
+    # Fetch requisitions with their items, ordered by creation date
+    requisitions = Requisition.query.options(
+        db.joinedload(Requisition.external_orders)
+    ).order_by(Requisition.created_at.desc()).all()
     
-    # Get currency from config (add to your config if needed)
+    # Get currency from config
     currency = current_app.config.get('CURRENCY', 'Ksh')
     
     return render_template('external_orders.html', 
-                          external_orders=external_orders,
+                          requisitions=requisitions,
                           suppliers=suppliers,
                           currency=currency)
 
@@ -856,131 +858,117 @@ def external_orders():
 @store_web_bp.route('/external-orders', methods=['POST'])
 def create_external_order():
     try:
-        # Extract form data with validation
-        item_name = request.form.get('item_name', '').strip()
-        if not item_name:
-            flash('Item name is required', 'error')
-            return redirect(url_for('store_web_bp.external_orders'))
-        
-        try:
-            quantity = int(request.form.get('quantity', 0))
-            if quantity <= 0:
-                flash('Quantity must be greater than zero', 'error')
-                return redirect(url_for('store_web_bp.external_orders'))
-        except (TypeError, ValueError):
-            flash('Invalid quantity value', 'error')
-            return redirect(url_for('store_web_bp.external_orders'))
-        
-        unit = request.form.get('unit', 'pcs')
-        
-        try:
-            unit_price = float(request.form.get('unit_price', 0))
-            if unit_price < 0:
-                flash('Unit price cannot be negative', 'error')
-                return redirect(url_for('store_web_bp.external_orders'))
-        except (TypeError, ValueError):
-            flash('Invalid unit price', 'error')
-            return redirect(url_for('store_web_bp.external_orders'))
-        
-        try:
-            tax_rate = float(request.form.get('tax_rate', 0))
-            if tax_rate < 0 or tax_rate > 100:
-                flash('Tax rate must be between 0 and 100', 'error')
-                return redirect(url_for('store_web_bp.external_orders'))
-        except (TypeError, ValueError):
-            flash('Invalid tax rate', 'error')
-            return redirect(url_for('store_web_bp.external_orders'))
-        
-        # Recalculate total server-side for security
-        subtotal = quantity * unit_price
-        tax_amount = subtotal * (tax_rate / 100)
-        total_price = subtotal + tax_amount
-        
-        try:
-            supplier_id_raw = request.form.get('supplier_id', '').strip()
-            supplier_id = int(supplier_id_raw) if supplier_id_raw else None
-
-            # Treat "0" as not selected
-            if supplier_id == 0:
-                supplier_id = None
-        except (TypeError, ValueError):
-            supplier_id = None
-
-        
-        contact_person = request.form.get('contact', '').strip()
-        contact_info = request.form.get('contact_info', '').strip()
-        
-        priority = request.form.get('priority', 'medium')
-        if priority not in ['low', 'medium', 'high', 'urgent']:
-            priority = 'medium'
-        
-
-        
-        category = request.form.get('category', '').strip()
-        if not category:
-            flash('Category is required', 'error')
-            return redirect(url_for('store_web_bp.external_orders'))
-        
-        try:
-            required_by = datetime.strptime(request.form.get('required_by'), '%Y-%m-%d')
-        except (TypeError, ValueError):
-            flash('Invalid required by date format', 'error')
-            return redirect(url_for('store_web_bp.external_orders'))
-
-        
-        reason = request.form.get('reason', '').strip()
-        if not reason:
-            flash('Reason is required', 'error')
-            return redirect(url_for('store_web_bp.external_orders'))
-        
-        # Create new order
-        new_order = ExternalOrder(
-            item_name=item_name,
-            quantity=quantity,
-            unit=unit,
-            unit_price=unit_price,
-            tax_rate=tax_rate,
-            total_price=total_price,
-            supplier_id=supplier_id,
-            contact_person=contact_person,
-            contact_info=contact_info,
-            priority=priority,
-            category=category,
-            required_by=required_by,
-            reason=reason,
-            user_id=current_user.id,  # Assuming you have current_user from Flask-Login
-            status='pending'
+        # Create a new requisition first
+        requisition = Requisition(
+            user_id=current_user.id,
+            overall_priority=request.form.get('overall_priority', 'medium'),
+            overall_reason=request.form.get('overall_reason', '')
         )
-        
-        db.session.add(new_order)
-        db.session.flush()  # Get ID without commit
-        
-        # SIMPLE LOGGING - just one line!
+        requisition.generate_requisition_number()
+
+        db.session.add(requisition)
+        db.session.flush()  # Get requisition ID before committing
+
+        # ✅ Dynamically find all item indices in the form
+        item_indices = sorted({
+            key.split('[')[1].split(']')[0]
+            for key in request.form.keys()
+            if key.startswith('items[')
+        })
+
+        if not item_indices:
+            flash('At least one item is required', 'error')
+            db.session.rollback()
+            return redirect(url_for('store_web_bp.external_orders'))
+
+        item_count = 0
+
+        # ✅ Process each item found
+        for i in item_indices:
+            item_name = request.form.get(f'items[{i}][item_name]', '').strip()
+            if not item_name:
+                flash(f'Item name for item #{item_count + 1} is required', 'error')
+                db.session.rollback()
+                return redirect(url_for('store_web_bp.external_orders'))
+
+            try:
+                quantity = int(request.form.get(f'items[{i}][quantity]', 0))
+                if quantity <= 0:
+                    flash(f'Quantity for item #{item_count + 1} must be greater than zero', 'error')
+                    db.session.rollback()
+                    return redirect(url_for('store_web_bp.external_orders'))
+            except (TypeError, ValueError):
+                flash(f'Invalid quantity for item #{item_count + 1}', 'error')
+                db.session.rollback()
+                return redirect(url_for('store_web_bp.external_orders'))
+
+            unit = request.form.get(f'items[{i}][unit]', 'pcs')
+            priority = request.form.get(f'items[{i}][priority]', 'medium')
+            category = request.form.get(f'items[{i}][category]', '').strip()
+
+            if not category:
+                flash(f'Category for item #{item_count + 1} is required', 'error')
+                db.session.rollback()
+                return redirect(url_for('store_web_bp.external_orders'))
+
+            try:
+                required_by = datetime.strptime(request.form.get(f'items[{i}][required_by]'), '%Y-%m-%d')
+            except (TypeError, ValueError):
+                flash(f'Invalid required by date for item #{item_count + 1}', 'error')
+                db.session.rollback()
+                return redirect(url_for('store_web_bp.external_orders'))
+
+            reason = request.form.get(f'items[{i}][reason]', '').strip()
+            if not reason:
+                flash(f'Reason for item #{item_count + 1} is required', 'error')
+                db.session.rollback()
+                return redirect(url_for('store_web_bp.external_orders'))
+
+            # ✅ Create external order for this item
+            external_order = ExternalOrder(
+                requisition_id=requisition.id,
+                item_name=item_name,
+                quantity=quantity,
+                unit=unit,
+                unit_price=0,
+                tax_rate=0,
+                total_price=0,
+                priority=priority,
+                category=category,
+                required_by=required_by,
+                reason=reason,
+                user_id=current_user.id,
+                status='pending'
+            )
+
+            db.session.add(external_order)
+            item_count += 1
+
+        # ✅ Log the requisition creation
         log_inventory_action(
             action='create',
-            resource_type='external_order',
-            resource_id=new_order.id,
-            description=f"Created requisition order for {quantity} {new_order.unit} of {item_name}",
+            resource_type='requisition',
+            resource_id=requisition.id,
+            description=f"Created requisition {requisition.requisition_number} with {item_count} items",
             new_values={
-                'item_name': item_name,
-                'quantity': quantity,
-                'unit_price': new_order.unit_price,
-                'total_price': new_order.total_price,
-                'supplier_id': new_order.supplier_id
+                'requisition_number': requisition.requisition_number,
+                'item_count': item_count,
+                'overall_priority': requisition.overall_priority
             },
             module='procurement'
         )
-        
+
         db.session.commit()
-        
-        flash('Requisition created successfully!', 'success')
+
+        flash(f'Requisition {requisition.requisition_number} with {item_count} item(s) created successfully!', 'success')
         return redirect(url_for('store_web_bp.external_orders'))
+
     except SQLAlchemyError as e:
         db.session.rollback()
         current_app.logger.error(f"Database error creating external order: {str(e)}")
         flash('An error occurred while saving your requisition. Please try again.', 'error')
         return redirect(url_for('store_web_bp.external_orders'))
-    
+
     except Exception as e:
         current_app.logger.error(f"Unexpected error creating external order: {str(e)}")
         flash('An unexpected error occurred. Please try again.', 'error')
@@ -1010,17 +998,10 @@ def edit_external_order(order_id):
             order.item_name = request.form['item_name']
             order.quantity = int(request.form['quantity'])
             order.unit = request.form['unit']
-            order.unit_price = float(request.form['unit_price'])
-            order.tax_rate = float(request.form.get('tax_rate', 0))
+
             
-            # Recalculate total
-            subtotal = order.quantity * order.unit_price
-            tax_amount = subtotal * (order.tax_rate / 100)
-            order.total_price = subtotal + tax_amount
-            
-            order.supplier_id = int(request.form['supplier_id'])
-            order.contact_person = request.form.get('contact', '')
-            order.contact_info = request.form.get('contact_info', '')
+
+
             order.priority = request.form['priority']
             order.category = request.form['category']
 

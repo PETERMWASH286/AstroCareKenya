@@ -635,7 +635,12 @@ def process_payment():
         if not reg_no:
             raise ValueError("Patient RegNo is required.")
 
-        # --- NEW LOGIC FOR VISIT TYPE ---
+        # --- NEW: Get patient category ---
+        patient_category = request.form.get('patientCategory', 'general').strip()
+        if patient_category not in ['general', 'walkin', 'special_clinic']:
+            patient_category = 'general'  # default if invalid
+
+        # --- VISIT TYPE LOGIC ---
         final_visit_type = request.form.get('finalVisitType', '').strip()
 
 
@@ -741,6 +746,8 @@ def process_payment():
                 existing_visit_service_ids = {svc.id for svc in visit.services}
                 new_services_for_visit = [svc for svc in services if svc.id not in existing_visit_service_ids]
                 visit.services.extend(new_services_for_visit) # Add only new services
+                visit.patient_category = patient_category
+
                 visit.visit_type_category = final_visit_type
                 visit.visit_type_other_details = other_visit_type_details
             else:

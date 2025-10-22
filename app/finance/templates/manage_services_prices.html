@@ -47,7 +47,9 @@
                 <tr>
                     <th class="px-6 py-4 text-left text-gray-500 dark:text-gray-400 font-medium text-sm">Service Name</th>
                     <th class="px-6 py-4 text-left text-gray-500 dark:text-gray-400 font-medium text-sm">Category</th>
-                    <th class="px-6 py-4 text-left text-gray-500 dark:text-gray-400 font-medium text-sm">Price (KES)</th>
+                    <th class="px-6 py-4 text-left text-gray-500 dark:text-gray-400 font-medium text-sm">Regular Price (KES)</th>
+                    <th class="px-6 py-4 text-left text-gray-500 dark:text-gray-400 font-medium text-sm">Walk-in Price (KES)</th>
+                    <th class="px-6 py-4 text-left text-gray-500 dark:text-gray-400 font-medium text-sm">Special Clinic Price (KES)</th>
                     <th class="px-6 py-4 text-left text-gray-500 dark:text-gray-400 font-medium text-sm">Duration</th>
                     <th class="px-6 py-4 text-center text-gray-500 dark:text-gray-400 font-medium text-sm">Status</th>
                     <th class="px-6 py-4 text-right text-gray-500 dark:text-gray-400 font-medium text-sm">Actions</th>
@@ -63,7 +65,25 @@
                         <span class="text-gray-700 dark:text-gray-300">{{ service.category }}</span>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="text-gray-700 dark:text-gray-300">KSh {{ "%0.2f"|format(service.price) }}</span>
+                        <span class="text-gray-700 dark:text-gray-300 font-medium">KSh {{ "%0.2f"|format(service.price) }}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="text-blue-600 dark:text-blue-400 font-medium">
+                            {% if service.walkin_price is not none %}
+                                KSh {{ "%0.2f"|format(service.walkin_price) }}
+                            {% else %}
+                                KSh 0.00
+                            {% endif %}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="text-purple-600 dark:text-purple-400 font-medium">
+                            {% if service.special_clinic_price is not none %}
+                                KSh {{ "%0.2f"|format(service.special_clinic_price) }}
+                            {% else %}
+                                KSh 0.00
+                            {% endif %}
+                        </span>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
                         <span class="text-gray-700 dark:text-gray-300">{{ service.duration }} {% if service.is_pharmacy_product %}days{% else %}mins{% endif %}</span>
@@ -85,7 +105,7 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="6" class="px-6 py-12 text-center">
+                    <td colspan="8" class="px-6 py-12 text-center">
                         <div class="text-gray-400 dark:text-gray-500 space-y-2">
                             <i class="fas fa-box-open fa-2x"></i>
                             <p>No services found.</p>
@@ -146,7 +166,6 @@
             filterServices();
         });
 
-        // Delete confirmation
         // Delete confirmation
         document.querySelectorAll('.delete-btn').forEach((btn) => {
             btn.addEventListener('click', () => {

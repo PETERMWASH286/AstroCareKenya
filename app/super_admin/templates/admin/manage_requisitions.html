@@ -110,125 +110,185 @@
                         <th class="px-8 py-4 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700" id="requisitions-table">
-                    {% for req in orders %}
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-750 transition-all duration-200" 
-                        data-item-name="{{ req.item_name.lower() }}"
-                        data-created-date="{{ req.created_at.strftime('%Y-%m-%d') if req.created_at else '' }}"
-                        data-required-date="{{ req.required_by.strftime('%Y-%m-%d') if req.required_by else '' }}">
-                        <td class="px-8 py-5">
-                            <div class="flex items-center gap-3">
-                                <div class="p-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg">
-                                    <i class="fas fa-box text-indigo-600 dark:text-indigo-400 text-sm"></i>
-                                </div>
-                                <div>
-                                    <div class="text-sm font-semibold text-indigo-600 dark:text-indigo-400">#REQ-{{ req.id }}</div>
-                                    <div class="text-base font-medium text-gray-900 dark:text-white mt-1">{{ req.item_name }}</div>
-                                    <div class="text-sm text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-1">
-                                        <i class="fas fa-truck text-xs"></i>
-                                        {{ req.supplier.name if req.supplier else 'No supplier' }}
-                                    </div>
-                                </div>
-                            </div>
-                        </td>
+<tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700" id="requisitions-table">
+    {% for requisition in requisitions %}
+    <!-- Requisition Header Row -->
+    <tr class="requisition-header bg-blue-50 dark:bg-blue-900/20 border-t-2 border-blue-200 dark:border-blue-700">
+        <td colspan="8" class="px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <div class="bg-blue-100 dark:bg-blue-800 rounded-lg p-2">
+                        <i class="fas fa-file-alt text-blue-600 dark:text-blue-400"></i>
+                    </div>
+                    <div>
+                        <div class="text-lg font-bold text-gray-900 dark:text-white">{{ requisition.requisition_number }}</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400">
+                            {{ requisition.pending_orders|length }} item(s) pending approval • 
+                            Created: {{ requisition.created_at.strftime('%d %b %Y') }} •
+                            Requested by: {{ requisition.user.username if requisition.user else 'Unknown' }}
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <!-- Approve All Button -->
+                    <form action="{{ url_for('admin_web_bp.approve_requisition_all', requisition_id=requisition.id) }}" 
+                          method="POST" 
+                          class="inline"
+                          onsubmit="return confirm('Are you sure you want to approve all {{ requisition.pending_orders|length }} items in this requisition?');">
+                        <button type="submit" 
+                                class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center space-x-2">
+                            <i class="fas fa-check-double"></i>
+                            <span>Approve All ({{ requisition.pending_orders|length }})</span>
+                        </button>
+                    </form>
+                    {% if requisition.overall_reason %}
+                    <div class="text-right max-w-md">
+                        <div class="text-sm text-gray-600 dark:text-gray-400 truncate" title="{{ requisition.overall_reason }}">
+                            {{ requisition.overall_reason }}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </td>
+    </tr>
+    
+    <!-- Individual Orders for this Requisition -->
+    {% for order in requisition.pending_orders %}
+    <tr class="order-row hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors" 
+        data-item-name="{{ order.item_name|lower }}"
+        data-created-date="{{ order.created_at.strftime('%Y-%m-%d') }}"
+        data-required-date="{{ order.required_by.strftime('%Y-%m-%d') if order.required_by else '' }}">
+        <td class="px-8 py-5">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg">
+                    <i class="fas fa-box text-indigo-600 dark:text-indigo-400 text-sm"></i>
+                </div>
+                <div>
+                    <div class="text-sm font-semibold text-indigo-600 dark:text-indigo-400">#REQ-{{ requisition.id }}-{{ order.id }}</div>
+                    <div class="text-base font-medium text-gray-900 dark:text-white mt-1">{{ order.item_name }}</div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-1">
+                        <i class="fas fa-truck text-xs"></i>
+                        {{ order.supplier.name if order.supplier else 'No supplier' }}
+                    </div>
+                </div>
+            </div>
+        </td>
 
-                        <td class="px-6 py-5">
-                            <div class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ req.quantity }} {{ req.unit }}</div>
-                            <div class="text-sm text-gray-500 dark:text-gray-400">
-                                {{ currency }} {{ "%.2f"|format(req.unit_price) }} per unit
-                            </div>
-                        </td>
+        <td class="px-6 py-5">
+            <div class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ order.quantity }} {{ order.unit }}</div>
+            <div class="text-sm text-gray-500 dark:text-gray-400">
+                {{ currency }} {{ "%.2f"|format(order.unit_price) }} per unit
+            </div>
+        </td>
 
-                        <td class="px-6 py-5">
-                            <div class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ req.department|title }}</div>
-                            <div class="text-xs text-gray-500 dark:text-gray-400 px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-full inline-block mt-1">
-                                {{ req.category|replace('_', ' ')|title }}
-                            </div>
-                        </td>
+        <td class="px-6 py-5">
+            <div class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ order.department|title if order.department else 'N/A' }}</div>
+            <div class="text-xs text-gray-500 dark:text-gray-400 px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-full inline-block mt-1">
+                {{ order.category|replace('_', ' ')|title if order.category else 'Uncategorized' }}
+            </div>
+        </td>
 
-                        <td class="px-6 py-5">
-                            <div class="flex items-center">
-                                <div class="relative mr-4">
-                                    <div class="w-10 h-10 bg-gradient-to-br from-gray-300 to-gray-400 dark:from-gray-600 dark:to-gray-700 rounded-xl flex items-center justify-center shadow-sm">
-                                        <span class="text-sm font-semibold text-white">{{ req.user.username|first|upper }}</span>
-                                    </div>
-                                    {% if req.finance_approved %}
-                                    <div class="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white dark:border-gray-800"></div>
-                                    {% endif %}
-                                </div>
-                                <div>
-                                    <div class="text-sm font-medium text-gray-900 dark:text-white">{{ req.user.username }}</div>
-                                    <div class="text-sm text-gray-500 dark:text-gray-400">
-                                        {{ req.created_at.strftime('%d %b %Y') }}
-                                    </div>
-                                </div>
-                            </div>
-                        </td>
+        <td class="px-6 py-5">
+            <div class="flex items-center">
+                <div class="relative mr-4">
+                    <div class="w-10 h-10 bg-gradient-to-br from-gray-300 to-gray-400 dark:from-gray-600 dark:to-gray-700 rounded-xl flex items-center justify-center shadow-sm">
+                        <span class="text-sm font-semibold text-white">{{ order.user.username|first|upper if order.user else '?' }}</span>
+                    </div>
+                    {% if order.finance_approved %}
+                    <div class="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white dark:border-gray-800"></div>
+                    {% endif %}
+                </div>
+                <div>
+                    <div class="text-sm font-medium text-gray-900 dark:text-white">{{ order.user.username if order.user else 'Unknown' }}</div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">
+                        {{ order.created_at.strftime('%d %b %Y') }}
+                    </div>
+                </div>
+            </div>
+        </td>
 
-                        <td class="px-6 py-5">
-                            {% if req.finance_approved %}
-                                <span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                                    <i class="fas fa-check-circle"></i>
-                                    Approved
-                                </span>
-                            {% else %}
-                                <span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
-                                    <i class="fas fa-clock"></i>
-                                    Pending
-                                </span>
-                            {% endif %}
-                        </td>
+        <td class="px-6 py-5">
+            {% if order.finance_approved %}
+                <span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                    <i class="fas fa-check-circle"></i>
+                    Finance Approved
+                </span>
+                {% if order.finance_user and order.finance_approved_at %}
+                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    by {{ order.finance_user.full_name }}<br>
+                    on {{ order.finance_approved_at.strftime('%d %b %Y') }}
+                </div>
+                {% endif %}
+            {% else %}
+                <span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                    <i class="fas fa-clock"></i>
+                    Pending Finance
+                </span>
+            {% endif %}
+        </td>
 
-                        <td class="px-6 py-5">
-                            <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
-                                {% if req.required_by %}
-                                    {{ req.required_by.strftime('%d %b %Y') }}
-                                {% else %}
-                                    <span class="text-gray-400">Not specified</span>
-                                {% endif %}
-                            </div>
-                        </td>
+        <td class="px-6 py-5">
+            <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                {% if order.required_by %}
+                    {{ order.required_by.strftime('%d %b %Y') }}
+                {% else %}
+                    <span class="text-gray-400">Not specified</span>
+                {% endif %}
+            </div>
+            <div class="text-xs {% if order.is_overdue %}text-red-600{% else %}text-gray-500{% endif %}">
+                {{ order.days_text }}
+            </div>
+        </td>
 
-                        <td class="px-6 py-5">
-                            <div class="text-lg font-bold text-gray-900 dark:text-white">
-                                {{ currency }} {{ "%.2f"|format(req.total_price) }}
-                            </div>
-                        </td>
+        <td class="px-6 py-5">
+            <div class="text-lg font-bold text-gray-900 dark:text-white">
+                {{ currency }} {{ "%.2f"|format(order.total_price) }}
+            </div>
+        </td>
 
-<td class="px-8 py-5 whitespace-nowrap text-right">
-    <div class="flex justify-end gap-2">
-        {% if req.finance_approved and not req.director_approved %}
-            <a href="{{ url_for('admin_web_bp.approve_requisition', order_id=req.id) }}" 
-               class="p-2 bg-green-500 hover:bg-green-600 text-white rounded-xl transition-all duration-200 shadow-sm hover:shadow-md" 
-               title="Approve">
-                <i class="fas fa-check text-sm"></i>
-            </a>
-            <button onclick="openRejectionModal({{ req.id }})" 
-                    class="p-2 bg-red-500 hover:bg-red-600 text-white rounded-xl transition-all duration-200 shadow-sm hover:shadow-md" 
-                    title="Reject">
-                <i class="fas fa-times text-sm"></i>
-            </button>
-        {% endif %}
-        <a href="{{ url_for('admin_web_bp.view_requisition', order_id=req.id) }}" 
-           class="p-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl transition-all duration-200 shadow-sm hover:shadow-md" 
-           title="View Details">
-            <i class="fas fa-eye text-sm"></i>
-        </a>
-    </div>
-</td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="8" class="px-8 py-12 text-center">
-                            <div class="text-gray-400 dark:text-gray-500">
-                                <i class="fas fa-check-circle text-5xl mb-4"></i>
-                                <p class="text-xl font-medium">No requisitions pending</p>
-                                <p class="mt-2 text-gray-500 dark:text-gray-400">All purchase requisitions are processed and up to date</p>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
+        <td class="px-8 py-5 whitespace-nowrap text-right">
+            <div class="flex justify-end gap-2">
+                <!-- Individual Approve Button -->
+                <a href="{{ url_for('admin_web_bp.approve_requisition', order_id=order.id) }}" 
+                   class="p-2 bg-green-500 hover:bg-green-600 text-white rounded-xl transition-all duration-200 shadow-sm hover:shadow-md" 
+                   title="Approve This Item"
+                   onclick="return confirm('Are you sure you want to approve this item?');">
+                    <i class="fas fa-check text-sm"></i>
+                </a>
+                
+                <!-- Individual Reject Button -->
+                <button onclick="openRejectionModal({{ order.id }})" 
+                        class="p-2 bg-red-500 hover:bg-red-600 text-white rounded-xl transition-all duration-200 shadow-sm hover:shadow-md" 
+                        title="Reject This Item">
+                    <i class="fas fa-times text-sm"></i>
+                </button>
+                
+                <!-- View Details -->
+                <a href="{{ url_for('admin_web_bp.view_requisition', order_id=order.id) }}" 
+                   class="p-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl transition-all duration-200 shadow-sm hover:shadow-md" 
+                   title="View Details">
+                    <i class="fas fa-eye text-sm"></i>
+                </a>
+            </div>
+        </td>
+    </tr>
+    {% endfor %}
+    {% endfor %}
+    
+    <!-- Empty state when no requisitions -->
+    {% if requisitions|length == 0 %}
+    <tr>
+        <td colspan="8" class="px-8 py-12 text-center">
+            <div class="text-gray-400 dark:text-gray-500">
+                <i class="fas fa-check-circle text-5xl mb-4"></i>
+                <p class="text-xl font-medium">No requisitions pending</p>
+                <p class="mt-2 text-gray-500 dark:text-gray-400">All purchase requisitions are processed and up to date</p>
+            </div>
+        </td>
+    </tr>
+    {% endif %}
+</tbody>
             </table>
         </div>
     </div>

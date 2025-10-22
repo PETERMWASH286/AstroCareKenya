@@ -7,7 +7,7 @@ from sqlalchemy import case
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import joinedload
 
-from app.store.models import LPO, ExternalOrder, PaymentRequest, SupplierTransaction
+from app.store.models import LPO, ExternalOrder, PaymentRequest, Requisition, SupplierTransaction
 from app import db
 
 # Define the blueprint
@@ -28,66 +28,85 @@ def admin_dashboard():
 def manage_requisitions():
     """
     Show requisitions that have been approved by Finance and are awaiting Director/Admin approval.
+    Grouped by requisition number.
     """
-
-    page = request.args.get('page', 1, type=int)
-    per_page = request.args.get('per_page', 20, type=int)
-
-    # Only those approved by finance and not yet approved by director
-    query = (
-        ExternalOrder.query
-        .filter(
-            ExternalOrder.finance_approved.is_(True),
-            ExternalOrder.director_approved.is_(False),
-            ExternalOrder.status.notin_(["rejected", "cancelled"])   # exclude rejected/cancelled
+    try:
+        # Fetch requisitions with their orders, ordered by urgency
+        requisitions = (
+            Requisition.query
+            .join(Requisition.external_orders)
+            .filter(
+                ExternalOrder.finance_approved.is_(True),
+                ExternalOrder.director_approved.is_(False),
+                ExternalOrder.status.notin_(["rejected", "cancelled"])
+            )
+            .options(
+                db.joinedload(Requisition.external_orders)
+                .joinedload(ExternalOrder.supplier),
+                db.joinedload(Requisition.external_orders)
+                .joinedload(ExternalOrder.user),
+                db.joinedload(Requisition.user)
+            )
+            .order_by(Requisition.created_at.desc())
+            .all()
         )
-        .options(
-            joinedload(ExternalOrder.supplier),
-            joinedload(ExternalOrder.user)
+        
+        # Calculate days until required for each order and attach to requisition
+        now = datetime.utcnow()
+        requisitions_with_info = []
+        
+        for requisition in requisitions:
+            # Process each order in the requisition
+            orders_with_info = []
+            for order in requisition.external_orders:
+                # Only include orders that meet our criteria
+                if (order.finance_approved and 
+                    not order.director_approved and 
+                    order.status not in ["rejected", "cancelled"]):
+                    
+                    if order.required_by:
+                        delta = order.required_by - now
+                        days_until = delta.days
+                        is_overdue = days_until < 0
+
+                        if days_until < 0:
+                            days_text = f"{abs(days_until)} days overdue"
+                        elif days_until == 0:
+                            days_text = "Today"
+                        elif days_until == 1:
+                            days_text = "Tomorrow"
+                        else:
+                            days_text = f"{days_until} days"
+                    else:
+                        days_until = None
+                        is_overdue = False
+                        days_text = "Not specified"
+
+                    # Attach attributes to order
+                    order.days_until = days_until
+                    order.is_overdue = is_overdue
+                    order.days_text = days_text
+                    orders_with_info.append(order)
+            
+            # Only include requisitions that have pending orders
+            if orders_with_info:
+                requisition.pending_orders = orders_with_info
+                requisitions_with_info.append(requisition)
+        
+        # Get currency from config
+        currency = current_app.config.get('CURRENCY', 'Ksh')
+        
+        return render_template(
+            "admin/manage_requisitions.html",
+            requisitions=requisitions_with_info,
+            currency=currency,
+            now=now
         )
-        .order_by(
-            case((ExternalOrder.required_by == None, 1), else_=0),  # push NULLs last
-            ExternalOrder.required_by.asc(),
-            ExternalOrder.created_at.desc()
-        )
-    )
-
-    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
-    orders = pagination.items
-
-    now = datetime.utcnow()
-    for order in orders:
-        if order.required_by:
-            delta = order.required_by - now
-            days_until = delta.days
-            is_overdue = days_until < 0
-
-            if days_until < 0:
-                days_text = f"{abs(days_until)} days overdue"
-            elif days_until == 0:
-                days_text = "Today"
-            elif days_until == 1:
-                days_text = "Tomorrow"
-            else:
-                days_text = f"{days_until} days"
-        else:
-            days_until = None
-            is_overdue = False
-            days_text = "Not specified"
-
-        order.days_until = days_until
-        order.is_overdue = is_overdue
-        order.days_text = days_text
-
-    currency = current_app.config.get('CURRENCY', 'Ksh')
-
-    return render_template(
-        "admin/manage_requisitions.html",
-        orders=orders,
-        pagination=pagination,
-        currency=currency,
-        now=now
-    )
+    
+    except SQLAlchemyError as e:
+        current_app.logger.error(f"Database error fetching requisitions: {str(e)}")
+        flash('An error occurred while fetching requisitions. Please try again.', 'error')
+        return redirect(url_for('admin_web_bp.dashboard'))
 
 
 # Approve by Director route
@@ -119,7 +138,48 @@ def approve_requisition(order_id):
     current_app.logger.info(f"Requisition #{order.id} approved by director {current_user.username}")
     flash(f"Requisition #{order.id} approved successfully.", "success")
     return redirect(url_for("admin_web_bp.manage_requisitions"))
-
+@admin_web.route("/requisitions/approve-all/<int:requisition_id>", methods=["POST"])
+@login_required
+def approve_requisition_all(requisition_id):
+    """
+    Approve all pending orders in a requisition at once.
+    """
+    try:
+        requisition = Requisition.query.get_or_404(requisition_id)
+        
+        # Get all pending orders in this requisition
+        pending_orders = [
+            order for order in requisition.external_orders 
+            if (order.finance_approved and 
+                not order.director_approved and 
+                order.status not in ["rejected", "cancelled"])
+        ]
+        
+        if not pending_orders:
+            flash("No pending orders found in this requisition.", "warning")
+            return redirect(url_for("admin_web_bp.manage_requisitions"))
+        
+        # Approve all pending orders
+        approved_count = 0
+        for order in pending_orders:
+            order.director_approved = True
+            order.director_approved_by = current_user.id
+            order.director_approved_at = datetime.utcnow()
+            order.status = "director_approved"
+            order.updated_at = datetime.utcnow()
+            approved_count += 1
+        
+        db.session.commit()
+        
+        current_app.logger.info(f"Approved {approved_count} orders in requisition #{requisition.id} by director {current_user.username}")
+        flash(f"Successfully approved {approved_count} items in requisition #{requisition.requisition_number}.", "success")
+        
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        current_app.logger.error(f"Database error approving requisition: {str(e)}")
+        flash('An error occurred while approving the requisition. Please try again.', 'error')
+    
+    return redirect(url_for("admin_web_bp.manage_requisitions"))
 
 # Reject by Director route
 @admin_web.route("/requisitions/reject/<int:order_id>", methods=['POST'])
