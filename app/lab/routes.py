@@ -3094,7 +3094,7 @@ def bulk_request_detail(bulk_id):
     """View details of a specific bulk request"""
     bulk_request = BulkRequest.query.get_or_404(bulk_id)
     stock_requests = bulk_request.stock_requests.all()
-    
+        
     return render_template('lab-inventory/bulk_request_detail.html',
                          bulk_request=bulk_request,
                          stock_requests=stock_requests,
