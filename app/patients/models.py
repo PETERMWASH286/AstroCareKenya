@@ -200,7 +200,7 @@ class Patient(db.Model):
 
 class Visit(db.Model):
     __tablename__ = 'visits'
-    __audit_trail__ = True  # Enable auditing
+    __audit_trail__ = True
 
     id = db.Column(db.Integer, primary_key=True)
     
@@ -209,33 +209,37 @@ class Visit(db.Model):
 
     # Basic visit info
     visit_date = db.Column(db.DateTime, default=datetime.utcnow)
-    visit_status = db.Column(db.String(20), default='in_progress')  # in_progress, completed, cancelled, etc.
-    current_position = db.Column(db.String(64), nullable=True)  # e.g., triage, consultation, pharmacy
+    visit_status = db.Column(db.String(20), default='in_progress')
+    current_position = db.Column(db.String(64), nullable=True)
 
     # Walk-in flag
     is_walk_in = db.Column(db.Boolean, nullable=True, default=False)
     visit_type_category = db.Column(db.String(50), nullable=False, default='general_consultation')
-    # You might also want to store the 'other' detailed description if chosen
     visit_type_other_details = db.Column(db.String(255), nullable=True)
     
-    # NEW: Patient category for pricing
-    patient_category = db.Column(db.String(20), nullable=False, default='general')  # general, walkin, special_clinic
+    # Patient category for pricing
+    patient_category = db.Column(db.String(20), nullable=False, default='general')
     
     # Billing
     is_paid = db.Column(db.Boolean, default=False)
-    payment_status = db.Column(db.String(20), default='pending')  # pending, paid, failed
+    payment_status = db.Column(db.String(20), default='pending')
 
     # Services (many-to-many)
     services = db.relationship('Service', secondary='visit_services',
                                backref=db.backref('visits', lazy='dynamic'))
 
-    # Relationships
+    # Relationships - FIXED: Remove uselist=False where multiple records can exist
     patient = db.relationship('Patient', backref=db.backref('visits', lazy=True))
     transaction = db.relationship('Transaction', backref=db.backref('visit', uselist=False))
-    vitals = db.relationship('Vitals', back_populates='visit', uselist=False)
+    
+    # CHANGED: Remove uselist=False since multiple vitals can exist per visit
+    vitals = db.relationship('Vitals', back_populates='visit')
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # CHANGED: Remove uselist=False since multiple consultations can exist per visit
+    consultations = db.relationship('Consultation', back_populates='visit')
 
     # ← Add this relation to match Invoice.visit.back_populates
     invoice = db.relationship(
@@ -247,6 +251,15 @@ class Visit(db.Model):
     def __repr__(self):
         return f"<Visit {self.id} Patient:{self.patient_id} Status:{self.visit_status} WalkIn:{self.is_walk_in}>"
 
+    # Helper property to get the most recent consultation
+    @property
+    def latest_consultation(self):
+        return Consultation.query.filter_by(visit_id=self.id).order_by(Consultation.created_at.desc()).first()
+
+    # Helper property to get the most recent vitals
+    @property
+    def latest_vitals(self):
+        return Vitals.query.filter_by(visit_id=self.id).order_by(Vitals.recorded_at.desc()).first()
 
 
 
@@ -374,25 +387,28 @@ class TbScreening(db.Model):
 
 class Consultation(db.Model):
     __tablename__ = 'consultations'
-    __audit_trail__ = True  # Enable auditing
+    __audit_trail__ = True
 
     id = db.Column(db.Integer, primary_key=True)
     patient_id = db.Column(db.Integer, db.ForeignKey('patients.id'), nullable=False)
-    visit_id   = db.Column(db.Integer, db.ForeignKey('visits.id'), nullable=True)
+    visit_id = db.Column(db.Integer, db.ForeignKey('visits.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    treated_by_id= db.Column(db.Integer, db.ForeignKey('user.id'),       nullable=True)   # ← new!
+    treated_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
 
     # clinical fields
-    history         = db.Column(db.Text, nullable=False)
-    examination     = db.Column(db.Text, nullable=False)
-    diagnosis       = db.Column(db.Text, nullable=False)
-    treatment_plan  = db.Column(db.Text, nullable=False)
-    notes           = db.Column(db.Text)
+    history = db.Column(db.Text, nullable=False)
+    examination = db.Column(db.Text, nullable=False)
+    diagnosis = db.Column(db.Text, nullable=False)
+    treatment_plan = db.Column(db.Text, nullable=False)
+    notes = db.Column(db.Text)
 
-    # relationships
+    # Relationships - FIXED
     patient = db.relationship('Patient', backref=db.backref('consultations', lazy='dynamic'))
-    visit   = db.relationship('Visit',    backref=db.backref('consultation', uselist=False))
-    treated_by  = db.relationship('User',     backref='consultations')             # ← new!
+    
+    # CHANGED: Remove uselist=False and use proper back_populates
+    visit = db.relationship('Visit', back_populates='consultations')
+    
+    treated_by = db.relationship('User', backref='consultations')
 
     def to_dict(self):
         return {

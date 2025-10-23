@@ -212,8 +212,8 @@ def view_patient(patient_id):
 def add_treatment(visit_id):
     visit = Visit.query.get_or_404(visit_id)
     
-    # Fetch existing consultation if it exists
-    consultation = Consultation.query.filter_by(visit_id=visit_id).first()
+    # Get the latest consultation instead of first() to handle multiple consultations per visit
+    consultation = visit.latest_consultation
     
     # Fetch existing treatments
     existing_medications = []
@@ -450,7 +450,7 @@ def add_treatment(visit_id):
                                         numeric_value=value,
                                         unit=param.unit,
                                         entered_by=current_user.username,
-                                        entered_at=datetime.datetime.utcnow()
+                                        entered_at=datetime.utcnow()
                                     )
                                     db.session.add(new_result)
                                     results_added_for_this_test = True
@@ -467,7 +467,7 @@ def add_treatment(visit_id):
                                     categorical_value=value,
                                     unit=param.unit,
                                     entered_by=current_user.username,
-                                    entered_at=datetime.datetime.utcnow()
+                                    entered_at=datetime.utcnow()
                                 )
                                 db.session.add(new_result)
                                 results_added_for_this_test = True
@@ -481,7 +481,7 @@ def add_treatment(visit_id):
                                     text_value=value,
                                     unit=param.unit,
                                     entered_by=current_user.username,
-                                    entered_at=datetime.datetime.utcnow()
+                                    entered_at=datetime.utcnow()
                                 )
                                 db.session.add(new_result)
                                 results_added_for_this_test = True
@@ -512,7 +512,7 @@ def add_treatment(visit_id):
                     if results_added_for_this_test:
                         lab_test_order.status = 'results_entered' 
                         lab_test_order.done_by = current_user
-                        lab_test_order.done_at = datetime.datetime.utcnow()
+                        lab_test_order.done_at = datetime.utcnow()
 
                     # Update overall interpretation and comments for the LabTest order
                     overall_interpretation_name = f'lab_test_overall_interpretation[{lab_test_id}]'
@@ -545,7 +545,6 @@ def add_treatment(visit_id):
         existing_radiology=existing_radiology,
         existing_lab_results=existing_lab_results 
     )
-
 
 
 @consultations_web_bp.route('/consultations/<int:consultation_id>/edit', methods=['GET', 'POST'])
