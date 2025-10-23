@@ -371,6 +371,7 @@ def add_treatment(visit_id):
                     db.session.delete(lab_test_order)
 
             # Add new lab tests
+            # Add new lab tests
             for service_id in submitted_lab_service_ids:
                 if service_id not in existing_lab_service_ids:
                     service = Service.query.get(service_id)
