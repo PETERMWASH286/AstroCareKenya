@@ -152,6 +152,8 @@ class DailyLogEntry(db.Model):
 
 class ScheduledMaintenanceLog(db.Model):
     __tablename__ = 'scheduled_maintenance_logs'
+    __audit_trail__ = True
+
     id = db.Column(db.Integer, primary_key=True)
     equipment = db.Column(db.String(100), nullable=False)
     maintenance_date = db.Column(db.Date, nullable=False)
@@ -377,6 +379,7 @@ from sqlalchemy.orm import relationship
 
 class LaboratoryTest(db.Model):
     __tablename__ = 'laboratory_tests'
+    __audit_trail__ = True
 
     test_id = db.Column(db.Integer, primary_key=True)
     test_name = db.Column(db.String(100), nullable=False)
@@ -403,6 +406,7 @@ class LaboratoryTest(db.Model):
 
 class TestParameter(db.Model):
     __tablename__ = 'test_parameters'
+    __audit_trail__ = True
 
     parameter_id = db.Column(db.Integer, primary_key=True)
     test_id = db.Column(db.Integer, ForeignKey('laboratory_tests.test_id', ondelete='CASCADE'), nullable=False)
@@ -428,6 +432,7 @@ class TestParameter(db.Model):
 
 class ParameterRange(db.Model):
     __tablename__ = 'parameter_ranges'
+    __audit_trail__ = True
 
     range_id = db.Column(db.Integer, primary_key=True)
     parameter_id = db.Column(db.Integer, ForeignKey('test_parameters.parameter_id', ondelete='CASCADE'), nullable=False)
@@ -457,6 +462,7 @@ class ParameterRange(db.Model):
 
 class ParameterOption(db.Model):
     __tablename__ = 'parameter_options'
+    __audit_trail__ = True
 
     option_id = db.Column(db.Integer, primary_key=True)
     parameter_id = db.Column(db.Integer, ForeignKey('test_parameters.parameter_id', ondelete='CASCADE'), nullable=False)
@@ -469,6 +475,7 @@ class ParameterOption(db.Model):
 
 class TestPanel(db.Model):
     __tablename__ = 'test_panels'
+    __audit_trail__ = True
 
     panel_id = db.Column(db.Integer, primary_key=True)
     panel_name = db.Column(db.String(100), nullable=False)
@@ -480,6 +487,7 @@ class TestPanel(db.Model):
 
 class PanelTest(db.Model):
     __tablename__ = 'panel_tests'
+    __audit_trail__ = True
 
     panel_id = db.Column(db.Integer, ForeignKey('test_panels.panel_id', ondelete='CASCADE'), primary_key=True)
     test_id = db.Column(db.Integer, ForeignKey('laboratory_tests.test_id', ondelete='CASCADE'), primary_key=True)
@@ -491,6 +499,7 @@ class PanelTest(db.Model):
 
 class LabTestResult(db.Model):
     __tablename__ = 'lab_test_results'
+    __audit_trail__ = True
 
     result_id = db.Column(db.Integer, primary_key=True)
 

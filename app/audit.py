@@ -254,16 +254,30 @@ def log_audit_event(action, target=None, connection=None, changes=None, *,
 
 
 # -------------------------------------------------------------------
-# Event listeners
+# Event listeners - FIXED VERSION
 # -------------------------------------------------------------------
 def after_insert_listener(mapper, connection, target):
-    if target.id is None:  # force DB round-trip
-        db.session.flush()
-    log_audit_event('CREATE', target, connection)
-
+    # FIXED: Use inspect to check if identity is set instead of assuming 'id' attribute
+    insp = inspect(target)
+    if insp.identity is None:  # Check if primary key is not set yet
+        # Try to force flush to get the primary key
+        try:
+            # Use the session from the connection if available
+            session = object_session(target)
+            if session:
+                session.flush()
+        except Exception:
+            # If flush fails, continue without the primary key
+            pass
+    
+    if should_audit(target):
+        log_audit_event('CREATE', target, connection)
 
 
 def before_update_listener(mapper, connection, target):
+    if not should_audit(target):
+        return
+        
     changes = {}
     insp = inspect(target)
 
