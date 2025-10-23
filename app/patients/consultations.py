@@ -232,7 +232,6 @@ def add_treatment(visit_id):
             if results:
                 existing_lab_results[lab_test_order.id] = results
 
-
     # Fetch the patient's insurance record
     insurance_obj = None
     if visit.patient.payment_method == 'insurance' and visit.patient.insurance_provider:
@@ -356,8 +355,7 @@ def add_treatment(visit_id):
                     db.session.delete(medication_obj)
             # --- End Process Medications ---
 
-
-            # Process Lab Tests (Existing logic, no changes needed here for the medication error)
+            # --- Process Lab Tests (FIXED) ---
             submitted_lab_service_ids = [int(sid) for sid in request.form.getlist('lab_tests') if sid] # Filter out empty strings
             
             current_consultation_lab_tests = LabTest.query.filter_by(consultation_id=consultation.id).all()
@@ -370,26 +368,23 @@ def add_treatment(visit_id):
                     # e.g., if lab_test_order.status == 'requested':
                     db.session.delete(lab_test_order)
 
-            # Add new lab tests
-            # Add new lab tests
+            # Add new lab tests - FIXED: Only set consultation, not visit
             for service_id in submitted_lab_service_ids:
                 if service_id not in existing_lab_service_ids:
                     service = Service.query.get(service_id)
                     if service and service.category == 'Laboratory':
                         lab_test = LabTest(
-                            consultation=consultation,
-                            service=service,
+                            consultation_id=consultation.id,  # Set consultation_id directly
+                            service_id=service_id,
                             status='requested'
                         )
-                        if consultation:
-                            lab_test.consultation = consultation
-                            lab_test.visit = visit
+                        # DO NOT set visit_id to avoid constraint violation
                         db.session.add(lab_test)
 
-            
-            # Process Radiology Orders (Existing logic, no changes needed here)
-            # This logic explicitly deletes all and re-adds, which is fine if that's the intended behavior for radiology
+            # --- Process Radiology Orders (FIXED) ---
+            # Delete existing radiology orders for this consultation
             Radiology.query.filter_by(consultation_id=consultation.id).delete()
+            
             for service_id_str in request.form.getlist('imaging_studies'):
                 if not service_id_str: # Skip if empty
                     continue
@@ -397,22 +392,16 @@ def add_treatment(visit_id):
                 service = Service.query.get(service_id)
                 if service and service.category == 'Radiology':
                     radiology = Radiology(
-                        consultation=consultation,
-                        service=service,
+                        consultation_id=consultation.id,  # Set consultation_id directly
+                        service_id=service_id,
                         status='requested'
                     )
-                    if consultation:
-                        radiology.consultation = consultation
-                        radiology.visit = visit
+                    # DO NOT set visit_id to avoid constraint violation
                     db.session.add(radiology)
 
             db.session.commit() # Commit after processing medications, lab tests, and radiology
 
-            # IMPORTANT: Process Lab Test Results (Your existing logic for this section is good)
-            # Make sure to re-fetch existing_lab_tests after the above commit
-            # to ensure you're working with the most up-to-date lab test orders.
-            
-            # Re-fetch existing_lab_tests to include newly added ones after the commit
+            # --- Process Lab Test Results ---
             db.session.refresh(consultation) # Refresh consultation object if it was added/modified
             existing_lab_tests = LabTest.query.filter_by(consultation_id=consultation.id).all()
 
@@ -508,7 +497,6 @@ def add_treatment(visit_id):
                             #     existing_result.comments = comments if comments else existing_result.comments
                             pass
 
-
                     # Update the status of the LabTest order if results were actually processed for it
                     if results_added_for_this_test:
                         lab_test_order.status = 'results_entered' 
@@ -531,7 +519,6 @@ def add_treatment(visit_id):
             db.session.rollback()
             flash(f'Error saving treatment: {str(e)}', 'danger')
             current_app.logger.error(f"Error in add_treatment: {e}", exc_info=True) # Log the full traceback
-
 
     return render_template(
         'add_treatment.html',
