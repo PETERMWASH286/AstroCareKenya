@@ -742,37 +742,7 @@ def add_treatment(visit_id):
             db.session.rollback()
             flash(f'Error saving treatment: {str(e)}', 'danger')
             current_app.logger.error(f"Error in add_treatment: {e}", exc_info=True) # Log the full traceback
-    # --- Process Radiology Results ---
-    for radiology_order in Radiology.query.filter_by(consultation_id=consultation.id).all():
-        radiology_id = str(radiology_order.id)
-        
-        # Get structured results data from form
-        findings = request.form.get(f'radiology_findings[{radiology_id}]')
-        impression = request.form.get(f'radiology_impression[{radiology_id}]')
-        recommendations = request.form.get(f'radiology_recommendations[{radiology_id}]')
-        notes = request.form.get(f'radiology_notes[{radiology_id}]')
-        is_completed = request.form.get(f'radiology_completed[{radiology_id}]') == 'completed'
-        
-        # Update radiology order with structured results data
-        if findings is not None:  # Only update if the field was submitted
-            # Create or update results_data JSON
-            if not radiology_order.results_data:
-                radiology_order.results_data = {}
-            
-            radiology_order.results_data.update({
-                'findings': findings.strip() if findings else None,
-                'impression': impression.strip() if impression else None,
-                'recommendations': recommendations.strip() if recommendations else None
-            })
-            
-            radiology_order.notes = notes.strip() if notes else None
-            
-            # Update status and completion time if marked as completed
-            if is_completed and radiology_order.status != 'completed':
-                radiology_order.status = 'completed'
-                radiology_order.completed_at = datetime.utcnow()
-                radiology_order.done_by = current_user
-                radiology_order.done_at = datetime.utcnow()
+
     return render_template(
         'add_treatment.html',
         visit=visit,
