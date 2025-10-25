@@ -73,27 +73,87 @@
                         <i class="fas fa-times-circle mr-1"></i> Clear Selected
                      </button>
                 </div>
-                <!-- Patient Category Filter -->
-                <div class="mb-6 p-4 bg-blue-50 dark:bg-gray-700 rounded-lg border border-blue-200 dark:border-gray-600">
-                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Patient Category:</label>
-                    <div class="flex flex-wrap gap-3">
-                        <label class="inline-flex items-center">
-                            <input type="radio" name="patientCategory" value="general" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300" checked>
-                            <span class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">General</span>
-                        </label>
-                        <label class="inline-flex items-center">
-                            <input type="radio" name="patientCategory" value="walkin" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300">
-                            <span class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">Walk-in</span>
-                        </label>
-                        <label class="inline-flex items-center">
-                            <input type="radio" name="patientCategory" value="special_clinic" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300">
-                            <span class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">Special Clinic</span>
-                        </label>
-                    </div>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                        Prices will automatically update based on selected category
-                    </p>
-                </div>
+<!-- Patient Category Filter -->
+<div class="mb-6 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700 rounded-2xl border border-blue-100 dark:border-gray-600 shadow-sm">
+    <label class="block text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center">
+        <svg class="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+        </svg>
+        Patient Category
+    </label>
+    <div class="flex flex-wrap gap-3 mb-3">
+        <label class="category-option">
+            <input type="radio" name="patientCategory" value="general" class="sr-only peer" checked>
+            <span class="category-label peer-checked:bg-blue-500 peer-checked:text-white peer-checked:border-blue-500 peer-checked:shadow-lg">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                </svg>
+                General
+            </span>
+        </label>
+        <label class="category-option">
+            <input type="radio" name="patientCategory" value="walkin" class="sr-only peer">
+            <span class="category-label peer-checked:bg-green-500 peer-checked:text-white peer-checked:border-green-500 peer-checked:shadow-lg">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                </svg>
+                Walk-in
+            </span>
+        </label>
+        <label class="category-option">
+            <input type="radio" name="patientCategory" value="special_clinic" class="sr-only peer">
+            <span class="category-label peer-checked:bg-purple-500 peer-checked:text-white peer-checked:border-purple-500 peer-checked:shadow-lg">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                </svg>
+                Special Clinic
+            </span>
+        </label>
+    </div>
+    <p class="text-sm text-blue-600 dark:text-blue-400 font-medium flex items-center justify-center">
+        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        Prices update automatically based on selected category
+    </p>
+</div>
+
+<style>
+.category-option {
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+.category-label {
+    display: flex;
+    align-items: center;
+    padding: 10px 16px;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    background: white;
+    font-weight: 600;
+    font-size: 14px;
+    color: #6b7280;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.category-label:hover {
+    border-color: #3b82f6;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.1);
+}
+
+.dark .category-label {
+    background: #374151;
+    border-color: #4b5563;
+    color: #d1d5db;
+}
+
+.dark .category-label:hover {
+    border-color: #60a5fa;
+}
+</style>
 
                 <div class="mb-6">
                     <label for="serviceSearch" class="sr-only">Search Services</label>
@@ -381,17 +441,18 @@ document.addEventListener('DOMContentLoaded', function() {
             
             console.log(`Updating service ${index}: ${checkbox.getAttribute('data-service-name')} to Ksh ${price}`);
             
-            // FIX: Force DOM update by recreating the text content
-            priceDisplay.textContent = 'Ksh ' + price.toLocaleString('en-US', {maximumFractionDigits: 0});
+            // Update price display with smooth animation
+            priceDisplay.style.opacity = '0';
+            priceDisplay.style.transform = 'translateY(-5px)';
             
-            // FIX: Also update the innerHTML to ensure visual update
-            priceDisplay.innerHTML = 'Ksh ' + price.toLocaleString('en-US', {maximumFractionDigits: 0});
+            setTimeout(() => {
+                priceDisplay.textContent = 'Ksh ' + price.toLocaleString('en-US', {maximumFractionDigits: 0});
+                priceDisplay.style.opacity = '1';
+                priceDisplay.style.transform = 'translateY(0)';
+            }, 150);
             
             // Update the data-price attribute for total calculation
-            checkbox.setAttribute('data-price', price.toString());
-            
-            // FIX: Force a reflow by accessing offsetHeight
-            priceDisplay.offsetHeight;
+            checkbox.setAttribute('data-current-price', price.toString());
         });
         
         // Update patient category hidden input
@@ -400,22 +461,29 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('Updated patient category input to:', selectedCategory);
         }
         
-        // FIX: Add a small delay to ensure DOM updates are processed
-        setTimeout(updateTotal, 10);
+        // Update total with slight delay for smooth transition
+        setTimeout(updateTotal, 200);
     }
     
     // Add event listeners to patient category radios
     patientCategoryRadios.forEach(radio => {
         radio.addEventListener('change', function() {
             console.log('Patient category changed to:', this.value);
-            updateServicePrices();
             
-            // FIX: Force a visual refresh
-            document.body.style.zoom = '100%';
+            // Add visual feedback
+            const labels = document.querySelectorAll('.category-label');
+            labels.forEach(label => {
+                label.style.transform = 'scale(0.98)';
+                setTimeout(() => {
+                    label.style.transform = '';
+                }, 150);
+            });
+            
+            updateServicePrices();
         });
     });
     
-    // Existing total update function
+    // Existing total update function - MODIFIED to use data-current-price
     function updateTotal() {
         console.log('updateTotal called');
         
@@ -423,15 +491,21 @@ document.addEventListener('DOMContentLoaded', function() {
         const checkedBoxes = document.querySelectorAll('.service-checkbox:checked');
         
         checkedBoxes.forEach(checkbox => {
-            total += parseFloat(checkbox.getAttribute('data-price')) || 0;
+            // Use data-current-price instead of data-price to ensure correct pricing
+            const currentPrice = checkbox.getAttribute('data-current-price') || checkbox.getAttribute('data-price');
+            total += parseFloat(currentPrice) || 0;
         });
         
         const totalDisplay = document.getElementById('totalAmountDisplay');
         const totalValueInput = document.getElementById('totalAmountValue');
         
         if (totalDisplay) {
-            totalDisplay.textContent = 'Ksh ' + total.toLocaleString('en-US', {maximumFractionDigits: 0});
-            totalDisplay.innerHTML = 'Ksh ' + total.toLocaleString('en-US', {maximumFractionDigits: 0});
+            // Add animation to total display
+            totalDisplay.style.transform = 'scale(1.05)';
+            setTimeout(() => {
+                totalDisplay.textContent = 'Ksh ' + total.toLocaleString('en-US', {maximumFractionDigits: 0});
+                totalDisplay.style.transform = 'scale(1)';
+            }, 150);
         }
         
         if (totalValueInput) {
@@ -452,12 +526,13 @@ document.addEventListener('DOMContentLoaded', function() {
         
         document.querySelectorAll('.service-checkbox:checked').forEach(checkbox => {
             const serviceName = checkbox.getAttribute('data-service-name');
-            const price = parseFloat(checkbox.getAttribute('data-price')) || 0;
+            const currentPrice = checkbox.getAttribute('data-current-price') || checkbox.getAttribute('data-price');
+            const price = parseFloat(currentPrice) || 0;
             const listItem = document.createElement('li');
-            listItem.className = 'flex justify-between';
+            listItem.className = 'flex justify-between py-2 border-b border-gray-100 dark:border-gray-600';
             listItem.innerHTML = `
-                <span>${serviceName}</span>
-                <span class="font-semibold">Ksh ${price.toLocaleString('en-US', {maximumFractionDigits: 0})}</span>
+                <span class="text-gray-700 dark:text-gray-300">${serviceName}</span>
+                <span class="font-semibold text-blue-600 dark:text-blue-400">Ksh ${price.toLocaleString('en-US', {maximumFractionDigits: 0})}</span>
             `;
             summaryList.appendChild(listItem);
         });
@@ -479,15 +554,22 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
+    // Initialize all service items with current-price attribute
+    function initializeServicePrices() {
+        const serviceItems = document.querySelectorAll('.service-item');
+        serviceItems.forEach(item => {
+            const checkbox = item.querySelector('.service-checkbox');
+            if (checkbox) {
+                const initialPrice = checkbox.getAttribute('data-price') || '0';
+                checkbox.setAttribute('data-current-price', initialPrice);
+            }
+        });
+    }
+    
     // Initialize
     console.log('Initializing patient category functionality');
+    initializeServicePrices();
     updateServicePrices();
-    
-    // FIX: Add a test function to manually check if prices update
-    window.testPriceUpdate = function() {
-        console.log('Manual test: Forcing price update');
-        updateServicePrices();
-    };
 });
 </script>
 <script>
@@ -533,107 +615,187 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 });
 </script>
-<div id="receiptModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] hidden">
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-[95%] max-w-sm p-5 relative my-8">
-        <button id="closeReceipt" class="absolute top-3 right-3 text-gray-500 hover:text-gray-700 dark:text-gray-300">
-            <i class="fas fa-times text-xl"></i>
+<div id="receiptModal" class="fixed inset-0 bg-gray-200 bg-opacity-40 flex items-center justify-center z-[100] hidden backdrop-blur-[2px] transition-opacity duration-300">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-[95%] max-w-md mx-4 p-6 relative my-8 transform transition-all duration-300 scale-95">
+        <!-- Close Button -->
+        <button id="closeReceipt" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full p-2 transition-colors duration-200">
+            <i class="fas fa-times text-lg"></i>
         </button>
 
+        <!-- Receipt Content -->
         <div id="receiptContent" class="overflow-y-auto max-h-[75vh] scroll-smooth" style="scrollbar-width: none; -ms-overflow-style: none;">
-            <div class="space-y-4 font-receipt text-sm">
-                <div class="text-center mb-5">
-                    <div class="mb-3">
-                        {# Dynamically load logo if available, otherwise fallback or handle gracefully #}
+            <div class="space-y-6 font-receipt">
+                
+                <!-- Header Section -->
+                <div class="text-center mb-6">
+                    <div class="mb-4">
                         {% if hospital_info and hospital_info.logo_url %}
-                            <img src="{{ hospital_info.logo_url }}" alt="{{ hospital_info.display_name or hospital_info.name }}" class="h-14 mx-auto">
+                            <img src="{{ hospital_info.logo_url }}" alt="{{ hospital_info.display_name or hospital_info.name }}" class="h-16 mx-auto mb-3 rounded-lg shadow-sm">
                         {% else %}
-                            {# Fallback for when no logo_url is provided, e.g., a default logo or text #}
-                            <i class="fas fa-hospital text-5xl text-blue-500 mx-auto"></i>
+                            <div class="w-16 h-16 mx-auto mb-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center shadow-sm">
+                                <i class="fas fa-hospital text-2xl text-white"></i>
+                            </div>
                         {% endif %}
-                        <h2 class="text-2xl font-bold mt-2 tracking-tight">{{ hospital_info.display_name or hospital_info.name or 'Hospital Name' }}</h2>
-                        {% if hospital_info.tagline %}<p class="text-sm text-gray-600 dark:text-gray-400">{{ hospital_info.tagline }}</p>{% endif %}
+                        <h2 class="text-2xl font-bold text-gray-800 dark:text-white tracking-tight">{{ hospital_info.display_name or hospital_info.name or 'Hospital Name' }}</h2>
+                        {% if hospital_info.tagline %}
+                            <p class="text-sm text-gray-600 dark:text-gray-300 mt-1 font-medium">{{ hospital_info.tagline }}</p>
+                        {% endif %}
                     </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div class="text-left">
-                            <p>{{ hospital_info.address_line1 or '' }}</p>
-                            <p>{{ hospital_info.city or '' }}, {{ hospital_info.country or '' }}</p>
-                            {% if hospital_info.postal_code %}<p>P.O Box {{ hospital_info.postal_code }}</p>{% endif %}
+                    
+                    <!-- Contact Information -->
+                    <div class="grid grid-cols-2 gap-4 text-xs text-gray-600 dark:text-gray-400">
+                        <div class="text-left space-y-1">
+                            {% if hospital_info.address_line1 %}
+                                <p class="flex items-center">
+                                    <i class="fas fa-map-marker-alt mr-2 text-blue-500"></i>
+                                    {{ hospital_info.address_line1 }}
+                                </p>
+                            {% endif %}
+                            {% if hospital_info.city %}
+                                <p>{{ hospital_info.city }}, {{ hospital_info.country or '' }}</p>
+                            {% endif %}
+                            {% if hospital_info.postal_code %}
+                                <p>P.O Box {{ hospital_info.postal_code }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="text-right space-y-1">
+                            {% if hospital_info.primary_contact %}
+                                <p class="flex items-center justify-end">
+                                    <i class="fas fa-phone mr-2 text-green-500"></i>
+                                    {{ hospital_info.primary_contact }}
+                                </p>
+                            {% endif %}
+                            {% if hospital_info.email %}
+                                <p class="flex items-center justify-end">
+                                    <i class="fas fa-envelope mr-2 text-purple-500"></i>
+                                    {{ hospital_info.email }}
+                                </p>
+                            {% endif %}
+                            {% if hospital_info.website %}
+                                <p class="flex items-center justify-end">
+                                    <i class="fas fa-globe mr-2 text-blue-500"></i>
+                                    {{ hospital_info.website }}
+                                </p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Receipt Title -->
+                <div class="border-y-2 border-dashed border-blue-200 dark:border-gray-600 py-4 text-center bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-700 dark:to-gray-600 rounded-lg">
+                    <h3 class="text-lg font-bold text-gray-800 dark:text-white uppercase tracking-wide">CASH RECEIPT</h3>
+                    <p class="text-xs text-gray-500 dark:text-gray-300 mt-1 font-semibold">System Generated • Valid Receipt</p>
+                </div>
+
+                <!-- Patient & Receipt Info -->
+                <div class="grid grid-cols-2 gap-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <div class="space-y-2">
+                        <div>
+                            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Patient</p>
+                            <p class="font-medium text-gray-800 dark:text-white" id="r_patientName">-</p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Reg No</p>
+                            <p class="font-medium text-gray-800 dark:text-white" id="r_regNo">-</p>
+                        </div>
+                    </div>
+                    <div class="space-y-2 text-right">
+                        <div>
+                            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Receipt No</p>
+                            <p class="font-medium text-gray-800 dark:text-white" id="r_receiptNo">-</p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Date & Time</p>
+                            <p class="font-medium text-gray-800 dark:text-white" id="r_date">-</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Served By Section -->
+                <!-- Served By Section -->
+                <div class="p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-gray-700 dark:to-gray-600 rounded-lg border border-green-100 dark:border-gray-600">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center mr-3 shadow-sm">
+                                <i class="fas fa-user-md text-white text-sm"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Served By</p>
+                                <p class="font-medium text-gray-800 dark:text-white" id="r_servedBy">Staff Member</p>
+                            </div>
                         </div>
                         <div class="text-right">
-                            <p>{{ hospital_info.primary_contact or '' }}</p>
-                            {% if hospital_info.email %}<p>{{ hospital_info.email }}</p>{% endif %}
-                            {% if hospital_info.website %}<p>{{ hospital_info.website }}</p>{% endif %}
+                            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Patient Type</p>
+                            <p class="font-medium text-gray-800 dark:text-white" id="r_patientType">General</p>
                         </div>
                     </div>
                 </div>
 
-                <div class="border-y border-dashed border-gray-300 py-3 text-center">
-                    <h3 class="text-base font-bold uppercase">CASH RECEIPT</h3>
-                    <p class="text-xs text-gray-500">System Generated</p>
-                </div>
-
-                <div class="grid grid-cols-2 gap-3 mt-3">
-                    <div>
-                        <p><span class="font-semibold">Patient:</span> <span id="r_patientName"></span></p>
-                        <p><span class="font-semibold">Reg No:</span> <span id="r_regNo"></span></p>
-                    </div>
-                    <div class="text-right">
-                        <p><span class="font-semibold">Receipt:</span> <span id="r_receiptNo"></span></p>
-                        <p><span class="font-semibold">Date:</span> <span id="r_date"></span></p>
-                    </div>
-                </div>
-
-                <table class="w-full mt-3">
-                    <thead>
-                        <tr class="border-b border-gray-200">
-                            <th class="text-left pb-2 text-xs">DESCRIPTION</th>
-                            <th class="text-right pb-2 text-xs">AMOUNT</th>
-                        </tr>
-                    </thead>
-                    <tbody id="r_servicesList" class="divide-y divide-gray-200">
+                <!-- Services Table -->
+                <div class="border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
+                    <table class="w-full">
+                        <thead class="bg-gray-50 dark:bg-gray-700">
+                            <tr>
+                                <th class="text-left py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase border-b border-gray-200 dark:border-gray-600">DESCRIPTION</th>
+                                <th class="text-right py-3 px-4 text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase border-b border-gray-200 dark:border-gray-600">AMOUNT</th>
+                            </tr>
+                        </thead>
+                        <tbody id="r_servicesList" class="divide-y divide-gray-100 dark:divide-gray-600">
+                            <!-- Services will be populated here -->
                         </tbody>
-                    <tfoot class="bg-gray-50 dark:bg-gray-700">
-                        <tr>
-                            <td class="pt-3 font-semibold">Subtotal</td>
-                            <td class="pt-3 text-right" id="r_subtotal"></td>
-                        </tr>
-                        <tr>
-                            <td>Tax (0%)</td>
-                            <td class="text-right">0.00</td>
-                        </tr>
-                        <tr class="border-t border-gray-300">
-                            <td class="pt-2 font-bold">TOTAL</td>
-                            <td class="pt-2 text-right font-bold" id="r_total"></td>
-                        </tr>
-                    </tfoot>
-                </table>
+                        <tfoot class="bg-gray-50 dark:bg-gray-700">
+                            <tr>
+                                <td class="py-3 px-4 font-semibold text-gray-700 dark:text-gray-300 border-t border-gray-200 dark:border-gray-600">Subtotal</td>
+                                <td class="py-3 px-4 text-right font-semibold text-gray-700 dark:text-gray-300 border-t border-gray-200 dark:border-gray-600" id="r_subtotal">0.00</td>
+                            </tr>
+                            <tr>
+                                <td class="py-2 px-4 text-gray-600 dark:text-gray-400">Tax (0%)</td>
+                                <td class="py-2 px-4 text-right text-gray-600 dark:text-gray-400">0.00</td>
+                            </tr>
+                            <tr class="bg-blue-50 dark:bg-blue-900/20">
+                                <td class="py-3 px-4 font-bold text-lg text-gray-800 dark:text-white border-t-2 border-blue-200 dark:border-blue-600">TOTAL</td>
+                                <td class="py-3 px-4 text-right font-bold text-lg text-blue-600 dark:text-blue-400 border-t-2 border-blue-200 dark:border-blue-600" id="r_total">0.00</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
 
-                <div class="grid grid-cols-2 gap-3 mt-4">
+                <!-- Payment Information -->
+                <div class="grid grid-cols-2 gap-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                     <div>
-                        <p class="font-semibold">Payment Method:</p>
-                        <p>CASH</p>
+                        <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Payment Method</p>
+                        <div class="flex items-center">
+                            <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center mr-2 shadow-sm">
+                                <i class="fas fa-money-bill-wave text-white text-xs"></i>
+                            </div>
+                            <p class="font-medium text-gray-800 dark:text-white">CASH</p>
+                        </div>
                     </div>
                     <div class="text-right">
-                        <p class="font-semibold">Received:</p>
-                        <p id="r_amountReceived"></p>
+                        <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Amount Received</p>
+                        <p class="font-bold text-lg text-green-600 dark:text-green-400" id="r_amountReceived">0.00</p>
                     </div>
                 </div>
 
-                <div class="text-center text-xs mt-4 text-gray-500 border-t pt-3">
-                    <p>** Official Computer Generated Receipt **</p>
+                <!-- Footer -->
+                <div class="text-center text-xs text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-600 pt-4 space-y-2">
+                    <p class="font-semibold text-gray-600 dark:text-gray-300">** Official Computer Generated Receipt **</p>
                     <p>Valid with original stamp & signature</p>
-                    {# Dynamically add the hospital's display name or a fallback #}
-                    <p>Thank you for choosing {{ hospital_info.display_name or hospital_info.name or 'Our Hospital' }}</p>
+                    <p class="text-blue-600 dark:text-blue-400 font-medium">
+                        Thank you for choosing {{ hospital_info.display_name or hospital_info.name or 'Our Hospital' }}
+                    </p>
+
                 </div>
             </div>
         </div>
 
-        <div class="mt-5 flex justify-end gap-3">
-            <button id="printReceipt" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm">
-                <i class="fas fa-print mr-2"></i>Print
+        <!-- Action Buttons -->
+        <div class="mt-6 flex justify-end gap-3">
+            <button id="printReceipt" class="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl text-sm font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 flex items-center">
+                <i class="fas fa-print mr-2"></i>Print Receipt
             </button>
-            <button id="downloadPdf" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm">
-                <i class="fas fa-file-pdf mr-2"></i>PDF
+            <button id="downloadPdf" class="px-5 py-2.5 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-xl text-sm font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 flex items-center">
+                <i class="fas fa-file-pdf mr-2"></i>Save PDF
             </button>
         </div>
     </div>
@@ -1037,67 +1199,88 @@ document.addEventListener('DOMContentLoaded', function() {
         const overlay = document.getElementById('paymentOverlay');
         let currentCheckoutId = '';
 
-        async function pollTransactionStatus(checkoutId, maxDuration = 120000, interval = 2000) {
-            const startTime = Date.now();
-            overlay.classList.remove('hidden');
-            document.getElementById('overlayProgress').style.animationPlayState = 'running';
+async function pollTransactionStatus(checkoutId, maxDuration = 120000, interval = 2000) {
+    const startTime = Date.now();
+    overlay.classList.remove('hidden');
+    document.getElementById('overlayProgress').style.animationPlayState = 'running';
 
-            const poll = async() => {
-                try {
-                    const res = await fetch(`/patients/check-status?checkout_id=${checkoutId}`);
-                    const data = await res.json();
+    const poll = async() => {
+        try {
+            const res = await fetch(`/patients/check-status?checkout_id=${checkoutId}`);
+            const data = await res.json();
 
-                    if (data.status === 'success') {
-                        overlay.classList.add('hidden');
-                        showAlert('success', `Payment confirmed! Rendering receipt…`, 4000);
-                        currentCheckoutId = checkoutId;
+            if (data.status === 'success') {
+                overlay.classList.add('hidden');
+                showAlert('success', `Payment confirmed! Rendering receipt…`, 4000);
+                currentCheckoutId = checkoutId;
 
-                        // Populate receipt modal
-                        const tx = data.transaction;
-                        const pt = data.patient;
-                        const services = data.services;
+                // Populate receipt modal
+                const tx = data.transaction;
+                const pt = data.patient;
+                const services = data.services;
 
-                        document.getElementById('r_patientName').textContent = `${pt.first_name} ${pt.last_name}`;
-                        document.getElementById('r_regNo').textContent = pt.reg_no;
-                        document.getElementById('r_receiptNo').textContent = tx.receipt_number;
-                        document.getElementById('r_date').textContent = new Date(tx.paid_at).toLocaleString();
+                document.getElementById('r_patientName').textContent = `${pt.first_name} ${pt.last_name}`;
+                document.getElementById('r_regNo').textContent = pt.reg_no;
+                document.getElementById('r_receiptNo').textContent = tx.receipt_number;
+                document.getElementById('r_date').textContent = new Date(tx.paid_at).toLocaleString();
+                
+                // NEW: Populate served by and patient type
+                document.getElementById('r_servedBy').textContent = tx.served_by || 'Staff Member';
+                document.getElementById('r_patientType').textContent = formatPatientCategory(tx.patient_category || 'general');
 
-                        // Build services rows
-                        const tbody = document.getElementById('r_servicesList');
-                        tbody.innerHTML = ''; // clear
-                        let total = 0;
-                        services.forEach(s => {
-                            const tr = document.createElement('tr');
-                            tr.innerHTML = `
-            <td class="py-2">${s.name}</td>
-            <td class="py-2 text-right">${s.price.toLocaleString()}</td>
-          `;
-                            tbody.appendChild(tr);
-                            total += s.price;
-                        });
-                        document.getElementById('r_total').textContent = total.toLocaleString();
+                // Build services rows
+                const tbody = document.getElementById('r_servicesList');
+                tbody.innerHTML = ''; // clear
+                let total = 0;
+                services.forEach(s => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors';
+                    tr.innerHTML = `
+                        <td class="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">${s.name}</td>
+                        <td class="py-3 px-4 text-right text-sm font-medium text-gray-900 dark:text-white">
+                            Ksh ${parseFloat(s.price).toLocaleString('en-US', {maximumFractionDigits: 0})}
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                    total += s.price;
+                });
+                
+                // Update totals
+                document.getElementById('r_subtotal').textContent = `Ksh ${total.toLocaleString('en-US', {maximumFractionDigits: 0})}`;
+                document.getElementById('r_total').textContent = `Ksh ${total.toLocaleString('en-US', {maximumFractionDigits: 0})}`;
+                document.getElementById('r_amountReceived').textContent = `Ksh ${parseFloat(tx.amount).toLocaleString('en-US', {maximumFractionDigits: 0})}`;
 
-                        // Show modal
-                        document.getElementById('receiptModal').classList.remove('hidden');
+                // Show modal
+                document.getElementById('receiptModal').classList.remove('hidden');
 
-                        return;
-                    }
+                return;
+            }
 
-                    if (Date.now() - startTime < maxDuration) {
-                        setTimeout(poll, interval);
-                    } else {
-                        overlay.classList.add('hidden');
-                        showAlert('warning', 'Payment not confirmed within 2 minutes. Please check later.');
-                    }
+            if (Date.now() - startTime < maxDuration) {
+                setTimeout(poll, interval);
+            } else {
+                overlay.classList.add('hidden');
+                showAlert('warning', 'Payment not confirmed within 2 minutes. Please check later.');
+            }
 
-                } catch (err) {
-                    overlay.classList.add('hidden');
-                    console.error('Polling error:', err);
-                    showAlert('error', 'Failed to verify payment status. Please try again later.');
-                }
-            };
-            poll();
+        } catch (err) {
+            overlay.classList.add('hidden');
+            console.error('Polling error:', err);
+            showAlert('error', 'Failed to verify payment status. Please try again later.');
         }
+    };
+    poll();
+}
+
+// Add this helper function to format patient category
+function formatPatientCategory(category) {
+    const categoryMap = {
+        'general': 'General',
+        'walkin': 'Walk-in', 
+        'special_clinic': 'Special Clinic'
+    };
+    return categoryMap[category] || 'General';
+}
 
 // Close receipt
 document.getElementById('closeReceipt').onclick = () => {

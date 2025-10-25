@@ -365,7 +365,8 @@
     >{% if consultation %}{{ consultation.notes }}{% endif %}</textarea>
   </div>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/tinymce@6/tinymce.min.js"></script>
+  <!-- <script src="https://cdn.jsdelivr.net/npm/tinymce@6/tinymce.min.js"></script>
+ -->
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -912,19 +913,215 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 </script>
-      <div id="radiology" class="tab-content hidden p-8">
-        <div>
-          <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"><i class="fas fa-x-ray text-purple-500 mr-2"></i>Imaging Studies</label>
-          <select name="imaging_studies" multiple class="w-full" data-placeholder="Select imaging studies...">
+<div id="radiology" class="tab-content hidden p-8">
+    <div>
+        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            <i class="fas fa-x-ray text-purple-500 mr-2"></i>Imaging Studies
+        </label>
+        <select name="imaging_studies" multiple class="w-full" data-placeholder="Select imaging studies...">
             {% for service in imaging_services %}
             <option value="{{ service.id }}"
-              {% if service.id in existing_radiology|map(attribute='service_id') %}selected{% endif %}>
-              {{ service.name }} - Ksh {{ service.price|number_format }}
+                {% if service.id in existing_radiology|map(attribute='service_id') %}selected{% endif %}>
+                {{ service.name }} - Ksh {{ service.price|number_format }}
             </option>
             {% endfor %}
-          </select>
+        </select>
+    </div>
+
+    <!-- Radiology Results Section -->
+    {% if existing_radiology %}
+    <div class="mt-8">
+        <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-4">
+            <i class="fas fa-file-medical-alt text-blue-500 mr-2"></i>Radiology Results
+        </h3>
+        
+        {% for radiology_order in existing_radiology %}
+        <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 mb-6 border border-gray-200 dark:border-gray-700">
+            <h4 class="font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center">
+                <i class="fas fa-x-ray text-purple-500 mr-2"></i>
+                {{ radiology_order.service.name }}
+                <span class="ml-2 text-sm font-normal px-2 py-1 rounded-full 
+                    {% if radiology_order.status == 'completed' %}bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300
+                    {% else %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300{% endif %}">
+                    {{ radiology_order.status|title }}
+                </span>
+            </h4>
+
+            <!-- Display Images if exists -->
+            {% if radiology_order.images %}
+            <div class="mt-6">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center">
+                    <i class="fas fa-images text-pink-500 mr-3"></i> Imaging Files
+                </h3>
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    {% set img_list = radiology_order.images.split(',') %}
+                    {% for filename in img_list %}
+                    <a href="{{ url_for('static', filename='uploads/' ~ filename.strip()) }}" 
+                       target="_blank" 
+                       class="relative group aspect-square rounded-xl overflow-hidden shadow border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 block">
+                        <img src="{{ url_for('static', filename='uploads/' ~ filename.strip()) }}" 
+                             alt="Radiology Image {{ loop.index }}" 
+                             class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
+                        <!-- Overlay -->
+                        <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all flex items-center justify-center">
+                            <div class="text-white text-xl opacity-0 group-hover:opacity-100 transition-opacity">
+                                <i class="fas fa-search-plus"></i>
+                            </div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Results Data (from JSON) -->
+            {% if radiology_order.results_data %}
+            <div class="mt-6">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <i class="fas fa-file-medical text-green-500 mr-2"></i>Results Data
+                </label>
+                <div class="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg p-4">
+                    {% if radiology_order.results_data.findings %}
+                    <div class="mb-3">
+                        <strong class="text-sm font-medium text-gray-700 dark:text-gray-300">Findings:</strong>
+                        <p class="text-gray-800 dark:text-gray-200 mt-1">{{ radiology_order.results_data.findings }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if radiology_order.results_data.impression %}
+                    <div class="mb-3">
+                        <strong class="text-sm font-medium text-gray-700 dark:text-gray-300">Impression:</strong>
+                        <p class="text-gray-800 dark:text-gray-200 mt-1">{{ radiology_order.results_data.impression }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if radiology_order.results_data.recommendations %}
+                    <div class="mb-3">
+                        <strong class="text-sm font-medium text-gray-700 dark:text-gray-300">Recommendations:</strong>
+                        <p class="text-gray-800 dark:text-gray-200 mt-1">{{ radiology_order.results_data.recommendations }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Notes -->
+            {% if radiology_order.notes %}
+            <div class="mt-6">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <i class="fas fa-sticky-note text-yellow-500 mr-2"></i>Notes
+                </label>
+                <div class="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg p-4">
+                    <p class="text-gray-800 dark:text-gray-200">{{ radiology_order.notes }}</p>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Results Entry Form (only if not completed) -->
+            {% if radiology_order.status != 'completed' %}
+            <div class="border-t border-gray-200 dark:border-gray-600 pt-6 mt-6">
+                <h5 class="font-semibold text-gray-700 dark:text-gray-300 mb-4 flex items-center">
+                    <i class="fas fa-edit text-blue-500 mr-2"></i>Enter Results
+                </h5>
+                
+                <!-- Results Data Input -->
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Findings
+                        </label>
+                        <textarea 
+                            name="radiology_findings[{{ radiology_order.id }}]" 
+                            rows="3"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Enter radiology findings..."
+                        >{% if radiology_order.results_data %}{{ radiology_order.results_data.findings or '' }}{% endif %}</textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Impression
+                        </label>
+                        <textarea 
+                            name="radiology_impression[{{ radiology_order.id }}]" 
+                            rows="2"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Enter impression..."
+                        >{% if radiology_order.results_data %}{{ radiology_order.results_data.impression or '' }}{% endif %}</textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Recommendations
+                        </label>
+                        <textarea 
+                            name="radiology_recommendations[{{ radiology_order.id }}]" 
+                            rows="2"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Enter recommendations..."
+                        >{% if radiology_order.results_data %}{{ radiology_order.results_data.recommendations or '' }}{% endif %}</textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Notes
+                        </label>
+                        <textarea 
+                            name="radiology_notes[{{ radiology_order.id }}]" 
+                            rows="2"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Additional notes..."
+                        >{{ radiology_order.notes or '' }}</textarea>
+                    </div>
+                </div>
+
+                <!-- Status Update -->
+                <div class="flex items-center justify-between mt-6 pt-4 border-t border-gray-200 dark:border-gray-600">
+                    <div class="flex items-center space-x-4">
+                        <label class="flex items-center">
+                            <input type="checkbox" 
+                                   name="radiology_completed[{{ radiology_order.id }}]"
+                                   value="completed"
+                                   class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Mark as Completed</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Completion Information -->
+            {% if radiology_order.status == 'completed' %}
+            <div class="border-t border-gray-200 dark:border-gray-600 pt-6 mt-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                        <strong class="text-gray-700 dark:text-gray-300">Done By:</strong>
+                        <p class="text-gray-800 dark:text-gray-200">
+                            {% if radiology_order.done_by %}
+                                {{ radiology_order.done_by.full_name }}
+                            {% else %}
+                                Unknown
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div>
+                        <strong class="text-gray-700 dark:text-gray-300">Completed At:</strong>
+                        <p class="text-gray-800 dark:text-gray-200">
+                            {% if radiology_order.completed_at %}
+                                {{ radiology_order.completed_at.strftime('%Y-%m-%d %H:%M') }}
+                            {% else %}
+                                Not recorded
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
         </div>
-      </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
     </form>
   </div>
 </div>

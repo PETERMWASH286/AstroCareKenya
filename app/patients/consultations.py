@@ -9,7 +9,7 @@ import requests
 from app.auth.models import User
 from app.extensions import db
 from datetime import datetime
-from sqlalchemy import exc
+from sqlalchemy import exc, exists
 
 from app.finance.models import Insurance
 from app.lab.models import LabTestResult
@@ -20,70 +20,184 @@ consultations_web_bp = Blueprint(
     url_prefix='/patients'
 )
 
-# app/patients/consultations.py
 from sqlalchemy.orm import joinedload
-
+from sqlalchemy import or_, and_
 @consultations_web_bp.route('/consultation-queue', methods=['GET', 'POST'])
 def consultation_queue():
     if request.method == 'POST':
-        # This block can handle AJAX requests for setting the active tab
-        # or other POST requests if you introduce them later.
-        # For now, we'll primarily use GET for initial load and JS for updates.
         pass
 
     # Get the last active tab from the session, default to 'consultation'
     active_tab = session.get('active_consultation_tab', 'consultation')
 
     # Define walk-in visit categories that should NOT appear in consultation queue after completion
-    # These are visits that inherently don't require a doctor's consultation after lab/rad
     walk_in_visit_types_to_exclude = ['walk_in_lab', 'walk_in_rad', 'walk_in_pharm', 'optician_clinic', 'dental_clinic']
 
     # 1. Patients currently in the consultation queue
     waiting_for_consultation = (
         Visit.query
         .filter_by(current_position='consultation', visit_status='in_progress')
-        .options(joinedload(Visit.vitals))  # Eager load vitals
-        .options(joinedload(Visit.patient)) # Eager load patient info
+        .options(joinedload(Visit.vitals))
+        .options(joinedload(Visit.patient))
         .order_by(Visit.visit_date)
         .all()
     )
 
-    # 2. Lab tests that are completed and paid AND require consultation (i.e., not a walk-in for lab)
+    # 2. Lab tests that are completed and paid AND require consultation AND need treatment plan/diagnosis
     completed_paid_lab_tests_raw = (
         LabTest.query
         .filter_by(status='completed', payment_status='paid')
-        # Filter out lab tests whose *visit type* indicates they are purely walk-in lab
-        # We need to join through consultation to get to visit, and then check visit_type_category
-        .join(LabTest.consultation) # Inner join ensures only tests with a consultation are considered initially
+        .join(LabTest.consultation)
         .join(Consultation.visit)
         .filter(Visit.visit_type_category.notin_(walk_in_visit_types_to_exclude))
+        # NEW: Only show tests where consultation lacks proper treatment documentation
+        .filter(
+            and_(
+                # Either treatment plan is missing/incomplete
+                or_(
+                    Consultation.treatment_plan.is_(None),
+                    Consultation.treatment_plan == '',
+                    Consultation.treatment_plan.like('%pending%'),
+                    Consultation.treatment_plan.like('%waiting%')
+                ),
+                # OR diagnosis is missing/incomplete
+                or_(
+                    Consultation.diagnosis.is_(None),
+                    Consultation.diagnosis == '',
+                    Consultation.diagnosis.like('%pending%'),
+                    Consultation.diagnosis.like('%waiting%')
+                )
+            )
+        )
         .options(joinedload(LabTest.consultation).joinedload(Consultation.visit).joinedload(Visit.patient))
-        .options(joinedload(LabTest.service)) # Eager load service details (e.g., test name)
-        .options(joinedload(LabTest.done_by)) # Eager load who completed it
-        .order_by(LabTest.completed_at.desc()) # Order by most recently completed
+        .options(joinedload(LabTest.service))
+        .options(joinedload(LabTest.done_by))
+        .order_by(LabTest.completed_at.desc())
         .all()
     )
 
-    # 3. Radiology orders that are completed and paid AND require consultation (i.e., not a walk-in for rad)
+    # 3. Radiology orders that are completed and paid AND require consultation AND need treatment plan/diagnosis
     completed_paid_radiology_orders_raw = (
-        Radiology.query # Assuming you have a Radiology model
+        Radiology.query
         .filter_by(status='completed', payment_status='paid')
-        # Filter out radiology orders whose *visit type* indicates they are purely walk-in rad
-        .join(Radiology.consultation) # Inner join ensures only tests with a consultation are considered initially
+        .join(Radiology.consultation)
         .join(Consultation.visit)
         .filter(Visit.visit_type_category.notin_(walk_in_visit_types_to_exclude))
+        # NEW: Only show radiology orders where consultation lacks proper treatment documentation
+        .filter(
+            and_(
+                # Either treatment plan is missing/incomplete
+                or_(
+                    Consultation.treatment_plan.is_(None),
+                    Consultation.treatment_plan == '',
+                    Consultation.treatment_plan.like('%pending%'),
+                    Consultation.treatment_plan.like('%waiting%')
+                ),
+                # OR diagnosis is missing/incomplete
+                or_(
+                    Consultation.diagnosis.is_(None),
+                    Consultation.diagnosis == '',
+                    Consultation.diagnosis.like('%pending%'),
+                    Consultation.diagnosis.like('%waiting%')
+                )
+            )
+        )
         .options(joinedload(Radiology.consultation).joinedload(Consultation.visit).joinedload(Visit.patient))
-        .options(joinedload(Radiology.service)) # Eager load service details (e.g., scan type)
-        .options(joinedload(Radiology.done_by)) # Eager load who completed it
-        .order_by(Radiology.completed_at.desc()) # Order by most recently completed
+        .options(joinedload(Radiology.service))
+        .options(joinedload(Radiology.done_by))
+        .order_by(Radiology.completed_at.desc())
+        .all()
+    )
+    # NEW: 4. Patients with completed treatment - RECOMMENDED APPROACH
+    patients_with_completed_treatment = (
+        Visit.query
+        .filter(Visit.visit_status.in_(['completed', 'in_progress']))
+        .join(Consultation)  # Inner join to ensure consultation exists
+        .filter(
+            # Ensure consultation has actual medical content
+            (Consultation.diagnosis != None) | 
+            (Consultation.treatment_plan != None) |
+            (Consultation.history != None) |
+            (Consultation.examination != None)
+        )
+        .options(joinedload(Visit.patient))
+        .options(joinedload(Visit.vitals))
+        .options(joinedload(Visit.consultations))
+        .order_by(Visit.updated_at.desc())
         .all()
     )
 
+    # NEW: 5. Patients with pending treatment (lab tests or radiology not done) - SIMPLIFIED
+    patients_with_pending_treatment = (
+        db.session.query(Visit)
+        .join(Consultation, Visit.consultations)  # Join with consultations
+        .filter(
+            Visit.visit_status == 'in_progress',
+            or_(
+                # Check for services with pending payment status (any status)
+                exists().where(
+                    and_(
+                        LabTest.payment_status.in_(['paid', 'pending']),
+                        or_(
+                            # Unpaid services: linked via consultation only
+                            and_(
+                                LabTest.consultation_id == Consultation.id,
+                                LabTest.visit_id == None
+                            ),
+                            # Paid services: linked directly to visit
+                            and_(
+                                LabTest.visit_id == Visit.id,
+                                LabTest.payment_status == 'paid'
+                            )
+                        )
+                    )
+                ),
+                exists().where(
+                    and_(
+                        Radiology.payment_status.in_(['paid', 'pending']),
+                        or_(
+                            and_(
+                                Radiology.consultation_id == Consultation.id,
+                                Radiology.visit_id == None
+                            ),
+                            and_(
+                                Radiology.visit_id == Visit.id,
+                                Radiology.payment_status == 'paid'
+                            )
+                        )
+                    )
+                ),
+                exists().where(
+                    and_(
+                        Medication.payment_status.in_(['paid', 'pending']),
+                        or_(
+                            and_(
+                                Medication.consultation_id == Consultation.id,
+                                Medication.visit_id == None
+                            ),
+                            and_(
+                                Medication.visit_id == Visit.id,
+                                Medication.payment_status == 'paid'
+                            )
+                        )
+                    )
+                )
+            )
+        )
+        .options(joinedload(Visit.patient))
+        .options(joinedload(Visit.vitals))
+        .options(joinedload(Visit.consultations).joinedload(Consultation.lab_tests))
+        .options(joinedload(Visit.consultations).joinedload(Consultation.radiology_orders))
+        .options(joinedload(Visit.consultations).joinedload(Consultation.medications))
+        .options(joinedload(Visit.lab_tests))
+        .options(joinedload(Visit.radiology_orders))
+        .options(joinedload(Visit.medications))
+        .order_by(Visit.visit_date.asc())
+        .all()
+    )
     # Process lab tests to combine by visit
     combined_lab_tests = {}
     for test in completed_paid_lab_tests_raw:
-        # Check if consultation exists to avoid errors on pure walk-ins that somehow slipped
-        # Although the query should already filter this, it's a good defensive check
         if test.consultation and test.consultation.visit:
             visit_id = test.consultation.visit.id
             if visit_id not in combined_lab_tests:
@@ -91,22 +205,19 @@ def consultation_queue():
                     'patient': test.consultation.visit.patient,
                     'visit': test.consultation.visit,
                     'tests': [],
-                    'interpretations': set(), # Use a set to store unique interpretations
-                    'completed_at': test.completed_at # Add completed_at here
+                    'interpretations': set(),
+                    'completed_at': test.completed_at
                 }
             combined_lab_tests[visit_id]['tests'].append(test.service.name)
             if test.interpretation:
                 combined_lab_tests[visit_id]['interpretations'].add(test.interpretation)
     
-    # Convert set of interpretations to a string or list as needed for display
     for visit_id in combined_lab_tests:
         combined_lab_tests[visit_id]['interpretations'] = list(combined_lab_tests[visit_id]['interpretations'])
-
 
     # Process radiology orders to combine by visit
     combined_radiology_orders = {}
     for order in completed_paid_radiology_orders_raw:
-        # Check if consultation exists for the same defensive reason
         if order.consultation and order.consultation.visit:
             visit_id = order.consultation.visit.id
             if visit_id not in combined_radiology_orders:
@@ -115,7 +226,7 @@ def consultation_queue():
                     'visit': order.consultation.visit,
                     'scans': [],
                     'interpretations': set(),
-                    'completed_at': order.completed_at # Add completed_at here
+                    'completed_at': order.completed_at
                 }
             combined_radiology_orders[visit_id]['scans'].append(order.service.name)
             if order.interpretation:
@@ -124,11 +235,111 @@ def consultation_queue():
     for visit_id in combined_radiology_orders:
         combined_radiology_orders[visit_id]['interpretations'] = list(combined_radiology_orders[visit_id]['interpretations'])
 
-
+    # Process pending treatments to get detailed pending services - FIXED to avoid duplicates by service_id only
+    processed_pending_treatments = []
+    for visit in patients_with_pending_treatment:
+        pending_services = []
+        seen_service_ids = set()  # Track service IDs to avoid duplicates
+        
+        # Get ALL lab tests for this visit (both consultation and visit linked)
+        all_lab_tests = []
+        all_lab_tests.extend(visit.lab_tests)  # Direct visit linkage (paid services)
+        for consultation in visit.consultations:
+            all_lab_tests.extend(consultation.lab_tests)  # Consultation linkage
+        
+        # Process lab tests - avoid duplicates by service_id only (ignore status changes)
+        for test in all_lab_tests:
+            if test.payment_status in ['paid', 'pending']:
+                
+                service_key = f"lab_{test.service_id}"
+                if service_key not in seen_service_ids:
+                    seen_service_ids.add(service_key)
+                    pending_services.append({
+                        'type': 'lab',
+                        'name': test.service.name if test.service else 'Lab Test',
+                        'status': test.status,  # Can be any status: requested, in_progress, waiting results, etc.
+                        'payment_status': test.payment_status,
+                        'requested_at': test.requested_at,
+                        'is_paid': test.payment_status == 'paid',
+                        'has_visit': test.visit_id is not None,
+                        'service_id': test.service_id,  # For unique identification
+                        'record_id': test.id  # Unique record identifier
+                    })
+        
+        # Get ALL radiology orders for this visit
+        all_radiology = []
+        all_radiology.extend(visit.radiology_orders)
+        for consultation in visit.consultations:
+            all_radiology.extend(consultation.radiology_orders)
+        
+        # Process radiology - avoid duplicates by service_id only
+        for rad in all_radiology:
+            if rad.payment_status in ['paid', 'pending']:
+                
+                service_key = f"rad_{rad.service_id}"
+                if service_key not in seen_service_ids:
+                    seen_service_ids.add(service_key)
+                    pending_services.append({
+                        'type': 'radiology',
+                        'name': rad.service.name if rad.service else 'Radiology',
+                        'status': rad.status,
+                        'payment_status': rad.payment_status,
+                        'requested_at': rad.requested_at,
+                        'is_paid': rad.payment_status == 'paid',
+                        'has_visit': rad.visit_id is not None,
+                        'service_id': rad.service_id,
+                        'record_id': rad.id
+                    })
+        
+        # Get ALL medications for this visit
+        all_medications = []
+        all_medications.extend(visit.medications)
+        for consultation in visit.consultations:
+            all_medications.extend(consultation.medications)
+        
+        # Process medications - avoid duplicates by service_id only
+        for med in all_medications:
+            if med.payment_status in ['paid', 'pending']:
+                
+                service_key = f"med_{med.service_id}"
+                if service_key not in seen_service_ids:
+                    seen_service_ids.add(service_key)
+                    pending_services.append({
+                        'type': 'pharmacy',
+                        'name': med.service.name if med.service else 'Medication',
+                        'status': 'pending_dispense' if not med.is_dispensed else 'dispensed',
+                        'payment_status': med.payment_status,
+                        'requested_at': med.prescribed_at,
+                        'is_paid': med.payment_status == 'paid',
+                        'has_visit': med.visit_id is not None,
+                        'service_id': med.service_id,
+                        'record_id': med.id
+                    })
+        
+        if pending_services:
+            # Count unique payment statuses
+            paid_count = sum(1 for service in pending_services if service['payment_status'] == 'paid')
+            pending_count = sum(1 for service in pending_services if service['payment_status'] == 'pending')
+            total_count = len(pending_services)
+            
+            processed_pending_treatments.append({
+                'patient': visit.patient,
+                'visit': visit,
+                'pending_services': pending_services,
+                'pending_count': total_count,
+                'paid_count': paid_count,
+                'pending_payment_count': pending_count,
+                'has_pending_payment': pending_count > 0,
+                'has_paid_services': paid_count > 0,
+                'all_paid': pending_count == 0 and paid_count > 0,
+                'all_pending': paid_count == 0 and pending_count > 0
+            })
     return render_template('consultation_queue.html',
                            waiting_for_consultation=waiting_for_consultation,
                            completed_paid_lab_tests=list(combined_lab_tests.values()),
                            completed_paid_radiology_orders=list(combined_radiology_orders.values()),
+                           patients_with_completed_treatment=patients_with_completed_treatment,  # NEW
+                           patients_with_pending_treatment=processed_pending_treatments,  # NEW
                            active_tab=active_tab)
 
 @consultations_web_bp.route('/optical-consultation-queue', methods=['GET'])
@@ -510,6 +721,18 @@ def add_treatment(visit_id):
                     lab_test_order.interpretation = request.form.get(overall_interpretation_name)
                     lab_test_order.notes = request.form.get(overall_comments_name) # Assuming 'notes' maps to overall comments
 
+
+
+            # Check if any billable services were actually added (not just consultation notes)
+            medications_added = any(drug_id for drug_id in request.form.getlist('drug[]') if drug_id)
+            lab_tests_added = any(lab_id for lab_id in request.form.getlist('lab_tests') if lab_id)
+            radiology_added = any(rad_id for rad_id in request.form.getlist('imaging_studies') if rad_id)
+
+            if medications_added or lab_tests_added or radiology_added:
+                visit.current_position = 'billing'
+                current_app.logger.info(f"Visit {visit_id} moved to billing position after adding billable services")
+
+
             db.session.commit() # Final commit after all operations (including lab results)
 
             flash('Treatment plan and lab results saved successfully', 'success')
@@ -519,7 +742,37 @@ def add_treatment(visit_id):
             db.session.rollback()
             flash(f'Error saving treatment: {str(e)}', 'danger')
             current_app.logger.error(f"Error in add_treatment: {e}", exc_info=True) # Log the full traceback
-
+    # --- Process Radiology Results ---
+    for radiology_order in Radiology.query.filter_by(consultation_id=consultation.id).all():
+        radiology_id = str(radiology_order.id)
+        
+        # Get structured results data from form
+        findings = request.form.get(f'radiology_findings[{radiology_id}]')
+        impression = request.form.get(f'radiology_impression[{radiology_id}]')
+        recommendations = request.form.get(f'radiology_recommendations[{radiology_id}]')
+        notes = request.form.get(f'radiology_notes[{radiology_id}]')
+        is_completed = request.form.get(f'radiology_completed[{radiology_id}]') == 'completed'
+        
+        # Update radiology order with structured results data
+        if findings is not None:  # Only update if the field was submitted
+            # Create or update results_data JSON
+            if not radiology_order.results_data:
+                radiology_order.results_data = {}
+            
+            radiology_order.results_data.update({
+                'findings': findings.strip() if findings else None,
+                'impression': impression.strip() if impression else None,
+                'recommendations': recommendations.strip() if recommendations else None
+            })
+            
+            radiology_order.notes = notes.strip() if notes else None
+            
+            # Update status and completion time if marked as completed
+            if is_completed and radiology_order.status != 'completed':
+                radiology_order.status = 'completed'
+                radiology_order.completed_at = datetime.utcnow()
+                radiology_order.done_by = current_user
+                radiology_order.done_at = datetime.utcnow()
     return render_template(
         'add_treatment.html',
         visit=visit,

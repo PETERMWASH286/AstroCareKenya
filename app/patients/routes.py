@@ -1,7 +1,8 @@
 import base64
+from flask_login import current_user
 import requests
 from sqlalchemy import or_
-from flask import current_app, flash, redirect, render_template, request, jsonify, url_for
+from flask import current_app, flash, g, redirect, render_template, request, jsonify, url_for
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import joinedload, subqueryload
 from app.finance.models import Insurance, InsuranceService, Invoice, InvoiceItem
@@ -640,23 +641,25 @@ def process_payment():
         if patient_category not in ['general', 'walkin', 'special_clinic']:
             patient_category = 'general'  # default if invalid
 
+
         # --- VISIT TYPE LOGIC ---
         final_visit_type = request.form.get('finalVisitType', '').strip()
-
-
         other_visit_type_details = None
+                # --- NEW: Get served by information ---
+        # --- NEW: Get served by information ---
+        served_by = request.form.get('servedBy', '').strip()
+        if not served_by:
+            # Use current_user.full_name if available
+            if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated:
+                served_by = current_user.full_name
+            else:
+                served_by = "System"  # fallback
+
         # If 'other' was selected, get the detailed description
         if final_visit_type == 'other':
             other_visit_type_details = request.form.get('otherVisitType', '').strip()
             if not other_visit_type_details:
                 raise ValueError("Please specify the 'Other' visit type.")
-            # For the database, we might still want to store 'other' as the category
-            # and the specific details in a separate column.
-            # Or, you could store the detailed description directly as final_visit_type
-            # if you prefer that for 'other' cases.
-            # For this example, let's keep final_visit_type as 'other' and use the details column.
-            # If you want the actual detailed string in final_visit_type, uncomment the line below:
-            # final_visit_type = other_visit_type_details # Uncomment if you want the specific string here
 
         # --- END NEW LOGIC ---
 
@@ -707,7 +710,7 @@ def process_payment():
 
             # 7.d) Initiate STK push
             response = mpesa_client.initiate_stk_push(
-            phone=phone_suffix,           # without leading "0"
+                phone=phone_suffix,           # without leading "0"
                 amount=total_amount,
                 account_ref=reg_no,
                 description=f"Medical services: {service_names}",
@@ -721,15 +724,24 @@ def process_payment():
             mpesa_tx = response.get('transaction')
             if not isinstance(mpesa_tx, Transaction):
                 raise ValueError("Unexpected transaction object from MPESA client.")
+            
             tx_record = mpesa_tx
+            
+            # ────────────── NEW: Set served_by and patient_category ──────────────
+            tx_record.served_by = served_by
+            tx_record.patient_category = patient_category
+            
+            # If you have user authentication, set served_by_id
+            if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated:
+                tx_record.served_by_id = current_user.id
+            # ────────────────────────────────────────────────────────────────────
+            
             db.session.add(tx_record)
             db.session.flush()  # get tx_record.id
 
-            # ────────────── NEW ──────────────
             # Associate each Service with this Transaction (writes into transaction_services)
             tx_record.services.extend(services)
             db.session.flush()
-            # ───────────────────────────────────
 
             # 9) Either reuse an existing in_progress visit or create a new one
             visit = (
@@ -760,69 +772,137 @@ def process_payment():
                     visit_type_category = final_visit_type,
                     visit_type_other_details = other_visit_type_details, # Store details if 'other'
                     is_paid        = (payment_method == 'paybill'),
-                    payment_status = ('paid' if payment_method == 'paybill' else 'pending')
+                    payment_status = ('paid' if payment_method == 'paybill' else 'pending'),
+                    patient_category = patient_category  # NEW: Store patient category in visit too
                 )
                 db.session.add(visit)
                 visit.services.extend(services)
 
             db.session.flush()  # so visit.id is set
+
             # ───────────────────────────────────────────────────────────
             # ───────────────────────────────────────────────────────────
             # --- NEW LOGIC: Create respective LabTest, Medication, Radiology records ---
-            # This block now applies universally after the visit is confirmed.
+            # ───────────────────────────────────────────────────────────
+            # ───────────────────────────────────────────────────────────
+            # --- COMPREHENSIVE LOGIC: Handle all scenarios for service records ---
             current_app.logger.info(f"Processing services for visit {visit.id}. Category: {visit.visit_type_category}")
 
             for svc in services:
-                # Check if a record for this service already exists for the current visit.
-                # This prevents creating duplicates if the same service is added to an existing visit multiple times.
-                record_exists = False
-                if svc.category.lower() == 'pharmacy':
-                    record_exists = Medication.query.filter_by(visit_id=visit.id, service_id=svc.id).first()
-                elif svc.category == 'Laboratory': # Note: Use 'lab' not 'laboratory' if that's your Service.category value
-                    record_exists = LabTest.query.filter_by(visit_id=visit.id, service_id=svc.id).first()
-                elif svc.category.lower() == 'radiology':
-                    record_exists = Radiology.query.filter_by(visit_id=visit.id, service_id=svc.id).first()
-                
-                if record_exists:
-                    current_app.logger.info(f"Record for service {svc.name} (Category: {svc.category}) already exists for Visit {visit.id}. Skipping creation.")
-                    continue # Skip to the next service
+                # Get all consultations for this visit
+                consultation_ids = [c.id for c in visit.consultations] if visit.consultations else []
                 
                 if svc.category.lower() == 'pharmacy':
-                    medication = Medication(
-                        service_id=svc.id,
-                        visit_id=visit.id, 
-                        # quantity (you might need to get this from the frontend)
-                        quantity=1, 
-                        price=svc.price,
-                        is_paid=False,          
-                        payment_status='pending'
-                    )
-                    db.session.add(medication)
-                    current_app.logger.info(f"Created pending Medication for service {svc.name} (Visit: {visit.id}).")
+                    # Strategy: Prefer updating consultation records, fallback to creating visit records
+                    existing_medication = None
+                    
+                    # First, check for pending consultation medications
+                    if consultation_ids:
+                        existing_medication = Medication.query.filter(
+                            Medication.consultation_id.in_(consultation_ids),
+                            Medication.service_id == svc.id,
+                            Medication.payment_status == 'pending'
+                        ).first()
+                    
+                    if existing_medication:
+                        # Update existing consultation medication
+                        existing_medication.visit_id = visit.id
+                        existing_medication.payment_status = 'paid'
+                        existing_medication.is_paid = True
+                        current_app.logger.info(f"UPDATED: Consultation Medication {existing_medication.id} for {svc.name} -> Visit {visit.id}, marked as paid")
+                    
+                    else:
+                        # Check if already exists in visit (shouldn't normally happen)
+                        existing_visit_medication = Medication.query.filter_by(visit_id=visit.id, service_id=svc.id).first()
+                        if existing_visit_medication:
+                            # Update existing visit medication payment status
+                            existing_visit_medication.payment_status = 'paid'
+                            existing_visit_medication.is_paid = True
+                            current_app.logger.info(f"UPDATED: Existing Visit Medication {existing_visit_medication.id} for {svc.name} -> marked as paid")
+                        else:
+                            # Create new medication record
+                            medication = Medication(
+                                service_id=svc.id,
+                                visit_id=visit.id, 
+                                quantity=1, 
+                                price=svc.price,
+                                is_paid=True,          
+                                payment_status='paid'
+                            )
+                            db.session.add(medication)
+                            current_app.logger.info(f"CREATED: New Medication for {svc.name} in Visit {visit.id}")
 
-                elif svc.category == 'Laboratory': # Ensure this matches your Service.category value
-                    lab_test = LabTest(
-                        service_id=svc.id,
-                        visit_id=visit.id, 
-                        status='requested',
-                        is_paid=False,      
-                        payment_status='pending',
-                        requested_at=datetime.utcnow()
-                    )
-                    db.session.add(lab_test)
-                    current_app.logger.info(f"Created pending LabTest for service {svc.name} (Visit: {visit.id}).")
+                elif svc.category == 'Laboratory':
+                    # Similar logic for Lab Tests
+                    existing_lab_test = None
+                    
+                    if consultation_ids:
+                        existing_lab_test = LabTest.query.filter(
+                            LabTest.consultation_id.in_(consultation_ids),
+                            LabTest.service_id == svc.id,
+                            LabTest.payment_status == 'pending'
+                        ).first()
+                    
+                    if existing_lab_test:
+                        # Update existing consultation lab test
+                        existing_lab_test.visit_id = visit.id
+                        existing_lab_test.payment_status = 'paid'
+                        existing_lab_test.is_paid = True
+                        current_app.logger.info(f"UPDATED: Consultation LabTest {existing_lab_test.id} for {svc.name} -> Visit {visit.id}, marked as paid")
+                    
+                    else:
+                        existing_visit_lab_test = LabTest.query.filter_by(visit_id=visit.id, service_id=svc.id).first()
+                        if existing_visit_lab_test:
+                            existing_visit_lab_test.payment_status = 'paid'
+                            existing_visit_lab_test.is_paid = True
+                            current_app.logger.info(f"UPDATED: Existing Visit LabTest {existing_visit_lab_test.id} for {svc.name} -> marked as paid")
+                        else:
+                            lab_test = LabTest(
+                                service_id=svc.id,
+                                visit_id=visit.id, 
+                                status='requested',
+                                is_paid=True,      
+                                payment_status='paid',
+                                requested_at=datetime.utcnow()
+                            )
+                            db.session.add(lab_test)
+                            current_app.logger.info(f"CREATED: New LabTest for {svc.name} in Visit {visit.id}")
 
                 elif svc.category.lower() == 'radiology':
-                    radiology_order = Radiology(
-                        service_id=svc.id,
-                        visit_id=visit.id, 
-                        status='requested',
-                        is_paid=False,      
-                        payment_status='pending',
-                        requested_at=datetime.utcnow()
-                    )
-                    db.session.add(radiology_order)
-                    current_app.logger.info(f"Created pending Radiology for service {svc.name} (Visit: {visit.id}).")
+                    # Similar logic for Radiology
+                    existing_radiology = None
+                    
+                    if consultation_ids:
+                        existing_radiology = Radiology.query.filter(
+                            Radiology.consultation_id.in_(consultation_ids),
+                            Radiology.service_id == svc.id,
+                            Radiology.payment_status == 'pending'
+                        ).first()
+                    
+                    if existing_radiology:
+                        # Update existing consultation radiology
+                        existing_radiology.visit_id = visit.id
+                        existing_radiology.payment_status = 'paid'
+                        existing_radiology.is_paid = True
+                        current_app.logger.info(f"UPDATED: Consultation Radiology {existing_radiology.id} for {svc.name} -> Visit {visit.id}, marked as paid")
+                    
+                    else:
+                        existing_visit_radiology = Radiology.query.filter_by(visit_id=visit.id, service_id=svc.id).first()
+                        if existing_visit_radiology:
+                            existing_visit_radiology.payment_status = 'paid'
+                            existing_visit_radiology.is_paid = True
+                            current_app.logger.info(f"UPDATED: Existing Visit Radiology {existing_visit_radiology.id} for {svc.name} -> marked as paid")
+                        else:
+                            radiology_order = Radiology(
+                                service_id=svc.id,
+                                visit_id=visit.id, 
+                                status='requested',
+                                is_paid=True,      
+                                payment_status='paid',
+                                requested_at=datetime.utcnow()
+                            )
+                            db.session.add(radiology_order)
+                            current_app.logger.info(f"CREATED: New Radiology for {svc.name} in Visit {visit.id}")
 
             # 10) Create CASH invoice (pending)
             invoice = Invoice(
@@ -832,9 +912,9 @@ def process_payment():
                 insurance_id=None,
                 issue_date=datetime.utcnow(),
                 due_date=datetime.utcnow(),  # due immediately
-                total_amount=0.0,  # we’ll set it below
+                total_amount=0.0,  # we'll set it below
                 status='pending',
-                notes=f"Auto‐generated cash invoice on {datetime.utcnow().date()}"
+                notes=f"Auto‐generated cash invoice on {datetime.utcnow().date()}. Served by: {served_by}"  # NEW: Include served_by in notes
             )
             db.session.add(invoice)
             db.session.flush()  # get invoice.id
@@ -862,13 +942,14 @@ def process_payment():
             # 12) Commit Visit, Transaction, Invoice, InvoiceItems all at once
             db.session.commit()
 
+            # NEW: Return served_by in response for receipt generation
             return jsonify({
                 "status": "success",
                 "message": response['customer_message'],
-                "checkout_id": response['checkout_request_id']
+                "checkout_id": response['checkout_request_id'],
+                "served_by": served_by,  # NEW: Return served_by information
+                "patient_category": patient_category  # NEW: Return patient category
             })
-
-
         # ───────────────────────────────────────────────────────────
         # B) Paybill confirmation path
         # ───────────────────────────────────────────────────────────
@@ -1029,7 +1110,10 @@ def check_status():
                 "receipt_number":      tx.receipt_number,
                 "amount":              tx.amount,
                 "paid_at":             tx.paid_at.isoformat() if tx.paid_at else None,
-                "payment_method":      tx.payment_method
+                "payment_method":      tx.payment_method,
+                # NEW: Add served_by and patient_category
+                "served_by":           tx.served_by,
+                "patient_category":    tx.patient_category
             },
             "patient": {
                 "reg_no":     patient.reg_no,
@@ -1044,7 +1128,6 @@ def check_status():
 
     else:
         return jsonify({"status": "pending", "message": "Transaction still pending"}), 200
-
 
 
 

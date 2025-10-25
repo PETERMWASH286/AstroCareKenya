@@ -3,7 +3,7 @@ from datetime import datetime
 from flask import current_app, flash, json, make_response, redirect, render_template, url_for
 from flask import render_template, request, jsonify
 from flask_login import current_user
-from sqlalchemy import func
+from sqlalchemy import and_, exists, func
 from app import db
 from app.auth.models import User
 from app.store.models import Stock, StockRequest  # Import the db object
@@ -15,31 +15,44 @@ from app.patients.models import Consultation, Patient, Service, Visit, Medicatio
 def pharmacy_dashboard():
     """Main pharmacy dashboard route"""
     return render_template('dashboard.html')
-
 @pharmacy_web_bp.route('/pharmacy/dispense')
 def dispense_medication():
     """
     Show only visits that have paid, not-yet-dispensed medications.
+    Handles medications linked via both consultation and direct visit relationships.
     """
-    # 1) Find all Visit → Consultation → Medication where:
-    #    - visit_status is 'in_progress'
-    #    - medication.is_paid == True and payment_status == 'paid'
-    #    - medication.is_dispensed == False
-    #
-    # We join Visit → Consultation → Medication and filter out any already-dispensed meds.
-    # Then .distinct() ensures each Visit appears only once in the list.
+    from sqlalchemy import or_
+    
+    # Get visits that have undispensed medications through either:
+    # 1. Consultation → Medication path, OR
+    # 2. Direct Visit → Medication path
     pharmacy_queue = (
         db.session.query(Visit)
-        .join(Visit.consultation)
-        .join(Consultation.medications)
         .filter(
             Visit.visit_status == 'in_progress',
-            Medication.is_paid == True,
-            Medication.payment_status == 'paid',
-            Medication.is_dispensed == False
+            or_(
+                # Medications linked via consultation
+                exists().where(
+                    and_(
+                        Consultation.visit_id == Visit.id,
+                        Medication.consultation_id == Consultation.id,
+                        Medication.is_paid == True,
+                        Medication.payment_status == 'paid',
+                        Medication.is_dispensed == False
+                    )
+                ),
+                # Medications linked directly to visit
+                exists().where(
+                    and_(
+                        Medication.visit_id == Visit.id,
+                        Medication.is_paid == True,
+                        Medication.payment_status == 'paid',
+                        Medication.is_dispensed == False
+                    )
+                )
+            )
         )
         .order_by(Visit.visit_date.asc())
-        .distinct()
         .all()
     )
 

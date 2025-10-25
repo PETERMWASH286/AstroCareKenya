@@ -120,7 +120,14 @@ class Transaction(db.Model):
     status = db.Column(db.String(20), default='pending')  # Values: pending, requested, completed, failed
     phone = db.Column(db.String(20), nullable=True)
     
-    # NEW: Store raw callback JSON
+    # NEW: Store served_by information
+    served_by = db.Column(db.String(100), nullable=True)  # Staff member who processed the transaction
+    served_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # Link to user table if available
+    
+    # NEW: Store patient category
+    patient_category = db.Column(db.String(20), default='general')  # general, walkin, special_clinic
+    
+    # Store raw callback JSON
     callback_data = db.Column(db.JSON, nullable=True)  # MySQL JSON type
 
     # M-Pesa identifiers
@@ -137,6 +144,7 @@ class Transaction(db.Model):
     patient = db.relationship('Patient', backref=db.backref('transactions', lazy=True))
     services = db.relationship('Service', secondary=transaction_services, 
                                backref=db.backref('transactions', lazy=True))
+    staff_member = db.relationship('User', backref=db.backref('processed_transactions', lazy=True))
 
     def __repr__(self):
         return f"<Transaction {self.id} {self.amount} ({self.status})>"

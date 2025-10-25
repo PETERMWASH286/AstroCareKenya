@@ -10,10 +10,22 @@
     <!-- Stats Panel -->
     <div class="mb-6 flex flex-wrap justify-between items-center bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800  dark:bg-gray-900 dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-gray-100 dark:border-gray-700">
         <div class="text-gray-700 dark:text-gray-300 font-semibold text-lg">
-            Total Patients in Queue: <span id="totalPatients">0</span>
+            Total Patients in Queue: <span id="totalPatients">{{ pharmacy_queue|length }}</span>
         </div>
         <div class="text-gray-700 dark:text-gray-300 font-semibold text-lg">
-            Total Medications Pending: <span id="totalPendingMeds">0</span>
+            Total Medications Pending: <span id="totalPendingMeds">
+                {% set total_meds = 0 %}
+                {% for visit in pharmacy_queue %}
+                    {% for consultation in visit.consultations %}
+                        {% for med in consultation.medications %}
+                            {% if not med.is_dispensed %}
+                                {% set total_meds = total_meds + 1 %}
+                            {% endif %}
+                        {% endfor %}
+                    {% endfor %}
+                {% endfor %}
+                {{ total_meds }}
+            </span>
         </div>
     </div>
 
@@ -73,8 +85,24 @@
                 </thead>
                 <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                     {% for visit in pharmacy_queue %}
-                    <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition-colors group" x-data="{ open: false }" data-patient-name="{{ visit.patient.full_name | lower }}" data-patient-number="{{ visit.patient.reg_no | lower }}" data-priority="{{ visit.patient.priority_level }}"
-                        data-status="{{ 'Dispensed' if visit.consultation.medications | selectattr('is_dispensed') | list | length == visit.consultation.medications | length else 'Pending' }}">
+                    <!-- Calculate overall status for this visit -->
+                    {% set all_medications = [] %}
+                    {% set dispensed_count = 0 %}
+                    {% for consultation in visit.consultations %}
+                        {% for med in consultation.medications %}
+                            {% set _ = all_medications.append(med) %}
+                            {% if med.is_dispensed %}
+                                {% set dispensed_count = dispensed_count + 1 %}
+                            {% endif %}
+                        {% endfor %}
+                    {% endfor %}
+                    {% set visit_status = 'Dispensed' if dispensed_count == all_medications|length and all_medications|length > 0 else 'Pending' %}
+                    
+                    <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition-colors group" x-data="{ open: false }" 
+                        data-patient-name="{{ visit.patient.first_name|lower }} {{ visit.patient.last_name|lower }}" 
+                        data-patient-number="{{ visit.patient.reg_no|lower }}" 
+                        data-priority="Normal"
+                        data-status="{{ visit_status }}">
                         <!-- Patient Column -->
                         <td class="px-6 py-4 align-top">
                             <div class="flex items-center space-x-4">
@@ -87,7 +115,7 @@
                                     {% endif %}
                                 </div>
                                 <div class="min-w-0">
-                                    <div class="font-semibold text-gray-800 dark:text-white truncate">{{ visit.patient.full_name }}</div>
+                                    <div class="font-semibold text-gray-800 dark:text-white truncate">{{ visit.patient.first_name }} {{ visit.patient.last_name }}</div>
                                     <div class="text-sm text-gray-600 dark:text-gray-300 truncate">{{ visit.patient.reg_no }}</div>
                                 </div>
                             </div>
@@ -96,12 +124,20 @@
                         <!-- Visit Details -->
                         <td class="px-6 py-4 align-top">
                             <div class="space-y-1">
-                                <div class="text-gray-800 dark:text-white font-medium">{{ visit.visit_date.strftime('%d %b %Y') }}</div>
+                                <div class="text-gray-800 dark:text-white font-medium">
+                                    {% if visit.visit_date %}
+                                        {{ visit.visit_date.strftime('%d %b %Y') }}
+                                    {% else %}
+                                        No date
+                                    {% endif %}
+                                </div>
                                 <div class="text-sm text-gray-600 dark:text-gray-300">
-                                    {{ visit.visit_date.strftime('%I:%M %p') }}<br>
+                                    {% if visit.visit_date %}
+                                        {{ visit.visit_date.strftime('%I:%M %p') }}<br>
+                                    {% endif %}
                                     <span class="tag bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300 px-2 py-1 rounded-md text-xs">
-                      {{ visit.current_position|title }}
-                    </span>
+                                        {{ visit.current_position|title if visit.current_position else 'Unknown' }}
+                                    </span>
                                 </div>
                             </div>
                         </td>
@@ -109,16 +145,20 @@
                         <!-- Medications -->
                         <td class="px-6 py-4 align-top">
                             <div class="flex flex-col space-y-3">
-                                {% for med in visit.consultation.medications %}
-                                <div class="flex items-start space-x-3">
-                                    <i class="fas fa-pills text-blue-400 mt-1"></i>
-                                    <div class="min-w-0">
-                                        <div class="font-medium text-gray-800 dark:text-white truncate">{{ med.service.name }}</div>
-                                        <div class="text-sm text-gray-600 dark:text-gray-300">
-                                            {{ med.dose }} • {{ med.frequency }} • {{ med.duration }} days
+                                {% for consultation in visit.consultations %}
+                                    {% for med in consultation.medications %}
+                                    <div class="flex items-start space-x-3">
+                                        <i class="fas fa-pills text-blue-400 mt-1"></i>
+                                        <div class="min-w-0">
+                                            <div class="font-medium text-gray-800 dark:text-white truncate">
+                                                {{ med.service.name if med.service else 'Unknown Medication' }}
+                                            </div>
+                                            <div class="text-sm text-gray-600 dark:text-gray-300">
+                                                {{ med.dose }} • {{ med.frequency }} • {{ med.duration }} days
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
+                                    {% endfor %}
                                 {% endfor %}
                             </div>
                         </td>
@@ -126,17 +166,19 @@
                         <!-- Status -->
                         <td class="px-6 py-4 align-top">
                             <div class="flex flex-col space-y-3">
-                                {% for med in visit.consultation.medications %}
-                                <div class="flex items-center space-x-3">
-                                    <div class="relative w-full">
-                                        <div class="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                                            <div class="h-full bg-green-500 transition-all duration-500"></div>
-                                        </div>
-                                        <div class="text-xs {% if med.is_dispensed %}text-green-600 dark:text-green-400{% else %}text-yellow-600 dark:text-yellow-400{% endif %} mt-1" id="status-{{ med.id }}">
-                                            {{ 'Dispensed' if med.is_dispensed else 'Pending' }}
+                                {% for consultation in visit.consultations %}
+                                    {% for med in consultation.medications %}
+                                    <div class="flex items-center space-x-3">
+                                        <div class="relative w-full">
+                                            <div class="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                                                <div class="h-full {% if med.is_dispensed %}bg-green-500{% else %}bg-yellow-500{% endif %} transition-all duration-500"></div>
+                                            </div>
+                                            <div class="text-xs {% if med.is_dispensed %}text-green-600 dark:text-green-400{% else %}text-yellow-600 dark:text-yellow-400{% endif %} mt-1" id="status-{{ med.id }}">
+                                                {{ 'Dispensed' if med.is_dispensed else 'Pending' }}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
+                                    {% endfor %}
                                 {% endfor %}
                             </div>
                         </td>
@@ -144,19 +186,23 @@
                         <!-- Actions -->
                         <td class="px-6 py-4 align-top">
                             <div class="flex flex-col space-y-2">
-                                {% for med in visit.consultation.medications %}
-                                <div class="flex items-center gap-2">
-                                    {% if not med.is_dispensed %}
-                                    <button class="p-2 rounded-lg bg-green-100 hover:bg-green-200 dark:bg-green-900/50 dark:hover:bg-green-800 transition-colors relative dispense-btn" data-med-id="{{ med.id }}" data-status-id="status-{{ med.id }}">
-                      <i class="fas fa-check-circle text-green-600 dark:text-green-400"></i>
-                    </button> {% else %}
-                                    <span class="p-2 text-green-600 dark:text-green-400">
-                      <i class="fas fa-check-circle"></i>
-                    </span> {% endif %}
-                                    <button class="p-2 rounded-lg bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/50 dark:hover:bg-blue-800 transition-colors" data-tippy-content="View prescription details" @click="open = !open">
-                      <i class="fas fa-file-prescription text-blue-600 dark:text-blue-400"></i>
-                    </button>
-                                </div>
+                                {% for consultation in visit.consultations %}
+                                    {% for med in consultation.medications %}
+                                    <div class="flex items-center gap-2">
+                                        {% if not med.is_dispensed %}
+                                        <button class="p-2 rounded-lg bg-green-100 hover:bg-green-200 dark:bg-green-900/50 dark:hover:bg-green-800 transition-colors relative dispense-btn" data-med-id="{{ med.id }}" data-status-id="status-{{ med.id }}">
+                                            <i class="fas fa-check-circle text-green-600 dark:text-green-400"></i>
+                                        </button> 
+                                        {% else %}
+                                        <span class="p-2 text-green-600 dark:text-green-400">
+                                            <i class="fas fa-check-circle"></i>
+                                        </span> 
+                                        {% endif %}
+                                        <button class="p-2 rounded-lg bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/50 dark:hover:bg-blue-800 transition-colors" data-tippy-content="View prescription details" @click="open = !open">
+                                            <i class="fas fa-file-prescription text-blue-600 dark:text-blue-400"></i>
+                                        </button>
+                                    </div>
+                                    {% endfor %}
                                 {% endfor %}
                             </div>
                         </td>
@@ -176,7 +222,6 @@
         </div>
     </div>
 </div>
-
 
 <!-- Enhanced Styles -->
 <style>
