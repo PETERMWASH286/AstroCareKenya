@@ -469,12 +469,7 @@ class Medication(db.Model):
     # Add a check constraint to ensure one of the IDs is always present, but not both
     # This might be tricky to enforce directly in SQLAlchemy for both nullables.
     # Application logic should ensure either consultation_id or visit_id is set.
-    __table_args__ = (
-        db.CheckConstraint(
-            '(consultation_id IS NOT NULL AND visit_id IS NULL) OR (consultation_id IS NULL AND visit_id IS NOT NULL)',
-            name='chk_medication_origin'
-        ),
-    )
+
     # The above check constraint requires that either consultation_id is NOT NULL and visit_id IS NULL,
     # OR consultation_id IS NULL and visit_id IS NOT NULL. This ensures a medication always belongs to one path.
 
@@ -521,13 +516,6 @@ class LabTest(db.Model):
     doctor          = db.relationship('User', foreign_keys=[verified_by]) # Renamed from 'doctor' to 'verified_by_user' for clarity in Radiology
     results_detail  = db.relationship('LabTestResult', back_populates='lab_test_order', cascade='all, delete-orphan')
 
-    # Add a check constraint to ensure one of the IDs is always present, but not both
-    __table_args__ = (
-        db.CheckConstraint(
-            '(consultation_id IS NOT NULL AND visit_id IS NULL) OR (consultation_id IS NULL AND visit_id IS NOT NULL)',
-            name='chk_labtest_origin'
-        ),
-    )
 
 
 # In Radiology model
@@ -577,10 +565,3 @@ class Radiology(db.Model):
     # Add this relationship
     verified_by_user = db.relationship('User', foreign_keys=[verified_by])
 
-    # Add a check constraint to ensure one of the IDs is always present, but not both
-    __table_args__ = (
-        db.CheckConstraint(
-            '(consultation_id IS NOT NULL AND visit_id IS NULL) OR (consultation_id IS NULL AND visit_id IS NOT NULL)',
-            name='chk_radiology_origin'
-        ),
-    )
