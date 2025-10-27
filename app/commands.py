@@ -480,7 +480,11 @@ def seed_departments_for_tenant(session):
     from app.user_management.models import Department
     departments = [
         "General Medicine", "Pediatrics", "Surgery", "Pharmacy",
-        "Laboratory", "Radiology", "Human Resources", "Billing",
+        "Laboratory", "Radiology", "Human Resources", "Billing",         "Cardiology", "Dermatology", "Neurology", "Orthopedics", 
+        "Ophthalmology", "ENT (Ear, Nose & Throat)", "Dentistry",
+        "Psychiatry", "Obstetrics & Gynecology", "Urology",
+        "Gastroenterology", "Endocrinology", "Oncology",
+        "Pulmonology", "Nephrology", "Rheumatology",
         "Doctor", "Clinical Officer", "Receptionist", "Nursing", "Administrator", "Board Memember", "Information Technology",
     ]
     created = 0

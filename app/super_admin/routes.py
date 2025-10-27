@@ -147,6 +147,8 @@ def create_hospital():
             ('patients:manage', 'Patients', 'View & edit patient records'),
             ('patients:triage', 'Patients', 'Perform patient triage'),
             ('consultations:queue', 'Consultations', 'Access consultation queue'),
+                    ('consultations:special', 'Consultations', 'Access special consultation queue'),
+
             ('lab:orders', 'Lab Tests', 'View pending lab orders'),
             ('lab:results', 'Lab Tests', 'View lab test results'),
             ('lab:add_quick', 'Lab Tests', 'Add a quick lab test'),
@@ -239,6 +241,7 @@ def create_hospital():
                 ('finance:approve_lpo', 'Finance', 'Approve Local Purchase Orders (LPOs)'),
                 ('finance:supplier_accounts', 'Finance', 'Manage Supplier Accounts'),
                 ('finance:approve_payments', 'Finance', 'Approve Payments'),
+    ('finance:doctor_accounts', 'Finance', 'Manage Doctor Accounts'),  # New privilege added
 
             ('reports:clinical', 'Reports', 'Access Clinical Reports'),
             ('reports:financial', 'Reports', 'Access Financial Reports'),
@@ -382,12 +385,13 @@ def create_hospital():
 
             # --- Departments ---
             dept_names = [
-                "General Medicine", "Pediatrics", "Surgery",
-                "Pharmacy", "Laboratory", "Radiology",
-                "Human Resources", "Billing", "Doctor",
-                "Clinical Officer", "Receptionist", "Nursing",
-                "Administrator", "Board Memember",
-                "Information Technology" # ADDED: IT Department
+        "General Medicine", "Pediatrics", "Surgery", "Pharmacy",
+        "Laboratory", "Radiology", "Human Resources", "Billing",         "Cardiology", "Dermatology", "Neurology", "Orthopedics", 
+        "Ophthalmology", "ENT (Ear, Nose & Throat)", "Dentistry",
+        "Psychiatry", "Obstetrics & Gynecology", "Urology",
+        "Gastroenterology", "Endocrinology", "Oncology",
+        "Pulmonology", "Nephrology", "Rheumatology",
+        "Doctor", "Clinical Officer", "Receptionist", "Nursing", "Administrator", "Board Memember", "Information Technology",
             ]
             for d in dept_names:
                 if not session.query(Department).filter_by(name=d).first():

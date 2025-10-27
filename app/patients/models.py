@@ -69,7 +69,17 @@ class Service(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     lab_test_id = db.Column(db.Integer, db.ForeignKey('laboratory_tests.test_id'), unique=True, nullable=True)
     lab_test = db.relationship('LaboratoryTest', back_populates='service', uselist=False)
-
+    # Add this relationship
+    assigned_doctors = db.relationship(
+        'User', 
+        secondary='service_doctor_assignments',
+        primaryjoin='and_(Service.id == ServiceDoctorAssignment.service_id, '
+                   'ServiceDoctorAssignment.is_active == True)',
+        secondaryjoin='User.id == ServiceDoctorAssignment.doctor_id',
+        backref=db.backref('assigned_services', lazy='dynamic'),
+        lazy='dynamic',
+        viewonly=True  # This is a read-only relationship
+    )
     # Indexes
     __table_args__ = (
         db.Index('ix_service_category', 'category'),
@@ -108,7 +118,57 @@ class Service(db.Model):
             return False
         return True
 
+# Service-Doctor Assignment Model
+# Service-Doctor Assignment Model
+class ServiceDoctorAssignment(db.Model):
+    __tablename__ = 'service_doctor_assignments'
+    __audit_trail__ = True
+
+    id = db.Column(db.Integer, primary_key=True)
+    service_id = db.Column(db.Integer, db.ForeignKey('services.id'), nullable=False)
+    doctor_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    assigned_by = db.Column(db.Integer, db.ForeignKey('user.id'))
+    assigned_at = db.Column(db.DateTime, default=datetime.utcnow)
+    is_active = db.Column(db.Boolean, default=True)
     
+    # Commission and Payment Fields
+    commission_rate = db.Column(db.Float, default=70.0)  # Percentage (e.g., 70%)
+    fixed_amount = db.Column(db.Float, nullable=True)  # Fixed amount instead of percentage
+    payment_type = db.Column(db.String(20), default='percentage')  # 'percentage' or 'fixed'
+    
+    # Additional fields
+    schedule = db.Column(db.String(100))
+    max_patients_per_day = db.Column(db.Integer, default=20)
+    consultation_fee = db.Column(db.Float)
+    
+    # Relationships
+    service = db.relationship('Service', backref=db.backref('doctor_assignments', lazy='dynamic'))
+    doctor = db.relationship('User', foreign_keys=[doctor_id], backref=db.backref('doctor_service_assignments', lazy='dynamic'))
+    assigned_by_user = db.relationship('User', foreign_keys=[assigned_by])
+    
+    # Payment tracking
+    payments = db.relationship('DoctorPayment', backref='assignment', lazy='dynamic')
+    
+    __table_args__ = (
+        db.UniqueConstraint('service_id', 'doctor_id', name='unique_service_doctor'),
+    )
+
+class DoctorPayment(db.Model):
+    __tablename__ = 'doctor_payments'
+    __audit_trail__ = True
+
+    id = db.Column(db.Integer, primary_key=True)
+    assignment_id = db.Column(db.Integer, db.ForeignKey('service_doctor_assignments.id'), nullable=False)
+    amount = db.Column(db.Float, nullable=False)
+    payment_date = db.Column(db.DateTime, default=datetime.utcnow)
+    payment_method = db.Column(db.String(50))  # 'cash', 'bank_transfer', 'mpesa'
+    reference_number = db.Column(db.String(100))
+    notes = db.Column(db.Text)
+    paid_by = db.Column(db.Integer, db.ForeignKey('user.id'))
+    status = db.Column(db.String(20), default='completed')  # 'pending', 'completed', 'failed'
+    
+    # Relationships
+    paid_by_user = db.relationship('User', foreign_keys=[paid_by])
 class Transaction(db.Model):
     __tablename__ = 'transactions'
     __audit_trail__ = True  # Enable auditing

@@ -6,8 +6,9 @@ import smtplib
 import tempfile
 from flask import Blueprint, abort, flash, jsonify, redirect, render_template, request, session, url_for
 from flask_login import current_user, login_required
-from sqlalchemy import func
+from sqlalchemy import and_, func
 
+from app.auth.models import Role, User
 from app.finance.models import Expense, ExpenseCategory, Insurance, InsuranceClaim, InsuranceService, Invoice, InvoiceItem, Payment
 from sqlalchemy.exc import IntegrityError
 
@@ -15,7 +16,7 @@ from app.store.models import LPO, ExternalOrder, PaymentRequest, PurchaseOrder, 
 from app.user_management.models import Department
 
 from . import finance_web_bp
-from app.patients.models import Consultation, LabTest, Medication, Patient, Radiology, Transaction, Service, Visit, db
+from app.patients.models import Consultation, DoctorPayment, LabTest, Medication, Patient, Radiology, ServiceDoctorAssignment, Transaction, Service, Visit, db
 from flask import Blueprint, render_template, current_app
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import joinedload
@@ -2601,6 +2602,208 @@ def supplier_accounts():
     return render_template('supplier_accounts.html',
                          accounts=accounts,
                          suppliers_without_accounts=suppliers_without_accounts)
+    
+
+    
+@finance_web_bp.route('/doctor-accounts')
+@login_required
+def doctor_accounts():
+    """
+    Display doctor accounts with commission and payment tracking
+    """
+    # Get filter parameters
+    date_filter = request.args.get('date_filter', 'all')
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    doctor_id = request.args.get('doctor_id', type=int)
+    
+    # Base query for doctors
+    doctors_query = User.query.join(User.roles).filter(Role.name == 'Doctor')
+    
+    if doctor_id:
+        doctors_query = doctors_query.filter(User.id == doctor_id)
+    
+    doctors = doctors_query.all()
+    
+    doctor_accounts_data = []
+    
+    for doctor in doctors:
+        # Get date range for filtering
+        date_filter_condition = True
+        if date_filter == 'today':
+            today = datetime.now().date()
+            date_filter_condition = func.date(Visit.visit_date) == today
+        elif date_filter == 'week':
+            week_ago = datetime.now() - timedelta(days=7)
+            date_filter_condition = Visit.visit_date >= week_ago
+        elif date_filter == 'month':
+            month_ago = datetime.now() - timedelta(days=30)
+            date_filter_condition = Visit.visit_date >= month_ago
+        elif date_filter == 'custom' and start_date and end_date:
+            start = datetime.strptime(start_date, '%Y-%m-%d')
+            end = datetime.strptime(end_date, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
+            date_filter_condition = and_(Visit.visit_date >= start, Visit.visit_date <= end)
+        
+        # Get services assigned to this doctor
+        assigned_services = ServiceDoctorAssignment.query.filter_by(
+            doctor_id=doctor.id,
+            is_active=True
+        ).all()
+        
+        if not assigned_services:
+            doctor_accounts_data.append({
+                'doctor': doctor,
+                'assigned_services': [],
+                'total_visits': 0,
+                'period_earned': 0,
+                'total_paid': 0,
+                'balance_due': 0,
+                'last_visit': None,
+                'has_services': False
+            })
+            continue
+        
+        assigned_service_ids = [assignment.service_id for assignment in assigned_services]
+        
+        # Get visits with date filtering
+        doctor_visits_query = Visit.query.join(Visit.services).filter(
+            Service.id.in_(assigned_service_ids),
+            Visit.payment_status == 'paid',
+            date_filter_condition
+        ).options(
+            joinedload(Visit.patient),
+            joinedload(Visit.services)
+        )
+        
+        doctor_visits = doctor_visits_query.all()
+        
+        # Calculate earnings and payments
+        total_services_count = len(doctor_visits)
+        period_earned = 0
+        service_revenue_breakdown = {}
+        
+        for visit in doctor_visits:
+            for service in visit.services:
+                if service.id in assigned_service_ids:
+                    assignment = next((a for a in assigned_services if a.service_id == service.id), None)
+                    if assignment:
+                        if assignment.payment_type == 'percentage':
+                            service_earned = service.price * (assignment.commission_rate / 100)
+                        else:
+                            service_earned = assignment.fixed_amount or 0
+                        
+                        period_earned += service_earned
+                        
+                        # Track revenue by service
+                        if service.name in service_revenue_breakdown:
+                            service_revenue_breakdown[service.name] += service_earned
+                        else:
+                            service_revenue_breakdown[service.name] = service_earned
+        
+        # Calculate total payments made to this doctor
+        total_paid = 0
+        for assignment in assigned_services:
+            assignment_payments = DoctorPayment.query.filter_by(
+                assignment_id=assignment.id,
+                status='completed'
+            ).all()
+            total_paid += sum(payment.amount for payment in assignment_payments)
+        
+        balance_due = period_earned - total_paid
+        
+        doctor_accounts_data.append({
+            'doctor': doctor,
+            'assigned_services': assigned_services,
+            'assigned_service_ids': assigned_service_ids,
+            'total_visits': total_services_count,
+            'period_earned': period_earned,
+            'total_paid': total_paid,
+            'balance_due': balance_due,
+            'service_revenue_breakdown': service_revenue_breakdown,
+            'last_visit': max([v.visit_date for v in doctor_visits]) if doctor_visits else None,
+            'has_services': True,
+            'visit_details': doctor_visits[:10]
+        })
+    
+    return render_template(
+        'doctor_accounts.html',
+        title='Doctor Accounts',
+        doctor_accounts=doctor_accounts_data,
+        current_time=datetime.now(),
+        date_filter=date_filter,
+        start_date=start_date,
+        end_date=end_date,
+        doctor_id=doctor_id
+    )
+    
+@finance_web_bp.route('/api/doctor-visits/<int:doctor_id>')
+@login_required
+def get_doctor_visits(doctor_id):
+    """
+    API endpoint to get detailed visit information for a specific doctor
+    """
+    # Get date range from request
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    
+    # Get services assigned to this doctor
+    assigned_services = ServiceDoctorAssignment.query.filter_by(
+        doctor_id=doctor_id,
+        is_active=True
+    ).all()
+    
+    assigned_service_ids = [assignment.service_id for assignment in assigned_services]
+    
+    # Build query with date filtering
+    visits_query = Visit.query.join(Visit.services).filter(
+        Service.id.in_(assigned_service_ids),
+        Visit.payment_status == 'paid'
+    ).options(
+        joinedload(Visit.patient),
+        joinedload(Visit.services)
+    )
+    
+    if start_date and end_date:
+        start = datetime.strptime(start_date, '%Y-%m-%d')
+        end = datetime.strptime(end_date, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
+        visits_query = visits_query.filter(and_(Visit.visit_date >= start, Visit.visit_date <= end))
+    
+    visits = visits_query.order_by(Visit.visit_date.desc()).all()
+    
+    visit_data = []
+    for visit in visits:
+        visit_services = []
+        doctor_revenue = 0
+        
+        for service in visit.services:
+            if service.id in assigned_service_ids:
+                visit_services.append({
+                    'id': service.id,
+                    'name': service.name,
+                    'price': service.price,
+                    'category': service.category
+                })
+                doctor_revenue += service.price
+        
+        visit_data.append({
+            'visit_id': visit.id,
+            'visit_date': visit.visit_date.isoformat(),
+            'patient_name': visit.patient.full_name if visit.patient else 'Unknown',
+            'patient_id': visit.patient_id,
+            'services': visit_services,
+            'total_amount': doctor_revenue,
+            'payment_status': visit.payment_status,
+            'visit_status': visit.visit_status
+        })
+    
+    return jsonify({
+        'success': True,
+        'doctor_id': doctor_id,
+        'visits': visit_data,
+        'total_visits': len(visits),
+        'total_revenue': sum([v['total_amount'] for v in visit_data])
+    })
+    
 
 @finance_web_bp.route('/supplier-accounts/create', methods=['POST'])
 def create_supplier_account():

@@ -115,7 +115,7 @@
     <ul class="dropdown-content ml-6 pl-3 border-l-2 border-blue-300 dark:border-blue-700 space-y-1 mt-1">
 
         {# Consultations Subgroup #}
-        {% if has_privilege('consultations:queue') %}
+        {% if has_privilege('consultations:queue') or has_privilege('consultations:special') %}
         <li class="dropdown-subgroup">
             <button class="dropdown-sub-btn flex items-center justify-between w-full p-2 text-sm rounded-lg hover:bg-blue-200 transition-all dark:hover:bg-gray-600 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400">
                 <div class="flex items-center space-x-3">
@@ -125,14 +125,27 @@
                 <i class="fas fa-chevron-down text-xs transition-transform duration-200 text-gray-400 dark:text-gray-500"></i>
             </button>
             <ul class="dropdown-subcontent ml-4 pl-3 border-l-2 border-blue-400 dark:border-blue-600 space-y-1 mt-1">
+                {% if has_privilege('consultations:queue') %}
                 <li>
                     <a href="{{ url_for('consultations_web.consultation_queue') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg
                             hover:bg-blue-300 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300
                             focus:outline-none focus:ring-2 focus:ring-blue-300 transition-all">
                         <i class="fas fa-user-md text-teal-600 dark:text-teal-400"></i>
-                        <span class="sidebar-text transition-opacity duration-300">Consultation Queue</span>
+                        <span class="sidebar-text transition-opacity duration-300">General Consultation</span>
                     </a>
                 </li>
+                {% endif %}
+                
+                {% if has_privilege('consultations:special') %}
+                <li>
+                    <a href="{{ url_for('consultations_web.special_consultation') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg
+                            hover:bg-blue-300 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300
+                            focus:outline-none focus:ring-2 focus:ring-blue-300 transition-all">
+                        <i class="fas fa-star text-purple-600 dark:text-purple-400"></i>
+                        <span class="sidebar-text transition-opacity duration-300">Special Consultation</span>
+                    </a>
+                </li>
+                {% endif %}
             </ul>
         </li>
         {% endif %}
@@ -1314,56 +1327,65 @@
         </li>
         {% endif %}
 
-        {# Procurement & Payables Subgroup #}
-        {% if has_privilege('finance:manage_orders') or has_privilege('finance:approve_lpo') or has_privilege('finance:supplier_accounts') or has_privilege('finance:approve_payments') %}
-        <li class="dropdown-subgroup">
-            <button class="dropdown-sub-btn flex items-center justify-between w-full p-2 text-sm rounded-lg hover:bg-emerald-200 transition-all dark:hover:bg-gray-600 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-400">
-                <div class="flex items-center space-x-3">
-                    <i class="fas fa-shopping-cart text-purple-600 dark:text-purple-400"></i>
-                    <span class="sidebar-text transition-opacity duration-300">Procurement & Payables</span>
-                </div>
-                <i class="fas fa-chevron-down text-xs transition-transform duration-200 text-gray-400 dark:text-gray-500"></i>
-            </button>
-            <ul class="dropdown-subcontent ml-4 pl-3 border-l-2 border-emerald-400 dark:border-emerald-600 space-y-1 mt-1">
-                {% if has_privilege('finance:manage_orders') %}
-                <li>
-                    <a href="{{ url_for('finance_web_bp.manage_orders') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
-                        <i class="fas fa-clipboard-check text-amber-500"></i>
-                        <span class="sidebar-text transition-opacity duration-300">Manage Requisitions</span>
-                        <span class="px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-200 text-xs rounded-full">New</span>
-                    </a>
-                </li>
-                {% endif %}
-                {% if has_privilege('finance:approve_lpo') %}
-                <li>
-                    <a href="{{ url_for('finance_web_bp.approve_lpo') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
-                        <i class="fas fa-file-signature text-purple-500"></i>
-                        <span class="sidebar-text transition-opacity duration-300">Approve LPOs</span>
-                        <span class="px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-200 text-xs rounded-full">New</span>
-                    </a>
-                </li>
-                {% endif %}
-                {% if has_privilege('finance:supplier_accounts') %}
-                <li>
-                    <a href="{{ url_for('finance_web_bp.supplier_accounts') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
-                        <i class="fas fa-address-card text-teal-500"></i>
-                        <span class="sidebar-text transition-opacity duration-300">Supplier Accounts</span>
-                        <span class="px-1.5 py-0.5 bg-teal-100 dark:bg-teal-900 text-teal-700 dark:text-teal-200 text-xs rounded-full">New</span>
-                    </a>
-                </li>
-                {% endif %}
-                {% if has_privilege('finance:approve_payments') %}
-                <li>
-                    <a href="{{ url_for('finance_web_bp.approve_payments') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
-                        <i class="fas fa-check-circle text-green-500"></i>
-                        <span class="sidebar-text transition-opacity duration-300">Approve Payments</span>
-                        <span class="px-1.5 py-0.5 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200 text-xs rounded-full">New</span>
-                    </a>
-                </li>
-                {% endif %}
-            </ul>
+{# Procurement & Payables Subgroup #}
+{% if has_privilege('finance:manage_orders') or has_privilege('finance:approve_lpo') or has_privilege('finance:supplier_accounts') or has_privilege('finance:approve_payments') or has_privilege('finance:doctor_accounts') %}
+<li class="dropdown-subgroup">
+    <button class="dropdown-sub-btn flex items-center justify-between w-full p-2 text-sm rounded-lg hover:bg-emerald-200 transition-all dark:hover:bg-gray-600 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+        <div class="flex items-center space-x-3">
+            <i class="fas fa-shopping-cart text-purple-600 dark:text-purple-400"></i>
+            <span class="sidebar-text transition-opacity duration-300">Procurement & Payables</span>
+        </div>
+        <i class="fas fa-chevron-down text-xs transition-transform duration-200 text-gray-400 dark:text-gray-500"></i>
+    </button>
+    <ul class="dropdown-subcontent ml-4 pl-3 border-l-2 border-emerald-400 dark:border-emerald-600 space-y-1 mt-1">
+        {% if has_privilege('finance:manage_orders') %}
+        <li>
+            <a href="{{ url_for('finance_web_bp.manage_orders') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                <i class="fas fa-clipboard-check text-amber-500"></i>
+                <span class="sidebar-text transition-opacity duration-300">Manage Requisitions</span>
+                <span class="px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-200 text-xs rounded-full">New</span>
+            </a>
         </li>
         {% endif %}
+        {% if has_privilege('finance:approve_lpo') %}
+        <li>
+            <a href="{{ url_for('finance_web_bp.approve_lpo') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                <i class="fas fa-file-signature text-purple-500"></i>
+                <span class="sidebar-text transition-opacity duration-300">Approve LPOs</span>
+                <span class="px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-200 text-xs rounded-full">New</span>
+            </a>
+        </li>
+        {% endif %}
+        {% if has_privilege('finance:supplier_accounts') %}
+        <li>
+            <a href="{{ url_for('finance_web_bp.supplier_accounts') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                <i class="fas fa-address-card text-teal-500"></i>
+                <span class="sidebar-text transition-opacity duration-300">Supplier Accounts</span>
+                <span class="px-1.5 py-0.5 bg-teal-100 dark:bg-teal-900 text-teal-700 dark:text-teal-200 text-xs rounded-full">New</span>
+            </a>
+        </li>
+        {% endif %}
+        {% if has_privilege('finance:doctor_accounts') %}
+        <li>
+            <a href="{{ url_for('finance_web_bp.doctor_accounts') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                <i class="fas fa-user-md text-blue-500"></i>
+                <span class="sidebar-text transition-opacity duration-300">Doctors Accounts</span>
+                <span class="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200 text-xs rounded-full">New</span>
+            </a>
+        </li>
+        {% endif %}
+        {% if has_privilege('finance:approve_payments') %}
+        <li>
+            <a href="{{ url_for('finance_web_bp.approve_payments') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                <i class="fas fa-check-circle text-green-500"></i>
+                <span class="sidebar-text transition-opacity duration-300">Approve Payments</span>
+                <span class="px-1.5 py-0.5 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200 text-xs rounded-full">New</span>
+            </a>
+        </li>
+        {% endif %}
+    </ul>
+</li>
+{% endif %}
 
         {# Cost Management Subgroup #}
         {% if has_privilege('finance:expenses') %}

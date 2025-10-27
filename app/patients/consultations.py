@@ -6,14 +6,14 @@ import time
 from flask import Blueprint, current_app, render_template, request, redirect, session, url_for, flash, jsonify
 from flask_login import current_user
 import requests
-from app.auth.models import User
+from app.auth.models import Role, User
 from app.extensions import db
 from datetime import datetime
 from sqlalchemy import exc, exists
 
 from app.finance.models import Insurance
 from app.lab.models import LabTestResult
-from .models import LabTest, Medication, Patient, Radiology, Service, Visit, Consultation, Vitals
+from .models import LabTest, Medication, Patient, Radiology, Service, ServiceDoctorAssignment, Visit, Consultation, Vitals
 
 consultations_web_bp = Blueprint(
     'consultations_web', __name__,
@@ -36,7 +36,7 @@ def consultation_queue():
     # 1. Patients currently in the consultation queue
     waiting_for_consultation = (
         Visit.query
-        .filter_by(current_position='consultation', visit_status='in_progress')
+        .filter_by(current_position='consultation', visit_status='in_progress', patient_category='general', payment_status='paid')
         .options(joinedload(Visit.vitals))
         .options(joinedload(Visit.patient))
         .order_by(Visit.visit_date)
@@ -341,6 +341,340 @@ def consultation_queue():
                            patients_with_completed_treatment=patients_with_completed_treatment,  # NEW
                            patients_with_pending_treatment=processed_pending_treatments,  # NEW
                            active_tab=active_tab)
+    
+    
+@consultations_web_bp.route('/special-consultation', methods=['GET', 'POST'])
+def special_consultation():
+    if request.method == 'POST':
+        pass
+
+    # Get the last active tab from the session, default to 'consultation'
+    active_tab = session.get('active_consultation_tab', 'consultation')
+
+    # Define walk-in visit categories that should NOT appear in consultation queue after completion
+    walk_in_visit_types_to_exclude = ['walk_in_lab', 'walk_in_rad', 'walk_in_pharm', 'optician_clinic', 'dental_clinic']
+
+    # 1. Patients currently in the consultation queue - FILTERED BY DOCTOR'S ASSIGNED SERVICES
+    waiting_for_consultation = (
+        Visit.query
+        .join(Visit.services)  # Join with services through the many-to-many relationship
+        .join(ServiceDoctorAssignment, 
+            and_(Service.id == ServiceDoctorAssignment.service_id,
+                ServiceDoctorAssignment.doctor_id == current_user.id,
+                ServiceDoctorAssignment.is_active == True))
+        .filter(
+            Visit.current_position == 'consultation', 
+            Visit.visit_status == 'in_progress', 
+            Visit.patient_category == 'special_clinic', 
+            Visit.payment_status == 'paid'
+        )
+        .options(joinedload(Visit.vitals))
+        .options(joinedload(Visit.patient))
+        .order_by(Visit.visit_date)
+        .distinct()  # Add distinct to avoid duplicate visits if they have multiple services assigned to the same doctor
+        .all()
+    )
+
+    # 2. Lab tests that are completed and paid AND require consultation AND need treatment plan/diagnosis
+    completed_paid_lab_tests_raw = (
+        LabTest.query
+        .filter_by(status='completed', payment_status='paid')
+        .join(LabTest.consultation)
+        .join(Consultation.visit)
+        .filter(Visit.visit_type_category.notin_(walk_in_visit_types_to_exclude))
+        # NEW: Only show tests where consultation lacks proper treatment documentation
+        .filter(
+            and_(
+                # Either treatment plan is missing/incomplete
+                or_(
+                    Consultation.treatment_plan.is_(None),
+                    Consultation.treatment_plan == '',
+                    Consultation.treatment_plan.like('%pending%'),
+                    Consultation.treatment_plan.like('%waiting%')
+                ),
+                # OR diagnosis is missing/incomplete
+                or_(
+                    Consultation.diagnosis.is_(None),
+                    Consultation.diagnosis == '',
+                    Consultation.diagnosis.like('%pending%'),
+                    Consultation.diagnosis.like('%waiting%')
+                )
+            )
+        )
+        .options(joinedload(LabTest.consultation).joinedload(Consultation.visit).joinedload(Visit.patient))
+        .options(joinedload(LabTest.service))
+        .options(joinedload(LabTest.done_by))
+        .order_by(LabTest.completed_at.desc())
+        .all()
+    )
+
+    # 3. Radiology orders that are completed and paid AND require consultation AND need treatment plan/diagnosis
+    completed_paid_radiology_orders_raw = (
+        Radiology.query
+        .filter_by(status='completed', payment_status='paid')
+        .join(Radiology.consultation)
+        .join(Consultation.visit)
+        .filter(Visit.visit_type_category.notin_(walk_in_visit_types_to_exclude))
+        # NEW: Only show radiology orders where consultation lacks proper treatment documentation
+        .filter(
+            and_(
+                # Either treatment plan is missing/incomplete
+                or_(
+                    Consultation.treatment_plan.is_(None),
+                    Consultation.treatment_plan == '',
+                    Consultation.treatment_plan.like('%pending%'),
+                    Consultation.treatment_plan.like('%waiting%')
+                ),
+                # OR diagnosis is missing/incomplete
+                or_(
+                    Consultation.diagnosis.is_(None),
+                    Consultation.diagnosis == '',
+                    Consultation.diagnosis.like('%pending%'),
+                    Consultation.diagnosis.like('%waiting%')
+                )
+            )
+        )
+        .options(joinedload(Radiology.consultation).joinedload(Consultation.visit).joinedload(Visit.patient))
+        .options(joinedload(Radiology.service))
+        .options(joinedload(Radiology.done_by))
+        .order_by(Radiology.completed_at.desc())
+        .all()
+    )
+    # NEW: 4. Patients with completed treatment - RECOMMENDED APPROACH
+    patients_with_completed_treatment = (
+        Visit.query
+        .filter(Visit.visit_status.in_(['completed', 'in_progress']))
+        .join(Consultation)  # Inner join to ensure consultation exists
+        .filter(
+            # Ensure consultation has actual medical content
+            (Consultation.diagnosis != None) | 
+            (Consultation.treatment_plan != None) |
+            (Consultation.history != None) |
+            (Consultation.examination != None)
+        )
+        .options(joinedload(Visit.patient))
+        .options(joinedload(Visit.vitals))
+        .options(joinedload(Visit.consultations))
+        .order_by(Visit.updated_at.desc())
+        .all()
+    )
+
+    # NEW: 5. Patients with pending treatment (lab tests or radiology not done) - SIMPLIFIED
+    patients_with_pending_treatment = (
+        db.session.query(Visit)
+        .join(Consultation, Visit.consultations)  # Join with consultations
+        .filter(
+            Visit.visit_status == 'in_progress',
+            or_(
+                # Check for services with pending payment status (any status)
+                exists().where(
+                    and_(
+                        LabTest.payment_status.in_(['paid', 'pending']),
+                        or_(
+                            # Unpaid services: linked via consultation only
+                            and_(
+                                LabTest.consultation_id == Consultation.id,
+                                LabTest.visit_id == None
+                            ),
+                            # Paid services: linked directly to visit
+                            and_(
+                                LabTest.visit_id == Visit.id,
+                                LabTest.payment_status == 'paid'
+                            )
+                        )
+                    )
+                ),
+                exists().where(
+                    and_(
+                        Radiology.payment_status.in_(['paid', 'pending']),
+                        or_(
+                            and_(
+                                Radiology.consultation_id == Consultation.id,
+                                Radiology.visit_id == None
+                            ),
+                            and_(
+                                Radiology.visit_id == Visit.id,
+                                Radiology.payment_status == 'paid'
+                            )
+                        )
+                    )
+                ),
+                exists().where(
+                    and_(
+                        Medication.payment_status.in_(['paid', 'pending']),
+                        or_(
+                            and_(
+                                Medication.consultation_id == Consultation.id,
+                                Medication.visit_id == None
+                            ),
+                            and_(
+                                Medication.visit_id == Visit.id,
+                                Medication.payment_status == 'paid'
+                            )
+                        )
+                    )
+                )
+            )
+        )
+        .options(joinedload(Visit.patient))
+        .options(joinedload(Visit.vitals))
+        .options(joinedload(Visit.consultations).joinedload(Consultation.lab_tests))
+        .options(joinedload(Visit.consultations).joinedload(Consultation.radiology_orders))
+        .options(joinedload(Visit.consultations).joinedload(Consultation.medications))
+        .options(joinedload(Visit.lab_tests))
+        .options(joinedload(Visit.radiology_orders))
+        .options(joinedload(Visit.medications))
+        .order_by(Visit.visit_date.asc())
+        .all()
+    )
+    # Process lab tests to combine by visit
+    combined_lab_tests = {}
+    for test in completed_paid_lab_tests_raw:
+        if test.consultation and test.consultation.visit:
+            visit_id = test.consultation.visit.id
+            if visit_id not in combined_lab_tests:
+                combined_lab_tests[visit_id] = {
+                    'patient': test.consultation.visit.patient,
+                    'visit': test.consultation.visit,
+                    'tests': [],
+                    'interpretations': set(),
+                    'completed_at': test.completed_at
+                }
+            combined_lab_tests[visit_id]['tests'].append(test.service.name)
+            if test.interpretation:
+                combined_lab_tests[visit_id]['interpretations'].add(test.interpretation)
+    
+    for visit_id in combined_lab_tests:
+        combined_lab_tests[visit_id]['interpretations'] = list(combined_lab_tests[visit_id]['interpretations'])
+
+    # Process radiology orders to combine by visit
+    combined_radiology_orders = {}
+    for order in completed_paid_radiology_orders_raw:
+        if order.consultation and order.consultation.visit:
+            visit_id = order.consultation.visit.id
+            if visit_id not in combined_radiology_orders:
+                combined_radiology_orders[visit_id] = {
+                    'patient': order.consultation.visit.patient,
+                    'visit': order.consultation.visit,
+                    'scans': [],
+                    'interpretations': set(),
+                    'completed_at': order.completed_at
+                }
+            combined_radiology_orders[visit_id]['scans'].append(order.service.name)
+            if order.interpretation:
+                combined_radiology_orders[visit_id]['interpretations'].add(order.interpretation)
+                
+    for visit_id in combined_radiology_orders:
+        combined_radiology_orders[visit_id]['interpretations'] = list(combined_radiology_orders[visit_id]['interpretations'])
+
+    # Process pending treatments to get detailed pending services - FIXED to avoid duplicates by service_id only
+    processed_pending_treatments = []
+    for visit in patients_with_pending_treatment:
+        pending_services = []
+        seen_service_ids = set()  # Track service IDs to avoid duplicates
+        
+        # Get ALL lab tests for this visit (both consultation and visit linked)
+        all_lab_tests = []
+        all_lab_tests.extend(visit.lab_tests)  # Direct visit linkage (paid services)
+        for consultation in visit.consultations:
+            all_lab_tests.extend(consultation.lab_tests)  # Consultation linkage
+        
+        # Process lab tests - avoid duplicates by service_id only (ignore status changes)
+        for test in all_lab_tests:
+            if test.payment_status in ['paid', 'pending']:
+                
+                service_key = f"lab_{test.service_id}"
+                if service_key not in seen_service_ids:
+                    seen_service_ids.add(service_key)
+                    pending_services.append({
+                        'type': 'lab',
+                        'name': test.service.name if test.service else 'Lab Test',
+                        'status': test.status,  # Can be any status: requested, in_progress, waiting results, etc.
+                        'payment_status': test.payment_status,
+                        'requested_at': test.requested_at,
+                        'is_paid': test.payment_status == 'paid',
+                        'has_visit': test.visit_id is not None,
+                        'service_id': test.service_id,  # For unique identification
+                        'record_id': test.id  # Unique record identifier
+                    })
+        
+        # Get ALL radiology orders for this visit
+        all_radiology = []
+        all_radiology.extend(visit.radiology_orders)
+        for consultation in visit.consultations:
+            all_radiology.extend(consultation.radiology_orders)
+        
+        # Process radiology - avoid duplicates by service_id only
+        for rad in all_radiology:
+            if rad.payment_status in ['paid', 'pending']:
+                
+                service_key = f"rad_{rad.service_id}"
+                if service_key not in seen_service_ids:
+                    seen_service_ids.add(service_key)
+                    pending_services.append({
+                        'type': 'radiology',
+                        'name': rad.service.name if rad.service else 'Radiology',
+                        'status': rad.status,
+                        'payment_status': rad.payment_status,
+                        'requested_at': rad.requested_at,
+                        'is_paid': rad.payment_status == 'paid',
+                        'has_visit': rad.visit_id is not None,
+                        'service_id': rad.service_id,
+                        'record_id': rad.id
+                    })
+        
+        # Get ALL medications for this visit
+        all_medications = []
+        all_medications.extend(visit.medications)
+        for consultation in visit.consultations:
+            all_medications.extend(consultation.medications)
+        
+        # Process medications - avoid duplicates by service_id only
+        for med in all_medications:
+            if med.payment_status in ['paid', 'pending']:
+                
+                service_key = f"med_{med.service_id}"
+                if service_key not in seen_service_ids:
+                    seen_service_ids.add(service_key)
+                    pending_services.append({
+                        'type': 'pharmacy',
+                        'name': med.service.name if med.service else 'Medication',
+                        'status': 'pending_dispense' if not med.is_dispensed else 'dispensed',
+                        'payment_status': med.payment_status,
+                        'requested_at': med.prescribed_at,
+                        'is_paid': med.payment_status == 'paid',
+                        'has_visit': med.visit_id is not None,
+                        'service_id': med.service_id,
+                        'record_id': med.id
+                    })
+        
+        if pending_services:
+            # Count unique payment statuses
+            paid_count = sum(1 for service in pending_services if service['payment_status'] == 'paid')
+            pending_count = sum(1 for service in pending_services if service['payment_status'] == 'pending')
+            total_count = len(pending_services)
+            
+            processed_pending_treatments.append({
+                'patient': visit.patient,
+                'visit': visit,
+                'pending_services': pending_services,
+                'pending_count': total_count,
+                'paid_count': paid_count,
+                'pending_payment_count': pending_count,
+                'has_pending_payment': pending_count > 0,
+                'has_paid_services': paid_count > 0,
+                'all_paid': pending_count == 0 and paid_count > 0,
+                'all_pending': paid_count == 0 and pending_count > 0
+            })
+    return render_template('special_consultation.html',
+                           waiting_for_consultation=waiting_for_consultation,
+                           completed_paid_lab_tests=list(combined_lab_tests.values()),
+                           completed_paid_radiology_orders=list(combined_radiology_orders.values()),
+                           patients_with_completed_treatment=patients_with_completed_treatment,  # NEW
+                           patients_with_pending_treatment=processed_pending_treatments,  # NEW
+                           active_tab=active_tab)
+    
+
 
 @consultations_web_bp.route('/optical-consultation-queue', methods=['GET'])
 def optical_consultation_queue():
@@ -1596,35 +1930,149 @@ def delete_service(service_id):
 
     return redirect(url_for('consultations_web_bp.manage_consultation_services'))
 
-
 @consultations_web_bp.route('/manage-doctors/<int:service_id>')
 def manage_doctors(service_id):
     """
     Renders the page for managing doctors assigned to a specific service.
-    
-    This route fetches the specified service and a list of doctors to be
-    assigned or unassigned.
     """
-    # Find the service by its ID, or return a 404 error if not found.
     service = Service.query.get_or_404(service_id)
     
-    # ---
-    # NOTE: You'll need to define a relationship between Service and doctors
-    # For now, let's just fetch all users that have a 'Doctor' role.
-    # You would replace this with your actual logic to get assigned doctors.
+    # Get all doctors (users with Doctor role)
+    all_doctors = User.query.join(User.roles).filter(Role.name == 'Doctor').all()
     
-    # Assuming 'role_name' is a column in your User model
-    # and there's a Role model linked to it.
-    # Replace this with your specific database schema logic.
-    doctors = User.query.filter_by(role_name='Doctor').all()
-    # ---
+    # FIXED: Get currently assigned doctors with explicit join condition
+    assigned_doctors = db.session.query(User).join(
+        ServiceDoctorAssignment, 
+        User.id == ServiceDoctorAssignment.doctor_id
+    ).filter(
+        ServiceDoctorAssignment.service_id == service_id,
+        ServiceDoctorAssignment.is_active == True
+    ).all()
+    
+    # Create a set of assigned doctor IDs for easy lookup in template
+    assigned_doctor_ids = {doctor.id for doctor in assigned_doctors}
 
     return render_template(
         'services/manage_doctors.html',
         title=f"Manage Doctors for {service.name}",
         service=service,
-        doctors=doctors
+        doctors=all_doctors,
+        assigned_doctors=assigned_doctors,
+        assigned_doctor_ids=assigned_doctor_ids
     )
+
+
+@consultations_web_bp.route('/assign-doctor-to-service', methods=['POST'])
+def assign_doctor_to_service():
+    """
+    Assign a doctor to a service
+    """
+    try:
+        data = request.get_json()
+        service_id = data.get('service_id')
+        doctor_id = data.get('doctor_id')
+        
+        if not service_id or not doctor_id:
+            return jsonify({'success': False, 'message': 'Missing service_id or doctor_id'}), 400
+        
+        # Check if assignment already exists (active or inactive)
+        existing_assignment = ServiceDoctorAssignment.query.filter_by(
+            service_id=service_id, 
+            doctor_id=doctor_id
+        ).first()
+        
+        if existing_assignment:
+            if existing_assignment.is_active:
+                return jsonify({'success': False, 'message': 'Doctor is already assigned to this service'}), 400
+            else:
+                # Reactivate the existing assignment
+                existing_assignment.is_active = True
+                existing_assignment.assigned_by = current_user.id
+                existing_assignment.assigned_at = datetime.utcnow()
+                action = 'reactivated'
+        else:
+            # Create new assignment
+            new_assignment = ServiceDoctorAssignment(
+                service_id=service_id,
+                doctor_id=doctor_id,
+                assigned_by=current_user.id,
+                is_active=True
+            )
+            db.session.add(new_assignment)
+            action = 'assigned'
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Doctor {action} successfully',
+            'action': action
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@consultations_web_bp.route('/unassign-doctor-from-service', methods=['POST'])
+def unassign_doctor_from_service():
+    """
+    Unassign a doctor from a service
+    """
+    try:
+        data = request.get_json()
+        service_id = data.get('service_id')
+        doctor_id = data.get('doctor_id')
+        
+        if not service_id or not doctor_id:
+            return jsonify({'success': False, 'message': 'Missing service_id or doctor_id'}), 400
+        
+        # Find and deactivate the assignment
+        assignment = ServiceDoctorAssignment.query.filter_by(
+            service_id=service_id, 
+            doctor_id=doctor_id,
+            is_active=True
+        ).first()
+        
+        if not assignment:
+            return jsonify({'success': False, 'message': 'Assignment not found'}), 404
+        
+        assignment.is_active = False
+        db.session.commit()
+        
+        return jsonify({
+            'success': True, 
+            'message': 'Doctor unassigned successfully'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@consultations_web_bp.route('/get-service-doctors/<int:service_id>')
+def get_service_doctors(service_id):
+    """
+    Get all doctors assigned to a service
+    """
+    # FIXED: Use explicit join condition
+    assigned_doctors = db.session.query(User).join(
+        ServiceDoctorAssignment, 
+        User.id == ServiceDoctorAssignment.doctor_id
+    ).filter(
+        ServiceDoctorAssignment.service_id == service_id,
+        ServiceDoctorAssignment.is_active == True
+    ).all()
+    
+    doctors_data = []
+    for doctor in assigned_doctors:
+        doctors_data.append({
+            'id': doctor.id,
+            'name': doctor.full_name or doctor.username,
+            'email': doctor.email,
+            'department': doctor.department.name if doctor.department else 'N/A',
+            'profile_image': doctor.profile_image
+        })
+    
+    return jsonify({'doctors': doctors_data})
     
     
     

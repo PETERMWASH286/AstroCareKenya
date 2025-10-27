@@ -19,6 +19,8 @@ def create_initial_privileges(session):
         ('patients:manage', 'Patients', 'View & edit patient records'),
         ('patients:triage', 'Patients', 'Perform patient triage'),
         ('consultations:queue', 'Consultations', 'Access consultation queue'),
+                ('consultations:special', 'Consultations', 'Access special consultation queue'),
+
             # New diagnosis privilege added here
     ('diagnosis:manage', 'Medical Services', 'Manage patient diagnoses'),
         ('lab:orders', 'Lab Tests', 'View pending lab orders'),
@@ -112,6 +114,8 @@ def create_initial_privileges(session):
         
             ('finance:approve_lpo', 'Finance', 'Approve Local Purchase Orders (LPOs)'),
                 ('finance:supplier_accounts', 'Finance', 'Manage Supplier Accounts'),
+                    ('finance:doctor_accounts', 'Finance', 'Manage Doctor Accounts'),  # New privilege added
+
                 ('finance:approve_payments', 'Finance', 'Approve Payments'),
 
         ('reports:clinical', 'Reports', 'Access Clinical Reports'),

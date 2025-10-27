@@ -1,0 +1,991 @@
+{% extends "base.html" %}
+
+{% block title %}Consultation Queue{% endblock %}
+
+{% block content %}
+<div class="min-h-screen p-4 md:p-8 bg-gray-100 dark:bg-gray-900">
+    <div class="max-w-7xl mx-auto">
+        <div class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
+            <div>
+                <h1 class="text-3xl font-extrabold text-gray-800 dark:text-white mb-2">
+                    <i class="fas fa-user-clock text-blue-600 mr-2"></i>Consultation Hub ✨
+                </h1>
+                <p class="text-gray-600 dark:text-gray-400">
+                    Efficiently manage patient consultations and review diagnostic results with ease.
+                </p>
+            </div>
+            <div class="flex items-center space-x-3">
+                <button onclick="location.reload()" class="flex items-center px-4 py-2 bg-white/80 backdrop-blur-md border border-gray-200 dark:border-gray-700 dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 ease-in-out transform hover:-translate-y-0.5">
+                    <i class="fas fa-sync-alt mr-2 text-blue-500"></i>
+                    <span class="text-gray-700 dark:text-gray-300 font-medium">Refresh Data</span>
+                </button>
+            </div>
+        </div>
+
+
+<div class="mb-6 bg-white/80 backdrop-blur-md border border-gray-200 dark:border-gray-700 dark:bg-gray-900 rounded-xl p-2 flex flex-wrap gap-2 shadow-lg">
+    <!-- Consultations -->
+    <button class="tab-button px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ease-in-out flex items-center space-x-2" data-tab="consultation">
+        <i class="fas fa-users-medical text-green-500"></i>
+        <span class="text-gray-700 dark:text-gray-300">Consultations ({{ waiting_for_consultation|length }})</span>
+    </button>
+    
+    <!-- Lab Results -->
+    <button class="tab-button px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ease-in-out flex items-center space-x-2" data-tab="lab-tests">
+        <i class="fas fa-flask text-orange-500"></i>
+        <span class="text-gray-700 dark:text-gray-300">Lab Results ({{ completed_paid_lab_tests|length }})</span>
+    </button>
+    
+    <!-- Radiology Reports -->
+    <button class="tab-button px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ease-in-out flex items-center space-x-2" data-tab="radiology">
+        <i class="fas fa-x-ray text-cyan-500"></i>
+        <span class="text-gray-700 dark:text-gray-300">Radiology Reports ({{ completed_paid_radiology_orders|length }})</span>
+    </button>
+
+    <!-- Completed Treatment -->
+    <button class="tab-button px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ease-in-out flex items-center space-x-2" data-tab="completed-treatment">
+        <i class="fas fa-check-circle text-blue-500"></i>
+        <span class="text-gray-700 dark:text-gray-300">Completed Treatment ({{ patients_with_completed_treatment|length }})</span>
+    </button>
+    
+    <!-- Pending Treatment -->
+    <button class="tab-button px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ease-in-out flex items-center space-x-2" data-tab="pending-treatment">
+        <i class="fas fa-hourglass-half text-purple-500"></i>
+        <span class="text-gray-700 dark:text-gray-300">Pending Treatment ({{ patients_with_pending_treatment|length }})</span>
+    </button>
+</div>
+
+        <div class="mb-6 bg-white/80 backdrop-blur-md border border-gray-200 dark:border-gray-700 dark:bg-gray-900 rounded-xl p-4 shadow-lg">
+            <h3 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Filter Patients 🔍</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-center">
+                <div class="col-span-1 md:col-span-2 lg:col-span-1 relative">
+                    <input type="text" id="searchInput" placeholder="Search by name, Reg No, or phone..."
+                           class="w-full pl-10 pr-4 py-2 rounded-full border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm transition-all duration-200">
+                    <div class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500">
+                        <i class="fas fa-search text-sm"></i>
+                    </div>
+                </div>
+
+                <div class="col-span-1 lg:col-span-2 flex flex-col sm:flex-row gap-4">
+                    <div class="relative w-full">
+                        <input type="date" id="dateFrom"
+                               class="w-full pl-10 pr-4 py-2 rounded-full border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm transition-all duration-200 cursor-pointer">
+                        <div class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500">
+                            <i class="fas fa-calendar-alt text-sm"></i>
+                        </div>
+                        <label for="dateFrom" class="absolute -top-2 left-6 text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 px-1 rounded">From</label>
+                    </div>
+                    <div class="relative w-full">
+                        <input type="date" id="dateTo"
+                               class="w-full pl-10 pr-4 py-2 rounded-full border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm transition-all duration-200 cursor-pointer">
+                        <div class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500">
+                            <i class="fas fa-calendar-alt text-sm"></i>
+                        </div>
+                        <label for="dateTo" class="absolute -top-2 left-6 text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 px-1 rounded">To</label>
+                    </div>
+                </div>
+
+                <div class="col-span-1 lg:col-span-1">
+                    <div class="flex bg-gray-50 dark:bg-gray-700 rounded-full border border-gray-300 dark:border-gray-600 overflow-hidden shadow-sm text-sm">
+                        <button type="button" id="filterAll" class="flex-1 px-4 py-2 text-gray-700 dark:text-gray-300 font-medium rounded-full transition-colors duration-200 bg-blue-500 text-white dark:bg-blue-600" data-payment-type="all">
+                            All
+                        </button>
+                        <button type="button" id="filterCash" class="flex-1 px-4 py-2 text-gray-700 dark:text-gray-300 font-medium rounded-full transition-colors duration-200 hover:bg-gray-100 dark:hover:bg-gray-600" data-payment-type="cash">
+                            Cash
+                        </button>
+                        <button type="button" id="filterInsurance" class="flex-1 px-4 py-2 text-gray-700 dark:text-gray-300 font-medium rounded-full transition-colors duration-200 hover:bg-gray-100 dark:hover:bg-gray-600" data-payment-type="insurance">
+                            Insurance
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+<div id="consultation-table-container" class="tab-content">
+    <h2 class="sr-only">Patients Waiting for Consultation</h2>
+    <div class="bg-white/80 backdrop-blur-md border border-gray-200 dark:border-gray-700 dark:bg-gray-900 rounded-xl shadow-lg overflow-hidden">
+        <div class="grid grid-cols-12 gap-x-4 px-6 py-4 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 items-center">
+            <div class="col-span-3 font-semibold text-gray-700 dark:text-gray-300">Patient</div>
+            <div class="col-span-2 font-semibold text-gray-700 dark:text-gray-300">Status & Time</div>
+            <div class="col-span-3 font-semibold text-gray-700 dark:text-gray-300">Services</div>
+            <div class="col-span-2 font-semibold text-gray-700 dark:text-gray-300">Vitals</div>
+            <div class="col-span-2 font-semibold text-gray-700 dark:text-gray-300 text-right">Actions</div>
+        </div>
+
+        <div class="divide-y divide-gray-200 dark:divide-gray-700" id="consultationTableBody">
+            {% if waiting_for_consultation %}
+                {% for visit in waiting_for_consultation %}
+                    {% set patient = visit.patient %}
+                    <div class="grid grid-cols-12 gap-x-4 px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors patient-row items-center"
+                         data-patient-name="{{ patient.first_name }} {{ patient.last_name }}"
+                         data-patient-regno="{{ patient.reg_no }}"
+                         data-patient-phone="{{ patient.phone_number }}"
+                         data-visit-date="{{ visit.visit_date.strftime('%Y-%m-%d') }}"
+                         data-payment-status="{{ visit.payment_status }}">
+                        <div class="col-span-3 flex items-center">
+                            <div class="flex-shrink-0">
+                                <div class="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center text-white text-lg font-bold">
+                                    {{ patient.first_name[0] }}{{ patient.last_name[0] }}
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <div class="font-medium text-gray-900 dark:text-white">
+                                    {{ patient.first_name }} {{ patient.last_name }}
+                                </div>
+                                <div class="text-sm text-gray-500 dark:text-gray-400">
+                                    {{ patient.reg_no }} • {{ patient.age }} yrs
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-span-2 flex flex-col justify-center">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap
+                            {% if visit.visit_status == 'in_progress' %}
+                                bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100
+                            {% elif visit.visit_status == 'pending' %}
+                                bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100
+                            {% elif visit.visit_status == 'completed' %}
+                                bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100
+                            {% else %}
+                                bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-300
+                            {% endif %}">
+                                {{ visit.visit_status|replace('_', ' ')|title }}
+                            </span>
+                            {% if visit.visit_date %}
+                            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1 whitespace-nowrap">
+                                <i class="far fa-calendar-alt mr-1"></i> {{ visit.visit_date.strftime('%b %d, %Y') }}
+                                <br>
+                                <i class="far fa-clock mr-1"></i> {{ visit.visit_date.strftime('%I:%M %p') }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-span-3">
+                            <div class="flex flex-wrap gap-2">
+                                {% for service in visit.services %}
+                                <span class="px-2.5 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-100 text-xs rounded-full flex items-center shadow-sm whitespace-nowrap">
+                                    <i class="fas fa-tag text-xs mr-1.5"></i>
+                                    {{ service.name }}
+                                </span>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="col-span-2 flex flex-col justify-center text-sm">
+                            {% if visit.vitals %} {% set vit = visit.vitals %}
+                            <div class="flex items-center text-gray-700 dark:text-gray-300 mb-1">
+                                <i class="fas fa-heartbeat text-red-500 w-4"></i>
+                                <span class="ml-2 font-medium">{{ vit.heart_rate or 'N/A' }} bpm</span>
+                            </div>
+                            <div class="flex items-center text-gray-700 dark:text-gray-300">
+                                <i class="fas fa-temperature-high text-orange-500 w-4"></i>
+                                <span class="ml-2 font-medium">{{ vit.temperature or 'N/A' }}°C</span>
+                            </div>
+                            {% else %}
+                            <span class="text-gray-500 dark:text-gray-400 italic">No vitals recorded</span>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-span-2 flex items-center justify-end space-x-2">
+                            <a href="{{ url_for('consultations_web.view_patient', patient_id=patient.id) }}" class="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors duration-200 tooltip-trigger" data-tippy-content="<strong>View Patient Profile</strong><br/>See full patient demographics and visit history.">
+                                <i class="fas fa-user"></i>
+                            </a>
+
+                            {% if visit.consultation %}
+                            <a href="{{ url_for('consultations_web.edit_treatment', consultation_id=visit.consultation.id) }}" class="p-2 text-green-500 hover:bg-green-100 dark:hover:bg-green-900 rounded-lg transition-colors duration-200 tooltip-trigger" data-tippy-content="<strong>Edit Treatment Plan</strong><br/>Modify this patient's current treatment plan.">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            {% else %}
+                            <a href="{{ url_for('consultations_web.add_treatment', visit_id=visit.id) }}" class="p-2 text-blue-500 hover:bg-blue-100 dark:hover:bg-blue-900 rounded-lg transition-colors duration-200 tooltip-trigger" data-tippy-content="<strong>Start Consultation</strong><br/>Begin a new treatment plan for this patient.">
+                                <i class="fas fa-plus-circle"></i>
+                            </a>
+                            {% endif %}
+
+                            <button onclick="completeVisit('{{ visit.id }}')" class="p-2 text-red-500 hover:bg-red-100 dark:hover:bg-red-900 rounded-lg transition-colors duration-200 tooltip-trigger" data-tippy-content="<strong>Complete Patient Visit</strong><br/>Mark this entire patient's visit as finished.">
+                                <i class="fas fa-check-double"></i>
+                            </button>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="px-6 py-4 text-gray-500 dark:text-gray-400 text-center">No patients currently waiting for consultation.</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+        <div id="lab-tests-table-container" class="tab-content hidden">
+            <h2 class="sr-only">Completed & Paid Lab Tests</h2>
+            <div class="bg-white/80 backdrop-blur-md border border-gray-200 dark:border-gray-700 dark:bg-gray-900 rounded-xl shadow-lg overflow-hidden">
+                <div class="grid grid-cols-12 gap-4 px-6 py-4 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                    <div class="col-span-3 font-semibold text-gray-700 dark:text-gray-300">Patient</div>
+                    <div class="col-span-2 font-semibold text-gray-700 dark:text-gray-300">Tests</div>
+                    <div class="col-span-2 font-semibold text-gray-700 dark:text-gray-300">Status</div>
+                    <div class="col-span-3 font-semibold text-gray-700 dark:text-gray-300">Interpretations</div>
+                    <div class="col-span-2 font-semibold text-gray-700 dark:text-gray-300 text-right">Actions</div>
+                </div>
+
+                <div class="divide-y divide-gray-200 dark:divide-gray-700" id="labTestsTableBody">
+                    {% if completed_paid_lab_tests %}
+                        {% for entry in completed_paid_lab_tests %}
+                            {% set patient = entry.patient %}
+                            {% set visit = entry.visit %}
+                            <div class="grid grid-cols-12 gap-4 px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors patient-row"
+                                 data-patient-name="{{ patient.first_name }} {{ patient.last_name }}"
+                                 data-patient-regno="{{ patient.reg_no }}"
+                                 data-patient-phone="{{ patient.phone_number }}"
+                                 data-visit-date="{{ visit.visit_date.strftime('%Y-%m-%d') }}"
+                                 data-payment-status="{{ visit.payment_status }}"> {# Assuming visit.payment_status exists #}
+                                 <div class="col-span-3 flex items-center">
+                                     <div class="flex-shrink-0">
+                                         <div class="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center text-white text-lg font-bold">
+                                             {{ patient.first_name[0] }}{{ patient.last_name[0] }}
+                                         </div>
+                                     </div>
+                                     <div class="ml-4">
+                                         <div class="font-medium text-gray-900 dark:text-white">
+                                             {{ patient.first_name }} {{ patient.last_name }}
+                                         </div>
+                                         <div class="text-sm text-gray-500 dark:text-gray-400">
+                                             {{ patient.reg_no }} • Visit ID: {{ visit.id }}
+                                         </div>
+                                     </div>
+                                 </div>
+                                 <div class="col-span-2 flex flex-col justify-center">
+                                     {% for test_name in entry.tests %}
+                                         <span class="text-gray-700 dark:text-gray-300 font-medium">{{ test_name }}</span>
+                                     {% endfor %}
+                                 </div>
+                                 <div class="col-span-2 flex flex-col justify-center">
+                                     <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
+                                         Completed (Paid)
+                                     </span>
+                                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100 mt-1">
+                                         Awaiting Doctor Review
+                                     </span>
+                                     {% if entry.completed_at %}
+                                     <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                         Completed: {{ entry.completed_at.strftime('%Y-%m-%d %I:%M %p') }}
+                                     </div>
+                                     {% endif %}
+                                 </div>
+                                 <div class="col-span-3 flex items-center text-sm text-gray-600 dark:text-gray-400">
+                                     {% if entry.interpretations %}
+                                         {{ entry.interpretations|join(', ') }}
+                                     {% else %}
+                                         No interpretation provided.
+                                     {% endif %}
+                                 </div>
+                                 <div class="col-span-2 flex items-center justify-end space-x-2">
+                                     <a href="{{ url_for('consultations_web.view_patient', patient_id=patient.id) }}" class="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors duration-200" data-tippy-content="<strong>View Patient Profile</strong><br/>See full patient demographics and visit history.">
+                                         <i class="fas fa-user"></i>
+                                     </a>
+                                     <a href="{{ url_for('consultations_web.add_treatment', visit_id=visit.id) }}" class="p-2 text-blue-500 hover:bg-blue-100 dark:hover:bg-blue-900 rounded-lg transition-colors duration-200" data-tippy-content="<strong>View Lab Results & Review</strong><br/>Examine the lab test results and provide your medical review.">
+                                         <i class="fas fa-file-alt"></i>
+                                     </a>
+                                     <button onclick="markVisitTestsAsReviewed('lab_test', '{{ visit.id }}')" class="p-2 text-green-500 hover:bg-green-100 dark:hover:bg-green-900 rounded-lg transition-colors duration-200" data-tippy-content="<strong>Mark Lab Tests for Visit as Reviewed</strong><br/>Confirm you have reviewed all lab results for this visit.">
+                                         <i class="fas fa-check"></i>
+                                     </button>
+                                 </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="px-6 py-4 text-gray-500 dark:text-gray-400 text-center">No completed and paid lab tests awaiting review.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div id="radiology-table-container" class="tab-content hidden">
+            <h2 class="sr-only">Completed & Paid Radiology Orders</h2>
+            <div class="bg-white/80 backdrop-blur-md border border-gray-200 dark:border-gray-700 dark:bg-gray-900 rounded-xl shadow-lg overflow-hidden">
+                <div class="grid grid-cols-12 gap-4 px-6 py-4 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                    <div class="col-span-3 font-semibold text-gray-700 dark:text-gray-300">Patient</div>
+                    <div class="col-span-2 font-semibold text-gray-700 dark:text-gray-300">Scans</div>
+                    <div class="col-span-2 font-semibold text-gray-700 dark:text-gray-300">Status</div>
+                    <div class="col-span-3 font-semibold text-gray-700 dark:text-gray-300">Interpretations</div>
+                    <div class="col-span-2 font-semibold text-gray-700 dark:text-gray-300 text-right">Actions</div>
+                </div>
+
+                <div class="divide-y divide-gray-200 dark:divide-gray-700" id="radiologyTableBody">
+                    {% if completed_paid_radiology_orders %}
+                        {% for entry in completed_paid_radiology_orders %}
+                            {% set patient = entry.patient %}
+                            {% set visit = entry.visit %}
+                            <div class="grid grid-cols-12 gap-4 px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors patient-row"
+                                 data-patient-name="{{ patient.first_name }} {{ patient.last_name }}"
+                                 data-patient-regno="{{ patient.reg_no }}"
+                                 data-patient-phone="{{ patient.phone_number }}"
+                                 data-visit-date="{{ visit.visit_date.strftime('%Y-%m-%d') }}"
+                                 data-payment-status="{{ visit.payment_status }}"> {# Assuming visit.payment_status exists #}
+                                 <div class="col-span-3 flex items-center">
+                                     <div class="flex-shrink-0">
+                                         <div class="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center text-white text-lg font-bold">
+                                             {{ patient.first_name[0] }}{{ patient.last_name[0] }}
+                                         </div>
+                                     </div>
+                                     <div class="ml-4">
+                                         <div class="font-medium text-gray-900 dark:text-white">
+                                             {{ patient.first_name }} {{ patient.last_name }}
+                                         </div>
+                                         <div class="text-sm text-gray-500 dark:text-gray-400">
+                                             {{ patient.reg_no }} • Visit ID: {{ visit.id }}
+                                         </div>
+                                     </div>
+                                 </div>
+                                 <div class="col-span-2 flex flex-col justify-center">
+                                     {% for scan_name in entry.scans %}
+                                         <span class="text-gray-700 dark:text-gray-300 font-medium">{{ scan_name }}</span>
+                                     {% endfor %}
+                                 </div>
+                                 <div class="col-span-2 flex flex-col justify-center">
+                                     <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
+                                         Completed (Paid)
+                                     </span>
+                                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100 mt-1">
+                                         Awaiting Doctor Review
+                                     </span>
+                                     {% if entry.completed_at %}
+                                     <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                         Completed: {{ entry.completed_at.strftime('%Y-%m-%d %I:%M %p') }}
+                                     </div>
+                                     {% endif %}
+                                 </div>
+                                 <div class="col-span-3 flex items-center text-sm text-gray-600 dark:text-gray-400">
+                                     {% if entry.interpretations %}
+                                         {{ entry.interpretations|join(', ') }}
+                                     {% else %}
+                                         No interpretation provided.
+                                     {% endif %}
+                                 </div>
+                                 <div class="col-span-2 flex items-center justify-end space-x-2">
+                                     <a href="{{ url_for('consultations_web.view_patient', patient_id=patient.id) }}" class="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors duration-200" data-tippy-content="<strong>View Patient Profile</strong><br/>See full patient demographics and visit history.">
+                                         <i class="fas fa-user"></i>
+                                     </a>
+                                     <a href="{{ url_for('consultations_web.add_treatment', visit_id=visit.id) }}" class="p-2 text-blue-500 hover:bg-blue-100 dark:hover:bg-blue-900 rounded-lg transition-colors duration-200" data-tippy-content="<strong>View Radiology Report & Review</strong><br/>Examine the radiology report and provide your medical review.">
+                                         <i class="fas fa-file-image"></i>
+                                     </a>
+                                     <button onclick="markVisitTestsAsReviewed('radiology', '{{ visit.id }}')" class="p-2 text-green-500 hover:bg-green-100 dark:hover:bg-green-900 rounded-lg transition-colors duration-200" data-tippy-content="<strong>Mark Radiology Orders for Visit as Reviewed</strong><br/>Confirm you have reviewed all radiology reports for this visit.">
+                                         <i class="fas fa-check"></i>
+                                     </button>
+                                 </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="px-6 py-4 text-gray-500 dark:text-gray-400 text-center">No completed and paid radiology orders awaiting review.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <!-- Completed Treatment Table -->
+<div id="completed-treatment-table-container" class="tab-content hidden">
+    <h2 class="sr-only">Patients with Completed Treatment</h2>
+    <div class="bg-white/80 backdrop-blur-md border border-gray-200 dark:border-gray-700 dark:bg-gray-900 rounded-xl shadow-lg overflow-hidden">
+        <div class="grid grid-cols-12 gap-4 px-6 py-4 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+            <div class="col-span-3 font-semibold text-gray-700 dark:text-gray-300">Patient</div>
+            <div class="col-span-2 font-semibold text-gray-700 dark:text-gray-300">Status</div>
+            <div class="col-span-3 font-semibold text-gray-700 dark:text-gray-300">Completion Time</div>
+            <div class="col-span-2 font-semibold text-gray-700 dark:text-gray-300">Vitals</div>
+            <div class="col-span-2 font-semibold text-gray-700 dark:text-gray-300 text-right">Actions</div>
+        </div>
+
+        <div class="divide-y divide-gray-200 dark:divide-gray-700" id="completedTreatmentTableBody">
+            {% if patients_with_completed_treatment %}
+                {% for visit in patients_with_completed_treatment %}
+                    {% set patient = visit.patient %}
+                    <div class="grid grid-cols-12 gap-4 px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors patient-row"
+                         data-patient-name="{{ patient.first_name }} {{ patient.last_name }}"
+                         data-patient-regno="{{ patient.reg_no }}"
+                         data-patient-phone="{{ patient.phone_number }}"
+                         data-visit-date="{{ visit.visit_date.strftime('%Y-%m-%d') }}"
+                         data-payment-status="{{ visit.payment_status }}">
+                        
+                        <div class="col-span-3 flex items-center">
+                            <div class="flex-shrink-0">
+                                <div class="h-10 w-10 rounded-full bg-green-500 flex items-center justify-center text-white text-lg font-bold">
+                                    {{ patient.first_name[0] }}{{ patient.last_name[0] }}
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <div class="font-medium text-gray-900 dark:text-white">
+                                    {{ patient.first_name }} {{ patient.last_name }}
+                                </div>
+                                <div class="text-sm text-gray-500 dark:text-gray-400">
+                                    {{ patient.reg_no }} • {{ patient.age }} yrs
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-span-2 flex flex-col justify-center">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
+                                <i class="fas fa-check-circle mr-1"></i>
+                                Completed
+                            </span>
+                            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                {{ visit.visit_status|replace('_', ' ')|title }}
+                            </div>
+                        </div>
+
+                        <div class="col-span-3 flex flex-col justify-center">
+                            {% if visit.updated_at %}
+                            <div class="text-sm text-gray-700 dark:text-gray-300 font-medium">
+                                {{ visit.updated_at.strftime('%b %d, %Y') }}
+                            </div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400">
+                                {{ visit.updated_at.strftime('%I:%M %p') }}
+                            </div>
+                            {% else %}
+                            <span class="text-gray-500 dark:text-gray-400 italic">No completion time</span>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-span-2 flex flex-col justify-center text-sm">
+                            {% if visit.vitals and visit.vitals|length > 0 %} 
+                                {% set vit = visit.vitals[0] %}
+                                <div class="flex items-center text-gray-700 dark:text-gray-300 mb-1">
+                                    <i class="fas fa-heartbeat text-red-500 w-4"></i>
+                                    <span class="ml-2">{{ vit.heart_rate or 'N/A' }} bpm</span>
+                                </div>
+                                <div class="flex items-center text-gray-700 dark:text-gray-300">
+                                    <i class="fas fa-temperature-high text-orange-500 w-4"></i>
+                                    <span class="ml-2">{{ vit.temperature or 'N/A' }}°C</span>
+                                </div>
+                            {% else %}
+                                <span class="text-gray-500 dark:text-gray-400 italic">No vitals</span>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-span-2 flex items-center justify-end space-x-2">
+                            <a href="{{ url_for('consultations_web.view_patient', patient_id=patient.id) }}" 
+                               class="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors duration-200 tooltip-trigger" 
+                               data-tippy-content="<strong>View Patient Profile</strong><br/>See full patient demographics and visit history.">
+                                <i class="fas fa-user"></i>
+                            </a>
+                            
+                            <a href="" 
+                               class="p-2 text-blue-500 hover:bg-blue-100 dark:hover:bg-blue-900 rounded-lg transition-colors duration-200 tooltip-trigger" 
+                               data-tippy-content="<strong>View Visit Details</strong><br/>See complete treatment details for this visit.">
+                                <i class="fas fa-file-medical"></i>
+                            </a>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="px-6 py-8 text-center">
+                    <i class="fas fa-check-circle text-gray-300 text-4xl mb-3"></i>
+                    <p class="text-gray-500 dark:text-gray-400">No completed treatments found</p>
+                    <p class="text-sm text-gray-400 dark:text-gray-500 mt-1">Patients with fully completed treatment will appear here</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+<!-- Pending Treatment Table -->
+<!-- Pending Treatment Table -->
+<div id="pending-treatment-table-container" class="tab-content hidden">
+    <h2 class="sr-only">Patients with Pending Treatment</h2>
+    <div class="bg-white/80 backdrop-blur-md border border-gray-200 dark:border-gray-700 dark:bg-gray-900 rounded-xl shadow-lg overflow-hidden">
+        <div class="grid grid-cols-12 gap-4 px-6 py-4 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+            <div class="col-span-2 font-semibold text-gray-700 dark:text-gray-300">Patient</div>
+            <div class="col-span-2 font-semibold text-gray-700 dark:text-gray-300">Pending Services</div>
+            <div class="col-span-2 font-semibold text-gray-700 dark:text-gray-300">Payment Status</div>
+            <div class="col-span-4 font-semibold text-gray-700 dark:text-gray-300">Service Details</div>
+            <div class="col-span-2 font-semibold text-gray-700 dark:text-gray-300 text-right">Actions</div>
+        </div>
+
+        <div class="divide-y divide-gray-200 dark:divide-gray-700" id="pendingTreatmentTableBody">
+            {% if patients_with_pending_treatment %}
+                {% for treatment in patients_with_pending_treatment %}
+                    {% set patient = treatment.patient %}
+                    {% set visit = treatment.visit %}
+                    <div class="grid grid-cols-12 gap-4 px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors patient-row"
+                         data-patient-name="{{ patient.first_name }} {{ patient.last_name }}"
+                         data-patient-regno="{{ patient.reg_no }}"
+                         data-patient-phone="{{ patient.phone_number }}"
+                         data-visit-date="{{ visit.visit_date.strftime('%Y-%m-%d') }}"
+                         data-payment-status="{{ visit.payment_status }}">
+                        
+                        <div class="col-span-2 flex items-center">
+                            <div class="flex-shrink-0">
+                                <div class="h-10 w-10 rounded-full bg-yellow-500 flex items-center justify-center text-white text-lg font-bold">
+                                    {{ patient.first_name[0] }}{{ patient.last_name[0] }}
+                                </div>
+                            </div>
+                            <div class="ml-3">
+                                <div class="font-medium text-gray-900 dark:text-white text-sm">
+                                    {{ patient.first_name }} {{ patient.last_name }}
+                                </div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400">
+                                    {{ patient.reg_no }}
+                                </div>
+                                <div class="text-xs text-gray-400 dark:text-gray-500">
+                                    {{ patient.age }} yrs
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-span-2 flex flex-col justify-center space-y-2">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100">
+                                {{ treatment.pending_count }} Total
+                            </span>
+                            
+                            <!-- Accurate Payment Counts -->
+                            <div class="flex flex-col space-y-1 text-xs">
+                                {% if treatment.paid_count > 0 %}
+                                <span class="inline-flex items-center text-green-600 dark:text-green-400">
+                                    <i class="fas fa-check-circle mr-1"></i>
+                                    {{ treatment.paid_count }} Paid
+                                </span>
+                                {% endif %}
+                                {% if treatment.pending_payment_count > 0 %}
+                                <span class="inline-flex items-center text-yellow-600 dark:text-yellow-400">
+                                    <i class="fas fa-clock mr-1"></i>
+                                    {{ treatment.pending_payment_count }} Pending Payment
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="col-span-2 flex flex-col justify-center space-y-1">
+                            <!-- Overall Payment Status -->
+                            {% if treatment.all_paid %}
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+                                    <i class="fas fa-check mr-1"></i>
+                                    All Paid
+                                </span>
+                            {% elif treatment.all_pending %}
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300">
+                                    <i class="fas fa-clock mr-1"></i>
+                                    All Pending Payment
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300">
+                                    <i class="fas fa-money-bill-wave mr-1"></i>
+                                    Mixed Payment
+                                </span>
+                            {% endif %}
+                            
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
+                                {{ visit.visit_status|replace('_', ' ')|title }}
+                            </span>
+                        </div>
+
+                        <div class="col-span-4">
+                            <div class="space-y-2 max-h-40 overflow-y-auto pr-2">
+                                {% for service in treatment.pending_services %}
+                                <div class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded text-xs">
+                                    <div class="flex items-center space-x-2 flex-1">
+                                        {% if service.type == 'lab' %}
+                                            <i class="fas fa-flask text-blue-500 text-xs"></i>
+                                            <span class="font-medium text-gray-700 dark:text-gray-300">Lab:</span>
+                                        {% elif service.type == 'radiology' %}
+                                            <i class="fas fa-x-ray text-purple-500 text-xs"></i>
+                                            <span class="font-medium text-gray-700 dark:text-gray-300">Radiology:</span>
+                                        {% else %}
+                                            <i class="fas fa-pills text-green-500 text-xs"></i>
+                                            <span class="font-medium text-gray-700 dark:text-gray-300">Pharmacy:</span>
+                                        {% endif %}
+                                        <span class="text-gray-600 dark:text-gray-400 truncate flex-1">{{ service.name }}</span>
+                                    </div>
+                                    <div class="flex flex-col items-end space-y-1">
+                                        <!-- Service Status - Now shows any status -->
+                                        <div>
+                                            {% if service.status == 'requested' %}
+                                                <span class="px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
+                                                    Requested
+                                                </span>
+                                            {% elif service.status == 'in_progress' %}
+                                                <span class="px-2 py-0.5 rounded-full text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300">
+                                                    In Progress
+                                                </span>
+                                            {% elif service.status == 'waiting results' %}
+                                                <span class="px-2 py-0.5 rounded-full text-xs bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300">
+                                                    Waiting Results
+                                                </span>
+                                            {% elif service.status == 'results_entered' %}
+                                                <span class="px-2 py-0.5 rounded-full text-xs bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300">
+                                                    Results Entered
+                                                </span>
+                                            {% elif service.status == 'completed' %}
+                                                <span class="px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+                                                    Completed
+                                                </span>
+                                            {% elif service.status == 'pending_dispense' %}
+                                                <span class="px-2 py-0.5 rounded-full text-xs bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300">
+                                                    Pending Dispense
+                                                </span>
+                                            {% elif service.status == 'dispensed' %}
+                                                <span class="px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+                                                    Dispensed
+                                                </span>
+                                            {% else %}
+                                                <span class="px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                                                    {{ service.status|replace('_', ' ')|title }}
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <!-- Payment Status -->
+                                        <div>
+                                            {% if service.payment_status == 'paid' %}
+                                                <span class="px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 flex items-center">
+                                                    <i class="fas fa-check mr-1"></i>Paid
+                                                </span>
+                                            {% else %}
+                                                <span class="px-2 py-0.5 rounded-full text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300 flex items-center">
+                                                    <i class="fas fa-clock mr-1"></i>Payment Pending
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="col-span-2 flex items-center justify-end space-x-1">
+                            <a href="{{ url_for('consultations_web.view_patient', patient_id=patient.id) }}" 
+                               class="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors duration-200 tooltip-trigger" 
+                               data-tippy-content="<strong>View Patient Profile</strong><br/>See full patient demographics and visit history.">
+                                <i class="fas fa-user text-sm"></i>
+                            </a>
+                            
+                            {% if visit.consultations %}
+                            <a href="{{ url_for('consultations_web.edit_treatment', consultation_id=visit.consultations[0].id) }}" 
+                               class="p-2 text-green-500 hover:bg-green-100 dark:hover:bg-green-900 rounded-lg transition-colors duration-200 tooltip-trigger" 
+                               data-tippy-content="<strong>Review Treatment</strong><br/>Check treatment progress and updates.">
+                                <i class="fas fa-edit text-sm"></i>
+                            </a>
+                            {% endif %}
+                            
+                            <!-- Quick action for billing if any service payment is pending -->
+                            {% if treatment.pending_payment_count > 0 %}
+                            <a href="{{ url_for('billing_web.process_payment', visit_id=visit.id) }}" 
+                               class="p-2 text-purple-500 hover:bg-purple-100 dark:hover:bg-purple-900 rounded-lg transition-colors duration-200 tooltip-trigger" 
+                               data-tippy-content="<strong>Process Payment</strong><br/>Handle billing for {{ treatment.pending_payment_count }} pending service(s).">
+                                <i class="fas fa-credit-card text-sm"></i>
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="px-6 py-8 text-center col-span-12">
+                    <i class="fas fa-hourglass-half text-gray-300 text-4xl mb-3"></i>
+                    <p class="text-gray-500 dark:text-gray-400">No pending treatments found</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+    </div>
+</div>
+
+<link rel="stylesheet" href="https://unpkg.com/tippy.js@6/dist/tippy.css" />
+<link rel="stylesheet" href="https://unpkg.com/tippy.js@6/themes/light-border.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+<script src="https://unpkg.com/@popperjs/core@2"></script>
+<script src="https://unpkg.com/tippy.js@6"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Declare filter input variables at the top of the DOMContentLoaded scope
+    const searchInput = document.getElementById('searchInput');
+    const dateFromInput = document.getElementById('dateFrom');
+    const dateToInput = document.getElementById('dateTo');
+    const paymentFilterButtons = document.querySelectorAll('.col-span-1.lg-col-span-1 button[data-payment-type]');
+
+    // Initialize Tippy.js
+    tippy('[data-tippy-content]', {
+        allowHTML: true,
+        theme: 'light-border',
+        arrow: true,
+        animation: 'scale',
+        delay: [100, 50],
+        maxWidth: 280
+    });
+
+    // Tab functionality
+    const tabs = document.querySelectorAll('.tab-button');
+    const tabContents = document.querySelectorAll('.tab-content');
+    const initialActiveTab = "{{ active_tab }}"; // Get the active tab from Flask
+
+    function activateTab(targetTabId) {
+        // Deactivate all tabs
+// In the activateTab function, update the icon color reset logic:
+tabs.forEach(t => {
+    t.classList.remove('active', 'bg-blue-100', 'dark:bg-blue-800', 'shadow-md');
+    t.classList.add('bg-gray-100/50', 'dark:bg-gray-800/50', 'hover:bg-gray-200/70', 'dark:hover:bg-gray-700/70', 'shadow-sm');
+    t.querySelector('span').classList.remove('text-blue-700', 'dark:text-blue-100');
+    t.querySelector('span').classList.add('text-gray-700', 'dark:text-gray-300');
+    // Reset icon color to its original specific color
+    const icon = t.querySelector('i');
+    if (t.dataset.tab === 'consultation') {
+        icon.className = 'fas fa-users-medical text-green-500';
+    } else if (t.dataset.tab === 'lab-tests') {
+        icon.className = 'fas fa-flask text-orange-500';
+    } else if (t.dataset.tab === 'radiology') {
+        icon.className = 'fas fa-x-ray text-cyan-500';
+    } else if (t.dataset.tab === 'completed-treatment') {
+        icon.className = 'fas fa-check-circle text-blue-500';
+    } else if (t.dataset.tab === 'pending-treatment') {
+        icon.className = 'fas fa-hourglass-half text-purple-500';
+    }
+});
+
+        // Activate clicked tab
+        const activeTabButton = document.querySelector(`.tab-button[data-tab="${targetTabId}"]`);
+        if (activeTabButton) {
+            activeTabButton.classList.add('active', 'bg-blue-100', 'dark:bg-blue-800', 'shadow-md');
+            activeTabButton.classList.remove('bg-gray-100/50', 'dark:bg-gray-800/50', 'hover:bg-gray-200/70', 'dark:hover:bg-gray-700/70', 'shadow-sm');
+            activeTabButton.querySelector('span').classList.add('text-blue-700', 'dark:text-blue-100');
+            activeTabButton.querySelector('span').classList.remove('text-gray-700', 'dark:text-gray-300');
+            // Set active icon color
+            const activeIcon = activeTabButton.querySelector('i');
+            activeIcon.classList.remove('text-green-500', 'text-orange-500', 'text-cyan-500');
+            activeIcon.classList.add('text-blue-700', 'dark:text-blue-100');
+        }
+
+        // Hide all tab content and show the target one
+        tabContents.forEach(content => {
+            if (content.id === `${targetTabId}-table-container`) {
+                content.classList.remove('hidden');
+            } else {
+                content.classList.add('hidden');
+            }
+        });
+
+        // Save active tab to session
+        fetch('/patients/set-active-tab', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ tab: targetTabId })
+        }).catch(error => console.error('Error saving active tab:', error));
+
+        // Re-apply filters when tab changes
+        applyFilters();
+    }
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            activateTab(tab.dataset.tab);
+        });
+    });
+
+    // Initialize active tab on load using the value from Flask
+    activateTab(initialActiveTab);
+
+function applyFilters() {
+    const searchText = searchInput.value.toLowerCase();
+    const dateFrom = dateFromInput.value ? new Date(dateFromInput.value) : null;
+    const dateTo = dateToInput.value ? new Date(dateToInput.value) : null;
+    if (dateTo) {
+        dateTo.setHours(23, 59, 59, 999);
+    }
+    const activePaymentFilter = document.querySelector('.col-span-1.lg-col-span-1 button.bg-blue-500');
+    const paymentType = activePaymentFilter ? activePaymentFilter.dataset.paymentType : 'all';
+    const activeTabContent = document.querySelector('.tab-content:not(.hidden)');
+    let currentTableBodyId;
+    
+    if (activeTabContent) {
+        const tabId = activeTabContent.id.replace('-table-container', '');
+        
+        // Convert to camelCase for the table body ID
+        if (tabId === 'consultation') {
+            currentTableBodyId = 'consultationTableBody';
+        } else if (tabId === 'lab-tests') {
+            currentTableBodyId = 'labTestsTableBody';
+        } else if (tabId === 'radiology') {
+            currentTableBodyId = 'radiologyTableBody';
+        } else if (tabId === 'completed-treatment') {
+            currentTableBodyId = 'completedTreatmentTableBody';
+        } else if (tabId === 'pending-treatment') {
+            currentTableBodyId = 'pendingTreatmentTableBody';
+        } else {
+            currentTableBodyId = 'consultationTableBody'; // Fallback
+        }
+    } else {
+        currentTableBodyId = 'consultationTableBody'; // Default fallback
+    }
+
+    const tableBody = document.getElementById(currentTableBodyId);
+    if (!tableBody) {
+        console.warn(`Table body with ID '${currentTableBodyId}' not found. Please check your HTML IDs.`);
+        return;
+    }
+
+        const rows = tableBody.querySelectorAll('.patient-row');
+
+        rows.forEach(row => {
+            const patientName = row.dataset.patientName ? row.dataset.patientName.toLowerCase() : '';
+            const patientRegNo = row.dataset.patientRegno ? row.dataset.patientRegno.toLowerCase() : '';
+            const patientPhone = row.dataset.patientPhone ? row.dataset.patientPhone.toLowerCase() : '';
+            const visitDateStr = row.dataset.visitDate;
+            const visitDate = visitDateStr ? new Date(visitDateStr) : null;
+            const rowPaymentStatus = row.dataset.paymentStatus ? row.dataset.paymentStatus.toLowerCase() : '';
+
+            const matchesSearch = searchText === '' ||
+                                  patientName.includes(searchText) ||
+                                  patientRegNo.includes(searchText) ||
+                                  patientPhone.includes(searchText);
+
+            const matchesDate = (!dateFrom || (visitDate && visitDate >= dateFrom)) &&
+                                (!dateTo || (visitDate && visitDate <= dateTo));
+
+            const matchesPayment = paymentType === 'all' || rowPaymentStatus === paymentType;
+
+            if (matchesSearch && matchesDate && matchesPayment) {
+                row.classList.remove('hidden');
+            } else {
+                row.classList.add('hidden');
+            }
+        });
+    }
+
+    // Add event listeners to filters
+    searchInput.addEventListener('input', applyFilters); // Use 'input' for real-time filtering
+    dateFromInput.addEventListener('change', applyFilters);
+    dateToInput.addEventListener('change', applyFilters);
+
+    paymentFilterButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            paymentFilterButtons.forEach(btn => {
+                btn.classList.remove('bg-blue-500', 'text-white', 'dark:bg-blue-600');
+                btn.classList.add('hover:bg-gray-100', 'dark:hover:bg-gray-600', 'text-gray-700', 'dark:text-gray-300');
+            });
+            button.classList.add('bg-blue-500', 'text-white', 'dark:bg-blue-600');
+            button.classList.remove('hover:bg-gray-100', 'dark:hover:bg-gray-600', 'text-gray-700', 'dark:text-gray-300');
+            applyFilters();
+        });
+    });
+
+    // Initial application of filters when the page loads
+    applyFilters();
+});
+// JavaScript for actions (unchanged)
+async function completeVisit(visitId) {
+    if (confirm('Are you sure you want to mark this patient visit as completed? This will finalize their consultation.')) {
+        try {
+            const response = await fetch(`/patients/visits/${visitId}/complete`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                location.reload(); // Reload to update the queues
+            } else {
+                const error = await response.json();
+                alert(error.message || 'Failed to complete visit. Please try again.');
+            }
+        } catch (error) {
+            console.error('Network error:', error);
+            alert('A network error occurred. Please check your internet connection and try again.');
+        }
+    }
+}
+
+// Modified to mark all tests/orders for a *visit* as reviewed (unchanged)
+async function markVisitTestsAsReviewed(type, visitId) {
+    let endpoint = '';
+    let confirmationMessage = '';
+
+    if (type === 'lab_test') {
+        endpoint = `/patients/consultations/lab_test/visit/${visitId}/review_complete`;
+        confirmationMessage = 'Are you sure you want to mark ALL lab tests for this visit as reviewed by the doctor?';
+    } else if (type === 'radiology') {
+        endpoint = `/consultations/radiology/visit/${visitId}/review_complete`;
+        confirmationMessage = 'Are you sure you want to mark ALL radiology orders for this visit as reviewed by the doctor?';
+    } else {
+        alert('Invalid review type.');
+        return;
+    }
+
+    if (confirm(confirmationMessage)) {
+        try {
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                location.reload(); // Reload to update
+            } else {
+                const error = await response.json();
+                alert(error.message || 'Failed to mark as reviewed. Please try again.');
+            }
+        } catch (error) {
+            console.error('Network error:', error);
+            alert('A network error occurred. Please check your internet connection and try again.');
+        }
+    }
+}
+</script>
+<style>
+    /* Base styles for tab buttons */
+    .tab-button {
+        background-color: transparent;
+        border: none;
+        cursor: pointer;
+        outline: none;
+        position: relative;
+        z-index: 1;
+        white-space: nowrap; /* Prevent wrapping */
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04); /* Adjusted shadow for inactive */
+    }
+
+    /* Inactive tab styles */
+    .tab-button:not(.active) {
+        background-color: rgba(243, 244, 246, 0.6); /* light-gray-100 with more transparency */
+        color: #4B5563; /* gray-700 */
+    }
+
+    .dark .tab-button:not(.active) {
+        background-color: rgba(31, 41, 55, 0.6); /* dark:gray-800 with more transparency */
+        color: #D1D5DB; /* dark:gray-300 */
+    }
+
+    .tab-button:not(.active):hover {
+        background-color: rgba(229, 231, 235, 0.8); /* hover:gray-200 with more transparency */
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06); /* Increased shadow on hover */
+    }
+
+    .dark .tab-button:not(.active):hover {
+        background-color: rgba(55, 65, 81, 0.8); /* dark:hover:gray-700 with more transparency */
+    }
+
+    /* Active tab styles */
+    .tab-button.active {
+        background-color: #DBEAFE; /* blue-100 */
+        color: #1E40AF; /* blue-700 */
+        font-weight: 700; /* bolder font weight for active */
+        box-shadow: 0 6px 10px -1px rgba(0, 0, 0, 0.15), 0 3px 6px -1px rgba(0, 0, 0, 0.08); /* Stronger shadow for active */
+        border-bottom: 3px solid #3B82F6; /* Blue border for active tab */
+    }
+
+    .dark .tab-button.active {
+        background-color: #1E3A8A; /* dark:blue-800 */
+        color: #DBEAFE; /* dark:blue-100 */
+        border-color: #60A5FA; /* Lighter blue border for dark mode */
+    }
+
+    /* Transition for all changes */
+    .tab-button {
+        transition: all 0.3s ease-in-out;
+    }
+
+
+    /* General hover transition for action buttons */
+    .p-2.rounded-lg {
+        transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, transform 0.1s ease-out;
+    }
+    .p-2.rounded-lg:hover {
+        transform: translateY(-1px); /* Slight lift on hover */
+    }
+</style>
+{% endblock %}
