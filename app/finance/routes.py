@@ -2659,7 +2659,8 @@ def doctor_accounts():
                 'total_paid': 0,
                 'balance_due': 0,
                 'last_visit': None,
-                'has_services': False
+                'has_services': False,
+                'service_revenue_breakdown': {}
             })
             continue
         
@@ -2681,14 +2682,19 @@ def doctor_accounts():
         total_services_count = len(doctor_visits)
         period_earned = 0
         service_revenue_breakdown = {}
-        
+        service_visits_count = {}
+
         for visit in doctor_visits:
             for service in visit.services:
                 if service.id in assigned_service_ids:
                     assignment = next((a for a in assigned_services if a.service_id == service.id), None)
                     if assignment:
+                        # Calculate service revenue (total amount from visits)
+                        service_revenue = service.special_clinic_price
+                        
+                        # Calculate doctor's earnings based on commission type
                         if assignment.payment_type == 'percentage':
-                            service_earned = service.price * (assignment.commission_rate / 100)
+                            service_earned = service_revenue * (assignment.commission_rate / 100)
                         else:
                             service_earned = assignment.fixed_amount or 0
                         
@@ -2696,20 +2702,43 @@ def doctor_accounts():
                         
                         # Track revenue by service
                         if service.name in service_revenue_breakdown:
-                            service_revenue_breakdown[service.name] += service_earned
+                            service_revenue_breakdown[service.name] += service_revenue
                         else:
-                            service_revenue_breakdown[service.name] = service_earned
+                            service_revenue_breakdown[service.name] = service_revenue
+                        
+                        # Track visits count per service
+                        if service.name in service_visits_count:
+                            service_visits_count[service.name] += 1
+                        else:
+                            service_visits_count[service.name] = 1
         
-        # Calculate total payments made to this doctor
+        # Calculate total payments made to this doctor (with date filtering)
         total_paid = 0
         for assignment in assigned_services:
-            assignment_payments = DoctorPayment.query.filter_by(
+            assignment_payments_query = DoctorPayment.query.filter_by(
                 assignment_id=assignment.id,
                 status='completed'
-            ).all()
+            )
+            
+            # Apply the same date filter to payments
+            if date_filter == 'today':
+                assignment_payments_query = assignment_payments_query.filter(func.date(DoctorPayment.payment_date) == today)
+            elif date_filter == 'week':
+                assignment_payments_query = assignment_payments_query.filter(DoctorPayment.payment_date >= week_ago)
+            elif date_filter == 'month':
+                assignment_payments_query = assignment_payments_query.filter(DoctorPayment.payment_date >= month_ago)
+            elif date_filter == 'custom' and start_date and end_date:
+                assignment_payments_query = assignment_payments_query.filter(and_(DoctorPayment.payment_date >= start, DoctorPayment.payment_date <= end))
+            
+            assignment_payments = assignment_payments_query.all()
             total_paid += sum(payment.amount for payment in assignment_payments)
         
         balance_due = period_earned - total_paid
+        
+        # Add visits count to each assignment for the frontend
+        for assignment in assigned_services:
+            service = assignment.service
+            assignment.visits_count = service_visits_count.get(service.name, 0)
         
         doctor_accounts_data.append({
             'doctor': doctor,
@@ -2780,11 +2809,11 @@ def get_doctor_visits(doctor_id):
                 visit_services.append({
                     'id': service.id,
                     'name': service.name,
-                    'price': service.price,
+                    'price': service.special_clinic_price,
                     'category': service.category
                 })
-                doctor_revenue += service.price
-        
+                doctor_revenue += service.special_clinic_price
+
         visit_data.append({
             'visit_id': visit.id,
             'visit_date': visit.visit_date.isoformat(),
@@ -2804,6 +2833,468 @@ def get_doctor_visits(doctor_id):
         'total_revenue': sum([v['total_amount'] for v in visit_data])
     })
     
+@finance_web_bp.route('/api/doctor-commissions/<int:doctor_id>')
+@login_required
+def get_doctor_commissions(doctor_id):
+    """
+    API endpoint to get commission settings for a specific doctor
+    """
+    try:
+        # Get doctor info
+        doctor = User.query.get_or_404(doctor_id)
+        
+        # Get assigned services with commission details
+        assigned_services = ServiceDoctorAssignment.query.filter_by(
+            doctor_id=doctor_id,
+            is_active=True
+        ).options(
+            joinedload(ServiceDoctorAssignment.service)
+        ).all()
+        
+        # Get service statistics for revenue information
+        service_data = []
+        for assignment in assigned_services:
+            # Calculate revenue generated by this service for the doctor
+            service_visits = Visit.query.join(Visit.services).filter(
+                Service.id == assignment.service_id,
+                Visit.payment_status == 'paid'
+            ).all()
+            
+            total_revenue = 0
+            visits_count = len(service_visits)
+            
+            for visit in service_visits:
+                for service in visit.services:
+                    if service.id == assignment.service_id:
+                        total_revenue += service.special_clinic_price
+            
+            # Calculate doctor's earnings
+            if assignment.payment_type == 'percentage':
+                doctor_earnings = total_revenue * (assignment.commission_rate / 100)
+            else:
+                doctor_earnings = (assignment.fixed_amount or 0) * visits_count
+            
+            service_data.append({
+                'assignment_id': assignment.id,
+                'service_id': assignment.service.id,
+                'service_name': assignment.service.name,
+                'service_price': assignment.service.special_clinic_price,
+                'service_category': assignment.service.category,
+                'payment_type': assignment.payment_type,
+                'commission_rate': assignment.commission_rate,
+                'fixed_amount': assignment.fixed_amount,
+                'total_revenue': total_revenue,
+                'visits_count': visits_count,
+                'doctor_earnings': doctor_earnings
+            })
+        
+        return jsonify({
+            'success': True,
+            'doctor': {
+                'id': doctor.id,
+                'name': doctor.full_name or doctor.username,
+                'email': doctor.email
+            },
+            'assigned_services': service_data,
+            'total_services': len(service_data)
+        })
+        
+    except Exception as e:
+        import traceback
+        print(f"Error in get_doctor_commissions: {str(e)}")
+        print(traceback.format_exc())
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@finance_web_bp.route('/api/update-commission/<int:assignment_id>', methods=['POST'])
+@login_required
+def update_commission(assignment_id):
+    """
+    API endpoint to update commission settings for a service assignment
+    """
+    try:
+        data = request.get_json()
+        assignment = ServiceDoctorAssignment.query.get_or_404(assignment_id)
+        
+        # Update commission settings
+        assignment.payment_type = data.get('payment_type', assignment.payment_type)
+        
+        if data['payment_type'] == 'percentage':
+            assignment.commission_rate = float(data.get('commission_rate', assignment.commission_rate))
+            assignment.fixed_amount = None
+        else:
+            assignment.fixed_amount = float(data.get('fixed_amount', assignment.fixed_amount or 0))
+            assignment.commission_rate = None
+        
+        # Add updated_at field if it doesn't exist in your model
+        # If you don't have updated_at, you can skip this or add it to your model
+        if hasattr(assignment, 'updated_at'):
+            assignment.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        # Log the change
+        current_user.log_activity(
+            f"Updated commission for service {assignment.service.name} - Doctor: {assignment.doctor.full_name}",
+            'commission_update'
+        )
+        
+        return jsonify({
+            'success': True,
+            'message': 'Commission settings updated successfully',
+            'assignment': {
+                'id': assignment.id,
+                'payment_type': assignment.payment_type,
+                'commission_rate': assignment.commission_rate,
+                'fixed_amount': assignment.fixed_amount
+            }
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        import traceback
+        print(f"Error in update_commission: {str(e)}")
+        print(traceback.format_exc())
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@finance_web_bp.route('/api/doctor-services/<int:doctor_id>')
+@login_required
+def get_available_services(doctor_id):
+    """
+    Get services available for assignment to a doctor
+    """
+    try:
+        # Get services not currently assigned to this doctor
+        assigned_service_ids = db.session.query(ServiceDoctorAssignment.service_id).filter(
+            ServiceDoctorAssignment.doctor_id == doctor_id,
+            ServiceDoctorAssignment.is_active == True
+        ).subquery()
+        
+        available_services = Service.query.filter(
+            Service.is_active == True,
+            ~Service.id.in_(assigned_service_ids)
+        ).all()
+        
+        services_data = [{
+            'id': service.id,
+            'name': service.name,
+            'price': service.special_clinic_price,
+            'category': service.category
+        } for service in available_services]
+        
+        return jsonify({
+            'success': True,
+            'available_services': services_data
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@finance_web_bp.route('/api/doctor-payment-info/<int:doctor_id>')
+@login_required
+def get_doctor_payment_info(doctor_id):
+    """
+    API endpoint to get doctor's payment information including balance due
+    """
+    try:
+        # Get doctor info
+        doctor = User.query.get_or_404(doctor_id)
+        
+        # Get date filter from request
+        date_filter = request.args.get('date_filter', 'all')
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        
+        # Get assigned services
+        assigned_services = ServiceDoctorAssignment.query.filter_by(
+            doctor_id=doctor_id,
+            is_active=True
+        ).all()
+        
+        if not assigned_services:
+            return jsonify({
+                'success': True,
+                'doctor': {
+                    'id': doctor.id,
+                    'name': doctor.full_name or doctor.username,
+                    'email': doctor.email
+                },
+                'balance_due': 0,
+                'period_earned': 0,
+                'total_paid': 0,
+                'assigned_services_count': 0
+            })
+        
+        assigned_service_ids = [assignment.service_id for assignment in assigned_services]
+        
+        # Build date filter condition
+        date_filter_condition = True
+        if date_filter == 'today':
+            today = datetime.now().date()
+            date_filter_condition = func.date(Visit.visit_date) == today
+        elif date_filter == 'week':
+            week_ago = datetime.now() - timedelta(days=7)
+            date_filter_condition = Visit.visit_date >= week_ago
+        elif date_filter == 'month':
+            month_ago = datetime.now() - timedelta(days=30)
+            date_filter_condition = Visit.visit_date >= month_ago
+        elif date_filter == 'custom' and start_date and end_date:
+            start = datetime.strptime(start_date, '%Y-%m-%d')
+            end = datetime.strptime(end_date, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
+            date_filter_condition = and_(Visit.visit_date >= start, Visit.visit_date <= end)
+        
+        # Calculate period earned
+        doctor_visits = Visit.query.join(Visit.services).filter(
+            Service.id.in_(assigned_service_ids),
+            Visit.payment_status == 'paid',
+            date_filter_condition
+        ).all()
+        
+        period_earned = 0
+        for visit in doctor_visits:
+            for service in visit.services:
+                if service.id in assigned_service_ids:
+                    assignment = next((a for a in assigned_services if a.service_id == service.id), None)
+                    if assignment:
+                        if assignment.payment_type == 'percentage':
+                            service_earned = service.special_clinic_price * (assignment.commission_rate / 100)
+                        else:
+                            service_earned = assignment.fixed_amount or 0
+                        period_earned += service_earned
+        
+        # Calculate total paid with date filtering
+        total_paid = 0
+        for assignment in assigned_services:
+            assignment_payments_query = DoctorPayment.query.filter_by(
+                assignment_id=assignment.id,
+                status='completed'
+            )
+            
+            # Apply date filter to payments
+            if date_filter == 'today':
+                assignment_payments_query = assignment_payments_query.filter(func.date(DoctorPayment.payment_date) == today)
+            elif date_filter == 'week':
+                assignment_payments_query = assignment_payments_query.filter(DoctorPayment.payment_date >= week_ago)
+            elif date_filter == 'month':
+                assignment_payments_query = assignment_payments_query.filter(DoctorPayment.payment_date >= month_ago)
+            elif date_filter == 'custom' and start_date and end_date:
+                assignment_payments_query = assignment_payments_query.filter(and_(DoctorPayment.payment_date >= start, DoctorPayment.payment_date <= end))
+            
+            assignment_payments = assignment_payments_query.all()
+            total_paid += sum(payment.amount for payment in assignment_payments)
+        
+        balance_due = period_earned - total_paid
+        
+        return jsonify({
+            'success': True,
+            'doctor': {
+                'id': doctor.id,
+                'name': doctor.full_name or doctor.username,
+                'email': doctor.email
+            },
+            'balance_due': balance_due,
+            'period_earned': period_earned,
+            'total_paid': total_paid,
+            'assigned_services_count': len(assigned_services),
+            'date_filter': date_filter
+        })
+        
+    except Exception as e:
+        import traceback
+        print(f"Error in get_doctor_payment_info: {str(e)}")
+        print(traceback.format_exc())
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@finance_web_bp.route('/api/process-payment/<int:doctor_id>', methods=['POST'])
+@login_required
+def process_payment(doctor_id):
+    """
+    API endpoint to process a payment for a doctor
+    """
+    try:
+        data = request.get_json()
+        
+        # Validate required fields
+        required_fields = ['amount', 'payment_method', 'assignment_ids']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({
+                    'success': False,
+                    'error': f'Missing required field: {field}'
+                }), 400
+        
+        amount = float(data['amount'])
+        payment_method = data['payment_method']
+        assignment_ids = data['assignment_ids']
+        reference_number = data.get('reference_number', '')
+        notes = data.get('notes', '')
+        
+        if amount <= 0:
+            return jsonify({
+                'success': False,
+                'error': 'Payment amount must be greater than 0'
+            }), 400
+        
+        # Get doctor and verify assignments belong to this doctor
+        doctor = User.query.get_or_404(doctor_id)
+        assignments = ServiceDoctorAssignment.query.filter(
+            ServiceDoctorAssignment.id.in_(assignment_ids),
+            ServiceDoctorAssignment.doctor_id == doctor_id
+        ).all()
+        
+        if len(assignments) != len(assignment_ids):
+            return jsonify({
+                'success': False,
+                'error': 'Invalid assignment IDs or assignments do not belong to this doctor'
+            }), 400
+        
+        # Create payment records
+        payments = []
+        total_amount = 0
+        
+        # Distribute payment across assignments (proportional to their balance)
+        for assignment in assignments:
+            # Calculate assignment's share of the payment
+            # For now, we'll distribute evenly, but you can implement more complex logic
+            assignment_share = amount / len(assignments)
+            
+            payment = DoctorPayment(
+                assignment_id=assignment.id,
+                amount=assignment_share,
+                payment_method=payment_method,
+                reference_number=reference_number,
+                notes=notes,
+                paid_by=current_user.id,
+                status='completed',
+                payment_date=datetime.utcnow()
+            )
+            
+            db.session.add(payment)
+            payments.append(payment)
+            total_amount += assignment_share
+        
+        db.session.commit()
+        
+        # Log the activity (if log_activity method exists)
+        if hasattr(current_user, 'log_activity'):
+            current_user.log_activity(
+                f"Processed payment of KSH {amount:,.2f} to Dr. {doctor.full_name or doctor.username}",
+                'payment_processed'
+            )
+        else:
+            # Simple console log as fallback
+            print(f"Payment processed: User {current_user.id} paid KSH {amount:,.2f} to Dr. {doctor.full_name or doctor.username}")
+        
+        return jsonify({
+            'success': True,
+            'message': f'Payment of KSH {amount:,.2f} processed successfully',
+            'payment': {
+                'total_amount': total_amount,
+                'payment_method': payment_method,
+                'reference_number': reference_number,
+                'assignments_count': len(assignments)
+            }
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        import traceback
+        print(f"Error in process_payment: {str(e)}")
+        print(traceback.format_exc())
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@finance_web_bp.route('/api/doctor-assignments/<int:doctor_id>')
+@login_required
+def get_doctor_assignments(doctor_id):
+    """
+    API endpoint to get all service assignments for a doctor with current balances
+    """
+    try:
+        # Get assigned services with commission details
+        assigned_services = ServiceDoctorAssignment.query.filter_by(
+            doctor_id=doctor_id,
+            is_active=True
+        ).options(
+            joinedload(ServiceDoctorAssignment.service)
+        ).all()
+        
+        assignments_data = []
+        total_balance_due = 0
+        
+        for assignment in assigned_services:
+            # Calculate earnings for this assignment
+            service_visits = Visit.query.join(Visit.services).filter(
+                Service.id == assignment.service_id,
+                Visit.payment_status == 'paid'
+            ).all()
+            
+            total_revenue = 0
+            for visit in service_visits:
+                for service in visit.services:
+                    if service.id == assignment.service_id:
+                        total_revenue += service.special_clinic_price
+            
+            # Calculate doctor's earnings
+            if assignment.payment_type == 'percentage':
+                doctor_earnings = total_revenue * (assignment.commission_rate / 100)
+            else:
+                doctor_earnings = (assignment.fixed_amount or 0) * len(service_visits)
+            
+            # Calculate payments for this assignment
+            assignment_payments = DoctorPayment.query.filter_by(
+                assignment_id=assignment.id,
+                status='completed'
+            ).all()
+            
+            total_paid = sum(payment.amount for payment in assignment_payments)
+            balance_due = doctor_earnings - total_paid
+            
+            assignments_data.append({
+                'assignment_id': assignment.id,
+                'service_name': assignment.service.name,
+                'service_price': assignment.service.special_clinic_price,
+                'payment_type': assignment.payment_type,
+                'commission_rate': assignment.commission_rate,
+                'fixed_amount': assignment.fixed_amount,
+                'total_earnings': doctor_earnings,
+                'total_paid': total_paid,
+                'balance_due': balance_due,
+                'visits_count': len(service_visits)
+            })
+            
+            total_balance_due += balance_due
+        
+        return jsonify({
+            'success': True,
+            'assignments': assignments_data,
+            'total_balance_due': total_balance_due,
+            'assignments_count': len(assignments_data)
+        })
+        
+    except Exception as e:
+        import traceback
+        print(f"Error in get_doctor_assignments: {str(e)}")
+        print(traceback.format_exc())
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 
 @finance_web_bp.route('/supplier-accounts/create', methods=['POST'])
 def create_supplier_account():

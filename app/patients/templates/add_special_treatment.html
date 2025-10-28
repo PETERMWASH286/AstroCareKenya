@@ -1,0 +1,1463 @@
+{% extends "base.html" %} {% block title %}Create Treatment Plan - {{ visit.patient.full_name }}{% endblock %} {% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 pb-24">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-800 dark:text-white flex items-center">
+          <i class="fas fa-file-medical text-blue-500 mr-3"></i> Treatment Plan for {{ visit.patient.full_name }}
+        </h1>
+        <div class="mt-2 flex flex-wrap gap-2">
+          <span class="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100 px-3 py-1 rounded-full text-sm">Visit ID: {{ visit.id }}</span>
+          <span class="bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-100 px-3 py-1 rounded-full text-sm">RegNo: {{ visit.patient.reg_no }}</span>
+          <span class="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100 px-3 py-1 rounded-full text-sm">Age: {{ visit.patient.age }} years</span>
+          {% if visit.patient.payment_method == 'cash' %}
+          <span class="bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-100 px-3 py-1 rounded-full text-sm"><i class="fas fa-money-bill-wave mr-1"></i>Cash</span>
+          {% elif visit.patient.payment_method == 'insurance' and insurance_obj %}
+          <span class="bg-teal-100 dark:bg-teal-900 text-teal-800 dark:text-teal-100 px-3 py-1 rounded-full text-sm flex items-center">
+            <i class="fas fa-shield-alt mr-1"></i> {{ insurance_obj.name }}
+            <span class="font-medium mx-2">|</span>
+            <span class="text-sm">{{ visit.patient.insurance_number or 'No #' }}</span>
+          </span>
+          {% else %}
+          <span class="bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 px-3 py-1 rounded-full text-sm"><i class="fas fa-question-circle mr-1"></i>{{ visit.patient.payment_method | capitalize }}</span>
+          {% endif %}
+        </div>
+      </div>
+      <div class="flex items-center space-x-2">
+        <a href="{{ url_for('consultations_web.view_patient', patient_id=visit.patient.id) }}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 transition-colors">
+          <i class="fas fa-user-circle mr-2"></i> Full Profile
+        </a>
+        <a href="{{ url_for('consultations_web.consultation_queue') }}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-gray-600 hover:bg-gray-700 transition-colors">
+          <i class="fas fa-arrow-left mr-2"></i> Back to Queue
+        </a>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+      <div class="xl:col-span-1 space-y-6">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+          <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4 flex items-center">
+            <i class="fas fa-heartbeat text-red-500 mr-2"></i> Current Vitals
+          </h2>
+          {% if visit.vitals %} {% set vit = visit.vitals %}
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"><i class="fas fa-temperature-high text-orange-500 text-2xl"></i>
+              <div>
+                <div class="text-sm text-gray-500 dark:text-gray-400">Temperature</div>
+                <div class="text-lg font-medium text-gray-800 dark:text-gray-200">{{ vit.temperature }}°C</div>
+              </div>
+            </div>
+            <div class="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"><i class="fas fa-heartbeat text-red-500 text-2xl"></i>
+              <div>
+                <div class="text-sm text-gray-500 dark:text-gray-400">Heart Rate</div>
+                <div class="text-lg font-medium text-gray-800 dark:text-gray-200">{{ vit.heart_rate }} bpm</div>
+              </div>
+            </div>
+            <div class="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"><i class="fas fa-tachometer-alt text-purple-500 text-2xl"></i>
+              <div>
+                <div class="text-sm text-gray-500 dark:text-gray-400">Blood Pressure</div>
+                <div class="text-lg font-medium text-gray-800 dark:text-gray-200">{{ vit.bp_systolic }}/{{ vit.bp_diastolic }} mmHg</div>
+              </div>
+            </div>
+            <div class="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"><i class="fas fa-lungs text-blue-500 text-2xl"></i>
+              <div>
+                <div class="text-sm text-gray-500 dark:text-gray-400">SpO₂</div>
+                <div class="text-lg font-medium text-gray-800 dark:text-gray-200">{{ vit.spo2 }} %</div>
+              </div>
+            </div>
+            <div class="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"><i class="fas fa-wind text-green-500 text-2xl"></i>
+              <div>
+                <div class="text-sm text-gray-500 dark:text-gray-400">Respiratory Rate</div>
+                <div class="text-lg font-medium text-gray-800 dark:text-gray-200">{{ vit.resp_rate }} bpm</div>
+              </div>
+            </div>
+            <div class="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"><i class="fas fa-exclamation-triangle text-yellow-500 text-2xl"></i>
+              <div>
+                <div class="text-sm text-gray-500 dark:text-gray-400">Pain Score</div>
+                <div class="text-lg font-medium text-gray-800 dark:text-gray-200">{{ vit.pain_score }}/10</div>
+              </div>
+            </div>
+          </div>
+          {% if vit.notes %}
+          <div class="mt-4 p-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
+            <h3 class="font-semibold text-gray-700 dark:text-gray-300 mb-1">Triage Notes</h3>
+            <p class="text-sm text-gray-800 dark:text-gray-200">{{ vit.notes }}</p>
+          </div>
+          {% endif %} {% else %}
+          <div class="text-center py-8 text-gray-500 dark:text-gray-400 italic">No vitals recorded for this visit.</div>
+          {% endif %}
+        </div>
+
+<div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
+  <div class="flex items-center justify-between mb-5">
+    <div class="flex items-center">
+      <div class="w-12 h-12 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center mr-3">
+        <i class="fas fa-history text-indigo-600 dark:text-indigo-400 text-xl"></i>
+      </div>
+      <h2 class="text-xl font-bold text-gray-800 dark:text-white">Treatment History</h2>
+    </div>
+    <span class="text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300 px-3 py-1 rounded-full">
+      {{ visit.patient.consultations.count() }} records  {# Fixed: use .count() instead of |length #}
+    </span>
+  </div>
+  
+  <div class="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+    {% for consultation in visit.patient.consultations|sort(attribute='created_at', reverse=True) %}
+    <div class="group bg-gray-50 dark:bg-gray-700/60 rounded-xl p-4 border border-gray-200 dark:border-gray-600 hover:border-indigo-300 dark:hover:border-indigo-400 transition-all duration-300 hover:shadow-sm relative">
+      <!-- Status Ribbon -->
+      <div class="absolute top-0 right-0 transform translate-x-2 -translate-y-1/2 bg-white dark:bg-gray-800 rounded-full shadow-md">
+        <span class="text-xs px-2.5 py-1.5 rounded-full font-medium
+          {% if consultation.visit_id == visit.id %}bg-green-100 text-green-800 dark:bg-green-800/30 dark:text-green-300{% else %}bg-blue-100 text-blue-800 dark:bg-blue-800/30 dark:text-blue-300{% endif %}">
+          {% if consultation.visit_id == visit.id %}Current Visit{% else %}Past Visit{% endif %}
+        </span>
+      </div>
+      
+      <!-- Main Content -->
+      <div class="flex justify-between items-start mb-3">
+        <div>
+          <div class="text-sm font-semibold text-gray-800 dark:text-gray-200">
+            {{ consultation.created_at.strftime('%d %b %Y') }}
+          </div>
+          <div class="text-xs text-gray-500 dark:text-gray-400 mt-1 flex items-center">
+            <i class="fas fa-user-md mr-1"></i>
+            {{ consultation.treated_by.full_name if consultation.treated_by else 'N/A' }}
+          </div>
+        </div>
+        <div class="text-xs text-gray-500 dark:text-gray-400 flex items-center">
+          <i class="far fa-clock mr-1"></i>
+          {{ consultation.created_at.strftime('%H:%M') }}
+        </div>
+      </div>
+      
+      <!-- Diagnosis -->
+      <div class="mb-4">
+        <div class="text-xs font-medium text-indigo-600 dark:text-indigo-400 mb-1 flex items-center">
+          <i class="fas fa-diagnoses mr-2"></i>
+          DIAGNOSIS
+        </div>
+        <div class="text-sm text-gray-800 dark:text-gray-200">
+          {{ consultation.diagnosis | striptags or 'No diagnosis recorded' }}  {# Strip HTML tags #}
+        </div>
+      </div>
+      
+      <!-- Treatment Preview -->
+      {% if consultation.treatment_plan %}
+      <div class="mb-4">
+        <div class="text-xs font-medium text-indigo-600 dark:text-indigo-400 mb-1 flex items-center">
+          <i class="fas fa-prescription-bottle-alt mr-2"></i>
+          TREATMENT
+        </div>
+        <div class="text-sm text-gray-700 dark:text-gray-300 line-clamp-2">
+          {{ consultation.treatment_plan | striptags }}  {# Strip HTML tags #}
+        </div>
+      </div>
+      {% endif %}
+      
+      <!-- Action Buttons -->
+      <div class="flex justify-end space-x-2 mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+        <a href="#" class="action-button bg-gray-100 hover:bg-gray-200 text-gray-700 dark:bg-gray-600 dark:hover:bg-gray-500 dark:text-gray-200" title="View Full Report">
+          <i class="fas fa-eye"></i>
+          <span class="hidden md:inline ml-2">View</span>
+        </a>
+        <a href="{{ url_for('consultations_web.download_report', consultation_id=consultation.id) }}" class="action-button bg-indigo-100 hover:bg-indigo-200 text-indigo-700 dark:bg-indigo-900/30 dark:hover:bg-indigo-800/50 dark:text-indigo-300" title="Download Report">
+          <i class="fas fa-download"></i>
+          <span class="hidden md:inline ml-2">Download</span>
+        </a>
+      </div>
+    </div>
+    {% else %}
+    <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+      <div class="inline-block bg-gray-100 dark:bg-gray-700 rounded-full p-4 mb-3">
+        <i class="fas fa-file-medical-alt text-2xl"></i>
+      </div>
+      <p class="italic">No previous treatments found</p>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<style>
+  .action-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  }
+  
+  .action-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  }
+  
+  .action-button:active {
+    transform: translateY(0);
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #c7d2fe;
+    border-radius: 4px;
+  }
+  
+  .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #4f46e5;
+  }
+  
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #c7d2fe transparent;
+  }
+  
+  .dark .custom-scrollbar {
+    scrollbar-color: #4f46e5 transparent;
+  }
+          .message-bubble {
+            max-width: 80%;
+            animation: fadeIn 0.3s;
+        }
+        
+        .typing-indicator span {
+            width: 8px;
+            height: 8px;
+            background-color: #a0aec0;
+            border-radius: 50%;
+            display: inline-block;
+            margin: 0 2px;
+        }
+        
+        .chat-container {
+            scroll-behavior: smooth;
+        }
+        
+        .chat-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .chat-container::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+        
+        .chat-container::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+        }
+        
+        .send-btn {
+            transition: all 0.2s ease;
+        }
+        
+        .send-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+        
+        .glow-border {
+            box-shadow: 0 0 15px rgba(96, 165, 250, 0.5);
+        }
+</style>
+      </div>
+
+<div class="xl:col-span-2">
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+    <form method="POST" id="treatmentForm">
+      <div class="border-b border-gray-200 dark:border-gray-700">
+        <nav class="flex space-x-4 px-8" aria-label="Tabs">
+          <button type="button" class="tab-link active" onclick="openTab(event, 'notes')">Notes</button>
+          <button type="button" class="tab-link" onclick="openTab(event, 'diagnosis')">Diagnosis</button>
+          <button type="button" class="tab-link" onclick="openTab(event, 'medication')">Medication</button>
+          <button type="button" class="tab-link" onclick="openTab(event, 'lab')">Lab Requests</button>
+          <button type="button" class="tab-link" onclick="openTab(event, 'radiology')">Radiology</button>
+        </nav>
+      </div>
+
+<div id="notes" class="tab-content p-8">
+    <div>
+        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"><i class="fas fa-history text-blue-500 mr-2"></i>Medical History</label>
+        <textarea id="medicalHistory" name="history" rows="4" class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500" placeholder="Patient's medical history...">{% if consultation %}{{ consultation.history }}{% endif %}</textarea>
+    </div>
+    <div class="mt-6">
+        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"><i class="fas fa-search-plus text-green-500 mr-2"></i>Physical Examination</label>
+        <textarea id="physicalExamination" name="examination" rows="4" class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500" placeholder="Findings from physical exam...">{% if consultation %}{{ consultation.examination }}{% endif %}</textarea>
+    </div>
+</div>
+
+<div id="diagnosis" class="tab-content hidden p-8">
+  <!-- Diagnosis Search Section -->
+  <div>
+    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center">
+      <i class="fas fa-diagnoses text-purple-500 mr-2"></i>Diagnosis
+      <span class="text-xs font-normal text-gray-500 ml-2">(Search and select diagnosis)</span>
+    </label>
+    
+    <div class="relative">
+      <div class="flex items-center">
+        <input 
+          id="diagnosisSearch" 
+          type="text" 
+          class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500" 
+          placeholder="Search for diagnosis..."
+        >
+        <button id="clearSearch" class="ml-2 p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hidden">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <div id="searchResults" class="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 shadow-lg rounded-lg border border-gray-200 dark:border-gray-700 max-h-60 overflow-y-auto hidden"></div>
+    </div>
+    
+    <div id="selectedDiagnoses" class="mt-3 flex flex-wrap gap-2">
+      {% if consultation and consultation.diagnosis %}
+        <div class="diagnosis-tag bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 px-3 py-1.5 rounded-lg flex items-center">
+          {{ consultation.diagnosis }}
+          <button class="ml-2 text-purple-600 hover:text-purple-800 dark:hover:text-purple-200 remove-diagnosis">
+            <i class="fas fa-times text-xs"></i>
+          </button>
+        </div>
+      {% endif %}
+    </div>
+    
+    <textarea 
+      id="diagnosisText" 
+      name="diagnosis" 
+      class="hidden"
+    >{% if consultation %}{{ consultation.diagnosis }}{% endif %}</textarea>
+  </div>
+  
+  <!-- Treatment Plan -->
+  <div class="mt-6">
+    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+      <i class="fas fa-prescription-bottle-alt text-red-500 mr-2"></i>Treatment Plan
+    </label>
+    <textarea 
+      id="treatmentPlan" 
+      name="treatment_plan" 
+      rows="5" 
+      class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500" 
+      placeholder="Detailed treatment instructions..."
+    >{% if consultation %}{{ consultation.treatment_plan }}{% endif %}</textarea>
+  </div>
+  
+  <!-- Clinical Notes -->
+  <div class="mt-6">
+    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+      <i class="fas fa-sticky-note text-yellow-500 mr-2"></i>Clinical Notes
+    </label>
+    <textarea 
+      id="clinicalNotes" 
+      name="notes" 
+      rows="3" 
+      class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-yellow-500" 
+      placeholder="Additional notes or comments..."
+    >{% if consultation %}{{ consultation.notes }}{% endif %}</textarea>
+  </div>
+</div>
+  <!-- <script src="https://cdn.jsdelivr.net/npm/tinymce@6/tinymce.min.js"></script>
+ -->
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const diagnosisSearch = document.getElementById('diagnosisSearch');
+  const searchResults = document.getElementById('searchResults');
+  const selectedDiagnoses = document.getElementById('selectedDiagnoses');
+  const diagnosisText = document.getElementById('diagnosisText');
+  const clearSearch = document.getElementById('clearSearch');
+  
+  // Debounce function to limit API calls
+  function debounce(func, wait) {
+    let timeout;
+    return function(...args) {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func.apply(this, args), wait);
+    };
+  }
+  
+  // Search diagnosis function
+  const searchDiagnosis = debounce(async function(query) {
+    if (query.length < 2) {
+      searchResults.classList.add('hidden');
+      return;
+    }
+    
+    try {
+      const response = await fetch(`/patients/_search_diseases?q=${encodeURIComponent(query)}`);
+      const data = await response.json();
+      
+      if (data.results && data.results.length > 0) {
+        searchResults.innerHTML = '';
+        data.results.forEach(disease => {
+          const item = document.createElement('div');
+          item.className = 'p-3 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer flex items-start';
+          item.innerHTML = `
+            <div class="mr-3 mt-0.5">
+              <i class="fas fa-search text-gray-400"></i>
+            </div>
+            <div>
+              <div class="font-medium text-gray-900 dark:text-white">${disease.name}</div>
+              <div class="text-xs text-gray-500 dark:text-gray-400">${disease.code}</div>
+              <div class="text-sm text-gray-700 dark:text-gray-300 mt-1">${disease.description.substring(0, 100)}${disease.description.length > 100 ? '...' : ''}</div>
+            </div>
+          `;
+          
+          item.addEventListener('click', () => {
+            addDiagnosis(disease);
+            diagnosisSearch.value = '';
+            searchResults.classList.add('hidden');
+            clearSearch.classList.add('hidden');
+          });
+          
+          searchResults.appendChild(item);
+        });
+        
+        searchResults.classList.remove('hidden');
+      } else {
+        searchResults.classList.add('hidden');
+      }
+    } catch (error) {
+      console.error('Error fetching diagnosis:', error);
+      searchResults.innerHTML = '<div class="p-3 text-gray-500 dark:text-gray-400">Error loading results</div>';
+      searchResults.classList.remove('hidden');
+    }
+  }, 300);
+  
+  // Add diagnosis to selected list
+  function addDiagnosis(disease) {
+    // Check if already added
+    const existing = Array.from(selectedDiagnoses.children).some(
+      el => el.textContent.includes(disease.name)
+    );
+    
+    if (existing) return;
+    
+    const tag = document.createElement('div');
+    tag.className = 'diagnosis-tag bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 px-3 py-1.5 rounded-lg flex items-center';
+    tag.innerHTML = `
+      <span class="font-medium">${disease.code}</span>: ${disease.name}
+      <button class="ml-2 text-purple-600 hover:text-purple-800 dark:hover:text-purple-200 remove-diagnosis">
+        <i class="fas fa-times text-xs"></i>
+      </button>
+    `;
+    
+    tag.querySelector('.remove-diagnosis').addEventListener('click', () => {
+      tag.remove();
+      updateDiagnosisText();
+    });
+    
+    selectedDiagnoses.appendChild(tag);
+    updateDiagnosisText();
+  }
+  
+  // Update hidden textarea with selected diagnoses
+  function updateDiagnosisText() {
+    const diagnoses = Array.from(selectedDiagnoses.querySelectorAll('.diagnosis-tag'))
+      .map(tag => tag.textContent.replace('×', '').trim());
+    
+    diagnosisText.value = diagnoses.join('\n');
+  }
+  
+  // Event listeners
+  diagnosisSearch.addEventListener('input', function() {
+    if (this.value.trim()) {
+      clearSearch.classList.remove('hidden');
+      searchDiagnosis(this.value);
+    } else {
+      clearSearch.classList.add('hidden');
+      searchResults.classList.add('hidden');
+    }
+  });
+  
+  clearSearch.addEventListener('click', function() {
+    diagnosisSearch.value = '';
+    searchResults.classList.add('hidden');
+    clearSearch.classList.add('hidden');
+  });
+  
+  document.addEventListener('click', function(e) {
+    if (!searchResults.contains(e.target) && e.target !== diagnosisSearch) {
+      searchResults.classList.add('hidden');
+    }
+  });
+  
+  // Initialize with existing diagnosis if any
+  if (diagnosisText.value) {
+    diagnosisText.value.split('\n').forEach(diag => {
+      if (diag.trim()) {
+        const tag = document.createElement('div');
+        tag.className = 'diagnosis-tag bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 px-3 py-1.5 rounded-lg flex items-center';
+        tag.innerHTML = `
+          ${diag}
+          <button class="ml-2 text-purple-600 hover:text-purple-800 dark:hover:text-purple-200 remove-diagnosis">
+            <i class="fas fa-times text-xs"></i>
+          </button>
+        `;
+        
+        tag.querySelector('.remove-diagnosis').addEventListener('click', () => {
+          tag.remove();
+          updateDiagnosisText();
+        });
+        
+        selectedDiagnoses.appendChild(tag);
+      }
+    });
+  }
+  
+  // Initialize TinyMCE for other fields
+        tinymce.init({
+            selector: '#medicalHistory, #physicalExamination, #diagnosisText, #treatmentPlan, #clinicalNotes',
+            plugins: 'advlist autolink lists link image charmap print preview anchor searchreplace visualblocks code fullscreen insertdatetime media table paste code help wordcount',
+            toolbar: 'undo redo | formatselect | bold italic backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | help',
+            height: 200, // Adjust height as needed
+            content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"; font-size:14px }'
+        });
+});
+</script>
+
+<style>
+  .diagnosis-tag {
+    transition: all 0.2s ease;
+  }
+  
+  .diagnosis-tag:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+  
+  #searchResults {
+    scrollbar-width: thin;
+    scrollbar-color: #c7d2fe #f3f4f6;
+  }
+  
+  #searchResults::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  #searchResults::-webkit-scrollbar-track {
+    background: #f3f4f6;
+    border-radius: 0 0 8px 0;
+  }
+  
+  #searchResults::-webkit-scrollbar-thumb {
+    background: #c7d2fe;
+    border-radius: 4px;
+  }
+  
+  .dark #searchResults::-webkit-scrollbar-track {
+    background: #374151;
+  }
+  
+  .dark #searchResults::-webkit-scrollbar-thumb {
+    background: #4f46e5;
+  }
+</style>
+
+<div id="medication" class="tab-content hidden p-8">
+    <div class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center"><i class="fas fa-pills text-green-500 mr-2"></i>Medication Administration</h3>
+            <button type="button" onclick="addDrug()" class="px-3 py-1 bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300 rounded-lg hover:bg-green-200 dark:hover:bg-green-800 transition-colors"><i class="fas fa-plus mr-1"></i>Add Drug</button>
+        </div>
+
+        {# Row Headers for better readability #}
+        <div class="grid grid-cols-12 gap-4 items-center mb-2 font-semibold text-gray-600 dark:text-gray-400 text-sm">
+            <div class="col-span-4">Medication Name</div>
+            <div class="col-span-1">Dose</div> {# Reduced from col-span-2 #}
+            <div class="col-span-2">Frequency</div>
+            <div class="col-span-2">Duration</div> {# Reduced from col-span-2, placeholder simplified to "Days" #}
+            <div class="col-span-2">Qty</div> {# Increased from col-span-1 #}
+            <div class="col-span-1 text-right">Action</div>
+        </div>
+        {# End Row Headers #}
+
+        <template id="drugTemplate">
+            <div class="drug-entry grid grid-cols-12 gap-4 items-start mb-4 p-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-750">
+                <div class="col-span-4">
+                    <select class="drug-select w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500" onchange="updateDrugPrice(this)" name="drug[]">
+                        <option value="">Select Medication</option>
+                        {% for med in medications %}<option value="{{ med.id }}" data-price="{{ med.price }}">{{ med.name }} - Ksh {{ med.price|number_format }}</option>{% endfor %}
+                    </select>
+                    <input type="hidden" name="drug_price[]" value="">
+                </div>
+                <div class="col-span-2"> {# Changed from col-span-2 #}
+                    <input type="text" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500" placeholder="Dose" name="drug_dose[]">
+                </div>
+                <div class="col-span-2">
+                    <select class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500" name="drug_frequency[]">
+                        <option value="OD">Once Daily</option>
+                        <option value="BD">Twice Daily</option>
+                        <option value="TDS">Thrice Daily</option>
+                        <option value="QID">Four Times Daily</option>
+                    </select>
+                </div>
+                <div class="col-span-2"> {# Kept at col-span-2 #}
+                    <input type="number" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500" name="drug_duration[]" placeholder="Days" min="0">
+                </div>
+                <div class="col-span-2"> {# Increased from col-span-1 #}
+                    <input type="number" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500" name="drug_quantity[]" placeholder="Qty" min="1" value="1">
+                </div>
+                <div class="col-span-1 flex justify-end">
+                    <button type="button" onclick="removeDrug(this)" class="text-red-500 hover:text-red-700 dark:hover:text-red-400 p-2 rounded-full hover:bg-red-100 dark:hover:bg-red-900 transition-colors">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+        </template>
+
+        <div id="drugContainer" class="space-y-4">
+            {% for med in existing_medications %}
+            <div class="drug-entry grid grid-cols-12 gap-4 items-start mb-4 p-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-750">
+                <div class="col-span-4">
+                    <select class="drug-select w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500" onchange="updateDrugPrice(this)" name="drug[]">
+                        <option value="">Select Medication</option>
+                        {% for medication_item in medications %}
+                        <option value="{{ medication_item.id }}" data-price="{{ medication_item.price }}"
+                            {% if med.service_id == medication_item.id %}selected{% endif %}>
+                            {{ medication_item.name }} - Ksh {{ medication_item.price|number_format }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <input type="hidden" name="drug_price[]" value="{{ med.price }}">
+                </div>
+                <div class="col-span-2"> {# Changed from col-span-2 #}
+                    <input type="text" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="Dose" name="drug_dose[]" value="{{ med.dose }}">
+                </div>
+                <div class="col-span-2">
+                    <select class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500" name="drug_frequency[]">
+                        <option value="OD" {% if med.frequency == 'OD' %}selected{% endif %}>Once Daily</option>
+                        <option value="BD" {% if med.frequency == 'BD' %}selected{% endif %}>Twice Daily</option>
+                        <option value="TDS" {% if med.frequency == 'TDS' %}selected{% endif %}>Thrice Daily</option>
+                        <option value="QID" {% if med.frequency == 'QID' %}selected{% endif %}>Four Times Daily</option>
+                    </select>
+                </div>
+                <div class="col-span-2"> {# Kept at col-span-2 #}
+                    <input type="number" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
+                                name="drug_duration[]" placeholder="Days" min="0" value="{{ med.duration if med.duration is not none else '' }}">
+                </div>
+                <div class="col-span-2"> {# Increased from col-span-1 #}
+                    <input type="number" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
+                                name="drug_quantity[]" placeholder="Qty" min="1" value="{{ med.quantity }}">
+                </div>
+                <div class="col-span-1 flex justify-end">
+                    <button type="button" onclick="removeDrug(this)" class="text-red-500 hover:text-red-700 dark:hover:text-red-400 p-2 rounded-full hover:bg-red-100 dark:hover:bg-red-900 transition-colors">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <div class="flex justify-between items-center">
+                <span class="font-medium text-gray-700 dark:text-gray-300">Total Medication Cost:</span>
+                <span id="totalCost" class="text-xl font-bold text-green-600 dark:text-green-400">Ksh 0</span>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="lab" class="tab-content hidden p-8">
+    <div>
+        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            <i class="fas fa-flask text-orange-500 mr-2"></i>Lab Tests
+        </label>
+        <select name="lab_tests" multiple class="w-full" data-placeholder="Select lab tests...">
+            {% for service in lab_tests %}
+            <option value="{{ service.id }}"
+                {% if service.id in existing_lab_tests|map(attribute='service_id') %}selected{% endif %}>
+                {{ service.name }} - Ksh {{ service.price|number_format }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div id="lab-results-display" class="mt-8">
+        <h3 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-6 flex items-center">
+            <i class="fas fa-chart-bar text-green-600 mr-2"></i>Detailed Lab Results Report
+        </h3>
+
+        {% if existing_lab_tests %}
+            {% for lab_test_order in existing_lab_tests %}
+                <div class="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 mb-8 border border-blue-200 dark:border-blue-700">
+                    <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+                        <h4 class="text-2xl font-bold text-blue-700 dark:text-blue-300 mb-2 md:mb-0">
+                            {{ lab_test_order.service.name }}
+                            {% if lab_test_order.service.lab_test and lab_test_order.service.lab_test.short_code %}
+                                <span class="text-gray-500 dark:text-gray-400 text-base ml-2">({{ lab_test_order.service.lab_test.short_code }})</span>
+                            {% endif %}
+                        </h4>
+                        <div class="flex items-center space-x-3">
+                            <span class="px-4 py-1.5 text-base font-semibold rounded-full capitalize
+                                {% if lab_test_order.status == 'requested' %} bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100
+                                {% elif lab_test_order.status == 'results_entered' %} bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-100
+                                {% elif lab_test_order.status == 'verified' %} bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100
+                                {% else %} bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 {% endif %}">
+                                <i class="{% if lab_test_order.status == 'requested' %}fas fa-hourglass-half{% elif lab_test_order.status == 'results_entered' %}fas fa-file-alt{% elif lab_test_order.status == 'verified' %}fas fa-check-double{% else %}fas fa-question-circle{% endif %} mr-2"></i>
+                                {{ lab_test_order.status|replace('_', ' ')|title }}
+                            </span>
+                            {% if lab_test_order.result_date %}
+                                <span class="text-sm text-gray-600 dark:text-gray-400">
+                                    <i class="fas fa-calendar-alt mr-1"></i>Date: {{ lab_test_order.result_date.strftime('%d %b %Y, %H:%M') }}
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if lab_test_order.interpretation %} {# Overall interpretation for the lab test order #}
+                        <div class="mb-6 bg-blue-50 dark:bg-blue-900 p-4 rounded-lg shadow-inner border border-blue-200 dark:border-blue-700">
+                            <h5 class="text-base font-semibold text-blue-800 dark:text-blue-200 mb-2 flex items-center">
+                                <i class="fas fa-lightbulb text-blue-600 mr-2"></i>Overall Interpretation:
+                            </h5>
+                            <p class="text-gray-800 dark:text-gray-200 leading-relaxed">{{ lab_test_order.interpretation }}</p>
+                        </div>
+                    {% endif %}
+
+                    {% if lab_test_order.service.lab_test %}
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6">
+                            {% for parameter in lab_test_order.service.lab_test.parameters %}
+                                {% set current_result = existing_lab_results[lab_test_order.id] | selectattr('parameter_id', '==', parameter.parameter_id) | first %}
+                                
+                                {% set result_status = 'N/A' %}
+                                {% set border_class = '' %}
+                                {% set text_color_class = 'text-gray-900 dark:text-white' %}
+
+                                {% if current_result and parameter.result_type == 'numeric' and current_result.numeric_value is not none %}
+                                    {% set patient_age_years = visit.patient.age %}
+                                    {% set patient_sex = visit.patient.gender %}
+                                    {% set applicable_ranges = parameter.ranges | selectattr('age_min', '<=', patient_age_years)
+                                                                              | selectattr('age_max', '>=', patient_age_years)
+                                                                              | selectattr('age_unit', '==', 'Years') | list %}
+                                    {% set gender_specific_range = applicable_ranges | selectattr('sex', '==', patient_sex) | first %}
+                                    {% set any_sex_range = applicable_ranges | selectattr('sex', '==', 'Any') | first %}
+                                    {% set final_range = gender_specific_range if gender_specific_range else any_sex_range %}
+
+                                    {% if final_range %}
+                                        {% set result_value = current_result.numeric_value | float %}
+                                        {% if final_range.critical_min is not none and result_value <= final_range.critical_min or final_range.critical_max is not none and result_value >= final_range.critical_max %}
+                                            {% set result_status = 'Critical' %}
+                                            {% set border_class = 'border-red-500' %}
+                                            {% set text_color_class = 'text-red-600 dark:text-red-400' %}
+                                        {% elif result_value < final_range.normal_min %}
+                                            {% set result_status = 'Low' %}
+                                            {% set border_class = 'border-orange-400' %}
+                                            {% set text_color_class = 'text-orange-500 dark:text-orange-300' %}
+                                        {% elif result_value > final_range.normal_max %}
+                                            {% set result_status = 'High' %}
+                                            {% set border_class = 'border-orange-400' %}
+                                            {% set text_color_class = 'text-orange-500 dark:text-orange-300' %}
+                                        {% else %}
+                                            {% set result_status = 'Normal' %}
+                                            {% set border_class = 'border-green-300' %}
+                                            {% set text_color_class = 'text-green-600 dark:text-green-400' %}
+                                        {% endif %}
+                                    {% endif %}
+                                {% endif %}
+                                
+                                <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg flex flex-col justify-between h-full border {{ border_class if border_class else 'border-transparent' }}">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <h5 class="text-base font-semibold text-gray-800 dark:text-gray-200">
+                                            {{ parameter.parameter_name }}
+                                            {% if parameter.unit %}<span class="text-gray-500 dark:text-gray-400 text-sm ml-1">({{ parameter.unit }})</span>{% endif %}
+                                        </h5>
+                                        <div class="text-right flex items-center space-x-2">
+                                            {% if parameter.result_type == 'numeric' %}
+                                                <span class="text-lg font-bold {{ text_color_class }}">
+                                                    {{ current_result.numeric_value if current_result and current_result.numeric_value is not none else 'N/A' }}
+                                                </span>
+                                                {% if result_status != 'N/A' %}
+                                                    <span class="px-2 py-0.5 text-xs font-semibold rounded-full capitalize
+                                                        {% if result_status == 'Normal' %} bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100
+                                                        {% elif result_status == 'Low' or result_status == 'High' %} bg-orange-100 text-orange-800 dark:bg-orange-800 dark:text-orange-100
+                                                        {% elif result_status == 'Critical' %} bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100
+                                                        {% endif %}">
+                                                        {{ result_status }}
+                                                    </span>
+                                                {% endif %}
+                                            {% elif parameter.result_type == 'categorical' %}
+                                                <span class="text-lg font-bold text-gray-900 dark:text-white">
+                                                    {{ current_result.categorical_value if current_result else 'N/A' }}
+                                                </span>
+                                            {% elif parameter.result_type == 'text' %}
+                                                <span class="text-lg font-bold text-gray-900 dark:text-white">
+                                                    {{ current_result.text_value if current_result else 'N/A' }}
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                    {# Reference Ranges #}
+                                    {% if parameter.result_type == 'numeric' %}
+                                        <p class="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
+                                            Normal Range:
+                                            {% if final_range %}
+                                                <span class="font-semibold">{{ final_range.normal_min }} - {{ final_range.normal_max }}</span>
+                                                {% if final_range.critical_min is not none or final_range.critical_max is not none %}
+                                                    <span class="ml-2">| Critical:
+                                                        {% if final_range.critical_min is not none and final_range.critical_max is not none %}
+                                                            <span class="font-semibold text-red-500">{{ final_range.critical_min }} - {{ final_range.critical_max }}</span>
+                                                        {% elif final_range.critical_min is not none %}
+                                                            <span class="font-semibold text-red-500">&lt; {{ final_range.critical_min }}</span>
+                                                        {% elif final_range.critical_max is not none %}
+                                                            <span class="font-semibold text-red-500">&gt; {{ final_range.critical_max }}</span>
+                                                        {% endif %}
+                                                    </span>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="italic">No specific range available</span>
+                                            {% endif %}
+                                        </p>
+                                    {% endif %}
+
+                                    {# Parameter-level Interpretation #}
+                                    {% if current_result and current_result.interpretation %}
+                                        <div class="mt-2 p-2 bg-blue-100 dark:bg-blue-800 rounded-md border border-blue-200 dark:border-blue-700">
+                                            <p class="text-sm text-blue-700 dark:text-blue-300">
+                                                <i class="fas fa-info-circle mr-1"></i> **Interpretation:** <span class="font-medium">{{ current_result.interpretation }}</span>
+                                            </p>
+                                        </div>
+                                    {% endif %}
+                                    
+                                    {# Parameter-level Comments/Notes #}
+                                    {% if current_result and current_result.comments %}
+                                        <div class="mt-2 p-2 bg-purple-100 dark:bg-purple-800 rounded-md border border-purple-200 dark:border-purple-700">
+                                            <p class="text-sm text-purple-700 dark:text-purple-300">
+                                                <i class="fas fa-comment-dots mr-1"></i> **Notes:** <span class="font-medium">{{ current_result.comments }}</span>
+                                            </p>
+                                        </div>
+                                    {% endif %}
+
+                                    {# Entered By and Verified By for each parameter #}
+                                    {% if current_result and (current_result.entered_by or current_result.verified_by) %}
+                                        <div class="mt-4 pt-2 border-t border-gray-200 dark:border-gray-600 text-xs text-gray-600 dark:text-gray-400">
+                                            {% if current_result.entered_by %}
+                                                <p><i class="fas fa-user-edit mr-1"></i> **Entered By:** {{ current_result.entered_by }}
+                                                {% if current_result.entered_at %} (on {{ current_result.entered_at.strftime('%d %b %Y, %H:%M') }}){% endif %}</p>
+                                            {% endif %}
+                                            {% if current_result.verified_by %}
+                                                <p class="mt-0.5"><i class="fas fa-user-check mr-1"></i> **Verified By:** {{ current_result.verified_by }}
+                                                {% if current_result.verified_at %} (on {{ current_result.verified_at.strftime('%d %b %Y, %H:%M') }}){% endif %}</p>
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                        
+                        ---
+
+                        {# Overall Notes and Entered/Verified for the Lab Test Order #}
+                        <div class="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+                            <h5 class="block text-base font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                <i class="fas fa-clipboard-list text-yellow-600 mr-2"></i>Overall Test Notes:
+                            </h5>
+                            <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded-md text-gray-800 dark:text-gray-200 min-h-[50px]">
+                                {{ lab_test_order.notes if lab_test_order.notes else 'No general notes for this test.' }}
+                            </div>
+
+                            {# Overall Lab Test Entered By and Verified By #}
+                            {% if lab_test_order.entered_by or lab_test_order.verified_by %}
+                                <div class="mt-4 pt-2 border-t border-gray-200 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-300">
+                                    {% if lab_test_order.entered_by %}
+                                        <p><i class="fas fa-user-edit mr-1"></i> <strong>Results Entered By:</strong> {{ lab_test_order.entered_by }}
+                                        {% if lab_test_order.entered_at %} (on {{ lab_test_order.entered_at.strftime('%d %b %Y, %H:%M') }}){% endif %}</p>
+                                    {% endif %}
+                                    {% if lab_test_order.verified_by %}
+                                        <p class="mt-0.5"><i class="fas fa-user-check mr-1"></i> <strong>Results Verified By:</strong> {{ lab_test_order.verified_by }}
+                                        {% if lab_test_order.verified_at %} (on {{ lab_test_order.verified_at.strftime('%d %b %Y, %H:%M') }}){% endif %}</p>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                    {% else %}
+                        <p class="text-red-500 text-sm mt-2">
+                            <i class="fas fa-exclamation-circle mr-1"></i>No detailed test parameters defined for this lab test in the service catalog.
+                        </p>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg text-center text-gray-600 dark:text-gray-300">
+                <i class="fas fa-info-circle mr-2"></i>No lab tests have been requested for this visit yet.
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize Choices.js for the lab tests select dropdown
+        new Choices('select[name="lab_tests"]', {
+            removeItemButton: true,
+            searchEnabled: true,
+            placeholder: true,
+            itemSelectText: 'Press to select',
+        });
+
+        const labResultsDisplay = document.getElementById('lab-results-display');
+        const hasExistingTests = {{ 'true' if existing_lab_tests else 'false' }};
+        if (hasExistingTests) {
+            labResultsDisplay.classList.remove('hidden');
+        } else {
+            labResultsDisplay.classList.add('hidden');
+        }
+    });
+</script>
+<div id="radiology" class="tab-content hidden p-8">
+    <div>
+        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            <i class="fas fa-x-ray text-purple-500 mr-2"></i>Imaging Studies
+        </label>
+        <select name="imaging_studies" multiple class="w-full" data-placeholder="Select imaging studies...">
+            {% for service in imaging_services %}
+            <option value="{{ service.id }}"
+                {% if service.id in existing_radiology|map(attribute='service_id') %}selected{% endif %}>
+                {{ service.name }} - Ksh {{ service.price|number_format }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <!-- Radiology Results Section -->
+    {% if existing_radiology %}
+    <div class="mt-8">
+        <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-4">
+            <i class="fas fa-file-medical-alt text-blue-500 mr-2"></i>Radiology Results
+        </h3>
+        
+        {% for radiology_order in existing_radiology %}
+        <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 mb-6 border border-gray-200 dark:border-gray-700">
+            <h4 class="font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center">
+                <i class="fas fa-x-ray text-purple-500 mr-2"></i>
+                {{ radiology_order.service.name }}
+                <span class="ml-2 text-sm font-normal px-2 py-1 rounded-full 
+                    {% if radiology_order.status == 'completed' %}bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300
+                    {% else %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300{% endif %}">
+                    {{ radiology_order.status|title }}
+                </span>
+            </h4>
+
+            <!-- Display Images if exists -->
+            {% if radiology_order.images %}
+            <div class="mt-6">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center">
+                    <i class="fas fa-images text-pink-500 mr-3"></i> Imaging Files
+                </h3>
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    {% set img_list = radiology_order.images.split(',') %}
+                    {% for filename in img_list %}
+                    <a href="{{ url_for('static', filename='uploads/' ~ filename.strip()) }}" 
+                       target="_blank" 
+                       class="relative group aspect-square rounded-xl overflow-hidden shadow border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 block">
+                        <img src="{{ url_for('static', filename='uploads/' ~ filename.strip()) }}" 
+                             alt="Radiology Image {{ loop.index }}" 
+                             class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
+                        <!-- Overlay -->
+                        <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all flex items-center justify-center">
+                            <div class="text-white text-xl opacity-0 group-hover:opacity-100 transition-opacity">
+                                <i class="fas fa-search-plus"></i>
+                            </div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Results Data (from JSON) -->
+            {% if radiology_order.results_data %}
+            <div class="mt-6">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <i class="fas fa-file-medical text-green-500 mr-2"></i>Results Data
+                </label>
+                <div class="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg p-4">
+                    {% if radiology_order.results_data.findings %}
+                    <div class="mb-3">
+                        <strong class="text-sm font-medium text-gray-700 dark:text-gray-300">Findings:</strong>
+                        <p class="text-gray-800 dark:text-gray-200 mt-1">{{ radiology_order.results_data.findings }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if radiology_order.results_data.impression %}
+                    <div class="mb-3">
+                        <strong class="text-sm font-medium text-gray-700 dark:text-gray-300">Impression:</strong>
+                        <p class="text-gray-800 dark:text-gray-200 mt-1">{{ radiology_order.results_data.impression }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    {% if radiology_order.results_data.recommendations %}
+                    <div class="mb-3">
+                        <strong class="text-sm font-medium text-gray-700 dark:text-gray-300">Recommendations:</strong>
+                        <p class="text-gray-800 dark:text-gray-200 mt-1">{{ radiology_order.results_data.recommendations }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Notes -->
+            {% if radiology_order.notes %}
+            <div class="mt-6">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <i class="fas fa-sticky-note text-yellow-500 mr-2"></i>Notes
+                </label>
+                <div class="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg p-4">
+                    <p class="text-gray-800 dark:text-gray-200">{{ radiology_order.notes }}</p>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Results Entry Form (only if not completed) -->
+            {% if radiology_order.status != 'completed' %}
+            <div class="border-t border-gray-200 dark:border-gray-600 pt-6 mt-6">
+                <h5 class="font-semibold text-gray-700 dark:text-gray-300 mb-4 flex items-center">
+                    <i class="fas fa-edit text-blue-500 mr-2"></i>Enter Results
+                </h5>
+                
+                <!-- Results Data Input -->
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Findings
+                        </label>
+                        <textarea 
+                            name="radiology_findings[{{ radiology_order.id }}]" 
+                            rows="3"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Enter radiology findings..."
+                        >{% if radiology_order.results_data %}{{ radiology_order.results_data.findings or '' }}{% endif %}</textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Impression
+                        </label>
+                        <textarea 
+                            name="radiology_impression[{{ radiology_order.id }}]" 
+                            rows="2"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Enter impression..."
+                        >{% if radiology_order.results_data %}{{ radiology_order.results_data.impression or '' }}{% endif %}</textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Recommendations
+                        </label>
+                        <textarea 
+                            name="radiology_recommendations[{{ radiology_order.id }}]" 
+                            rows="2"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Enter recommendations..."
+                        >{% if radiology_order.results_data %}{{ radiology_order.results_data.recommendations or '' }}{% endif %}</textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Notes
+                        </label>
+                        <textarea 
+                            name="radiology_notes[{{ radiology_order.id }}]" 
+                            rows="2"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Additional notes..."
+                        >{{ radiology_order.notes or '' }}</textarea>
+                    </div>
+                </div>
+
+                <!-- Status Update -->
+                <div class="flex items-center justify-between mt-6 pt-4 border-t border-gray-200 dark:border-gray-600">
+                    <div class="flex items-center space-x-4">
+                        <label class="flex items-center">
+                            <input type="checkbox" 
+                                   name="radiology_completed[{{ radiology_order.id }}]"
+                                   value="completed"
+                                   class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Mark as Completed</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Completion Information -->
+            {% if radiology_order.status == 'completed' %}
+            <div class="border-t border-gray-200 dark:border-gray-600 pt-6 mt-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                        <strong class="text-gray-700 dark:text-gray-300">Done By:</strong>
+                        <p class="text-gray-800 dark:text-gray-200">
+                            {% if radiology_order.done_by %}
+                                {{ radiology_order.done_by.full_name }}
+                            {% else %}
+                                Unknown
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div>
+                        <strong class="text-gray-700 dark:text-gray-300">Completed At:</strong>
+                        <p class="text-gray-800 dark:text-gray-200">
+                            {% if radiology_order.completed_at %}
+                                {{ radiology_order.completed_at.strftime('%Y-%m-%d %H:%M') }}
+                            {% else %}
+                                Not recorded
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+    </form>
+  </div>
+</div>
+
+
+    </div>
+  </div>
+</div>
+
+<button id="ai-assistant-button" class="fixed bottom-20 right-6 bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 transition-transform transform hover:scale-110 z-50">
+  <i class="fas fa-robot"></i>
+</button>
+
+    <!-- AI Modal -->
+    <div id="ai-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
+        <div class="absolute inset-0 bg-gray-900 bg-opacity-75 transition-opacity duration-300"></div>
+        
+        <div class="modal-content bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all duration-300">
+            <div class="absolute top-4 right-4">
+                <button id="close-ai-modal" class="text-gray-400 hover:text-white transition-colors duration-200 rounded-full p-2">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="p-5 border-b border-gray-700 flex items-center">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center">
+                    <i class="fas fa-robot text-white text-xl"></i>
+                </div>
+                <div class="ml-3">
+                    <h3 class="text-lg font-bold text-white">Clinical AI Assistant</h3>
+                    <p class="text-xs text-blue-400 flex items-center">
+                        <span class="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                        Online
+                    </p>
+                </div>
+                <div class="ml-auto flex space-x-2">
+                    <button class="text-gray-400 hover:text-white p-2 rounded-full hover:bg-gray-700 transition-colors">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                    <button class="text-gray-400 hover:text-white p-2 rounded-full hover:bg-gray-700 transition-colors">
+                        <i class="fas fa-history"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div id="chat-container" class="chat-container p-4 h-80 overflow-y-auto">
+                <div class="flex justify-center mb-4">
+                    <div class="bg-gray-700 rounded-full px-4 py-2 text-sm text-gray-300">
+                        Today, July 14, 2025
+                    </div>
+                </div>
+                
+                <div class="message-bubble bg-gray-700 rounded-2xl rounded-tl-none p-4 mb-4">
+                    <div class="text-blue-400 font-medium text-sm mb-1">Clinical AI Assistant</div>
+                    <div class="text-white">
+                        Hello! I'm your clinical AI assistant. How can I help with this case today?
+                    </div>
+                    <div class="text-xs text-gray-400 mt-2">2:45 PM</div>
+                </div>
+                
+                <div class="flex justify-end mb-4">
+                    <div class="message-bubble bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl rounded-tr-none p-4 max-w-xs">
+                        <div class="text-white">
+                            Can you summarize the patient's current condition?
+                        </div>
+                        <div class="text-xs text-blue-100 mt-2">2:46 PM</div>
+                    </div>
+                </div>
+                
+                <div class="message-bubble bg-gray-700 rounded-2xl rounded-tl-none p-4 mb-4">
+                    <div class="text-blue-400 font-medium text-sm mb-1">Clinical AI Assistant</div>
+                    <div class="text-white">
+                        Based on the records, the patient is a 45-year-old male presenting with elevated blood pressure (150/95 mmHg), mild tachycardia, and reported stress-related symptoms. No prior cardiac history noted.
+                    </div>
+                    <div class="text-xs text-gray-400 mt-2">2:47 PM</div>
+                </div>
+                
+                <div id="typing-indicator" class="typing-indicator flex items-center p-3 bg-gray-700 rounded-2xl rounded-tl-none w-24 mb-4 hidden">
+                    <span class="animate-bounce"></span>
+                    <span class="animate-bounce" style="animation-delay: 0.2s"></span>
+                    <span class="animate-bounce" style="animation-delay: 0.4s"></span>
+                </div>
+            </div>
+            
+            <div class="p-4 border-t border-gray-700">
+                <div class="flex items-center">
+                    <div class="flex space-x-2 mr-3">
+                        <button class="text-gray-400 hover:text-white p-2 rounded-full hover:bg-gray-700 transition-colors">
+                            <i class="fas fa-paperclip"></i>
+                        </button>
+                        <button class="text-gray-400 hover:text-white p-2 rounded-full hover:bg-gray-700 transition-colors">
+                            <i class="fas fa-microphone"></i>
+                        </button>
+                    </div>
+                    <input type="text" 
+                           id="message-input" 
+                           placeholder="Ask about this case..." 
+                           class="flex-1 bg-gray-700 text-white rounded-full px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <button id="send-button" class="send-btn ml-2 w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-full flex items-center justify-center hover:from-blue-600 hover:to-indigo-700 transition-all">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const aiModal = document.getElementById('ai-modal');
+        const openAiButton = document.getElementById('ai-assistant-button');
+        const closeAiButton = document.getElementById('close-ai-modal');
+        const messageInput = document.getElementById('message-input');
+        const sendButton = document.getElementById('send-button');
+        const chatContainer = document.getElementById('chat-container');
+        const typingIndicator = document.getElementById('typing-indicator');
+        
+        // Open modal with animation
+        openAiButton.addEventListener('click', () => {
+            aiModal.classList.remove('hidden');
+            aiModal.querySelector('.modal-content').classList.add('scaleIn');
+            
+            // Add backdrop animation
+            setTimeout(() => {
+                aiModal.querySelector('.bg-gray-900').classList.add('fadeIn');
+            }, 10);
+        });
+        
+        // Close modal with animation
+        function closeModal() {
+            aiModal.querySelector('.modal-content').classList.remove('scaleIn');
+            aiModal.querySelector('.modal-content').classList.add('scaleOut');
+            aiModal.querySelector('.bg-gray-900').classList.remove('fadeIn');
+            aiModal.querySelector('.bg-gray-900').classList.add('fadeOut');
+            
+            setTimeout(() => {
+                aiModal.classList.add('hidden');
+                aiModal.querySelector('.modal-content').classList.remove('scaleOut');
+                aiModal.querySelector('.bg-gray-900').classList.remove('fadeOut');
+            }, 300);
+        }
+        
+        closeAiButton.addEventListener('click', closeModal);
+        
+        // Close modal when clicking outside
+        aiModal.addEventListener('click', (event) => {
+            if (event.target === aiModal) {
+                closeModal();
+            }
+        });
+        
+        // Handle sending messages
+        function sendMessage() {
+            const message = messageInput.value.trim();
+            if (message) {
+                // Add user message to chat
+                const userMessage = document.createElement('div');
+                userMessage.className = 'flex justify-end mb-4';
+                userMessage.innerHTML = `
+                    <div class="message-bubble bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl rounded-tr-none p-4 max-w-xs">
+                        <div class="text-white">${message}</div>
+                        <div class="text-xs text-blue-100 mt-2">Just now</div>
+                    </div>
+                `;
+                chatContainer.appendChild(userMessage);
+                
+                // Clear input
+                messageInput.value = '';
+                
+                // Show typing indicator
+                typingIndicator.classList.remove('hidden');
+                
+                // Scroll to bottom
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+                
+                // Simulate AI response after delay
+                setTimeout(() => {
+                    typingIndicator.classList.add('hidden');
+                    
+                    // Add AI response
+                    const aiMessage = document.createElement('div');
+                    aiMessage.className = 'message-bubble bg-gray-700 rounded-2xl rounded-tl-none p-4 mb-4';
+                    aiMessage.innerHTML = `
+                        <div class="text-blue-400 font-medium text-sm mb-1">Clinical AI Assistant</div>
+                        <div class="text-white">
+                            I've analyzed the patient's vitals and history. Based on current readings, I recommend monitoring blood pressure closely and considering lifestyle modifications. Would you like me to suggest a treatment plan?
+                        </div>
+                        <div class="text-xs text-gray-400 mt-2">Just now</div>
+                    `;
+                    chatContainer.appendChild(aiMessage);
+                    
+                    // Scroll to bottom again
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                }, 2000);
+            }
+        }
+        
+        sendButton.addEventListener('click', sendMessage);
+        
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+        
+        // Add glow effect on input focus
+        messageInput.addEventListener('focus', () => {
+            messageInput.classList.add('glow-border');
+        });
+        
+        messageInput.addEventListener('blur', () => {
+            messageInput.classList.remove('glow-border');
+        });
+    </script>
+
+
+<div class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-2 flex justify-end space-x-2">
+  <button type="button" onclick="document.getElementById('treatmentForm').reset()" class="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Reset</button>
+  <button type="submit" form="treatmentForm" formaction="?draft=true" class="px-4 py-2 text-sm bg-gray-500 text-white rounded-lg font-semibold shadow-md hover:bg-gray-600 transition-all"><i class="fas fa-save mr-1"></i>Save to Draft</button>
+  <button type="submit" form="treatmentForm" class="px-4 py-2 text-sm bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg font-semibold shadow-md transition-all"><i class="fas fa-check-circle mr-1"></i>Submit Plan</button>
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
+<script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+  // Tab navigation
+  function openTab(event, tabName) {
+    let i, tabcontent, tablinks;
+    tabcontent = document.getElementsByClassName("tab-content");
+    for (i = 0; i < tabcontent.length; i++) {
+      tabcontent[i].style.display = "none";
+    }
+    tablinks = document.getElementsByClassName("tab-link");
+    for (i = 0; i < tablinks.length; i++) {
+      tablinks[i].className = tablinks[i].className.replace(" active", "");
+    }
+    document.getElementById(tabName).style.display = "block";
+    event.currentTarget.className += " active";
+  }
+
+
+
+  document.addEventListener('DOMContentLoaded', () => {
+    // Activate the first tab by default
+    document.querySelector('.tab-link').click();
+
+    // Initialize multi-select dropdowns
+    const selects = document.querySelectorAll('select[multiple]');
+    selects.forEach(select => {
+      new Choices(select, {
+        removeItemButton: true,
+        searchEnabled: true,
+        placeholderValue: select.dataset.placeholder,
+        noResultsText: 'No results found',
+        itemSelectText: 'Click to select'
+      });
+    });
+    
+    // Form submission confirmation
+    const form = document.getElementById('treatmentForm');
+    form.addEventListener('submit', function(e) {
+      if (e.submitter && e.submitter.formAction.includes('draft=true')) return;
+      
+      e.preventDefault();
+      Swal.fire({
+        title: 'Please Confirm',
+        html: `<p class="text-left">You are about to submit the treatment plan. <strong>This action cannot be undone.</strong></p>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, Submit It',
+        cancelButtonText: 'Cancel',
+        reverseButtons: true,
+        customClass: {
+          popup: 'rounded-2xl p-6 bg-white dark:bg-gray-800',
+          title: 'text-2xl font-bold text-gray-900 dark:text-gray-100',
+          confirmButton: 'bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg ml-2',
+          cancelButton: 'bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg'
+        }
+      }).then((result) => {
+        if (result.isConfirmed) form.submit();
+      });
+    });
+  });
+
+  // Drug Administration Logic
+  function addDrug() {
+    const container = document.getElementById('drugContainer');
+    const template = document.getElementById('drugTemplate');
+    const clone = template.content.cloneNode(true);
+    const select = clone.querySelector('.drug-select');
+    container.appendChild(clone);
+    new Choices(select, { searchEnabled: true, itemSelectText: '', placeholderValue: 'Select Medication' });
+    updateTotalCost();
+  }
+
+  function removeDrug(button) {
+    button.closest('.drug-entry').remove();
+    updateTotalCost();
+  }
+  
+  function updateDrugPrice(select) {
+      updateTotalCost();
+  }
+
+  function updateTotalCost() {
+    let total = 0;
+    const drugEntries = document.querySelectorAll('.drug-entry');
+    drugEntries.forEach(entry => {
+        const select = entry.querySelector('.drug-select');
+        const quantityInput = entry.querySelector('[name="drug_quantity[]"]');
+        const selectedOption = select.options[select.selectedIndex];
+        
+        const price = selectedOption && selectedOption.dataset.price ? parseFloat(selectedOption.dataset.price) : 0;
+        const quantity = quantityInput && quantityInput.value ? parseFloat(quantityInput.value) : 0;
+
+        total += price * quantity;
+    });
+    document.getElementById('totalCost').textContent = `Ksh ${total.toLocaleString()}`;
+  }
+  
+  document.addEventListener('input', (e) => {
+    if (e.target.matches('[name="drug_quantity[]"]') || e.target.matches('.drug-select')) {
+      updateTotalCost();
+    }
+  });
+</script>
+
+<style>
+  .tab-link { padding: 1rem; border-bottom: 3px solid transparent; color: #6B7280; cursor: pointer; transition: all 0.2s ease; font-weight: 500;}
+  .tab-link:hover { color: #3B82F6; }
+  .tab-link.active { color: #3B82F6; border-color: #3B82F6; font-weight: 600; }
+  .drug-entry { transition: all 0.3s ease; }
+  .choices__list--dropdown .choices__item--selectable::after { content: attr(data-price); float: right; color: #4B5563; font-size: 0.875rem; }
+  .dark .choices__list--dropdown .choices__item--selectable::after { color: #D1D5DB; }
+  textarea { min-height: 100px; transition: all 0.2s ease; }
+  .choices__list--multiple .choices__item { background-color: #3B82F6; border-color: #2563EB; color: white; margin-bottom: 4px; }
+  .dark .choices__list--dropdown { background-color: #1F2937; border-color: #374151; }
+  .dark .choices__input { background-color: #1F2937; color: white; }
+</style>
+{% endblock %}

@@ -106,6 +106,23 @@ class Role(db.Model):
         db.session.commit()
 
 
+class ActivityLog(db.Model):
+    __tablename__ = 'activity_logs'
+    __audit_trail__ = True  # Enable auditing
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    activity_type = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    ip_address = db.Column(db.String(45))
+    user_agent = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    user = db.relationship('User', backref=db.backref('activity_logs', lazy='dynamic'))
+    
+    def __repr__(self):
+        return f'<ActivityLog {self.activity_type} by User {self.user_id}>'
+
 # UPDATED: User model inherits from UserMixin
 class User(UserMixin, db.Model):
     __tablename__ = 'user' # Changed to lowercase 'user' for consistency
@@ -258,28 +275,24 @@ class User(UserMixin, db.Model):
         admin_role = Role.query.filter_by(name='Admin').first()
         return admin_role in self.roles.all() if admin_role else False
 
-    # Flask-Login requires an is_active property (provided by UserMixin)
-    # Flask-Login requires a get_id() method (provided by UserMixin)
-    # UserMixin assumes your primary key column is named 'id'. If it's different,
-    # you would need to define get_id() manually:
-    # def get_id(self):
-    #     return str(self.your_primary_key_column_name)
-
-# Note: The user_loader function is typically defined in app/__init__.py
-# or a dedicated authentication module, not usually inside the models file itself.
-# @login_manager.user_loader
-# def load_user(user_id):
-#     return User.query.get(int(user_id))
-
-# User loader for Flask-JWT-Extended (if using identity lookup)
-# @jwt.user_lookup_loader
-# def user_lookup_callback(_jwt_header, jwt_data):
-#     identity = jwt_data["sub"] # Assuming 'sub' contains the user id
-#     return User.query.filter_by(id=identity['id']).one_or_none()
-
-
-
-
+    def log_activity(self, description, activity_type, request=None):
+        """Log user activity"""
+        try:
+            activity = ActivityLog(
+                user_id=self.id,
+                activity_type=activity_type,
+                description=description,
+                ip_address=request.remote_addr if request else None,
+                user_agent=request.headers.get('User-Agent') if request else None
+            )
+            db.session.add(activity)
+            db.session.commit()
+            return activity
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error logging activity: {e}")
+            return None
+        
 class BlogPost(db.Model):
     __tablename__ = 'blog_posts'
     id = db.Column(db.Integer, primary_key=True)

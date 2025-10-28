@@ -114,11 +114,36 @@ def consultation_queue():
         .filter(Visit.visit_status.in_(['completed', 'in_progress']))
         .join(Consultation)  # Inner join to ensure consultation exists
         .filter(
-            # Ensure consultation has actual medical content
-            (Consultation.diagnosis != None) | 
-            (Consultation.treatment_plan != None) |
-            (Consultation.history != None) |
-            (Consultation.examination != None)
+            or_(
+                and_(
+                    Consultation.diagnosis != None, 
+                    Consultation.diagnosis != '',
+                    ~Consultation.diagnosis.ilike('%none%'),
+                    ~Consultation.diagnosis.ilike('%pending%'),
+                    ~Consultation.diagnosis.ilike('%waiting%')
+                ),
+                and_(
+                    Consultation.treatment_plan != None,
+                    Consultation.treatment_plan != '',
+                    ~Consultation.treatment_plan.ilike('%none%'),
+                    ~Consultation.treatment_plan.ilike('%pending%'),
+                    ~Consultation.treatment_plan.ilike('%waiting%')
+                ),
+                and_(
+                    Consultation.history != None,
+                    Consultation.history != '',
+                    ~Consultation.history.ilike('%none%'),
+                    ~Consultation.history.ilike('%pending%'),
+                    ~Consultation.history.ilike('%waiting%')
+                ),
+                and_(
+                    Consultation.examination != None,
+                    Consultation.examination != '',
+                    ~Consultation.examination.ilike('%none%'),
+                    ~Consultation.examination.ilike('%pending%'),
+                    ~Consultation.examination.ilike('%waiting%')
+                )
+            )
         )
         .options(joinedload(Visit.patient))
         .options(joinedload(Visit.vitals))
@@ -376,15 +401,23 @@ def special_consultation():
     )
 
     # 2. Lab tests that are completed and paid AND require consultation AND need treatment plan/diagnosis
+    # 2. Lab tests that are completed and paid AND require consultation AND need treatment plan/diagnosis - FILTERED BY DOCTOR'S ASSIGNED SERVICES
     completed_paid_lab_tests_raw = (
         LabTest.query
         .filter_by(status='completed', payment_status='paid')
         .join(LabTest.consultation)
         .join(Consultation.visit)
-        .filter(Visit.visit_type_category.notin_(walk_in_visit_types_to_exclude))
-        # NEW: Only show tests where consultation lacks proper treatment documentation
+        # NEW: Join with services and service doctor assignments to filter by current user's assigned services
+        .join(Visit.services)
+        .join(ServiceDoctorAssignment, 
+            and_(Service.id == ServiceDoctorAssignment.service_id,
+                ServiceDoctorAssignment.doctor_id == current_user.id,
+                ServiceDoctorAssignment.is_active == True))
         .filter(
-            and_(
+            Visit.visit_type_category.notin_(walk_in_visit_types_to_exclude),
+            Visit.patient_category == 'special_clinic',  # Filter for special clinic visits
+            # NEW: Only show tests where consultation lacks proper treatment documentation
+            or_(
                 # Either treatment plan is missing/incomplete
                 or_(
                     Consultation.treatment_plan.is_(None),
@@ -405,32 +438,42 @@ def special_consultation():
         .options(joinedload(LabTest.service))
         .options(joinedload(LabTest.done_by))
         .order_by(LabTest.completed_at.desc())
+        .distinct()  # Add distinct to avoid duplicates from multiple services assigned to same doctor
         .all()
     )
-
-    # 3. Radiology orders that are completed and paid AND require consultation AND need treatment plan/diagnosis
+    # 3. Radiology orders that are completed and paid AND require consultation AND need treatment plan/diagnosis - FILTERED BY DOCTOR'S ASSIGNED SERVICES
     completed_paid_radiology_orders_raw = (
         Radiology.query
         .filter_by(status='completed', payment_status='paid')
         .join(Radiology.consultation)
         .join(Consultation.visit)
-        .filter(Visit.visit_type_category.notin_(walk_in_visit_types_to_exclude))
-        # NEW: Only show radiology orders where consultation lacks proper treatment documentation
+        # NEW: Join with services and service doctor assignments to filter by current user's assigned services
+        .join(Visit.services)
+        .join(ServiceDoctorAssignment, 
+            and_(Service.id == ServiceDoctorAssignment.service_id,
+                ServiceDoctorAssignment.doctor_id == current_user.id,
+                ServiceDoctorAssignment.is_active == True))
         .filter(
-            and_(
+            Visit.visit_type_category.notin_(walk_in_visit_types_to_exclude),
+            Visit.patient_category == 'special_clinic',  # Filter for special clinic visits
+            # NEW: Only show radiology orders where consultation lacks proper treatment documentation
+            or_(
                 # Either treatment plan is missing/incomplete
                 or_(
                     Consultation.treatment_plan.is_(None),
                     Consultation.treatment_plan == '',
                     Consultation.treatment_plan.like('%pending%'),
-                    Consultation.treatment_plan.like('%waiting%')
+                    Consultation.treatment_plan.like('%waiting%'),
+                    Consultation.treatment_plan.like('%to be determined%')
                 ),
                 # OR diagnosis is missing/incomplete
                 or_(
                     Consultation.diagnosis.is_(None),
                     Consultation.diagnosis == '',
                     Consultation.diagnosis.like('%pending%'),
-                    Consultation.diagnosis.like('%waiting%')
+                    Consultation.diagnosis.like('%waiting%'),
+                    Consultation.diagnosis.like('%to be determined%'),
+                    Consultation.diagnosis.like('%provisional%')
                 )
             )
         )
@@ -438,33 +481,74 @@ def special_consultation():
         .options(joinedload(Radiology.service))
         .options(joinedload(Radiology.done_by))
         .order_by(Radiology.completed_at.desc())
+        .distinct()  # Add distinct to avoid duplicates from multiple services assigned to same doctor
         .all()
     )
-    # NEW: 4. Patients with completed treatment - RECOMMENDED APPROACH
+    # NEW: 4. Patients with completed treatment - FILTERED BY DOCTOR'S ASSIGNED SERVICES
     patients_with_completed_treatment = (
         Visit.query
         .filter(Visit.visit_status.in_(['completed', 'in_progress']))
-        .join(Consultation)  # Inner join to ensure consultation exists
+        .join(Consultation)
+        .join(Visit.services)
+        .join(ServiceDoctorAssignment, 
+            and_(Service.id == ServiceDoctorAssignment.service_id,
+                ServiceDoctorAssignment.doctor_id == current_user.id,
+                ServiceDoctorAssignment.is_active == True))
         .filter(
-            # Ensure consultation has actual medical content
-            (Consultation.diagnosis != None) | 
-            (Consultation.treatment_plan != None) |
-            (Consultation.history != None) |
-            (Consultation.examination != None)
+            Visit.patient_category == 'special_clinic',
+            # Enhanced: Ensure consultation has ACTUAL medical content (not placeholders)
+            or_(
+                and_(
+                    Consultation.diagnosis != None, 
+                    Consultation.diagnosis != '',
+                    ~Consultation.diagnosis.ilike('%none%'),
+                    ~Consultation.diagnosis.ilike('%pending%'),
+                    ~Consultation.diagnosis.ilike('%waiting%')
+                ),
+                and_(
+                    Consultation.treatment_plan != None,
+                    Consultation.treatment_plan != '',
+                    ~Consultation.treatment_plan.ilike('%none%'),
+                    ~Consultation.treatment_plan.ilike('%pending%'),
+                    ~Consultation.treatment_plan.ilike('%waiting%')
+                ),
+                and_(
+                    Consultation.history != None,
+                    Consultation.history != '',
+                    ~Consultation.history.ilike('%none%'),
+                    ~Consultation.history.ilike('%pending%'),
+                    ~Consultation.history.ilike('%waiting%')
+                ),
+                and_(
+                    Consultation.examination != None,
+                    Consultation.examination != '',
+                    ~Consultation.examination.ilike('%none%'),
+                    ~Consultation.examination.ilike('%pending%'),
+                    ~Consultation.examination.ilike('%waiting%')
+                )
+            )
         )
         .options(joinedload(Visit.patient))
         .options(joinedload(Visit.vitals))
         .options(joinedload(Visit.consultations))
         .order_by(Visit.updated_at.desc())
+        .distinct()
         .all()
     )
 
-    # NEW: 5. Patients with pending treatment (lab tests or radiology not done) - SIMPLIFIED
+    # NEW: 5. Patients with pending treatment (lab tests or radiology not done) - FILTERED BY DOCTOR'S ASSIGNED SERVICES
     patients_with_pending_treatment = (
         db.session.query(Visit)
         .join(Consultation, Visit.consultations)  # Join with consultations
+        # NEW: Join with services and service doctor assignments to filter by current user's assigned services
+        .join(Visit.services)
+        .join(ServiceDoctorAssignment, 
+            and_(Service.id == ServiceDoctorAssignment.service_id,
+                ServiceDoctorAssignment.doctor_id == current_user.id,
+                ServiceDoctorAssignment.is_active == True))
         .filter(
             Visit.visit_status == 'in_progress',
+            Visit.patient_category == 'special_clinic',  # Filter for special clinic visits
             or_(
                 # Check for services with pending payment status (any status)
                 exists().where(
@@ -525,6 +609,7 @@ def special_consultation():
         .options(joinedload(Visit.radiology_orders))
         .options(joinedload(Visit.medications))
         .order_by(Visit.visit_date.asc())
+        .distinct()  # Add distinct to avoid duplicates from multiple services assigned to same doctor
         .all()
     )
     # Process lab tests to combine by visit
@@ -1090,6 +1175,348 @@ def add_treatment(visit_id):
         existing_radiology=existing_radiology,
         existing_lab_results=existing_lab_results 
     )
+
+
+
+@consultations_web_bp.route('/visits/<int:visit_id>/add-special-treatment', methods=['GET', 'POST'])
+def add_special_treatment(visit_id):
+    visit = Visit.query.get_or_404(visit_id)
+    
+    # Get the latest consultation instead of first() to handle multiple consultations per visit
+    consultation = visit.latest_consultation
+    
+    # Fetch existing treatments
+    existing_medications = []
+    existing_lab_tests = []
+    existing_radiology = []
+    existing_lab_results = {} # Dictionary to hold lab results keyed by lab_test_id
+
+    if consultation:
+        existing_medications = Medication.query.filter_by(consultation_id=consultation.id).all()
+        existing_lab_tests = LabTest.query.filter_by(consultation_id=consultation.id).all()
+        existing_radiology = Radiology.query.filter_by(consultation_id=consultation.id).all()
+
+        # Fetch lab results for each existing lab test
+        for lab_test_order in existing_lab_tests:
+            results = LabTestResult.query.filter_by(lab_test_id=lab_test_order.id).all()
+            if results:
+                existing_lab_results[lab_test_order.id] = results
+
+    # Fetch the patient's insurance record
+    insurance_obj = None
+    if visit.patient.payment_method == 'insurance' and visit.patient.insurance_provider:
+        insurance_obj = Insurance.query.get(visit.patient.insurance_provider)
+
+    # Get services grouped by category
+    services = Service.query.all()
+    medications_list = [s for s in services if s.category == 'Pharmacy'] # Renamed to avoid conflict with Medication model
+    lab_tests_list = [s for s in services if s.category == 'Laboratory']
+    imaging_services = [s for s in services if s.category == 'Radiology']
+
+    if request.method == 'POST':
+        try:
+            # Create or update Consultation
+            if not consultation:
+                consultation = Consultation(
+                    patient_id=visit.patient_id,
+                    visit_id=visit_id,
+                    history=request.form.get('history'),
+                    examination=request.form.get('examination'),
+                    diagnosis=request.form.get('diagnosis'),
+                    treatment_plan=request.form.get('treatment_plan'),
+                    notes=request.form.get('notes')
+                )
+                consultation.treated_by = current_user
+                db.session.add(consultation)
+            else:
+                consultation.history = request.form.get('history')
+                consultation.examination = request.form.get('examination')
+                consultation.diagnosis = request.form.get('diagnosis')
+                consultation.treatment_plan = request.form.get('treatment_plan')
+                consultation.notes = request.form.get('notes')
+                consultation.treated_by = current_user
+
+            db.session.flush() # Flush to get consultation.id if it's new
+
+            # --- Process Medications (Updated Logic) ---
+            drug_ids = request.form.getlist('drug[]')
+            drug_doses = request.form.getlist('drug_dose[]')
+            drug_frequencies = request.form.getlist('drug_frequency[]')
+            drug_durations = request.form.getlist('drug_duration[]')
+            drug_quantities = request.form.getlist('drug_quantity[]')
+            drug_prices = request.form.getlist('drug_price[]')
+
+            # Map existing medications by service_id for quick lookup
+            # This is crucial for the "add or update" logic
+            existing_medications_map = {med.service_id: med for med in Medication.query.filter_by(consultation_id=consultation.id).all()}
+            
+            submitted_medication_service_ids = set() # To track which medications were submitted
+
+            for i, service_id_str in enumerate(drug_ids):
+                # Only process if a medication was actually selected (service_id is not empty)
+                if not service_id_str:
+                    continue 
+                
+                service_id = int(service_id_str)
+                service = Service.query.get(service_id)
+                
+                if not service or service.category != 'Pharmacy':
+                    flash(f"Invalid medication selected for ID: {service_id_str}. Skipping.", 'warning')
+                    continue # Skip invalid entries or non-pharmacy services
+
+                submitted_medication_service_ids.add(service_id) # Mark as submitted
+
+                # Safely get values, providing a default if the index is out of range
+                dose = drug_doses[i] if i < len(drug_doses) else ''
+                frequency = drug_frequencies[i] if i < len(drug_frequencies) else 'OD'
+                
+                duration_str = drug_durations[i] if i < len(drug_durations) else ''
+                duration = None # Default to None if empty or invalid, allowing NULL in DB
+
+                if duration_str:
+                    try:
+                        duration = int(duration_str)
+                    except ValueError:
+                        flash(f"Invalid duration value '{duration_str}' for {service.name}. Please enter a number.", 'warning')
+                        duration = None # Set to None if conversion fails
+
+                try:
+                    quantity = int(drug_quantities[i]) if i < len(drug_quantities) and drug_quantities[i] else 1
+                except ValueError:
+                    quantity = 1 # Default to 1 if quantity is invalid
+                
+                try:
+                    price = float(drug_prices[i]) if i < len(drug_prices) and drug_prices[i] else service.price
+                except ValueError:
+                    price = service.price # Fallback to service price if hidden price is invalid
+
+                # Check if this medication already exists for this consultation
+                if service_id in existing_medications_map:
+                    # Update existing medication
+                    medication = existing_medications_map[service_id]
+                    medication.dose = dose
+                    medication.frequency = frequency
+                    medication.duration = duration
+                    medication.quantity = quantity
+                    medication.price = price
+                    # No need to add to session, it's already tracked
+                else:
+                    # Add new medication
+                    medication = Medication(
+                        consultation=consultation,
+                        service=service,
+                        dose=dose,
+                        frequency=frequency,
+                        duration=duration,
+                        quantity=quantity,
+                        price=price,
+                        prescribed_at=datetime.utcnow() # Add prescribed_at
+                    )
+                    # attach to consultation or visit
+                    if consultation:
+                        medication.consultation = consultation
+                        medication.visit = visit
+
+                    db.session.add(medication)
+            
+            # Delete medications that were removed by the user (not in submitted_medication_service_ids)
+            for med_id, medication_obj in existing_medications_map.items():
+                if med_id not in submitted_medication_service_ids:
+                    db.session.delete(medication_obj)
+            # --- End Process Medications ---
+
+            # --- Process Lab Tests (FIXED) ---
+            submitted_lab_service_ids = [int(sid) for sid in request.form.getlist('lab_tests') if sid] # Filter out empty strings
+            
+            current_consultation_lab_tests = LabTest.query.filter_by(consultation_id=consultation.id).all()
+            existing_lab_service_ids = {lt.service_id for lt in current_consultation_lab_tests} # Use a set for faster lookup
+
+            # Delete lab tests that were removed by the user
+            for lab_test_order in current_consultation_lab_tests:
+                if lab_test_order.service_id not in submitted_lab_service_ids:
+                    # Consider adding checks for status before deleting to prevent data loss
+                    # e.g., if lab_test_order.status == 'requested':
+                    db.session.delete(lab_test_order)
+
+            # Add new lab tests - FIXED: Only set consultation, not visit
+            for service_id in submitted_lab_service_ids:
+                if service_id not in existing_lab_service_ids:
+                    service = Service.query.get(service_id)
+                    if service and service.category == 'Laboratory':
+                        lab_test = LabTest(
+                            consultation_id=consultation.id,  # Set consultation_id directly
+                            service_id=service_id,
+                            status='requested'
+                        )
+                        # DO NOT set visit_id to avoid constraint violation
+                        db.session.add(lab_test)
+
+            # --- Process Radiology Orders (FIXED) ---
+            # Delete existing radiology orders for this consultation
+            Radiology.query.filter_by(consultation_id=consultation.id).delete()
+            
+            for service_id_str in request.form.getlist('imaging_studies'):
+                if not service_id_str: # Skip if empty
+                    continue
+                service_id = int(service_id_str)
+                service = Service.query.get(service_id)
+                if service and service.category == 'Radiology':
+                    radiology = Radiology(
+                        consultation_id=consultation.id,  # Set consultation_id directly
+                        service_id=service_id,
+                        status='requested'
+                    )
+                    # DO NOT set visit_id to avoid constraint violation
+                    db.session.add(radiology)
+
+            db.session.commit() # Commit after processing medications, lab tests, and radiology
+
+            # --- Process Lab Test Results ---
+            db.session.refresh(consultation) # Refresh consultation object if it was added/modified
+            existing_lab_tests = LabTest.query.filter_by(consultation_id=consultation.id).all()
+
+            for lab_test_order in existing_lab_tests: 
+                lab_test_id = str(lab_test_order.id)
+                
+                submitted_params_for_test = False
+                for key in request.form:
+                    if key.startswith(f'lab_results[{lab_test_id}]'):
+                        submitted_params_for_test = True
+                        break
+
+                if submitted_params_for_test:
+                    laboratory_test_info = lab_test_order.service.lab_test 
+                    if not laboratory_test_info:
+                        continue 
+
+                    # Delete existing results for this lab_test_order to replace them
+                    # This is appropriate for lab test results, as you're replacing the set of results
+                    LabTestResult.query.filter_by(lab_test_id=lab_test_order.id).delete()
+                    
+                    results_added_for_this_test = False
+                    for param in laboratory_test_info.parameters:
+                        param_id = str(param.parameter_id)
+                        
+                        value = None
+                        if param.result_type == 'numeric':
+                            input_name = f'lab_results[{lab_test_id}][{param_id}][numeric_value]'
+                            raw_value = request.form.get(input_name)
+                            if raw_value is not None and raw_value != '':
+                                try:
+                                    value = float(raw_value)
+                                    new_result = LabTestResult(
+                                        lab_test_id=lab_test_order.id,
+                                        parameter_id=param.parameter_id,
+                                        numeric_value=value,
+                                        unit=param.unit,
+                                        entered_by=current_user.username,
+                                        entered_at=datetime.utcnow()
+                                    )
+                                    db.session.add(new_result)
+                                    results_added_for_this_test = True
+                                except ValueError:
+                                    flash(f"Invalid numeric value for {param.parameter_name} in Lab Test {lab_test_order.service.name}", 'danger')
+                                    continue
+                        elif param.result_type == 'categorical':
+                            input_name = f'lab_results[{lab_test_id}][{param_id}][categorical_value]'
+                            value = request.form.get(input_name)
+                            if value is not None and value != '':
+                                new_result = LabTestResult(
+                                    lab_test_id=lab_test_order.id,
+                                    parameter_id=param.parameter_id,
+                                    categorical_value=value,
+                                    unit=param.unit,
+                                    entered_by=current_user.username,
+                                    entered_at=datetime.utcnow()
+                                )
+                                db.session.add(new_result)
+                                results_added_for_this_test = True
+                        elif param.result_type == 'text':
+                            input_name = f'lab_results[{lab_test_id}][{param_id}][text_value]'
+                            value = request.form.get(input_name)
+                            if value is not None and value != '':
+                                new_result = LabTestResult(
+                                    lab_test_id=lab_test_order.id,
+                                    parameter_id=param.parameter_id,
+                                    text_value=value,
+                                    unit=param.unit,
+                                    entered_by=current_user.username,
+                                    entered_at=datetime.utcnow()
+                                )
+                                db.session.add(new_result)
+                                results_added_for_this_test = True
+                        
+                        # Add interpretation and comments if they are submitted for the parameter
+                        interpretation_input_name = f'lab_results[{lab_test_id}][{param_id}][interpretation]'
+                        comments_input_name = f'lab_results[{lab_test_id}][{param_id}][comments]'
+
+                        interpretation = request.form.get(interpretation_input_name)
+                        comments = request.form.get(comments_input_name)
+
+                        if results_added_for_this_test and 'new_result' in locals() and new_result:
+                            new_result.interpretation = interpretation if interpretation else None
+                            new_result.comments = comments if comments else None
+                        else:
+                            # If a result wasn't added but interpretation/comments are provided for an existing one
+                            # You would need to load existing result, update it, and then save.
+                            # For now, we only save interpretation/comments if a result value is submitted too.
+                            # To handle updates to interpretation/comments for existing results without value changes:
+                            # existing_result = LabTestResult.query.filter_by(lab_test_id=lab_test_order.id, parameter_id=param.parameter_id).first()
+                            # if existing_result:
+                            #     existing_result.interpretation = interpretation if interpretation else existing_result.interpretation
+                            #     existing_result.comments = comments if comments else existing_result.comments
+                            pass
+
+                    # Update the status of the LabTest order if results were actually processed for it
+                    if results_added_for_this_test:
+                        lab_test_order.status = 'results_entered' 
+                        lab_test_order.done_by = current_user
+                        lab_test_order.done_at = datetime.utcnow()
+
+                    # Update overall interpretation and comments for the LabTest order
+                    overall_interpretation_name = f'lab_test_overall_interpretation[{lab_test_id}]'
+                    overall_comments_name = f'lab_test_overall_comments[{lab_test_id}]'
+
+                    lab_test_order.interpretation = request.form.get(overall_interpretation_name)
+                    lab_test_order.notes = request.form.get(overall_comments_name) # Assuming 'notes' maps to overall comments
+
+
+
+            # Check if any billable services were actually added (not just consultation notes)
+            medications_added = any(drug_id for drug_id in request.form.getlist('drug[]') if drug_id)
+            lab_tests_added = any(lab_id for lab_id in request.form.getlist('lab_tests') if lab_id)
+            radiology_added = any(rad_id for rad_id in request.form.getlist('imaging_studies') if rad_id)
+
+            if medications_added or lab_tests_added or radiology_added:
+                visit.current_position = 'billing'
+                current_app.logger.info(f"Visit {visit_id} moved to billing position after adding billable services")
+
+
+            db.session.commit() # Final commit after all operations (including lab results)
+
+            flash('Treatment plan and lab results saved successfully', 'success')
+            return redirect(url_for('consultations_web.special_consultation'))
+
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error saving treatment: {str(e)}', 'danger')
+            current_app.logger.error(f"Error in add_treatment: {e}", exc_info=True) # Log the full traceback
+
+    return render_template(
+        'add_special_treatment.html',
+        visit=visit,
+        consultation=consultation, 
+        insurance_obj=insurance_obj,
+        medications=medications_list, # Changed variable name
+        lab_tests=lab_tests_list, # Changed variable name
+        imaging_services=imaging_services,
+        existing_medications=existing_medications,
+        existing_lab_tests=existing_lab_tests,
+        existing_radiology=existing_radiology,
+        existing_lab_results=existing_lab_results 
+    )
+
+
 
 
 @consultations_web_bp.route('/consultations/<int:consultation_id>/edit', methods=['GET', 'POST'])

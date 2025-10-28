@@ -729,7 +729,7 @@ def process_payment():
             
             # ────────────── NEW: Set served_by and patient_category ──────────────
             tx_record.served_by = served_by
-            tx_record.patient_category = patient_category
+            
             
             # If you have user authentication, set served_by_id
             if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated:
@@ -758,9 +758,7 @@ def process_payment():
                 existing_visit_service_ids = {svc.id for svc in visit.services}
                 new_services_for_visit = [svc for svc in services if svc.id not in existing_visit_service_ids]
                 visit.services.extend(new_services_for_visit) # Add only new services
-                visit.patient_category = patient_category
-
-                visit.visit_type_category = final_visit_type
+                tx_record.patient_category = visit.patient_category
                 visit.visit_type_other_details = other_visit_type_details
             else:
                 # no existing in-progress visit → create new
@@ -775,6 +773,7 @@ def process_payment():
                     payment_status = ('paid' if payment_method == 'paybill' else 'pending'),
                     patient_category = patient_category  # NEW: Store patient category in visit too
                 )
+                tx_record.patient_category = patient_category
                 db.session.add(visit)
                 visit.services.extend(services)
 

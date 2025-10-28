@@ -131,211 +131,269 @@
                 </div>
             </div>
         </div>
-        <!-- Enhanced Doctors Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-            {% for doctor_account in doctor_accounts %}
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200 overflow-hidden group">
-                <!-- Doctor Header -->
-                <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-4 relative">
-                    <div class="flex items-center space-x-3">
-                        <div class="flex-shrink-0">
-                            {% if doctor_account.doctor.profile_image %}
-                            <img class="h-12 w-12 rounded-full border-2 border-white shadow-md" src="{{ doctor_account.doctor.profile_image }}" alt="{{ doctor_account.doctor.full_name }}">
-                            {% else %}
-                            <div class="h-12 w-12 rounded-full bg-blue-500 border-2 border-white flex items-center justify-center shadow-md">
-                                <span class="text-white font-bold text-base">{{ (doctor_account.doctor.full_name or doctor_account.doctor.username)[0] }}</span>
-                            </div>
-                            {% endif %}
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <h3 class="text-white font-bold text-base truncate">{{ doctor_account.doctor.full_name or doctor_account.doctor.username }}</h3>
-                            <p class="text-blue-100 text-xs truncate">{{ doctor_account.doctor.email }}</p>
-                        </div>
-                        <div class="bg-white bg-opacity-25 rounded-full px-3 py-1.5 backdrop-blur-sm">
-                            <span class="text-white text-sm font-semibold">
-                                {{ doctor_account.assigned_services|length }} Service{% if doctor_account.assigned_services|length != 1 %}s{% endif %}
-                            </span>
-                        </div>
+
+        <!-- Modern Table Design -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <!-- Table Header -->
+            <div class="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-sm font-semibold text-gray-900">Doctor Accounts Overview</h3>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xs text-gray-600">{{ doctor_accounts|length }} doctors</span>
+                        <button class="text-xs text-blue-600 hover:text-blue-800 font-medium" onclick="toggleAllServices()">
+                            <i class="fas fa-expand mr-1"></i>
+                            Toggle All Services
+                        </button>
                     </div>
                 </div>
+            </div>
 
-                <!-- Enhanced Financial Metrics -->
-                <div class="p-4">
-                    <div class="grid grid-cols-2 gap-3 mb-4">
-                        <div class="text-center p-3 bg-blue-50 rounded-xl border border-blue-100">
-                            <p class="text-lg font-bold text-blue-700">{{ doctor_account.total_visits }}</p>
-                            <p class="text-xs text-gray-600 mt-0.5 font-medium">Visits</p>
-                        </div>
-                        <div class="text-center p-3 bg-green-50 rounded-xl border border-green-100">
-                            <p class="text-lg font-bold text-green-700">KSH {{ "{:,.0f}".format(doctor_account.period_earned) }}</p>
-                            <p class="text-xs text-gray-600 mt-0.5 font-medium">Earned</p>
-                        </div>
-                        <div class="text-center p-3 bg-purple-50 rounded-xl border border-purple-100">
-                            <p class="text-lg font-bold text-purple-700">KSH {{ "{:,.0f}".format(doctor_account.total_paid) }}</p>
-                            <p class="text-xs text-gray-600 mt-0.5 font-medium">Paid</p>
-                        </div>
-                        <div class="text-center p-3 {% if doctor_account.balance_due > 0 %}bg-amber-50 border-amber-100{% else %}bg-gray-50 border-gray-100{% endif %} rounded-xl border">
-                            <p class="text-lg font-bold {% if doctor_account.balance_due > 0 %}text-amber-700{% else %}text-gray-700{% endif %}">
-                                KSH {{ "{:,.0f}".format(doctor_account.balance_due) }}
-                            </p>
-                            <p class="text-xs text-gray-600 mt-0.5 font-medium">Due</p>
-                        </div>
-                    </div>
-
-                    <!-- Enhanced Assigned Services with Commission -->
-                    <div class="mb-4">
-                        <h4 class="text-sm font-semibold text-gray-900 mb-2 flex items-center justify-between">
-                            <span class="flex items-center">
-                                <i class="fas fa-list-medical text-blue-600 mr-2 text-xs"></i>
-                                Services & Commissions
-                            </span>
-                            <button onclick="manageCommissions({{ doctor_account.doctor.id }})" class="text-xs text-blue-600 hover:text-blue-800 font-medium">
-                                Manage
-                            </button>
-                        </h4>
-                        <div class="space-y-2 max-h-32 overflow-y-auto pr-2">
-                            {% for assignment in doctor_account.assigned_services %}
-                            <div class="flex items-center justify-between p-2 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors duration-150">
-                                <div class="flex-1 min-w-0">
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-xs font-medium text-gray-800 truncate">
-                                            {{ assignment.service.name }}
-                                        </span>
-                                        <span class="text-xs font-semibold {% if assignment.payment_type == 'percentage' %}text-green-600{% else %}text-blue-600{% endif %} ml-2">
-                                            {% if assignment.payment_type == 'percentage' %}
-                                                {{ "%.1f"|format(assignment.commission_rate) }}%
-                                            {% else %}
-                                                KSH {{ "{:,.0f}".format(assignment.fixed_amount or 0) }}
-                                            {% endif %}
-                                        </span>
+            <!-- Table -->
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="bg-gray-50 border-b border-gray-200">
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Doctor</th>
+                            <th class="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Visits</th>
+                            <th class="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">Earned</th>
+                            <th class="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">Paid</th>
+                            <th class="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">Balance Due</th>
+                            <th class="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Services</th>
+                            <th class="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        {% for doctor_account in doctor_accounts %}
+                        <!-- Main Doctor Row -->
+                        <tr class="bg-white hover:bg-gray-50 transition-colors duration-150 group" data-doctor-id="{{ doctor_account.doctor.id }}">
+                            <td class="px-4 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 h-10 w-10">
+                                        {% if doctor_account.doctor.profile_image %}
+                                        <img class="h-10 w-10 rounded-full border border-gray-200" src="{{ doctor_account.doctor.profile_image }}" alt="{{ doctor_account.doctor.full_name }}">
+                                        {% else %}
+                                        <div class="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center">
+                                            <span class="text-white font-bold text-sm">{{ (doctor_account.doctor.full_name or doctor_account.doctor.username)[0]|upper }}</span>
+                                        </div>
+                                        {% endif %}
                                     </div>
-                                    <!-- Service Revenue Breakdown -->
-                                    {% if doctor_account.service_revenue_breakdown.get(assignment.service.name) %}
-                                    <div class="flex justify-between text-xs text-gray-500 mt-1">
-                                        <span>Revenue:</span>
-                                        <span class="font-medium">KSH {{ "{:,.0f}".format(doctor_account.service_revenue_breakdown[assignment.service.name]) }}</span>
+                                    <div class="ml-4">
+                                        <div class="text-sm font-medium text-gray-900">{{ doctor_account.doctor.full_name or doctor_account.doctor.username }}</div>
+                                        <div class="text-xs text-gray-500">{{ doctor_account.doctor.email }}</div>
                                     </div>
-                                    {% endif %}
                                 </div>
-                            </div>
-                            {% else %}
-                            <div class="text-center py-2">
-                                <span class="text-xs text-gray-500 italic">No services assigned</span>
-                            </div>
-                            {% endfor %}
-                        </div>
-                    </div>
+                            </td>
+                            <td class="px-4 py-4 whitespace-nowrap text-center">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                    {{ doctor_account.total_visits }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-4 whitespace-nowrap text-right">
+                                <div class="text-sm font-semibold text-green-700">KSH {{ "{:,.0f}".format(doctor_account.period_earned) }}</div>
+                            </td>
+                            <td class="px-4 py-4 whitespace-nowrap text-right">
+                                <div class="text-sm font-semibold text-purple-700">KSH {{ "{:,.0f}".format(doctor_account.total_paid) }}</div>
+                            </td>
+                            <td class="px-4 py-4 whitespace-nowrap text-right">
+                                <div class="text-sm font-semibold {% if doctor_account.balance_due > 0 %}text-amber-700{% else %}text-gray-700{% endif %}">
+                                    KSH {{ "{:,.0f}".format(doctor_account.balance_due) }}
+                                </div>
+                                {% if doctor_account.balance_due > 0 %}
+                                <div class="text-xs text-amber-600 mt-1">Payment Due</div>
+                                {% elif doctor_account.balance_due < 0 %}
+                                <div class="text-xs text-green-600 mt-1">Overpaid</div>
+                                {% else %}
+                                <div class="text-xs text-gray-500 mt-1">Settled</div>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-4 whitespace-nowrap text-center">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                    {{ doctor_account.assigned_services|length }} service{% if doctor_account.assigned_services|length != 1 %}s{% endif %}
+                                </span>
+                            </td>
+                            <td class="px-4 py-4 whitespace-nowrap text-center">
+                                <div class="flex items-center justify-center space-x-2">
+                                    <button onclick="viewDoctorDetails({{ doctor_account.doctor.id }})" class="inline-flex items-center p-1.5 text-blue-600 hover:text-blue-800 transition-colors duration-150" title="Analytics">
+                                        <i class="fas fa-chart-line text-sm"></i>
+                                    </button>
+                                    <button onclick="processPayment({{ doctor_account.doctor.id }})" class="inline-flex items-center p-1.5 {% if doctor_account.balance_due > 0 %}text-green-600 hover:text-green-800{% else %}text-gray-400 cursor-not-allowed{% endif %} transition-colors duration-150" {% if doctor_account.balance_due <= 0 %}disabled{% endif %} title="Process Payment">
+                                        <i class="fas fa-money-bill-wave text-sm"></i>
+                                    </button>
+                                    <button onclick="manageCommissions({{ doctor_account.doctor.id }})" class="inline-flex items-center p-1.5 text-gray-600 hover:text-gray-800 transition-colors duration-150" title="Manage Commissions">
+                                        <i class="fas fa-cog text-sm"></i>
+                                    </button>
+                                    <button onclick="toggleServices({{ doctor_account.doctor.id }})" class="inline-flex items-center p-1.5 text-gray-600 hover:text-gray-800 transition-colors duration-150 services-toggle" title="View Services">
+                                        <i class="fas fa-chevron-down text-sm transition-transform duration-200"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
 
-                    <!-- Payment History Summary -->
-                    {% if doctor_account.total_paid > 0 %}
-                    <div class="mb-3">
-                        <h4 class="text-xs font-semibold text-gray-900 mb-1 flex items-center">
-                            <i class="fas fa-history text-gray-400 mr-1.5 text-xs"></i>
-                            Recent Payments
-                        </h4>
-                        <div class="text-xs text-gray-600 bg-gray-50 p-2 rounded border border-gray-200">
-                            Last payment: 
-                            {% set last_payment = None %}
-                            {% for assignment in doctor_account.assigned_services %}
-                                {% for payment in assignment.payments|sort(attribute='payment_date', reverse=true) %}
-                                    {% if not last_payment or payment.payment_date > last_payment.payment_date %}
-                                        {% set last_payment = payment %}
-                                    {% endif %}
-                                {% endfor %}
-                            {% endfor %}
-                            {% if last_payment %}
-                                KSH {{ "{:,.0f}".format(last_payment.amount) }} on {{ last_payment.payment_date.strftime('%b %d, %Y') }}
-                            {% else %}
-                                No payments recorded
-                            {% endif %}
-                        </div>
-                    </div>
-                    {% endif %}
+                        <!-- Services Details Row -->
+                        <tr id="services-{{ doctor_account.doctor.id }}" class="bg-gray-50 hidden transition-all duration-300">
+                            <td colspan="7" class="px-4 py-4">
+                                <div class="border border-gray-200 rounded-lg bg-white overflow-hidden">
+                                    <div class="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                                        <h4 class="text-sm font-semibold text-gray-900 flex items-center">
+                                            <i class="fas fa-list-medical text-blue-600 mr-2 text-xs"></i>
+                                            Services & Revenue Breakdown
+                                            <span class="ml-2 text-xs font-normal text-gray-600">(Total Revenue: KSH {{ "{:,.0f}".format(doctor_account.period_earned) }})</span>
+                                        </h4>
+                                    </div>
+                                    <div class="overflow-x-auto">
+                                        <table class="w-full">
+                                            <thead>
+                                                <tr class="bg-gray-50 border-b border-gray-200">
+                                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase">Service</th>
+                                                    <th class="px-4 py-2 text-center text-xs font-medium text-gray-700 uppercase">Commission Type</th>
+                                                    <th class="px-4 py-2 text-right text-xs font-medium text-gray-700 uppercase">Revenue Generated</th>
+                                                    <th class="px-4 py-2 text-right text-xs font-medium text-gray-700 uppercase">Commission Rate</th>
+                                                    <th class="px-4 py-2 text-right text-xs font-medium text-gray-700 uppercase">Doctor's Share</th>
+                                                    <th class="px-4 py-2 text-center text-xs font-medium text-gray-700 uppercase">Visits</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="divide-y divide-gray-200">
+                                                {% for assignment in doctor_account.assigned_services %}
+                                                {% set service_revenue = doctor_account.service_revenue_breakdown.get(assignment.service.name, 0) %}
+                                                {% set doctor_share = service_revenue * (assignment.commission_rate / 100) if assignment.payment_type == 'percentage' else (assignment.fixed_amount or 0) * (assignment.visits_count or 0) %}
+                                                <tr class="hover:bg-gray-50 transition-colors duration-150">
+                                                    <td class="px-4 py-3 text-sm font-medium text-gray-900">
+                                                        {{ assignment.service.name }}
+                                                    </td>
+                                                    <td class="px-4 py-3 text-center">
+                                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium {% if assignment.payment_type == 'percentage' %}bg-green-100 text-green-800{% else %}bg-blue-100 text-blue-800{% endif %}">
+                                                            {% if assignment.payment_type == 'percentage' %}
+                                                                Percentage
+                                                            {% else %}
+                                                                Fixed Amount
+                                                            {% endif %}
+                                                        </span>
+                                                    </td>
+                                                    <td class="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                                                        KSH {{ "{:,.0f}".format(service_revenue) }}
+                                                    </td>
+                                                    <td class="px-4 py-3 text-right text-sm font-medium {% if assignment.payment_type == 'percentage' %}text-green-700{% else %}text-blue-700{% endif %}">
+                                                        {% if assignment.payment_type == 'percentage' %}
+                                                            {{ "%.1f"|format(assignment.commission_rate) }}%
+                                                        {% else %}
+                                                            KSH {{ "{:,.0f}".format(assignment.fixed_amount or 0) }}
+                                                        {% endif %}
+                                                    </td>
+                                                    <td class="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                                                        KSH {{ "{:,.0f}".format(doctor_share) }}
+                                                    </td>
+                                                    <td class="px-4 py-3 text-center">
+                                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                                                            {{ assignment.visits_count or 0 }}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                                {% else %}
+                                                <tr>
+                                                    <td colspan="6" class="px-4 py-4 text-center text-sm text-gray-500">
+                                                        No services assigned to this doctor
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="7" class="px-4 py-8 text-center">
+                                <div class="text-center">
+                                    <div class="bg-blue-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <i class="fas fa-user-md text-blue-500 text-2xl"></i>
+                                    </div>
+                                    <h3 class="text-lg font-semibold text-gray-900 mb-2">No Doctors Found</h3>
+                                    <p class="text-gray-600 text-sm mb-4">There are no doctors with assigned services in the system.</p>
+                                    <button onclick="window.location.href='{{ url_for('consultations_web.manage_consultation_services') }}'" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-lg text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500 transition-colors duration-150 shadow-sm">
+                                        <i class="fas fa-plus mr-1.5 text-xs"></i>
+                                        Assign Services to Doctors
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
 
-                    <!-- Last Activity -->
-                    {% if doctor_account.last_visit %}
-                    <div class="flex items-center justify-between text-xs text-gray-600 bg-gray-50 p-2 rounded-lg border border-gray-200">
-                        <span class="font-medium">Last Activity:</span>
-                        <span class="text-gray-700">{{ doctor_account.last_visit.strftime('%b %d, %Y') }}</span>
+            <!-- Table Footer -->
+            {% if doctor_accounts and doctor_accounts|length > 0 %}
+            <div class="bg-gray-50 px-4 py-3 border-t border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div class="text-sm text-gray-700">
+                        Showing <span class="font-medium">{{ doctor_accounts|length }}</span> doctors
                     </div>
-                    {% endif %}
-                </div>
-
-                <!-- Enhanced Action Buttons -->
-                <div class="bg-gray-50 px-4 py-3 border-t border-gray-200">
                     <div class="flex space-x-2">
-                        <button onclick="viewDoctorDetails({{ doctor_account.doctor.id }})" class="flex-1 inline-flex justify-center items-center px-3 py-2 bg-blue-600 border border-transparent rounded-lg text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500 transition-colors duration-150 shadow-sm">
-                            <i class="fas fa-chart-line mr-1.5 text-xs"></i>
-                            Analytics
+                        <button class="inline-flex items-center px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors duration-150 shadow-sm">
+                            <i class="fas fa-chevron-left mr-1.5 text-xs"></i>
+                            Previous
                         </button>
-                        <button onclick="processPayment({{ doctor_account.doctor.id }})" class="flex-1 inline-flex justify-center items-center px-3 py-2 {% if doctor_account.balance_due > 0 %}bg-green-600 hover:bg-green-700{% else %}bg-gray-400 cursor-not-allowed{% endif %} border border-transparent rounded-lg text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-green-500 transition-colors duration-150 shadow-sm" {% if doctor_account.balance_due <= 0 %}disabled{% endif %}>
-                            <i class="fas fa-money-bill-wave mr-1.5 text-xs"></i>
-                            Pay
-                        </button>
-                    </div>
-                </div>
-            </div>
-            {% else %}
-            <!-- Empty State -->
-            <div class="col-span-full">
-                <div class="text-center py-12">
-                    <div class="bg-white rounded-xl shadow-sm p-8 max-w-md mx-auto border border-gray-200">
-                        <div class="bg-blue-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <i class="fas fa-user-md text-blue-500 text-2xl"></i>
-                        </div>
-                        <h3 class="text-lg font-semibold text-gray-900 mb-2">No Doctors Found</h3>
-                        <p class="text-gray-600 text-sm mb-4">There are no doctors with assigned services in the system.</p>
-                        <button onclick="window.location.href='{{ url_for('consultations_web.manage_consultation_services') }}'" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-lg text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500 transition-colors duration-150 shadow-sm">
-                            <i class="fas fa-plus mr-1.5 text-xs"></i>
-                            Assign Services to Doctors
+                        <button class="inline-flex items-center px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors duration-150 shadow-sm">
+                            Next
+                            <i class="fas fa-chevron-right ml-1.5 text-xs"></i>
                         </button>
                     </div>
                 </div>
             </div>
-            {% endfor %}
+            {% endif %}
         </div>
-
-        <!-- Load More -->
-        {% if doctor_accounts and doctor_accounts|length > 0 %}
-        <div class="mt-8 text-center">
-            <button class="inline-flex items-center px-5 py-2.5 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors duration-150 shadow-sm">
-                <i class="fas fa-chevron-down mr-1.5 text-xs"></i>
-                Load More Doctors
-            </button>
-        </div>
-        {% endif %}
     </div>
 </div>
 
 <!-- Commission Management Modal -->
-<div id="commissionModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
-    <div class="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden transform transition-all duration-300">
-        <div class="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
-            <h3 class="text-lg font-semibold text-gray-900">Manage Doctor Commissions</h3>
+<div id="commissionModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 hidden z-50">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[98vh] sm:max-h-[95vh] flex flex-col transform transition-all duration-300 mx-2">
+        <!-- Modal Header - Fixed -->
+        <div class="flex-shrink-0 flex items-center justify-between p-3 sm:p-4 border-b border-gray-200 bg-gray-50 rounded-t-xl">
+            <h3 class="text-base sm:text-lg font-semibold text-gray-900">Manage Doctor Commissions</h3>
             <button onclick="closeCommissionModal()" class="text-gray-400 hover:text-gray-600 transition-colors duration-150 p-1 rounded">
-                <i class="fas fa-times text-lg"></i>
+                <i class="fas fa-times text-base sm:text-lg"></i>
             </button>
         </div>
-        <div class="p-4 overflow-y-auto">
-            <div id="commissionModalContent">
+        
+        <!-- Modal Content - Scrollable -->
+        <div class="flex-1 overflow-y-auto min-h-0">
+            <div id="commissionModalContent" class="p-3 sm:p-4">
                 <!-- Content loaded via JavaScript -->
             </div>
         </div>
     </div>
 </div>
 
-<!-- Payment Modal -->
-<div id="paymentModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
-    <div class="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[85vh] overflow-hidden transform transition-all duration-300">
-        <div class="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
-            <h3 class="text-lg font-semibold text-gray-900">Process Payment</h3>
-            <button onclick="closePaymentModal()" class="text-gray-400 hover:text-gray-600 transition-colors duration-150 p-1 rounded">
-                <i class="fas fa-times text-lg"></i>
+<!-- Payment Modal - Enhanced Mobile Version -->
+<div id="paymentModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-1 sm:p-4 hidden z-50">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[98vh] sm:max-h-[90vh] flex flex-col transform transition-all duration-300 mx-1 sm:mx-2">
+        <!-- Modal Header - Fixed -->
+        <div class="flex-shrink-0 flex items-center justify-between p-3 sm:p-4 border-b border-gray-200 bg-gray-50 rounded-t-xl sticky top-0 z-10">
+            <h3 class="text-base sm:text-lg font-semibold text-gray-900 truncate pr-2">Process Payment</h3>
+            <button onclick="closePaymentModal()" class="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors duration-150 p-1 rounded">
+                <i class="fas fa-times text-base sm:text-lg"></i>
             </button>
         </div>
-        <div class="p-4 overflow-y-auto">
-            <div id="paymentModalContent">
+        
+        <!-- Modal Content - Scrollable -->
+        <div class="flex-1 overflow-y-auto min-h-0">
+            <div id="paymentModalContent" class="p-3 sm:p-4">
                 <!-- Content loaded via JavaScript -->
+            </div>
+        </div>
+        
+        <!-- Optional: Fixed Footer for Actions -->
+        <div class="flex-shrink-0 border-t border-gray-200 bg-gray-50 p-3 sm:p-4 rounded-b-xl">
+            <div class="flex flex-col sm:flex-row sm:justify-end sm:space-x-3 space-y-2 sm:space-y-0">
+                <button onclick="closePaymentModal()" class="w-full sm:w-auto px-4 py-2.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-150 font-medium">
+                    Cancel
+                </button>
+                <button onclick="submitPayment()" id="submitPaymentBtn" class="w-full sm:w-auto px-4 py-2.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors duration-150 font-medium disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center">
+                    <i class="fas fa-money-bill-wave mr-2 text-xs"></i>
+                    Process Payment
+                </button>
             </div>
         </div>
     </div>
@@ -352,7 +410,7 @@
 
 {% block scripts %}
 <script>
-// Filter Functions (keep existing)
+// Filter Functions
 function updateFilters() {
     const dateFilter = document.getElementById('dateFilter').value;
     const customDateRange = document.getElementById('customDateRange');
@@ -387,7 +445,44 @@ function clearFilters() {
     window.location.href = '{{ url_for("finance_web_bp.doctor_accounts") }}';
 }
 
+// Table Expand/Collapse Functions
+function toggleServices(doctorId) {
+    const servicesRow = document.getElementById(`services-${doctorId}`);
+    const toggleButton = document.querySelector(`[data-doctor-id="${doctorId}"] .services-toggle i`);
+    
+    if (servicesRow.classList.contains('hidden')) {
+        servicesRow.classList.remove('hidden');
+        toggleButton.classList.add('rotate-180');
+    } else {
+        servicesRow.classList.add('hidden');
+        toggleButton.classList.remove('rotate-180');
+    }
+}
+
+function toggleAllServices() {
+    const allServicesRows = document.querySelectorAll('[id^="services-"]');
+    const allToggleButtons = document.querySelectorAll('.services-toggle i');
+    const allHidden = Array.from(allServicesRows).every(row => row.classList.contains('hidden'));
+    
+    allServicesRows.forEach(row => {
+        if (allHidden) {
+            row.classList.remove('hidden');
+        } else {
+            row.classList.add('hidden');
+        }
+    });
+    
+    allToggleButtons.forEach(button => {
+        if (allHidden) {
+            button.classList.add('rotate-180');
+        } else {
+            button.classList.remove('rotate-180');
+        }
+    });
+}
+
 // Commission Management
+// Commission Management Functions
 function manageCommissions(doctorId) {
     document.getElementById('commissionModalContent').innerHTML = `
         <div class="space-y-4">
@@ -400,94 +495,515 @@ function manageCommissions(doctorId) {
     
     document.getElementById('commissionModal').classList.remove('hidden');
     
-    // Simulate loading commission data
-    setTimeout(() => {
-        document.getElementById('commissionModalContent').innerHTML = `
-            <div class="space-y-4">
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h4 class="font-semibold text-blue-900 text-sm mb-2">Commission Settings for Dr. John Doe</h4>
-                    <p class="text-blue-700 text-xs">Set commission rates or fixed amounts for each service</p>
-                </div>
-                
-                <div class="space-y-3">
-                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
-                        <div>
-                            <p class="font-medium text-sm">General Consultation</p>
-                            <p class="text-xs text-gray-600">Service Price: KSH 1,500</p>
+    // Fetch commission data from backend
+    fetch(`/finance/api/doctor-commissions/${doctorId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                renderCommissionModal(data, doctorId);
+            } else {
+                throw new Error(data.error || 'Failed to load commission settings');
+            }
+        })
+        .catch(error => {
+            document.getElementById('commissionModalContent').innerHTML = `
+                <div class="space-y-4">
+                    <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <div class="flex items-center">
+                            <i class="fas fa-exclamation-triangle text-red-400 mr-2"></i>
+                            <h4 class="font-semibold text-red-900 text-sm">Error Loading Data</h4>
                         </div>
-                        <div class="flex items-center space-x-2">
-                            <select class="text-sm border rounded px-2 py-1">
-                                <option>Percentage</option>
-                                <option>Fixed Amount</option>
+                        <p class="text-red-700 text-xs mt-1">${error.message}</p>
+                    </div>
+                    <div class="flex justify-end">
+                        <button onclick="closeCommissionModal()" class="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+}
+
+function renderCommissionModal(data, doctorId) {
+    const { doctor, assigned_services } = data;
+    
+    console.log('Assigned services:', assigned_services); // Debug log
+    
+    let servicesHTML = '';
+    
+    if (assigned_services.length > 0) {
+        assigned_services.forEach(service => {
+            const isPercentage = service.payment_type === 'percentage';
+            servicesHTML += `
+                <div class="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow duration-200">
+                    <div class="flex items-center justify-between mb-3">
+                        <div>
+                            <h4 class="font-semibold text-gray-900 text-sm">${service.service_name}</h4>
+                            <p class="text-xs text-gray-600">Price: KSH ${service.service_price?.toLocaleString() || '0'} • Category: ${service.service_category}</p>
+                            <p class="text-xs text-green-600 font-medium mt-1">
+                                Revenue: KSH ${service.total_revenue?.toLocaleString() || '0'} (${service.visits_count || 0} visits)
+                            </p>
+                        </div>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            isPercentage ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
+                        }">
+                            ${isPercentage ? 'Percentage' : 'Fixed Amount'}
+                        </span>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Commission Type</label>
+                            <select 
+                                id="payment_type_${service.assignment_id}" 
+                                onchange="toggleCommissionInput(${service.assignment_id})"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            >
+                                <option value="percentage" ${isPercentage ? 'selected' : ''}>Percentage</option>
+                                <option value="fixed" ${!isPercentage ? 'selected' : ''}>Fixed Amount</option>
                             </select>
-                            <input type="number" value="70" class="w-20 text-sm border rounded px-2 py-1" placeholder="Rate %">
+                        </div>
+                        
+                        <div id="commission_input_${service.assignment_id}">
+                            ${isPercentage ? `
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700 mb-1">Commission Rate (%)</label>
+                                    <input 
+                                        type="number" 
+                                        id="commission_rate_${service.assignment_id}"
+                                        value="${service.commission_rate || 0}" 
+                                        min="0" 
+                                        max="100" 
+                                        step="0.1"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        placeholder="e.g., 70"
+                                    >
+                                </div>
+                            ` : `
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700 mb-1">Fixed Amount (KSH)</label>
+                                    <input 
+                                        type="number" 
+                                        id="fixed_amount_${service.assignment_id}"
+                                        value="${service.fixed_amount || 0}" 
+                                        min="0" 
+                                        step="1"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        placeholder="e.g., 1000"
+                                    >
+                                </div>
+                            `}
                         </div>
                     </div>
                     
-                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
-                        <div>
-                            <p class="font-medium text-sm">Specialist Consultation</p>
-                            <p class="text-xs text-gray-600">Service Price: KSH 3,000</p>
-                        </div>
-                        <div class="flex items-center space-x-2">
-                            <select class="text-sm border rounded px-2 py-1">
-                                <option>Percentage</option>
-                                <option>Fixed Amount</option>
-                            </select>
-                            <input type="number" value="800" class="w-20 text-sm border rounded px-2 py-1" placeholder="Amount">
+                    <div class="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-gray-600">Doctor's Estimated Earnings:</span>
+                            <span class="font-semibold text-green-700">KSH ${service.doctor_earnings?.toLocaleString() || '0'}</span>
                         </div>
                     </div>
                 </div>
-                
-                <div class="flex justify-end space-x-3 pt-4 border-t">
-                    <button onclick="closeCommissionModal()" class="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50">
-                        Cancel
-                    </button>
-                    <button onclick="saveCommissions()" class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">
-                        Save Changes
+            `;
+        });
+    } else {
+        servicesHTML = `
+            <div class="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
+                <i class="fas fa-clipboard-list text-gray-400 text-3xl mb-2"></i>
+                <p class="text-gray-500 text-sm">No services assigned to this doctor</p>
+                <button onclick="showAssignServiceModal(${doctorId})" class="mt-2 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">
+                    Assign Services
+                </button>
+            </div>
+        `;
+    }
+    
+    const modalContent = `
+        <div class="space-y-4">
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h4 class="font-semibold text-blue-900 text-sm mb-1">Commission Settings for ${doctor.name}</h4>
+                        <p class="text-blue-700 text-xs">Set commission rates or fixed amounts for each service</p>
+                    </div>
+                    <button onclick="showAssignServiceModal(${doctorId})" class="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700">
+                        <i class="fas fa-plus mr-1"></i>Assign Service
                     </button>
                 </div>
             </div>
+            
+            <div class="space-y-3 max-h-96 overflow-y-auto pr-2" id="servicesList">
+                ${servicesHTML}
+            </div>
+            
+            ${assigned_services.length > 0 ? `
+                <div class="flex justify-between items-center pt-4 border-t">
+                    <div class="text-xs text-gray-600">
+                        ${assigned_services.length} service${assigned_services.length !== 1 ? 's' : ''} assigned
+                    </div>
+                    <div class="flex space-x-3">
+                        <button onclick="closeCommissionModal()" class="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50">
+                            Cancel
+                        </button>
+                        <button onclick="saveAllCommissions(${doctorId})" class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 flex items-center" id="saveCommissionsBtn">
+                            <i class="fas fa-save mr-1.5 text-xs"></i>
+                            Save All Changes
+                        </button>
+                    </div>
+                </div>
+            ` : ''}
+        </div>
+    `;
+    
+    console.log('Modal content rendered with save button:', assigned_services.length > 0); // Debug log
+    document.getElementById('commissionModalContent').innerHTML = modalContent;
+}
+
+function toggleCommissionInput(assignmentId) {
+    const paymentType = document.getElementById(`payment_type_${assignmentId}`).value;
+    const commissionInputDiv = document.getElementById(`commission_input_${assignmentId}`);
+    
+    if (paymentType === 'percentage') {
+        commissionInputDiv.innerHTML = `
+            <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Commission Rate (%)</label>
+                <input 
+                    type="number" 
+                    id="commission_rate_${assignmentId}"
+                    value="70" 
+                    min="0" 
+                    max="100" 
+                    step="0.1"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="e.g., 70"
+                >
+            </div>
         `;
-    }, 1000);
+    } else {
+        commissionInputDiv.innerHTML = `
+            <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Fixed Amount (KSH)</label>
+                <input 
+                    type="number" 
+                    id="fixed_amount_${assignmentId}"
+                    value="1000" 
+                    min="0" 
+                    step="1"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="e.g., 1000"
+                >
+            </div>
+        `;
+    }
+}
+function saveAllCommissions(doctorId) {
+    console.log('saveAllCommissions called for doctor:', doctorId); // Debug log
+    
+    const serviceElements = document.querySelectorAll('[id^="payment_type_"]');
+    console.log('Found service elements:', serviceElements.length); // Debug log
+    
+    if (serviceElements.length === 0) {
+        showToast('No commission settings found to save', 'error');
+        return;
+    }
+    
+    const updates = [];
+    
+    serviceElements.forEach(element => {
+        const assignmentId = element.id.replace('payment_type_', '');
+        const paymentType = element.value;
+        
+        let commissionData = {
+            assignment_id: parseInt(assignmentId),
+            payment_type: paymentType
+        };
+        
+        if (paymentType === 'percentage') {
+            const rateInput = document.getElementById(`commission_rate_${assignmentId}`);
+            commissionData.commission_rate = parseFloat(rateInput?.value || 0);
+            console.log(`Assignment ${assignmentId}: percentage ${commissionData.commission_rate}%`); // Debug log
+        } else {
+            const amountInput = document.getElementById(`fixed_amount_${assignmentId}`);
+            commissionData.fixed_amount = parseFloat(amountInput?.value || 0);
+            console.log(`Assignment ${assignmentId}: fixed amount ${commissionData.fixed_amount}`); // Debug log
+        }
+        
+        updates.push(commissionData);
+    });
+    
+    // Show loading state - use a more specific selector
+    const saveButton = document.getElementById('saveCommissionsBtn') || 
+                      document.querySelector('button[onclick*="saveAllCommissions"]');
+    
+    if (!saveButton) {
+        console.error('Save button not found!'); // Debug log
+        showToast('Error: Save button not found', 'error');
+        return;
+    }
+    
+    const originalText = saveButton.innerHTML;
+    const originalOnClick = saveButton.onclick;
+    
+    saveButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5 text-xs"></i>Saving...';
+    saveButton.disabled = true;
+    saveButton.onclick = null; // Prevent multiple clicks
+    
+    console.log('Sending updates:', updates); // Debug log
+    
+    // Send updates to backend
+    Promise.all(updates.map(update => 
+        fetch('/finance/api/update-commission/' + update.assignment_id, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(update)
+        }).then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+    )).then(results => {
+        console.log('Update results:', results); // Debug log
+        
+        const failedUpdates = results.filter(result => !result.success);
+        
+        if (failedUpdates.length === 0) {
+            showToast('All commission settings updated successfully!');
+            setTimeout(() => {
+                closeCommissionModal();
+                // Optional: Refresh the page to show updated data
+                // location.reload();
+            }, 1500);
+        } else {
+            showToast(`Failed to update ${failedUpdates.length} settings. Check console for details.`, 'error');
+            console.error('Failed updates:', failedUpdates);
+        }
+    }).catch(error => {
+        console.error('Error saving commission settings:', error);
+        showToast('Error saving commission settings: ' + error.message, 'error');
+    }).finally(() => {
+        // Restore button state
+        saveButton.innerHTML = originalText;
+        saveButton.disabled = false;
+        saveButton.onclick = originalOnClick;
+    });
 }
 
 function closeCommissionModal() {
     document.getElementById('commissionModal').classList.add('hidden');
 }
 
+// Enhanced Toast Function
+// Enhanced Toast Function
+function showToast(message, type = 'success') {
+    const toast = document.getElementById('successToast');
+    const toastMessage = document.getElementById('toastMessage');
+    const toastIcon = document.getElementById('toastIcon');
+    
+    if (!toast || !toastMessage) {
+        console.error('Toast elements not found');
+        return;
+    }
+    
+    // Remove existing color classes
+    toast.className = toast.className.replace(/bg-(green|red|blue|amber)-500/g, '');
+    
+    // Set color based on type
+    if (type === 'error') {
+        toast.classList.add('bg-red-500');
+        if (toastIcon) toastIcon.className = 'fas fa-exclamation-circle mr-2 text-sm';
+    } else if (type === 'warning') {
+        toast.classList.add('bg-amber-500');
+        if (toastIcon) toastIcon.className = 'fas fa-exclamation-triangle mr-2 text-sm';
+    } else if (type === 'info') {
+        toast.classList.add('bg-blue-500');
+        if (toastIcon) toastIcon.className = 'fas fa-info-circle mr-2 text-sm';
+    } else {
+        toast.classList.add('bg-green-500');
+        if (toastIcon) toastIcon.className = 'fas fa-check-circle mr-2 text-sm';
+    }
+    
+    toastMessage.textContent = message;
+    toast.classList.remove('translate-x-full');
+    
+    setTimeout(() => {
+        toast.classList.add('translate-x-full');
+    }, 4000);
+}
+
 // Payment Processing
+// Payment Processing Functions
 function processPayment(doctorId) {
+    // Show loading state
+    document.getElementById('paymentModalContent').innerHTML = `
+        <div class="space-y-4">
+            <div class="text-center py-4">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                <p class="text-sm text-gray-600 mt-2">Loading payment information...</p>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('paymentModal').classList.remove('hidden');
+    
+    // Fetch doctor's payment information
+    fetch(`/finance/api/doctor-payment-info/${doctorId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Then fetch assignments to show breakdown
+                return fetch(`/finance/api/doctor-assignments/${doctorId}`)
+                    .then(response => response.json())
+                    .then(assignmentsData => {
+                        if (assignmentsData.success) {
+                            renderPaymentModal(data, assignmentsData, doctorId);
+                        } else {
+                            throw new Error(assignmentsData.error || 'Failed to load assignment details');
+                        }
+                    });
+            } else {
+                throw new Error(data.error || 'Failed to load payment information');
+            }
+        })
+        .catch(error => {
+            document.getElementById('paymentModalContent').innerHTML = `
+                <div class="space-y-4">
+                    <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <div class="flex items-center">
+                            <i class="fas fa-exclamation-triangle text-red-400 mr-2"></i>
+                            <h4 class="font-semibold text-red-900 text-sm">Error Loading Data</h4>
+                        </div>
+                        <p class="text-red-700 text-xs mt-1">${error.message}</p>
+                    </div>
+                    <div class="flex justify-end">
+                        <button onclick="closePaymentModal()" class="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+}
+
+function renderPaymentModal(paymentData, assignmentsData, doctorId) {
+    const { doctor, balance_due, period_earned, total_paid } = paymentData;
+    const { assignments, total_balance_due } = assignmentsData;
+    
+    let assignmentsHTML = '';
+    let selectedAssignments = [];
+    
+    if (assignments.length > 0) {
+        assignments.forEach(assignment => {
+            if (assignment.balance_due > 0) {
+                selectedAssignments.push(assignment.assignment_id);
+                assignmentsHTML += `
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+                        <div class="flex-1">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm font-medium text-gray-900">${assignment.service_name}</span>
+                                <span class="text-sm font-semibold text-amber-700">KSH ${assignment.balance_due.toLocaleString()}</span>
+                            </div>
+                            <div class="flex justify-between text-xs text-gray-600 mt-1">
+                                <span>Earned: KSH ${assignment.total_earnings.toLocaleString()}</span>
+                                <span>Paid: KSH ${assignment.total_paid.toLocaleString()}</span>
+                            </div>
+                            <div class="text-xs text-gray-500 mt-1">
+                                ${assignment.payment_type === 'percentage' ? 
+                                    `${assignment.commission_rate}% commission` : 
+                                    `Fixed: KSH ${assignment.fixed_amount}`} • ${assignment.visits_count} visits
+                            </div>
+                        </div>
+                        <input 
+                            type="checkbox" 
+                            checked 
+                            onchange="toggleAssignmentSelection(${assignment.assignment_id}, this.checked)"
+                            class="ml-3 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        >
+                    </div>
+                `;
+            }
+        });
+    }
+    
     document.getElementById('paymentModalContent').innerHTML = `
         <div class="space-y-4">
             <div class="bg-green-50 border border-green-200 rounded-lg p-4">
-                <h4 class="font-semibold text-green-900 text-sm mb-2">Process Payment</h4>
-                <p class="text-green-700 text-xs">Total amount due: <span class="font-bold">KSH 12,500</span></p>
+                <h4 class="font-semibold text-green-900 text-sm mb-2">Process Payment for Dr. ${doctor.name}</h4>
+                <div class="grid grid-cols-2 gap-4 text-xs">
+                    <div>
+                        <span class="text-green-700">Total Earned:</span>
+                        <span class="font-bold text-green-900 ml-1">KSH ${period_earned.toLocaleString()}</span>
+                    </div>
+                    <div>
+                        <span class="text-green-700">Total Paid:</span>
+                        <span class="font-bold text-green-900 ml-1">KSH ${total_paid.toLocaleString()}</span>
+                    </div>
+                    <div class="col-span-2">
+                        <span class="text-green-700">Balance Due:</span>
+                        <span class="font-bold text-green-900 ml-1">KSH ${balance_due.toLocaleString()}</span>
+                    </div>
+                </div>
             </div>
+            
+            ${assignments.length > 0 ? `
+                <div>
+                    <h5 class="text-sm font-medium text-gray-900 mb-2 flex items-center">
+                        <i class="fas fa-list-check text-blue-600 mr-2 text-xs"></i>
+                        Select Services to Pay
+                    </h5>
+                    <div class="space-y-2 max-h-48 overflow-y-auto pr-2" id="assignmentsList">
+                        ${assignmentsHTML || '<p class="text-sm text-gray-500 text-center py-4">No payments due for any services</p>'}
+                    </div>
+                </div>
+            ` : ''}
             
             <div class="space-y-3">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Payment Amount (KSH)</label>
-                    <input type="number" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Enter amount">
+                    <input 
+                        type="number" 
+                        id="paymentAmount"
+                        value="${balance_due > 0 ? balance_due : 0}" 
+                        min="0" 
+                        max="${balance_due}"
+                        step="1"
+                        onchange="validatePaymentAmount(${balance_due})"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Enter amount"
+                    >
+                    <p class="text-xs text-gray-500 mt-1">Maximum: KSH ${balance_due.toLocaleString()}</p>
                 </div>
                 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
-                    <select class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        <option>MPesa</option>
-                        <option>Bank Transfer</option>
-                        <option>Cash</option>
+                    <select id="paymentMethod" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="mpesa">MPesa</option>
+                        <option value="bank_transfer">Bank Transfer</option>
+                        <option value="cash">Cash</option>
+                        <option value="cheque">Cheque</option>
                     </select>
                 </div>
                 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Reference Number</label>
-                    <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Optional">
+                    <input 
+                        type="text" 
+                        id="referenceNumber"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                        placeholder="Optional (e.g., MPesa transaction code)"
+                    >
                 </div>
                 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-                    <textarea class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" rows="2" placeholder="Payment notes..."></textarea>
+                    <textarea 
+                        id="paymentNotes"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                        rows="2" 
+                        placeholder="Payment notes or description..."
+                    ></textarea>
                 </div>
             </div>
             
@@ -495,23 +1011,128 @@ function processPayment(doctorId) {
                 <button onclick="closePaymentModal()" class="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50">
                     Cancel
                 </button>
-                <button onclick="submitPayment()" class="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700">
+                <button 
+                    onclick="submitPayment(${doctorId})" 
+                    id="submitPaymentBtn"
+                    class="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 flex items-center disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    ${balance_due <= 0 ? 'disabled' : ''}
+                >
+                    <i class="fas fa-money-bill-wave mr-1.5 text-xs"></i>
                     Process Payment
                 </button>
             </div>
         </div>
     `;
     
-    document.getElementById('paymentModal').classList.remove('hidden');
+    // Store selected assignments for later use
+    window.currentPaymentData = {
+        doctorId: doctorId,
+        selectedAssignments: selectedAssignments,
+        maxAmount: balance_due
+    };
+}
+
+function toggleAssignmentSelection(assignmentId, isSelected) {
+    if (isSelected) {
+        if (!window.currentPaymentData.selectedAssignments.includes(assignmentId)) {
+            window.currentPaymentData.selectedAssignments.push(assignmentId);
+        }
+    } else {
+        window.currentPaymentData.selectedAssignments = window.currentPaymentData.selectedAssignments.filter(
+            id => id !== assignmentId
+        );
+    }
+    
+    // Update UI to show how many assignments are selected
+    const selectedCount = window.currentPaymentData.selectedAssignments.length;
+    console.log(`Selected ${selectedCount} assignments`);
+}
+
+function validatePaymentAmount(maxAmount) {
+    const amountInput = document.getElementById('paymentAmount');
+    const submitBtn = document.getElementById('submitPaymentBtn');
+    const amount = parseFloat(amountInput.value) || 0;
+    
+    if (amount <= 0) {
+        amountInput.classList.add('border-red-300');
+        submitBtn.disabled = true;
+    } else if (amount > maxAmount) {
+        amountInput.classList.add('border-red-300');
+        submitBtn.disabled = true;
+        // Auto-correct to max amount
+        amountInput.value = maxAmount;
+    } else {
+        amountInput.classList.remove('border-red-300');
+        submitBtn.disabled = false;
+    }
+}
+
+function submitPayment(doctorId) {
+    const amount = parseFloat(document.getElementById('paymentAmount').value) || 0;
+    const paymentMethod = document.getElementById('paymentMethod').value;
+    const referenceNumber = document.getElementById('referenceNumber').value;
+    const notes = document.getElementById('paymentNotes').value;
+    
+    if (!window.currentPaymentData) {
+        showToast('Error: Payment data not loaded properly', 'error');
+        return;
+    }
+    
+    if (amount <= 0) {
+        showToast('Please enter a valid payment amount', 'error');
+        return;
+    }
+    
+    if (window.currentPaymentData.selectedAssignments.length === 0) {
+        showToast('Please select at least one service to pay', 'error');
+        return;
+    }
+    
+    const paymentData = {
+        amount: amount,
+        payment_method: paymentMethod,
+        assignment_ids: window.currentPaymentData.selectedAssignments,
+        reference_number: referenceNumber,
+        notes: notes
+    };
+    
+    // Show loading state
+    const submitBtn = document.getElementById('submitPaymentBtn');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5 text-xs"></i>Processing...';
+    submitBtn.disabled = true;
+    
+    // Send payment to backend
+    fetch(`/finance/api/process-payment/${doctorId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(paymentData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast(data.message || 'Payment processed successfully!');
+            closePaymentModal();
+            // Refresh the page to show updated balances
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            throw new Error(data.error || 'Failed to process payment');
+        }
+    })
+    .catch(error => {
+        showToast('Error processing payment: ' + error.message, 'error');
+        // Restore button
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
 }
 
 function closePaymentModal() {
     document.getElementById('paymentModal').classList.add('hidden');
-}
-
-function submitPayment() {
-    showToast('Payment processed successfully!');
-    closePaymentModal();
+    // Clear temporary data
+    window.currentPaymentData = null;
 }
 
 function saveCommissions() {
@@ -532,18 +1153,6 @@ function generateReport() {
     showToast('Generating financial report...');
 }
 
-// Toast Notification
-function showToast(message) {
-    const toast = document.getElementById('successToast');
-    const toastMessage = document.getElementById('toastMessage');
-    
-    toastMessage.textContent = message;
-    toast.classList.remove('translate-x-full');
-    
-    setTimeout(() => {
-        toast.classList.add('translate-x-full');
-    }, 3000);
-}
 
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
@@ -574,32 +1183,32 @@ document.addEventListener('keydown', function(e) {
 
 <style>
 /* Custom scrollbar */
-.max-h-32::-webkit-scrollbar {
-    width: 4px;
+.overflow-x-auto::-webkit-scrollbar {
+    height: 6px;
 }
 
-.max-h-32::-webkit-scrollbar-track {
+.overflow-x-auto::-webkit-scrollbar-track {
     background: #f1f5f9;
-    border-radius: 2px;
+    border-radius: 3px;
 }
 
-.max-h-32::-webkit-scrollbar-thumb {
+.overflow-x-auto::-webkit-scrollbar-thumb {
     background: #cbd5e1;
-    border-radius: 2px;
+    border-radius: 3px;
 }
 
-.max-h-32::-webkit-scrollbar-thumb:hover {
+.overflow-x-auto::-webkit-scrollbar-thumb:hover {
     background: #94a3b8;
 }
 
 /* Smooth animations */
-.doctor-card {
-    transition: all 0.3s ease;
+.rotate-180 {
+    transform: rotate(180deg);
 }
 
-.doctor-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+/* Table row hover effects */
+tbody tr {
+    transition: all 0.2s ease;
 }
 
 /* Modal animations */
@@ -617,6 +1226,11 @@ document.addEventListener('keydown', function(e) {
         opacity: 1;
         transform: scale(1) translateY(0);
     }
+}
+
+/* Service details row animation */
+[id^="services-"] {
+    transition: all 0.3s ease-out;
 }
 </style>
 {% endblock %}

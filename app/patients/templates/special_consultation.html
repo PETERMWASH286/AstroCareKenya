@@ -8,7 +8,7 @@
         <div class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
             <div>
                 <h1 class="text-3xl font-extrabold text-gray-800 dark:text-white mb-2">
-                    <i class="fas fa-user-clock text-blue-600 mr-2"></i>Consultation Hub ✨
+                    <i class="fas fa-user-clock text-blue-600 mr-2"></i>Special Consultation Hub ✨
                 </h1>
                 <p class="text-gray-600 dark:text-gray-400">
                     Efficiently manage patient consultations and review diagnostic results with ease.
@@ -195,7 +195,7 @@
                                 <i class="fas fa-edit"></i>
                             </a>
                             {% else %}
-                            <a href="{{ url_for('consultations_web.add_treatment', visit_id=visit.id) }}" class="p-2 text-blue-500 hover:bg-blue-100 dark:hover:bg-blue-900 rounded-lg transition-colors duration-200 tooltip-trigger" data-tippy-content="<strong>Start Consultation</strong><br/>Begin a new treatment plan for this patient.">
+                            <a href="{{ url_for('consultations_web.add_special_treatment', visit_id=visit.id) }}" class="p-2 text-blue-500 hover:bg-blue-100 dark:hover:bg-blue-900 rounded-lg transition-colors duration-200 tooltip-trigger" data-tippy-content="<strong>Start Consultation</strong><br/>Begin a new treatment plan for this patient.">
                                 <i class="fas fa-plus-circle"></i>
                             </a>
                             {% endif %}
@@ -279,7 +279,7 @@
                                      <a href="{{ url_for('consultations_web.view_patient', patient_id=patient.id) }}" class="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors duration-200" data-tippy-content="<strong>View Patient Profile</strong><br/>See full patient demographics and visit history.">
                                          <i class="fas fa-user"></i>
                                      </a>
-                                     <a href="{{ url_for('consultations_web.add_treatment', visit_id=visit.id) }}" class="p-2 text-blue-500 hover:bg-blue-100 dark:hover:bg-blue-900 rounded-lg transition-colors duration-200" data-tippy-content="<strong>View Lab Results & Review</strong><br/>Examine the lab test results and provide your medical review.">
+                                     <a href="{{ url_for('consultations_web.add_special_treatment', visit_id=visit.id) }}" class="p-2 text-blue-500 hover:bg-blue-100 dark:hover:bg-blue-900 rounded-lg transition-colors duration-200" data-tippy-content="<strong>View Lab Results & Review</strong><br/>Examine the lab test results and provide your medical review.">
                                          <i class="fas fa-file-alt"></i>
                                      </a>
                                      <button onclick="markVisitTestsAsReviewed('lab_test', '{{ visit.id }}')" class="p-2 text-green-500 hover:bg-green-100 dark:hover:bg-green-900 rounded-lg transition-colors duration-200" data-tippy-content="<strong>Mark Lab Tests for Visit as Reviewed</strong><br/>Confirm you have reviewed all lab results for this visit.">
@@ -361,7 +361,7 @@
                                      <a href="{{ url_for('consultations_web.view_patient', patient_id=patient.id) }}" class="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors duration-200" data-tippy-content="<strong>View Patient Profile</strong><br/>See full patient demographics and visit history.">
                                          <i class="fas fa-user"></i>
                                      </a>
-                                     <a href="{{ url_for('consultations_web.add_treatment', visit_id=visit.id) }}" class="p-2 text-blue-500 hover:bg-blue-100 dark:hover:bg-blue-900 rounded-lg transition-colors duration-200" data-tippy-content="<strong>View Radiology Report & Review</strong><br/>Examine the radiology report and provide your medical review.">
+                                     <a href="{{ url_for('consultations_web.add_special_treatment', visit_id=visit.id) }}" class="p-2 text-blue-500 hover:bg-blue-100 dark:hover:bg-blue-900 rounded-lg transition-colors duration-200" data-tippy-content="<strong>View Radiology Report & Review</strong><br/>Examine the radiology report and provide your medical review.">
                                          <i class="fas fa-file-image"></i>
                                      </a>
                                      <button onclick="markVisitTestsAsReviewed('radiology', '{{ visit.id }}')" class="p-2 text-green-500 hover:bg-green-100 dark:hover:bg-green-900 rounded-lg transition-colors duration-200" data-tippy-content="<strong>Mark Radiology Orders for Visit as Reviewed</strong><br/>Confirm you have reviewed all radiology reports for this visit.">
