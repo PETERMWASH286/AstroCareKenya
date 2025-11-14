@@ -118,6 +118,126 @@
                                         <option value="other">Other</option>
                                     </select>
                                 </div>
+<div>
+    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        County
+    </label>
+    <select id="county" name="county" required
+        class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 
+               bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500">
+
+        <option value="" disabled selected>Select County</option>
+        <option value="Baringo">Baringo</option>
+        <option value="Bomet">Bomet</option>
+        <option value="Bungoma">Bungoma</option>
+        <option value="Busia">Busia</option>
+        <option value="Elgeyo-Marakwet">Elgeyo-Marakwet</option>
+        <option value="Embu">Embu</option>
+        <option value="Garissa">Garissa</option>
+        <option value="Homa Bay">Homa Bay</option>
+        <option value="Isiolo">Isiolo</option>
+        <option value="Kajiado">Kajiado</option>
+        <option value="Kakamega">Kakamega</option>
+        <option value="Kericho">Kericho</option>
+        <option value="Kiambu">Kiambu</option>
+        <option value="Kilifi">Kilifi</option>
+        <option value="Kirinyaga">Kirinyaga</option>
+        <option value="Kisii">Kisii</option>
+        <option value="Kisumu">Kisumu</option>
+        <option value="Kitui">Kitui</option>
+        <option value="Kwale">Kwale</option>
+        <option value="Laikipia">Laikipia</option>
+        <option value="Lamu">Lamu</option>
+        <option value="Machakos">Machakos</option>
+        <option value="Makueni">Makueni</option>
+        <option value="Mandera">Mandera</option>
+        <option value="Marsabit">Marsabit</option>
+        <option value="Meru">Meru</option>
+        <option value="Migori">Migori</option>
+        <option value="Mombasa">Mombasa</option>
+        <option value="Murang'a">Murang'a</option>
+        <option value="Nairobi">Nairobi</option>
+        <option value="Nakuru">Nakuru</option>
+        <option value="Nandi">Nandi</option>
+        <option value="Narok">Narok</option>
+        <option value="Nyamira">Nyamira</option>
+        <option value="Nyandarua">Nyandarua</option>
+        <option value="Nyeri">Nyeri</option>
+        <option value="Samburu">Samburu</option>
+        <option value="Siaya">Siaya</option>
+        <option value="Taita-Taveta">Taita-Taveta</option>
+        <option value="Tana River">Tana River</option>
+        <option value="Tharaka-Nithi">Tharaka-Nithi</option>
+        <option value="Trans Nzoia">Trans Nzoia</option>
+        <option value="Turkana">Turkana</option>
+        <option value="Uasin Gishu">Uasin Gishu</option>
+        <option value="Vihiga">Vihiga</option>
+        <option value="Wajir">Wajir</option>
+        <option value="West Pokot">West Pokot</option>
+
+    </select>
+</div>
+<div>
+    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Subcounty</label>
+    <input type="text" id="subcounty" name="subcounty" required
+        class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600
+               bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500">
+</div>
+
+<div>
+    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ward</label>
+    <input type="text" id="ward" name="ward" required
+        class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600
+               bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500">
+</div>
+<div>
+    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Residence</label>
+    <input type="text" id="residence" name="residence" required
+        class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600
+               bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500">
+</div>
+
+
+
+
+<!-- ID or Guardian ID -->
+<!-- National ID -->
+<div id="nationalIdWrapper" class="hidden">
+    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        National ID (18+)
+    </label>
+    <input type="text" id="nationalId" name="national_id"
+        class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600
+               bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500"
+        placeholder="Enter National ID Number">
+</div>
+
+<!-- Guardian ID -->
+<div id="guardianIdWrapper" class="hidden">
+    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        Guardian's ID (Below 18)
+    </label>
+    <input type="text" id="guardianId" name="guardian_id"
+        class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600
+               bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500"
+        placeholder="Enter Guardian's ID Number">
+</div>
+
+
+<!-- Marital Status -->
+<div>
+    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Marital Status</label>
+    <select id="maritalStatus" name="marital_status" required
+        class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600
+               bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500">
+        <option value="" disabled selected>Select status</option>
+        <option value="Single">Single</option>
+        <option value="Married">Married</option>
+        <option value="Divorced">Divorced</option>
+        <option value="Widowed">Widowed</option>
+    </select>
+</div>
+
                             </div>
                         </div>
 
@@ -398,34 +518,59 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 <script>
 
-    // Age <-> DOB Conversion
-    const ageInput = document.getElementById('age');
-    const dobInput = document.getElementById('dob');
+// Age and DOB fields
+const ageInput = document.getElementById('age');
+const dobInput = document.getElementById('dob');
 
-    function calculateAge(dob) {
-        const today = new Date();
-        const birthDate = new Date(dob);
-        let age = today.getFullYear() - birthDate.getFullYear();
-        const monthDiff = today.getMonth() - birthDate.getMonth();
-        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-            age--;
-        }
-        return age;
+// ID wrappers
+const nationalIdWrapper = document.getElementById('nationalIdWrapper');
+const guardianIdWrapper = document.getElementById('guardianIdWrapper');
+
+// Function to calculate age from DOB
+function calculateAge(dob) {
+    const today = new Date();
+    const birthDate = new Date(dob);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
     }
+    return age;
+}
 
-    dobInput.addEventListener('change', () => {
-        if (dobInput.value) {
-            ageInput.value = calculateAge(dobInput.value);
-        }
-    });
+// Show/hide inputs based on age
+function updateIdFields(age) {
+    if (age >= 18) {
+        // Show National ID
+        nationalIdWrapper.classList.remove("hidden");
+        guardianIdWrapper.classList.add("hidden");
+    } else {
+        // Show Guardian ID
+        guardianIdWrapper.classList.remove("hidden");
+        nationalIdWrapper.classList.add("hidden");
+    }
+}
 
-    ageInput.addEventListener('input', () => {
-        if (ageInput.value) {
-            const currentYear = new Date().getFullYear();
-            const birthYear = currentYear - ageInput.value;
-            dobInput.value = `${birthYear}-01-01`;
-        }
-    });
+// When DOB changes → update age
+dobInput.addEventListener('change', () => {
+    if (dobInput.value) {
+        const age = calculateAge(dobInput.value);
+        ageInput.value = age;
+        updateIdFields(age);
+    }
+});
+
+// When age is manually changed → update DOB & fields
+ageInput.addEventListener('input', () => {
+    if (ageInput.value) {
+        const currentYear = new Date().getFullYear();
+        const birthYear = currentYear - ageInput.value;
+        dobInput.value = `${birthYear}-01-01`;
+        updateIdFields(parseInt(ageInput.value));
+    }
+});
+
 
     // Grab references to the button, its icon, and its text
     const submitBtn = document.getElementById('submitBtn');
@@ -437,19 +582,27 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchResults = document.getElementById('searchResults');
 
     // These fields we fill when selecting an existing patient
+// These fields we fill when selecting an existing patient
 const formFields = {
     regNo: document.getElementById('regNo'),
     firstName: document.getElementById('firstName'),
     lastName: document.getElementById('lastName'),
     dob: document.getElementById('dob'),
     age: document.getElementById('age'),
-    gender: document.getElementById('gender'), // ADD THIS LINE
+    gender: document.getElementById('gender'),
     phone: document.getElementById('phone'),
     email: document.getElementById('email'),
     kinName: document.getElementById('kinName'),
     kinRelationship: document.getElementById('kinRelationship'),
     kinPhone: document.getElementById('kinPhone'),
-    kinEmail: document.getElementById('kinEmail')
+    kinEmail: document.getElementById('kinEmail'),
+    county: document.getElementById('county'),
+    subcounty: document.getElementById('subcounty'),
+    ward: document.getElementById('ward'),
+    residence: document.getElementById('residence'),
+    nationalId: document.getElementById('nationalId'),
+    guardianId: document.getElementById('guardianId'),
+    maritalStatus: document.getElementById('maritalStatus'),
 };
 
     // Utility: calculate age from a date string (YYYY-MM-DD)
@@ -512,22 +665,31 @@ const formFields = {
 
         const results = await searchPatients(query);
 
-    searchResults.innerHTML = results.map(patient => `
+searchResults.innerHTML = results.map(patient => `
     <div class="p-3 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg cursor-pointer patient-result" 
             data-regno="${patient.regNo}"
             data-firstname="${patient.firstName}"
             data-lastname="${patient.lastName}"
             data-dob="${patient.dob}"
+            data-age="${patient.age}"
             data-phone="${patient.phone}"
             data-email="${patient.email}"
             data-kinname="${patient.kinName}"
             data-kinrelationship="${patient.kinRelationship}"
             data-kinphone="${patient.kinPhone}"
             data-kinemail="${patient.kinEmail}"
-            data-gender="${patient.gender || ''}">  <div class="font-medium">${patient.firstName} ${patient.lastName}</div>
+            data-gender="${patient.gender || ''}"
+            data-county="${patient.county || ''}"
+            data-subcounty="${patient.subcounty || ''}"
+            data-ward="${patient.ward || ''}"
+            data-residence="${patient.residence || ''}"
+            data-maritalstatus="${patient.maritalStatus || ''}"
+            data-nationalid="${patient.nationalId || ''}"
+            data-guardianid="${patient.guardianId || ''}">
+        <div class="font-medium">${patient.firstName} ${patient.lastName}</div>
         <div class="text-sm text-gray-500">${patient.phone} • Reg: ${patient.regNo}</div>
     </div>
-    `).join('');
+`).join('');
 
         searchResults.classList.remove('hidden');
 
@@ -576,24 +738,31 @@ const formFields = {
         setButtonToRegistering();
 
         // Gather the values
-        const payload = {
-            regNo: document.getElementById('regNo').value,
-            age: document.getElementById('age').value,
-            dob: document.getElementById('dob').value,
-            firstName: document.getElementById('firstName').value,
-            lastName: document.getElementById('lastName').value,
-            email: document.getElementById('email').value,
-            gender: document.getElementById('gender').value,
-            phone: document.getElementById('phone').value,
-            kinName: document.getElementById('kinName').value,
-            kinRelationship: document.getElementById('kinRelationship').value,
-            kinPhone: document.getElementById('kinPhone').value,
-            kinEmail: document.getElementById('kinEmail').value,
-            paymentMethod: document.querySelector('input[name="payment"]:checked').value,
-            insuranceProvider: null,
-            insuranceNumber: document.getElementById('insuranceNumber').value,
+    const payload = {
+        regNo: formFields.regNo.value,
+        age: formFields.age.value,
+        dob: formFields.dob.value,
+        firstName: formFields.firstName.value,
+        lastName: formFields.lastName.value,
+        email: formFields.email.value,
+        gender: formFields.gender.value,
+        phone: formFields.phone.value,
+        kinName: formFields.kinName.value,
+        kinRelationship: formFields.kinRelationship.value,
+        kinPhone: formFields.kinPhone.value,
+        kinEmail: formFields.kinEmail.value,
+        county: formFields.county.value,
+        subcounty: formFields.subcounty.value,
+        ward: formFields.ward.value,
+        residence: formFields.residence.value,
+        maritalStatus: formFields.maritalStatus.value,
+        nationalId: formFields.nationalId.value,
+        guardianId: formFields.guardianId.value,
+        paymentMethod: document.querySelector('input[name="payment"]:checked').value,
+        insuranceProvider: null,
+        insuranceNumber: document.getElementById('insuranceNumber').value,
+    };
 
-        };
 
         // Only include insurance if that section is visible
         const insSection = document.getElementById('insurance-details');

@@ -240,18 +240,27 @@ class Patient(db.Model):
     insurance_provider = db.Column(db.String(120))
     insurance_number  = db.Column(db.String(120))
 
+    # ── New fields ──
+    county        = db.Column(db.String(120))
+    subcounty     = db.Column(db.String(120))
+    ward          = db.Column(db.String(120))
+    residence     = db.Column(db.String(120))
+    marital_status= db.Column(db.String(64))
+    national_id   = db.Column(db.String(64))
+    guardian_id   = db.Column(db.String(64))
+
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def __repr__(self):
         return f"<Patient {self.reg_no} {self.first_name} {self.last_name}>"
+
     @property
     def full_name(self):
         return f"{self.first_name} {self.last_name}"
     
     @property
     def formatted_phone(self):
-        # Format for display
         phone = self.phone.strip()
         if phone.startswith('254'):
             return '0' + phone[3:]
@@ -259,12 +268,12 @@ class Patient(db.Model):
     
     @formatted_phone.setter
     def formatted_phone(self, value):
-        # Store in standardized format
         validated = validate_kenyan_phone(value)
         if validated:
             self.phone = validated
         else:
             raise ValueError("Invalid Kenyan phone number")
+
 
 class Visit(db.Model):
     __tablename__ = 'visits'
@@ -339,35 +348,35 @@ class Vitals(db.Model):
     patient_id    = db.Column(db.Integer, db.ForeignKey('patients.id'), nullable=False)
     visit_id      = db.Column(db.Integer, db.ForeignKey('visits.id'), nullable=True)
 
+    # Common vitals
     temperature   = db.Column(db.Float, nullable=False)
-    heart_rate    = db.Column(db.Integer, nullable=False)
-    bp_systolic   = db.Column(db.Integer, nullable=False)
-    bp_diastolic  = db.Column(db.Integer, nullable=False)
-    spo2          = db.Column(db.Integer, nullable=False)
+    heart_rate    = db.Column(db.Integer)
+    bp_systolic   = db.Column(db.Integer)
+    bp_diastolic  = db.Column(db.Integer)
+    spo2          = db.Column(db.Integer)
     resp_rate     = db.Column(db.Integer, nullable=False)
-    pain_score    = db.Column(db.Integer, nullable=False)
+    pain_score    = db.Column(db.Integer)
     notes         = db.Column(db.Text)
     recorded_at   = db.Column(db.DateTime, default=datetime.utcnow)
 
-    # ​— no more tb_screening_id column here! —
-    # tb_screening_id = db.Column(db.Integer, db.ForeignKey('tb_screenings.id'), nullable=True)
+    # Adult-specific
+    weight        = db.Column(db.Float)
+    height        = db.Column(db.Float)
+    bmi           = db.Column(db.Float)
+
+    # Pediatric-specific
+    muac          = db.Column(db.Float)  # optional malnutrition screening
+
+    # Optional medical history / allergies
+    allergy_food        = db.Column(db.Text)
+    allergy_drugs       = db.Column(db.Text)
+    chronic_conditions  = db.Column(db.Text)  # can store JSON
+    current_medications = db.Column(db.Text)
 
     # relationships
-    patient = db.relationship(
-        'Patient',
-        backref=db.backref('vitals', lazy='dynamic')
-    )
-    visit = db.relationship(
-        'Visit',
-        back_populates='vitals'
-    )
-
-    # ONE‐TO‐ONE: a Vitals row may have exactly one TbScreening (or none)
-    tb_screening = db.relationship(
-        'TbScreening',
-        back_populates='vitals',
-        uselist=False
-    )
+    patient = db.relationship('Patient', backref=db.backref('vitals', lazy='dynamic'))
+    visit = db.relationship('Visit', back_populates='vitals')
+    tb_screening = db.relationship('TbScreening', back_populates='vitals', uselist=False)
 
     def to_dict(self):
         base = {
@@ -381,14 +390,21 @@ class Vitals(db.Model):
             'spo2':        self.spo2,
             'resp_rate':   self.resp_rate,
             'pain_score':  self.pain_score,
+            'weight':      self.weight,
+            'height':      self.height,
+            'bmi':         self.bmi,
+            'muac':        self.muac,
+            'allergy_food':        self.allergy_food,
+            'allergy_drugs':       self.allergy_drugs,
+            'chronic_conditions':  self.chronic_conditions,
+            'current_medications': self.current_medications,
             'notes':       self.notes,
             'recorded_at': self.recorded_at.isoformat(),
             'visit_id':    self.visit_id,
         }
-
-        # If there is a TbScreening for this Vitals, include its data:
         base['tb_screening'] = self.tb_screening.to_dict() if self.tb_screening else None
         return base
+
 
 class TbScreening(db.Model):
     __tablename__ = 'tb_screenings'

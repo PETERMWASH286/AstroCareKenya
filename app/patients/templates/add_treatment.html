@@ -35,58 +35,141 @@
 
     <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
       <div class="xl:col-span-1 space-y-6">
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-          <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4 flex items-center">
-            <i class="fas fa-heartbeat text-red-500 mr-2"></i> Current Vitals
-          </h2>
-          {% if visit.vitals %} {% set vit = visit.vitals %}
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div class="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"><i class="fas fa-temperature-high text-orange-500 text-2xl"></i>
-              <div>
-                <div class="text-sm text-gray-500 dark:text-gray-400">Temperature</div>
-                <div class="text-lg font-medium text-gray-800 dark:text-gray-200">{{ vit.temperature }}°C</div>
-              </div>
-            </div>
-            <div class="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"><i class="fas fa-heartbeat text-red-500 text-2xl"></i>
-              <div>
-                <div class="text-sm text-gray-500 dark:text-gray-400">Heart Rate</div>
-                <div class="text-lg font-medium text-gray-800 dark:text-gray-200">{{ vit.heart_rate }} bpm</div>
-              </div>
-            </div>
-            <div class="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"><i class="fas fa-tachometer-alt text-purple-500 text-2xl"></i>
-              <div>
-                <div class="text-sm text-gray-500 dark:text-gray-400">Blood Pressure</div>
-                <div class="text-lg font-medium text-gray-800 dark:text-gray-200">{{ vit.bp_systolic }}/{{ vit.bp_diastolic }} mmHg</div>
-              </div>
-            </div>
-            <div class="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"><i class="fas fa-lungs text-blue-500 text-2xl"></i>
-              <div>
-                <div class="text-sm text-gray-500 dark:text-gray-400">SpO₂</div>
-                <div class="text-lg font-medium text-gray-800 dark:text-gray-200">{{ vit.spo2 }} %</div>
-              </div>
-            </div>
-            <div class="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"><i class="fas fa-wind text-green-500 text-2xl"></i>
-              <div>
-                <div class="text-sm text-gray-500 dark:text-gray-400">Respiratory Rate</div>
-                <div class="text-lg font-medium text-gray-800 dark:text-gray-200">{{ vit.resp_rate }} bpm</div>
-              </div>
-            </div>
-            <div class="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"><i class="fas fa-exclamation-triangle text-yellow-500 text-2xl"></i>
-              <div>
-                <div class="text-sm text-gray-500 dark:text-gray-400">Pain Score</div>
-                <div class="text-lg font-medium text-gray-800 dark:text-gray-200">{{ vit.pain_score }}/10</div>
-              </div>
-            </div>
-          </div>
-          {% if vit.notes %}
-          <div class="mt-4 p-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
-            <h3 class="font-semibold text-gray-700 dark:text-gray-300 mb-1">Triage Notes</h3>
-            <p class="text-sm text-gray-800 dark:text-gray-200">{{ vit.notes }}</p>
-          </div>
-          {% endif %} {% else %}
-          <div class="text-center py-8 text-gray-500 dark:text-gray-400 italic">No vitals recorded for this visit.</div>
-          {% endif %}
+<div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+  <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4 flex items-center">
+    <i class="fas fa-heartbeat text-red-500 mr-2"></i> Current Vitals
+  </h2>
+
+  {% if visit.latest_vitals %}
+    {% set vit = visit.latest_vitals %}
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <!-- Standard Vitals -->
+      <div class="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+        <i class="fas fa-temperature-high text-orange-500 text-2xl"></i>
+        <div>
+          <div class="text-sm text-gray-500 dark:text-gray-400">Temperature</div>
+          <div class="text-lg font-medium text-gray-800 dark:text-gray-200">{{ vit.temperature }}°C</div>
         </div>
+      </div>
+
+      <div class="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+        <i class="fas fa-heartbeat text-red-500 text-2xl"></i>
+        <div>
+          <div class="text-sm text-gray-500 dark:text-gray-400">Heart Rate</div>
+          <div class="text-lg font-medium text-gray-800 dark:text-gray-200">{{ vit.heart_rate }} bpm</div>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+        <i class="fas fa-tachometer-alt text-purple-500 text-2xl"></i>
+        <div>
+          <div class="text-sm text-gray-500 dark:text-gray-400">Blood Pressure</div>
+          <div class="text-lg font-medium text-gray-800 dark:text-gray-200">{{ vit.bp_systolic }}/{{ vit.bp_diastolic }} mmHg</div>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+        <i class="fas fa-lungs text-blue-500 text-2xl"></i>
+        <div>
+          <div class="text-sm text-gray-500 dark:text-gray-400">SpO₂</div>
+          <div class="text-lg font-medium text-gray-800 dark:text-gray-200">{{ vit.spo2 }}%</div>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+        <i class="fas fa-wind text-green-500 text-2xl"></i>
+        <div>
+          <div class="text-sm text-gray-500 dark:text-gray-400">Respiratory Rate</div>
+          <div class="text-lg font-medium text-gray-800 dark:text-gray-200">{{ vit.resp_rate }} bpm</div>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+        <i class="fas fa-exclamation-triangle text-yellow-500 text-2xl"></i>
+        <div>
+          <div class="text-sm text-gray-500 dark:text-gray-400">Pain Score</div>
+          <div class="text-lg font-medium text-gray-800 dark:text-gray-200">{{ vit.pain_score }}/10</div>
+        </div>
+      </div>
+
+      <!-- Additional Details -->
+      {% if vit.weight and vit.height %}
+      <div class="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+        <i class="fas fa-weight text-gray-600 text-2xl"></i>
+        <div>
+          <div class="text-sm text-gray-500 dark:text-gray-400">Weight / Height / BMI</div>
+          <div class="text-lg font-medium text-gray-800 dark:text-gray-200">{{ vit.weight }} kg / {{ vit.height }} m / {{ vit.bmi }}</div>
+        </div>
+      </div>
+      {% endif %}
+
+      {% if vit.muac %}
+      <div class="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+        <i class="fas fa-child text-pink-500 text-2xl"></i>
+        <div>
+          <div class="text-sm text-gray-500 dark:text-gray-400">MUAC</div>
+          <div class="text-lg font-medium text-gray-800 dark:text-gray-200">{{ vit.muac }} cm</div>
+        </div>
+      </div>
+      {% endif %}
+
+      {% if vit.allergy_food or vit.allergy_drugs %}
+      <div class="col-span-2 p-3 bg-red-50 dark:bg-red-700 rounded-lg">
+        <div class="text-sm text-red-500 dark:text-red-300 font-semibold">Allergies</div>
+        <div class="text-lg font-medium text-gray-800 dark:text-gray-200">
+          {{ vit.allergy_food or '' }} {{ vit.allergy_drugs or '' }}
+        </div>
+      </div>
+      {% endif %}
+
+      {% if vit.chronic_conditions %}
+      <div class="col-span-2 p-3 bg-yellow-50 dark:bg-yellow-700 rounded-lg">
+        <div class="text-sm text-yellow-500 dark:text-yellow-300 font-semibold">Chronic Conditions</div>
+        <div class="text-lg font-medium text-gray-800 dark:text-gray-200">{{ vit.chronic_conditions }}</div>
+      </div>
+      {% endif %}
+
+      {% if vit.current_medications %}
+      <div class="col-span-2 p-3 bg-green-50 dark:bg-green-700 rounded-lg">
+        <div class="text-sm text-green-500 dark:text-green-300 font-semibold">Current Medications</div>
+        <div class="text-lg font-medium text-gray-800 dark:text-gray-200">{{ vit.current_medications }}</div>
+      </div>
+      {% endif %}
+
+      {% if vit.tb_screening %}
+      <div class="col-span-2 p-3 bg-blue-50 dark:bg-blue-700 rounded-lg">
+        <div class="text-sm text-blue-500 dark:text-blue-300 font-semibold">TB Screening</div>
+        <div class="text-sm text-gray-700 dark:text-gray-200">
+          Cough Duration: {{ vit.tb_screening.cough_duration or 'N/A' }} weeks<br>
+          Fever: {{ vit.tb_screening.fever }} ({{ vit.tb_screening.fever_duration or 'N/A' }} weeks)<br>
+          Night Sweats: {{ vit.tb_screening.night_sweats }}<br>
+          Weight Loss: {{ vit.tb_screening.weight_loss_flag }} ({{ vit.tb_screening.weight_loss_amount or 'N/A' }} kg)<br>
+          Hemoptysis: {{ vit.tb_screening.hemoptysis }}<br>
+          HIV Status: {{ vit.tb_screening.hiv_status }}<br>
+          Diabetes: {{ vit.tb_screening.diabetes }}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    {% if vit.notes %}
+    <div class="mt-4 p-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
+      <h3 class="font-semibold text-gray-700 dark:text-gray-300 mb-1">Triage Notes</h3>
+      <p class="text-sm text-gray-800 dark:text-gray-200">{{ vit.notes }}</p>
+    </div>
+    {% endif %}
+
+    <div class="mt-2 text-xs text-gray-400 dark:text-gray-500">
+      Recorded at: {{ vit.recorded_at.strftime('%Y-%m-%d %H:%M') }}
+    </div>
+
+  {% else %}
+    <div class="text-center py-8 text-gray-500 dark:text-gray-400 italic">
+      No vitals recorded for this visit.
+    </div>
+  {% endif %}
+</div>
+
 
 <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
   <div class="flex items-center justify-between mb-5">

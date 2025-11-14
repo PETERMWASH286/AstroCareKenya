@@ -72,23 +72,55 @@
         </div>
     </div>
 {% else %}
+<div class="space-y-8">
+
+  <!-- Vital Signs Section -->
+  <div class="p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
+    <h2 class="text-lg font-bold text-indigo-600 dark:text-indigo-400 mb-4">Vital Signs</h2>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <!-- Weight -->
+      <div>
+        <label for="weight" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <i class="fas fa-weight text-gray-700 mr-1"></i>Weight (kg)
+        </label>
+        <input id="weight" name="weight" type="number" step="0.1" min="1" max="500" placeholder="70"
+               class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition shadow-sm" />
+      </div>
+
+      <!-- Height -->
+      <div>
+        <label for="height" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <i class="fas fa-ruler-vertical text-gray-700 mr-1"></i>Height (cm)
+        </label>
+        <input id="height" name="height" type="number" step="0.1" min="30" max="250" placeholder="170"
+               class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition shadow-sm" />
+      </div>
+
+      <!-- BMI -->
+      <div>
+        <label for="bmi" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <i class="fas fa-heart text-red-500 mr-1"></i>BMI
+        </label>
+        <input id="bmi" name="bmi" type="number" step="0.1" readonly placeholder="Auto-calculated"
+               class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition shadow-sm" />
+      </div>
+
       <!-- Temperature -->
       <div>
         <label for="temp" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           <i class="fas fa-thermometer-half text-orange-500 mr-1"></i>Temperature (°C)
         </label>
-        <input id="temp" name="temperature" type="number" step="0.1" min="32" max="42" required placeholder="36.5"
-               class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" />
+        <input id="temp" name="temperature" type="number" step="0.1" min="32" max="42" placeholder="36.5"
+               class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition shadow-sm" />
       </div>
 
-      <!-- Pulse -->
+      <!-- Pulse Rate -->
       <div>
         <label for="hr" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           <i class="fas fa-heartbeat text-red-500 mr-1"></i>Pulse Rate (BPM)
         </label>
-        <input id="hr" name="heart_rate" type="number" min="30" max="250" required placeholder="72"
-               class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" />
+        <input id="hr" name="heart_rate" type="number" min="30" max="250" placeholder="72"
+               class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition shadow-sm" />
       </div>
 
       <!-- Blood Pressure -->
@@ -97,11 +129,11 @@
           <i class="fas fa-tachometer-alt text-purple-500 mr-1"></i>Blood Pressure (mmHg)
         </label>
         <div class="flex space-x-2">
-          <input id="bp_sys" name="bp_systolic" type="number" min="50" max="250" required placeholder="120"
-                 class="flex-1 px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" />
+          <input id="bp_sys" name="bp_systolic" type="number" min="50" max="250" placeholder="120"
+                 class="flex-1 px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition shadow-sm" />
           <span class="self-center font-bold text-gray-600 dark:text-gray-400">/</span>
-          <input id="bp_dia" name="bp_diastolic" type="number" min="30" max="150" required placeholder="80"
-                 class="flex-1 px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" />
+          <input id="bp_dia" name="bp_diastolic" type="number" min="30" max="150" placeholder="80"
+                 class="flex-1 px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition shadow-sm" />
         </div>
       </div>
 
@@ -110,8 +142,8 @@
         <label for="spo2" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           <i class="fas fa-lungs text-blue-500 mr-1"></i>SpO₂ (%)
         </label>
-        <input id="spo2" name="spo2" type="number" min="70" max="100" required placeholder="98"
-               class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" />
+        <input id="spo2" name="spo2" type="number" min="70" max="100" placeholder="98"
+               class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition shadow-sm" />
       </div>
 
       <!-- Respiratory Rate -->
@@ -119,8 +151,8 @@
         <label for="rr" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           <i class="fas fa-wind text-green-500 mr-1"></i>Respiratory Rate (BPM)
         </label>
-        <input id="rr" name="resp_rate" type="number" min="8" max="40" required placeholder="16"
-               class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" />
+        <input id="rr" name="resp_rate" type="number" min="8" max="40" placeholder="16"
+               class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition shadow-sm" />
       </div>
 
       <!-- Pain Score -->
@@ -128,10 +160,149 @@
         <label for="pain" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           <i class="fas fa-exclamation-triangle text-yellow-500 mr-1"></i>Pain Score (0–10)
         </label>
-        <input id="pain" name="pain_score" type="number" min="0" max="10" required placeholder="0"
-               class="w-full px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" />
+        <input id="pain" name="pain_score" type="number" min="0" max="10" placeholder="0"
+               class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition shadow-sm" />
       </div>
-    </div>{% endif %}
+    </div>
+  </div>
+
+  <!-- Medical History Section -->
+  <div class="p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
+    <h2 class="text-lg font-bold text-indigo-600 dark:text-indigo-400 mb-4">Medical History</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+      <!-- Food Allergies -->
+      <div>
+        <label for="allergy_food" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <i class="fas fa-apple-alt text-red-500 mr-1"></i>Food Allergies
+        </label>
+        <input id="allergy_food" name="allergy_food" type="text" placeholder="Peanuts, Shellfish"
+               class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition shadow-sm" />
+      </div>
+
+      <!-- Drug Allergies -->
+      <div>
+        <label for="allergy_drugs" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <i class="fas fa-pills text-purple-500 mr-1"></i>Drug Allergies
+        </label>
+        <input id="allergy_drugs" name="allergy_drugs" type="text" placeholder="Penicillin, Ibuprofen"
+               class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition shadow-sm" />
+      </div>
+<!-- Chronic Conditions (Super Modern Tag Selector) -->
+<div class="col-span-1 md:col-span-2">
+  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+    <i class="fas fa-notes-medical text-green-500 mr-1"></i>Chronic Conditions
+  </label>
+
+  <!-- Selected Tags Display -->
+  <div id="selectedConditions" class="min-h-[50px] flex flex-wrap gap-2 mb-2 p-2 border-2 border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700">
+    <!-- Tags appear here dynamically -->
+  </div>
+
+  <!-- Dropdown -->
+  <div class="relative">
+    <button type="button" id="conditionsDropdownBtn"
+            class="w-full text-left px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm">
+      Select chronic conditions...
+    </button>
+
+    <div id="conditionsDropdown"
+         class="hidden absolute z-50 w-full mt-1 max-h-60 overflow-y-auto rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 shadow-lg">
+      <div class="p-2 space-y-1">
+        <div class="font-semibold text-gray-500 dark:text-gray-400">Metabolic</div>
+        <div class="condition-option px-3 py-1 cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-700 rounded" data-value="Diabetes">Diabetes</div>
+        <div class="condition-option px-3 py-1 cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-700 rounded" data-value="Hyperlipidemia">Hyperlipidemia</div>
+
+        <div class="font-semibold text-gray-500 dark:text-gray-400 mt-2">Cardiovascular</div>
+        <div class="condition-option px-3 py-1 cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-700 rounded" data-value="Hypertension">Hypertension</div>
+        <div class="condition-option px-3 py-1 cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-700 rounded" data-value="Heart Disease">Heart Disease</div>
+
+        <div class="font-semibold text-gray-500 dark:text-gray-400 mt-2">Neurological</div>
+        <div class="condition-option px-3 py-1 cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-700 rounded" data-value="Epilepsy">Epilepsy</div>
+        <div class="condition-option px-3 py-1 cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-700 rounded" data-value="Stroke">Stroke</div>
+
+        <div class="font-semibold text-gray-500 dark:text-gray-400 mt-2">Respiratory</div>
+        <div class="condition-option px-3 py-1 cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-700 rounded" data-value="Asthma">Asthma</div>
+        <div class="condition-option px-3 py-1 cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-700 rounded" data-value="COPD">COPD</div>
+
+        <div class="font-semibold text-gray-500 dark:text-gray-400 mt-2">Other</div>
+        <div class="condition-option px-3 py-1 cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-700 rounded" data-value="Kidney Disease">Kidney Disease</div>
+        <div class="condition-option px-3 py-1 cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-700 rounded" data-value="Cancer">Cancer</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden input for backend -->
+  <input type="hidden" name="chronic_conditions" id="chronic_conditions_input">
+</div>
+
+<script>
+  const dropdownBtn = document.getElementById('conditionsDropdownBtn');
+  const dropdown = document.getElementById('conditionsDropdown');
+  const selectedContainer = document.getElementById('selectedConditions');
+  const hiddenInput = document.getElementById('chronic_conditions_input');
+
+  let selectedConditions = [];
+
+  dropdownBtn.addEventListener('click', () => {
+    dropdown.classList.toggle('hidden');
+  });
+
+  document.querySelectorAll('.condition-option').forEach(option => {
+    option.addEventListener('click', () => {
+      const value = option.dataset.value;
+
+      if (!selectedConditions.includes(value)) {
+        selectedConditions.push(value);
+
+        // create tag
+        const tag = document.createElement('span');
+        tag.className = 'px-3 py-1 bg-indigo-500 text-white rounded-full text-sm flex items-center gap-1';
+        tag.innerHTML = value + ' <i class="fas fa-times cursor-pointer text-xs"></i>';
+        tag.querySelector('i').addEventListener('click', () => {
+          selectedContainer.removeChild(tag);
+          selectedConditions = selectedConditions.filter(v => v !== value);
+          hiddenInput.value = JSON.stringify(selectedConditions);
+        });
+
+        selectedContainer.appendChild(tag);
+      } else {
+        // remove if clicked again
+        selectedConditions = selectedConditions.filter(v => v !== value);
+        selectedContainer.querySelectorAll('span').forEach(span => {
+          if(span.textContent.includes(value)){
+            selectedContainer.removeChild(span);
+          }
+        });
+      }
+
+      hiddenInput.value = JSON.stringify(selectedConditions);
+    });
+  });
+
+  // close dropdown when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!dropdown.contains(e.target) && !dropdownBtn.contains(e.target)) {
+      dropdown.classList.add('hidden');
+    }
+  });
+</script>
+
+
+      <!-- Current Medications -->
+      <div class="col-span-1 md:col-span-2">
+        <label for="current_medications" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <i class="fas fa-capsules text-blue-500 mr-1"></i>Current Medications
+        </label>
+        <textarea id="current_medications" name="current_medications" rows="3" placeholder="e.g., Metformin, Lisinopril"
+                  class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition shadow-sm"></textarea>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+{% endif %}
 
 
 
@@ -449,7 +620,26 @@
   </div>
 </div>
 
+<script>
+  const weightInput = document.getElementById('weight');
+  const heightInput = document.getElementById('height');
+  const bmiInput = document.getElementById('bmi');
 
+  function calculateBMI() {
+    const weight = parseFloat(weightInput.value);
+    const heightCm = parseFloat(heightInput.value);
+    if (weight > 0 && heightCm > 0) {
+      const heightM = heightCm / 100;
+      const bmi = weight / (heightM * heightM);
+      bmiInput.value = bmi.toFixed(1);
+    } else {
+      bmiInput.value = '';
+    }
+  }
+
+  weightInput.addEventListener('input', calculateBMI);
+  heightInput.addEventListener('input', calculateBMI);
+</script>
 <!-- ========== Small JS to toggle panels + make optional fields non-blocking ========== -->
 <script>
   function togglePanel(panelId, btn) {

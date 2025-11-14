@@ -314,37 +314,44 @@ def api_add_or_update_patient():
         patient = Patient(reg_no=reg_no)
 
     # Map incoming fields to model attributes
-    patient.first_name        = data['firstName']
-    patient.last_name         = data['lastName']
-    patient.date_of_birth     = datetime.strptime(data['dob'], '%Y-%m-%d').date()
-    patient.age               = data.get('age')
-    patient.email             = data.get('email')
+    patient.first_name         = data['firstName']
+    patient.last_name          = data['lastName']
+    patient.date_of_birth      = datetime.strptime(data['dob'], '%Y-%m-%d').date()
+    patient.age                = data.get('age')
+    patient.email              = data.get('email')
     patient.gender             = data.get('gender')
-    patient.phone             = data['phone']
-    patient.kin_name          = data.get('kinName')
-    patient.kin_relationship  = data.get('kinRelationship')
-    patient.kin_phone         = data.get('kinPhone')
-    patient.kin_email         = data.get('kinEmail')
-    patient.payment_method    = data.get('paymentMethod')
-    patient.insurance_provider= data.get('insuranceProvider')
+    patient.phone              = data['phone']
+    patient.kin_name           = data.get('kinName')
+    patient.kin_relationship   = data.get('kinRelationship')
+    patient.kin_phone          = data.get('kinPhone')
+    patient.kin_email          = data.get('kinEmail')
+    patient.payment_method     = data.get('paymentMethod')
+    patient.insurance_provider = data.get('insuranceProvider')
+    patient.insurance_number   = data.get('insuranceNumber')
 
-    # ─── New assignment ─────────────────────────────────────────────────────────────
-    patient.insurance_number  = data.get('insuranceNumber')
-    # ───────────────────────────────────────────────────────────────────────────────
+    # ── New assignments ──
+    patient.county        = data.get('county')
+    patient.subcounty     = data.get('subcounty')
+    patient.ward          = data.get('ward')
+    patient.residence     = data.get('residence')
+    patient.marital_status= data.get('maritalStatus')
+    patient.national_id   = data.get('nationalId')
+    patient.guardian_id   = data.get('guardianId')
 
     db.session.add(patient)
     db.session.commit()
 
     return jsonify({
-        'id':               patient.id,
-        'regNo':            patient.reg_no,
-        'paymentMethod':    patient.payment_method,
-        'insuranceProvider':patient.insurance_provider,
-        'insuranceNumber':  patient.insurance_number,
-        'message':          reg_no and data.get('regNo')
-                             and 'Patient updated'
-                             or 'Patient created'
+        'id':                patient.id,
+        'regNo':             patient.reg_no,
+        'paymentMethod':     patient.payment_method,
+        'insuranceProvider': patient.insurance_provider,
+        'insuranceNumber':   patient.insurance_number,
+        'message':           reg_no and data.get('regNo')
+                                and 'Patient updated'
+                                or 'Patient created'
     }), 201
+
 
 
 @patients_web_bp.route('/api/search', methods=['GET'])
@@ -1372,24 +1379,24 @@ def api_vitals(reg_no):
     if request.method == 'POST':
         data = request.get_json(silent=True) or {}
 
-        # 1) Validate required vital sign fields
-        for fld in (
-            'temperature',
-            'heart_rate',
-            'bp_systolic',
-            'bp_diastolic',
-            'spo2',
-            'resp_rate',
-            'pain_score'
-        ):
+        # Determine if pediatric
+        is_pediatric = patient.age <= 5
+
+        # Required fields
+        if is_pediatric:
+            required_fields = ['weight', 'temperature', 'resp_rate']
+        else:
+            required_fields = [
+                'temperature', 'heart_rate', 'bp_systolic', 'bp_diastolic',
+                'spo2', 'resp_rate', 'pain_score'
+            ]
+
+        # Validate required fields
+        for fld in required_fields:
             if fld not in data:
                 return jsonify({'message': f'Missing field {fld}'}), 400
 
-        # 2) Validate minimal TB fields (fever and hiv_status)
-        if 'fever' not in data or 'hiv_status' not in data:
-            return jsonify({'message': 'Missing required TB screening field(s)'}), 400
-
-        # 3) Find an in‐progress visit if any
+        # Find in-progress visit
         visit = (
             Visit.query
             .filter_by(patient_id=patient.id, visit_status='in_progress')
@@ -1397,70 +1404,85 @@ def api_vitals(reg_no):
             .first()
         )
 
-        # 4) Create Vitals record
+        # Create vitals record
         vit = Vitals(
-            patient_id   = patient.id,
-            visit_id     = visit.id if visit else None,
-            temperature  = float(data['temperature']),
-            heart_rate   = int(data['heart_rate']),
-            bp_systolic  = int(data['bp_systolic']),
-            bp_diastolic = int(data['bp_diastolic']),
-            spo2         = int(data['spo2']),
-            resp_rate    = int(data['resp_rate']),
-            pain_score   = int(data['pain_score']),
-            notes        = data.get('notes')
+            patient_id = patient.id,
+            visit_id   = visit.id if visit else None,
+            temperature = float(data['temperature']),
+            resp_rate   = int(data['resp_rate']),
+            notes       = data.get('notes')
         )
+
+        if is_pediatric:
+            vit.weight = float(data['weight'])
+            vit.muac   = float(data.get('muac', 0))
+            vit.heart_rate = 0
+            vit.bp_systolic = 0
+            vit.bp_diastolic = 0
+            vit.spo2 = 0
+            vit.pain_score = 0
+            vit.height = 0
+            vit.bmi = 0
+
+        else:
+            vit.weight     = float(data['weight'])
+            vit.height     = float(data['height'])
+            vit.bmi        = float(data.get('bmi', 0))
+            vit.heart_rate = int(data['heart_rate'])
+            vit.bp_systolic= int(data['bp_systolic'])
+            vit.bp_diastolic=int(data['bp_diastolic'])
+            vit.spo2       = int(data['spo2'])
+            vit.pain_score = int(data['pain_score'])
+            # Medical history can be handled in a separate table or as JSON
+            vit.allergy_food        = data.get('allergy_food')
+            vit.allergy_drugs       = data.get('allergy_drugs')
+            vit.chronic_conditions  = data.get('chronic_conditions')  # maybe JSON
+            vit.current_medications = data.get('current_medications')
+
         db.session.add(vit)
-        db.session.flush()  # so vit.id is assigned
+        db.session.flush()
 
-        # 5) Safely parse TB integer fields (convert "" → None)
-        def parse_int_or_none(key):
-            val = data.get(key)
-            if val is None or (isinstance(val, str) and val.strip() == ""):
-                return None
-            try:
-                return int(val)
-            except (ValueError, TypeError):
-                return None
+        # TB screening only for non-pediatric patients if needed
+        if not is_pediatric:
+            def parse_int_or_none(key):
+                val = data.get(key)
+                if val is None or (isinstance(val, str) and val.strip() == ""):
+                    return None
+                try:
+                    return int(val)
+                except (ValueError, TypeError):
+                    return None
 
-        cough_duration = parse_int_or_none('cough_duration')
-        fever_duration = parse_int_or_none('fever_duration')
-        weight_loss_amount = parse_int_or_none('weight_loss_amount')
-        prior_tb_year = parse_int_or_none('prior_tb_year')
-        # 6) Create TbScreening record, using None for blank integer fields
-        tb = TbScreening(
-            vitals_id          = vit.id,
-            cough_duration     = cough_duration,
-            fever              = data.get('fever', 'no'),
-            fever_duration     = fever_duration,
-            night_sweats       = data.get('night_sweats', 'no'),
-            weight_loss_flag   = data.get('weight_loss_flag', 'no'),
-            weight_loss_amount = weight_loss_amount,
-            hemoptysis         = data.get('hemoptysis', 'no'),
-            hiv_status         = data.get('hiv_status', 'unknown'),
-            diabetes           = data.get('diabetes', 'no'),
-            prior_tb           = data.get('prior_tb', 'no'),
-            prior_tb_year      = prior_tb_year,
-            household_contact  = data.get('household_contact', 'no'),
-            smoking_history    = data.get('smoking_history', 'never'),
-            alcohol_use        = data.get('alcohol_use', 'none')
-        )
-        db.session.add(tb)
+            tb = TbScreening(
+                vitals_id          = vit.id,
+                cough_duration     = parse_int_or_none('cough_duration'),
+                fever              = data.get('fever', 'no'),
+                fever_duration     = parse_int_or_none('fever_duration'),
+                night_sweats       = data.get('night_sweats', 'no'),
+                weight_loss_flag   = data.get('weight_loss_flag', 'no'),
+                weight_loss_amount = parse_int_or_none('weight_loss_amount'),
+                hemoptysis         = data.get('hemoptysis', 'no'),
+                hiv_status         = data.get('hiv_status', 'unknown'),
+                diabetes           = data.get('diabetes', 'no'),
+                prior_tb           = data.get('prior_tb', 'no'),
+                prior_tb_year      = parse_int_or_none('prior_tb_year'),
+                household_contact  = data.get('household_contact', 'no'),
+                smoking_history    = data.get('smoking_history', 'never'),
+                alcohol_use        = data.get('alcohol_use', 'none')
+            )
+            db.session.add(tb)
 
-        # 7) Advance the visit if it exists
         if visit:
             visit.current_position = 'consultation'
             db.session.add(visit)
 
-        # 8) Commit both records
         db.session.commit()
 
-        # 9) Return the newly created Vitals (with embedded TB data)
         resp = vit.to_dict()
         resp['visit_id'] = visit.id if visit else None
         return jsonify(resp), 201
 
-    # ===== GET: fetch vitals (+ TB) for this patient =====
+    # ===== GET: fetch vitals =====
     recent_n = request.args.get('recent', type=int)
     query = Vitals.query.filter_by(patient_id=patient.id).order_by(Vitals.recorded_at.desc())
     if recent_n:
