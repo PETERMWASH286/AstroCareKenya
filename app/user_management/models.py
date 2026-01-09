@@ -55,7 +55,12 @@ class EmployeeBio(db.Model):
     __audit_trail__ = True
 
     id = db.Column(db.Integer, primary_key=True)
+
+    # Staff / Employee Number
+    staff_no = db.Column(db.String(32), unique=True, index=True, nullable=False)
+
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, unique=True)
+
     dob = db.Column(db.Date, nullable=True)
     phone = db.Column(db.String(20), nullable=True)
     address = db.Column(db.String(255), nullable=True)
@@ -66,35 +71,73 @@ class EmployeeBio(db.Model):
     nationality = db.Column(db.String(100), nullable=True)
     national_id = db.Column(db.String(64), nullable=True, index=True)
     passport_number = db.Column(db.String(64), nullable=True)
-    gender = db.Column(db.Enum('Male','Female','Other', name='gender_enum'), nullable=True)
-    marital_status = db.Column(db.Enum('Single','Married','Divorced','Widowed', name='marital_enum'), nullable=True)
+
+    gender = db.Column(
+        db.Enum('Male', 'Female', 'Other', name='gender_enum'),
+        nullable=True
+    )
+    place_of_worship = db.Column(db.String(128), nullable=True)
+    employment_date = db.Column(db.Date, nullable=True)
+    marital_status = db.Column(
+        db.Enum('Single', 'Married', 'Divorced', 'Widowed', name='marital_enum'),
+        nullable=True
+    )
+
     blood_type = db.Column(db.String(5), nullable=True)
+
     bank_name = db.Column(db.String(128), nullable=True)
     bank_branch = db.Column(db.String(128), nullable=True)
     bank_account_number = db.Column(db.String(64), nullable=True)
     bank_routing_number = db.Column(db.String(64), nullable=True)
+    nssf_no = db.Column(db.String(32), nullable=True)
+
     tax_id = db.Column(db.String(64), nullable=True)
     social_security_number = db.Column(db.String(64), nullable=True)
+
     emergency_contact_name = db.Column(db.String(128), nullable=True)
     emergency_contact_relationship = db.Column(db.String(64), nullable=True)
     emergency_contact_phone = db.Column(db.String(32), nullable=True)
+
+    nok_full_name = db.Column(db.String(128), nullable=True)
+    nok_relationship = db.Column(db.String(64), nullable=True)
+    nok_phone = db.Column(db.String(32), nullable=True)
+    nok_address = db.Column(db.String(255), nullable=True)
+
+
     insurance_provider = db.Column(db.String(128), nullable=True)
     insurance_number = db.Column(db.String(64), nullable=True)
+
     medical_conditions = db.Column(db.Text, nullable=True)
     allergies = db.Column(db.Text, nullable=True)
+
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = db.Column(
+        db.DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow
+    )
 
     # Relationships
     user = db.relationship('User', backref=db.backref('bio', uselist=False))
-    educations = db.relationship('EmployeeEducation', backref='bio', lazy=True, cascade='all, delete-orphan')
-    relatives = db.relationship('EmployeeRelative', backref='bio', lazy=True, cascade='all, delete-orphan')
-    work_histories = db.relationship('EmployeeWorkHistory', backref='bio', lazy=True, cascade='all, delete-orphan')
-    certifications = db.relationship('EmployeeCertification', backref='bio', lazy=True, cascade='all, delete-orphan')
-    attachments = db.relationship('BioAttachment', backref='bio', lazy=True, cascade='all, delete-orphan')
+    educations = db.relationship(
+        'EmployeeEducation', backref='bio', lazy=True, cascade='all, delete-orphan'
+    )
+    relatives = db.relationship(
+        'EmployeeRelative', backref='bio', lazy=True, cascade='all, delete-orphan'
+    )
+    work_histories = db.relationship(
+        'EmployeeWorkHistory', backref='bio', lazy=True, cascade='all, delete-orphan'
+    )
+    certifications = db.relationship(
+        'EmployeeCertification', backref='bio', lazy=True, cascade='all, delete-orphan'
+    )
+    attachments = db.relationship(
+        'BioAttachment', backref='bio', lazy=True, cascade='all, delete-orphan'
+    )
 
     def __repr__(self):
-        return f"<EmployeeBio for user_id={self.user_id}>"
+        return f"<EmployeeBio staff_no={self.staff_no} user_id={self.user_id}>"
+
 
 class EmployeeEducation(db.Model):
     __tablename__ = 'employee_educations'
@@ -102,6 +145,7 @@ class EmployeeEducation(db.Model):
     bio_id = db.Column(db.Integer, db.ForeignKey('employee_bios.id'), nullable=False)
     institution = db.Column(db.String(255), nullable=False)
     degree = db.Column(db.String(128), nullable=False)
+    certificate_no = db.Column(db.String(100), nullable=True)
     field_of_study = db.Column(db.String(128), nullable=True)
     start_date = db.Column(db.Date, nullable=False)
     end_date = db.Column(db.Date, nullable=True)

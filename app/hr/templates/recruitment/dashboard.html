@@ -1,0 +1,318 @@
+<!-- app/hr/templates/recruitment/dashboard.html -->
+{% extends 'base.html' %}
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    
+    <!-- Header -->
+    <div class="mb-8">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <div class="flex items-center gap-3 mb-2">
+            <div class="h-12 w-12 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl flex items-center justify-center shadow-lg">
+              <i class="fas fa-user-graduate text-white text-xl"></i>
+            </div>
+            <div>
+              <h1 class="text-4xl font-bold text-gray-900">Recruitment Dashboard</h1>
+              <p class="text-gray-600 mt-1">Manage hiring, interviews, and candidate selection</p>
+            </div>
+          </div>
+        </div>
+        <div class="flex gap-3">
+          <a href="{{ url_for('hr_web.new_job_posting') }}" 
+             class="group relative inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200">
+            <i class="fas fa-plus-circle mr-3"></i>
+            Post New Job
+            <div class="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 blur opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          </a>
+        </div>
+      </div>
+
+      <!-- Stats Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <!-- Total Jobs -->
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-600">Total Jobs</p>
+              <p class="text-2xl font-bold text-gray-900 mt-1">{{ total_jobs }}</p>
+              <p class="text-xs text-green-600 mt-1">{{ active_jobs }} active</p>
+            </div>
+            <div class="h-10 w-10 bg-gradient-to-r from-blue-100 to-cyan-100 rounded-lg flex items-center justify-center">
+              <i class="fas fa-briefcase text-blue-600"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Total Candidates -->
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-600">Candidates</p>
+              <p class="text-2xl font-bold text-gray-900 mt-1">{{ total_candidates }}</p>
+              <p class="text-xs text-blue-600 mt-1">{{ candidates_this_month|default(0) }} this month</p>
+            </div>
+            <div class="h-10 w-10 bg-gradient-to-r from-green-100 to-emerald-100 rounded-lg flex items-center justify-center">
+              <i class="fas fa-users text-green-600"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Today's Interviews -->
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-600">Today's Interviews</p>
+              <p class="text-2xl font-bold text-gray-900 mt-1">{{ interviews_today }}</p>
+              <p class="text-xs text-amber-600 mt-1">Schedule more</p>
+            </div>
+            <div class="h-10 w-10 bg-gradient-to-r from-amber-100 to-yellow-100 rounded-lg flex items-center justify-center">
+              <i class="fas fa-calendar-alt text-amber-600"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Conversion Rate -->
+        <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-600">Hire Rate</p>
+              <p class="text-2xl font-bold text-gray-900 mt-1">{{ conversion_rate|round(1) }}%</p>
+              <p class="text-xs text-purple-600 mt-1">{{ hired_count }} hires</p>
+            </div>
+            <div class="h-10 w-10 bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg flex items-center justify-center">
+              <i class="fas fa-trophy text-purple-600"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Two Column Layout -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Left Column - Recent Jobs -->
+      <div class="lg:col-span-2 space-y-6">
+        <!-- Recent Job Postings -->
+        <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100">
+          <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+            <h3 class="text-lg font-semibold text-gray-900">Recent Job Postings</h3>
+            <a href="{{ url_for('hr_web.recruitment_jobs') }}" class="text-sm text-purple-600 hover:text-purple-800 font-medium">
+              View All →
+            </a>
+          </div>
+          <div class="divide-y divide-gray-100">
+            {% for job in recent_jobs %}
+            <div class="p-6 hover:bg-gray-50 transition-colors duration-150">
+              <div class="flex items-start justify-between">
+                <div class="flex-1">
+                  <div class="flex items-center gap-3 mb-2">
+                    <h4 class="font-bold text-gray-900">{{ job.title }}</h4>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                      {% if job.status == 'Published' %}bg-green-100 text-green-800
+                      {% elif job.status == 'Draft' %}bg-yellow-100 text-yellow-800
+                      {% else %}bg-gray-100 text-gray-800{% endif %}">
+                      {{ job.status }}
+                    </span>
+                  </div>
+                  <p class="text-sm text-gray-600 mb-3 line-clamp-2">{{ job.description[:200] }}...</p>
+                  <div class="flex items-center gap-4 text-sm text-gray-500">
+                    <div class="flex items-center gap-1">
+                      <i class="fas fa-calendar-alt text-gray-400"></i>
+                      <span>Closes: {{ job.application_deadline.strftime('%d %b %Y') }}</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                      <i class="fas fa-users text-gray-400"></i>
+                      <span>{{ job.applications_count }} applicants</span>
+                    </div>
+                    {% if job.location %}
+                    <div class="flex items-center gap-1">
+                      <i class="fas fa-map-marker-alt text-gray-400"></i>
+                      <span>{{ job.location }}</span>
+                    </div>
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="ml-4 flex flex-col gap-2">
+                  <a href="{{ url_for('hr_web.view_job_posting', job_id=job.id) }}" 
+                     class="px-3 py-1.5 bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-100 transition-colors text-sm font-medium">
+                    View
+                  </a>
+                  {% if job.status == 'Published' %}
+                  <a href="{{ url_for('hr_web.new_candidate', job_id=job.id) }}" 
+                     class="px-3 py-1.5 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors text-sm font-medium">
+                    Add Candidate
+                  </a>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- Recent Candidates -->
+        <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100">
+          <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+            <h3 class="text-lg font-semibold text-gray-900">Recent Candidates</h3>
+            <a href="" class="text-sm text-purple-600 hover:text-purple-800 font-medium">
+              View All →
+            </a>
+          </div>
+          <div class="divide-y divide-gray-100">
+            {% for candidate in recent_candidates %}
+            <div class="p-6 hover:bg-gray-50 transition-colors duration-150">
+              <div class="flex items-start justify-between">
+                <div class="flex items-start gap-4 flex-1">
+                  <div class="h-12 w-12 bg-gradient-to-r from-blue-100 to-cyan-100 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-user text-blue-600"></i>
+                  </div>
+                  <div class="flex-1">
+                    <div class="flex items-center gap-3 mb-1">
+                      <h4 class="font-bold text-gray-900">{{ candidate.full_name }}</h4>
+                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                        {% if candidate.status == 'Shortlisted' %}bg-green-100 text-green-800
+                        {% elif candidate.status == 'Interviewed' %}bg-blue-100 text-blue-800
+                        {% elif candidate.status == 'Applied' %}bg-yellow-100 text-yellow-800
+                        {% elif candidate.status == 'Rejected' %}bg-red-100 text-red-800
+                        {% else %}bg-gray-100 text-gray-800{% endif %}">
+                        {{ candidate.status }}
+                      </span>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-2">Applied for: {{ candidate.job_posting.title }}</p>
+                    <div class="flex items-center gap-4 text-sm text-gray-500">
+                      <div class="flex items-center gap-1">
+                        <i class="fas fa-envelope text-gray-400"></i>
+                        <span>{{ candidate.email }}</span>
+                      </div>
+                      {% if candidate.phone %}
+                      <div class="flex items-center gap-1">
+                        <i class="fas fa-phone text-gray-400"></i>
+                        <span>{{ candidate.phone }}</span>
+                      </div>
+                      {% endif %}
+                      <div class="flex items-center gap-1">
+                        <i class="fas fa-calendar text-gray-400"></i>
+                        <span>{{ candidate.application_date.strftime('%d %b %Y') }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="ml-4">
+                  <a href="{{ url_for('hr_web.view_candidate', candidate_id=candidate.id) }}" 
+                     class="px-3 py-1.5 bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-100 transition-colors text-sm font-medium">
+                    View Profile
+                  </a>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column - Upcoming Interviews & Quick Actions -->
+      <div class="space-y-6">
+        <!-- Upcoming Interviews -->
+        <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900">Upcoming Interviews</h3>
+          </div>
+          <div class="divide-y divide-gray-100">
+            {% for interview in upcoming_interviews %}
+            <div class="p-4 hover:bg-gray-50 transition-colors duration-150">
+              <div class="flex items-start justify-between mb-2">
+                <div>
+                  <h4 class="font-medium text-gray-900">{{ interview.candidate.full_name }}</h4>
+                  <p class="text-sm text-gray-600">{{ interview.candidate.job_posting.title }}</p>
+                </div>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                  {% if interview.status == 'Confirmed' %}bg-green-100 text-green-800
+                  {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                  {{ interview.status }}
+                </span>
+              </div>
+              <div class="space-y-2 text-sm text-gray-600">
+                <div class="flex items-center gap-2">
+                  <i class="fas fa-calendar-alt text-gray-400"></i>
+                  <span>{{ interview.scheduled_date.strftime('%d %b %Y, %I:%M %p') }}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <i class="fas fa-clock text-gray-400"></i>
+                  <span>{{ interview.duration_minutes }} minutes</span>
+                </div>
+                {% if interview.location %}
+                <div class="flex items-center gap-2">
+                  <i class="fas fa-map-marker-alt text-gray-400"></i>
+                  <span>{{ interview.location }}</span>
+                </div>
+                {% endif %}
+              </div>
+              <div class="mt-3 flex gap-2">
+                <a href="{{ url_for('hr_web.score_interview', interview_id=interview.id) }}" 
+                   class="flex-1 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors text-sm font-medium text-center">
+                  Score
+                </a>
+                <a href="{{ url_for('hr_web.view_candidate', candidate_id=interview.candidate.id) }}" 
+                   class="flex-1 px-3 py-1.5 bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors text-sm font-medium text-center">
+                  Profile
+                </a>
+              </div>
+            </div>
+            {% else %}
+            <div class="p-6 text-center">
+              <div class="text-gray-400 mb-3">
+                <i class="fas fa-calendar-times text-3xl"></i>
+              </div>
+              <p class="text-gray-500">No upcoming interviews</p>
+              <a href="{{ url_for('hr_web.schedule_interview') }}" class="mt-3 inline-block text-sm text-purple-600 hover:text-purple-800">
+                Schedule an interview →
+              </a>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-6 border border-purple-200">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+          <div class="space-y-3">
+            <a href="{{ url_for('hr_web.new_job_posting') }}" 
+               class="flex items-center gap-3 p-3 bg-white rounded-xl border border-purple-200 hover:border-purple-300 hover:shadow-sm transition-all duration-200">
+              <div class="h-10 w-10 bg-gradient-to-r from-purple-100 to-purple-200 rounded-lg flex items-center justify-center">
+                <i class="fas fa-plus text-purple-600"></i>
+              </div>
+              <div>
+                <p class="font-medium text-gray-900">Post New Job</p>
+                <p class="text-xs text-gray-500">Create a job opening</p>
+              </div>
+            </a>
+            
+            <a href="{{ url_for('hr_web.schedule_interview') }}" 
+               class="flex items-center gap-3 p-3 bg-white rounded-xl border border-blue-200 hover:border-blue-300 hover:shadow-sm transition-all duration-200">
+              <div class="h-10 w-10 bg-gradient-to-r from-blue-100 to-blue-200 rounded-lg flex items-center justify-center">
+                <i class="fas fa-calendar-plus text-blue-600"></i>
+              </div>
+              <div>
+                <p class="font-medium text-gray-900">Schedule Interview</p>
+                <p class="text-xs text-gray-500">Arrange candidate interviews</p>
+              </div>
+            </a>
+            
+            <a href="{{ url_for('hr_web.recruitment_reports') }}" 
+               class="flex items-center gap-3 p-3 bg-white rounded-xl border border-green-200 hover:border-green-300 hover:shadow-sm transition-all duration-200">
+              <div class="h-10 w-10 bg-gradient-to-r from-green-100 to-green-200 rounded-lg flex items-center justify-center">
+                <i class="fas fa-chart-bar text-green-600"></i>
+              </div>
+              <div>
+                <p class="font-medium text-gray-900">View Reports</p>
+                <p class="text-xs text-gray-500">Analytics & insights</p>
+              </div>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

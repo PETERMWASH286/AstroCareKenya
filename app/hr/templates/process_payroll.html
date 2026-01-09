@@ -1,4 +1,6 @@
-{% extends "base.html" %} {% block content %}
+{% extends "base.html" %}
+
+{% block content %}
 <div class="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-4 md:p-8">
     <div class="max-w-7xl mx-auto">
         <!-- Header -->
@@ -20,12 +22,17 @@
                 <form id="processForm">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Pay Period</label>
-                            <select id="periodSelect" name="period_id" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Pay Period *</label>
+                            <select id="periodSelect" name="period_id" required 
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all">
                                 <option value="">Select Pay Period</option>
                                 {% for period in periods %}
-                                <option value="{{ period.id }}">
+                                <option value="{{ period.id }}" 
+                                        data-start="{{ period.start_date.strftime('%Y-%m-%d') }}"
+                                        data-end="{{ period.end_date.strftime('%Y-%m-%d') }}"
+                                        data-paydate="{{ period.pay_date.strftime('%Y-%m-%d') }}">
                                     {{ period.start_date.strftime('%d %b %Y') }} - {{ period.end_date.strftime('%d %b %Y') }}
+                                    {% if period.payrolls %} (Processed) {% endif %}
                                 </option>
                                 {% endfor %}
                             </select>
@@ -36,6 +43,7 @@
                             <div class="text-lg font-semibold text-gray-800" id="payDateDisplay">
                                 Select a period
                             </div>
+                            <div class="text-sm text-gray-500" id="periodDetails"></div>
                         </div>
 
                         <div>
@@ -43,6 +51,7 @@
                             <div class="text-lg font-semibold text-gray-800" id="employeeCount">
                                 {{ active_employees }} active employees
                             </div>
+                            <div class="text-sm text-gray-500" id="availableEmployees">Ready for processing</div>
                         </div>
                     </div>
 
@@ -50,22 +59,26 @@
                         <h3 class="text-lg font-semibold text-gray-800 mb-4">Processing Options</h3>
                         <div class="space-y-3">
                             <label class="flex items-center">
-                                <input type="checkbox" name="include_adjustments" checked class="h-4 w-4 text-indigo-600 rounded focus:ring-indigo-500">
+                                <input type="checkbox" name="include_adjustments" checked 
+                                       class="h-4 w-4 text-indigo-600 rounded focus:ring-indigo-500">
                                 <span class="ml-2 text-gray-700">Include pending adjustments</span>
                             </label>
                             <label class="flex items-center">
-                                <input type="checkbox" name="generate_payslips" checked class="h-4 w-4 text-indigo-600 rounded focus:ring-indigo-500">
+                                <input type="checkbox" name="generate_payslips" checked 
+                                       class="h-4 w-4 text-indigo-600 rounded focus:ring-indigo-500">
                                 <span class="ml-2 text-gray-700">Generate payslips immediately</span>
                             </label>
                             <label class="flex items-center">
-                                <input type="checkbox" name="notify_employees" class="h-4 w-4 text-indigo-600 rounded focus:ring-indigo-500">
+                                <input type="checkbox" name="notify_employees" 
+                                       class="h-4 w-4 text-indigo-600 rounded focus:ring-indigo-500">
                                 <span class="ml-2 text-gray-700">Notify employees when payslips are ready</span>
                             </label>
                         </div>
                     </div>
 
                     <div class="mt-8 flex justify-end">
-                        <button type="submit" id="processBtn" class="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+                        <button type="submit" id="processBtn" 
+                                class="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
                             <i class="fas fa-calculator"></i>
                             <span>Process Payroll</span>
                         </button>
@@ -74,22 +87,82 @@
             </div>
         </div>
 
-        <!-- Processing Status -->
+        <!-- Real-time Processing Status -->
         <div id="processingStatus" class="bg-white rounded-xl shadow-lg p-6 mb-8 hidden">
             <h2 class="text-xl font-bold text-gray-800 mb-4">Processing Status</h2>
-
-            <div class="flex flex-col items-center py-8">
-                <div class="w-24 h-24 mb-6">
-                    <div class="animate-spin rounded-full h-full w-full border-t-4 border-indigo-500 border-opacity-50"></div>
+            
+            <div class="space-y-4">
+                <!-- Progress Bar -->
+                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                    <div id="progressBar" class="bg-indigo-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
                 </div>
-                <p class="text-lg font-medium text-gray-700" id="statusMessage">Calculating payroll...</p>
-                <div class="mt-4 text-gray-500" id="progressDetails"></div>
+                
+                <div class="flex justify-between text-sm text-gray-600">
+                    <span id="progressText">0%</span>
+                    <span id="processingTime">00:00</span>
+                </div>
+                
+                <!-- Status Steps -->
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mt-6">
+                    <div class="status-step" data-step="1">
+                        <div class="status-circle flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 mx-auto">
+                            <span class="text-gray-500">1</span>
+                        </div>
+                        <p class="text-center text-sm mt-2 text-gray-600">Initializing</p>
+                    </div>
+                    <div class="status-step" data-step="2">
+                        <div class="status-circle flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 mx-auto">
+                            <span class="text-gray-500">2</span>
+                        </div>
+                        <p class="text-center text-sm mt-2 text-gray-600">Calculating</p>
+                    </div>
+                    <div class="status-step" data-step="3">
+                        <div class="status-circle flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 mx-auto">
+                            <span class="text-gray-500">3</span>
+                        </div>
+                        <p class="text-center text-sm mt-2 text-gray-600">Processing</p>
+                    </div>
+                    <div class="status-step" data-step="4">
+                        <div class="status-circle flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 mx-auto">
+                            <span class="text-gray-500">4</span>
+                        </div>
+                        <p class="text-center text-sm mt-2 text-gray-600">Generating</p>
+                    </div>
+                    <div class="status-step" data-step="5">
+                        <div class="status-circle flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 mx-auto">
+                            <span class="text-gray-500">5</span>
+                        </div>
+                        <p class="text-center text-sm mt-2 text-gray-600">Finalizing</p>
+                    </div>
+                </div>
+                
+                <!-- Current Status Message -->
+                <div class="mt-6 text-center">
+                    <p class="text-lg font-medium text-gray-700" id="statusMessage">Preparing payroll processing...</p>
+                    <p class="text-sm text-gray-500 mt-1" id="progressDetails"></p>
+                </div>
+                
+                <!-- Cancel Button -->
+                <div class="mt-6 text-center">
+                    <button id="cancelBtn" 
+                            class="px-4 py-2 text-sm text-red-600 hover:text-red-800 focus:outline-none">
+                        Cancel Processing
+                    </button>
+                </div>
             </div>
         </div>
 
         <!-- Results Card -->
         <div id="resultsCard" class="bg-white rounded-xl shadow-lg p-6 mb-8 hidden">
-            <h2 class="text-xl font-bold text-gray-800 mb-4">Processing Results</h2>
+            <div class="flex justify-between items-start mb-6">
+                <div>
+                    <h2 class="text-xl font-bold text-gray-800">Processing Results</h2>
+                    <p class="text-gray-600" id="resultsTimestamp"></p>
+                </div>
+                <div class="flex items-center space-x-2" id="statusBadge">
+                    <!-- Status badge will be inserted here -->
+                </div>
+            </div>
 
             <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
                 <div class="bg-green-50 p-4 rounded-lg border border-green-100">
@@ -113,20 +186,38 @@
                 </div>
             </div>
 
+            <!-- Action Buttons based on Status -->
             <div class="mt-6 flex justify-between items-center">
                 <div>
                     <p class="text-gray-700">
                         Payroll ID: <span class="font-mono text-indigo-600" id="payrollId"></span>
                     </p>
+                    <p class="text-sm text-gray-500" id="periodInfo"></p>
                 </div>
 
-                <div class="space-x-3">
-                    <button id="downloadBtn" class="px-5 py-2 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200">
-                        <i class="fas fa-file-pdf mr-2"></i> Download Report
-                    </button>
-                    <button id="approveBtn" class="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
-                        <i class="fas fa-check-circle mr-2"></i> Approve Payroll
-                    </button>
+                <div class="space-x-3" id="actionButtons">
+                    <!-- Action buttons will be dynamically inserted here -->
+                </div>
+            </div>
+            
+            <!-- Payslips Preview -->
+            <div class="mt-8 border-t border-gray-200 pt-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Payslips Preview</h3>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead>
+                            <tr class="bg-gray-50">
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Employee</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Gross</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Deductions</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Net Pay</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="payslipsList" class="bg-white divide-y divide-gray-200">
+                            <!-- Payslips will be loaded here -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -136,10 +227,11 @@
             <div class="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
                 <div class="flex justify-between items-center">
                     <h2 class="text-xl font-bold text-gray-800">Recent Payrolls</h2>
-                    <button class="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm">
+                    <a href="{{ url_for('hr_web.payroll_history') }}" 
+                       class="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm transition-colors">
                         <i class="fas fa-history"></i>
                         <span>View All</span>
-                    </button>
+                    </a>
                 </div>
                 <p class="text-gray-600 mt-1">Recently processed payroll batches</p>
             </div>
@@ -148,60 +240,73 @@
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payroll ID</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Period</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Processed On</th>
-                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Gross Pay</th>
-                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Net Pay</th>
-                            <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payroll ID</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Period</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Processed On</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Gross Pay</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Net Pay</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                         {% for payroll in recent_payrolls %}
-                        <tr class="hover:bg-gray-50">
+                        <tr class="hover:bg-gray-50 transition-colors" id="payroll-row-{{ payroll.id }}">
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="text-sm font-medium text-gray-900">#{{ payroll.id }}</div>
                                 <div class="text-sm text-gray-500">
-                                    {{ payroll.period.start_date.strftime('%d %b') }} - {{ payroll.period.end_date.strftime('%d %b') }}
+                                    {{ payroll.payslips|length if payroll.payslips else 0 }} employees
                                 </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900">{{ payroll.period.start_date.strftime('%b %Y') }}</div>
+                                <div class="text-sm text-gray-900">{{ payroll.period.start_date.strftime('%d %b') }} - {{ payroll.period.end_date.strftime('%d %b') }}</div>
                                 <div class="text-sm text-gray-500">{{ payroll.period.frequency.value }}</div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="text-sm text-gray-900">{{ payroll.processed_at.strftime('%d %b %Y') }}</div>
                                 <div class="text-sm text-gray-500">{{ payroll.processed_at.strftime('%H:%M') }}</div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-gray-900">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                 KES {{ "{:,.2f}".format(payroll.total_gross) }}
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-gray-900">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                 KES {{ "{:,.2f}".format(payroll.total_net) }}
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-center">
-                                {% if payroll.status == 'Draft' %}
+                            <td class="px-6 py-4 whitespace-nowrap" id="payroll-status-{{ payroll.id }}">
+                                {% if payroll.status == 'Processing' %}
                                 <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                                    Draft
-                                </span> {% elif payroll.status == 'Approved' %}
+                                    Processing
+                                </span>
+                                {% elif payroll.status == 'Processed' %}
                                 <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                                    Approved
-                                </span> {% elif payroll.status == 'Processed' %}
-                                <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-indigo-100 text-indigo-800">
                                     Processed
-                                </span> {% elif payroll.status == 'Paid' %}
+                                </span>
+                                {% elif payroll.status == 'Approved' %}
                                 <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                    Approved
+                                </span>
+                                {% elif payroll.status == 'Paid' %}
+                                <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
                                     Paid
-                                </span> {% endif %}
+                                </span>
+                                {% endif %}
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <button class="text-indigo-600 hover:text-indigo-900 mr-3">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium" id="payroll-actions-{{ payroll.id }}">
+                                <button class="view-payroll text-indigo-600 hover:text-indigo-900 mr-3" 
+                                        data-id="{{ payroll.id }}">
                                     <i class="fas fa-eye"></i>
-                                </button> {% if payroll.status == 'Draft' %}
-                                <button class="approve-payroll-btn text-green-600 hover:text-green-900" data-id="{{ payroll.id }}">
+                                </button>
+                                {% if payroll.status == 'Processed' %}
+                                <button class="approve-payroll text-green-600 hover:text-green-900 mr-3" 
+                                        data-id="{{ payroll.id }}">
                                     <i class="fas fa-check"></i>
-                                </button> {% endif %}
+                                </button>
+                                {% elif payroll.status == 'Approved' %}
+                                <button class="mark-paid-payroll text-purple-600 hover:text-purple-900" 
+                                        data-id="{{ payroll.id }}">
+                                    <i class="fas fa-money-check-alt"></i>
+                                </button>
+                                {% endif %}
                             </td>
                         </tr>
                         {% else %}
@@ -218,272 +323,799 @@
     </div>
 </div>
 
-<!-- Success Toast -->
-<div id="successToast" class="fixed top-4 right-4 z-50 p-4 max-w-sm bg-green-100 border border-green-300 rounded-lg shadow-lg hidden">
+<!-- Toasts - FIXED: Added proper content -->
+<div id="successToast" class="fixed top-4 right-4 z-50 p-4 max-w-sm bg-green-100 border border-green-300 rounded-lg shadow-lg hidden transform transition-transform duration-300 translate-x-full">
     <div class="flex items-start">
-        <div class="flex-shrink-0 pt-0.5">
-            <i class="fas fa-check-circle text-green-500 text-xl"></i>
+        <i class="fas fa-check-circle text-green-500 mr-2 mt-0.5"></i>
+        <div class="flex-1">
+            <p class="font-medium text-green-800">Success!</p>
+            <p class="text-sm text-green-700 mt-1" id="successToastMessage"></p>
         </div>
-        <div class="ml-3">
-            <p class="text-sm font-medium text-green-800" id="toastMessage">Success message</p>
-        </div>
-        <button class="ml-4 -mt-1 -mr-1 p-1 text-green-600 hover:text-green-500 focus:outline-none">
+        <button class="ml-4 text-green-400 hover:text-green-600 focus:outline-none" onclick="hideToast('successToast')">
             <i class="fas fa-times"></i>
         </button>
     </div>
 </div>
 
-<!-- Error Toast -->
-<div id="errorToast" class="fixed top-4 right-4 z-50 p-4 max-w-sm bg-red-100 border border-red-300 rounded-lg shadow-lg hidden">
+<div id="errorToast" class="fixed top-4 right-4 z-50 p-4 max-w-sm bg-red-100 border border-red-300 rounded-lg shadow-lg hidden transform transition-transform duration-300 translate-x-full">
     <div class="flex items-start">
-        <div class="flex-shrink-0 pt-0.5">
-            <i class="fas fa-exclamation-circle text-red-500 text-xl"></i>
+        <i class="fas fa-exclamation-circle text-red-500 mr-2 mt-0.5"></i>
+        <div class="flex-1">
+            <p class="font-medium text-red-800">Error!</p>
+            <p class="text-sm text-red-700 mt-1" id="errorToastMessage"></p>
         </div>
-        <div class="ml-3">
-            <p class="text-sm font-medium text-red-800" id="errorToastMessage">Error message</p>
-        </div>
-        <button class="ml-4 -mt-1 -mr-1 p-1 text-red-600 hover:text-red-500 focus:outline-none">
+        <button class="ml-4 text-red-400 hover:text-red-600 focus:outline-none" onclick="hideToast('errorToast')">
             <i class="fas fa-times"></i>
         </button>
     </div>
 </div>
 
 <script>
-    // DOM Elements
-    const periodSelect = document.getElementById('periodSelect');
-    const payDateDisplay = document.getElementById('payDateDisplay');
-    const processForm = document.getElementById('processForm');
-    const processBtn = document.getElementById('processBtn');
-    const processingStatus = document.getElementById('processingStatus');
-    const statusMessage = document.getElementById('statusMessage');
-    const progressDetails = document.getElementById('progressDetails');
-    const resultsCard = document.getElementById('resultsCard');
-    const grossTotal = document.getElementById('grossTotal');
-    const deductionsTotal = document.getElementById('deductionsTotal');
-    const netTotal = document.getElementById('netTotal');
-    const employeeTotal = document.getElementById('employeeTotal');
-    const payrollId = document.getElementById('payrollId');
-    const downloadBtn = document.getElementById('downloadBtn');
-    const approveBtn = document.getElementById('approveBtn');
+// Global variables
+let currentPayrollId = null;
+let processingInterval = null;
+let startTime = null;
 
+// DOM Elements
+const elements = {
+    periodSelect: document.getElementById('periodSelect'),
+    payDateDisplay: document.getElementById('payDateDisplay'),
+    periodDetails: document.getElementById('periodDetails'),
+    processForm: document.getElementById('processForm'),
+    processBtn: document.getElementById('processBtn'),
+    processingStatus: document.getElementById('processingStatus'),
+    statusMessage: document.getElementById('statusMessage'),
+    progressDetails: document.getElementById('progressDetails'),
+    resultsCard: document.getElementById('resultsCard'),
+    grossTotal: document.getElementById('grossTotal'),
+    deductionsTotal: document.getElementById('deductionsTotal'),
+    netTotal: document.getElementById('netTotal'),
+    employeeTotal: document.getElementById('employeeTotal'),
+    payrollId: document.getElementById('payrollId'),
+    periodInfo: document.getElementById('periodInfo'),
+    resultsTimestamp: document.getElementById('resultsTimestamp'),
+    statusBadge: document.getElementById('statusBadge'),
+    actionButtons: document.getElementById('actionButtons'),
+    payslipsList: document.getElementById('payslipsList'),
+    progressBar: document.getElementById('progressBar'),
+    progressText: document.getElementById('progressText'),
+    processingTime: document.getElementById('processingTime'),
+    cancelBtn: document.getElementById('cancelBtn')
+};
 
+// Update period details when selected
+elements.periodSelect.addEventListener('change', () => {
+    const selectedOption = elements.periodSelect.options[elements.periodSelect.selectedIndex];
+    if (selectedOption.value) {
+        const startDate = selectedOption.dataset.start;
+        const endDate = selectedOption.dataset.end;
+        const payDate = selectedOption.dataset.paydate;
+        
+        elements.payDateDisplay.textContent = formatDate(payDate);
+        elements.periodDetails.textContent = `${formatDate(startDate)} - ${formatDate(endDate)}`;
+        
 
-    // Update pay date when period is selected
-    periodSelect.addEventListener('change', () => {
-        const periodId = periodSelect.value;
-        if (periodId && periodsData[periodId]) {
-            payDateDisplay.textContent = periodsData[periodId].pay_date;
+    } else {
+        elements.payDateDisplay.textContent = 'Select a period';
+        elements.periodDetails.textContent = '';
+    }
+});
+
+// Process payroll form submission
+elements.processForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const periodId = elements.periodSelect.value;
+    if (!periodId) {
+        showToast('Please select a pay period', false);
+        return;
+    }
+    
+    // Start processing
+    startProcessing(periodId);
+});
+
+// Start payroll processing
+async function startProcessing(periodId) {
+    // Show processing status
+    elements.processBtn.disabled = true;
+    elements.processingStatus.classList.remove('hidden');
+    elements.resultsCard.classList.add('hidden');
+    
+    // Reset progress
+    updateProgress(0, 'Initializing payroll processing...');
+    startTime = new Date();
+    
+    // Start timer
+    startTimer();
+    
+    try {
+        const formData = new FormData(elements.processForm);
+        const data = {
+            period_id: periodId,
+            generate_payslips: formData.get('generate_payslips') === 'on',
+            include_adjustments: formData.get('include_adjustments') === 'on',
+            notify_employees: formData.get('notify_employees') === 'on'
+        };
+        
+        // Update status steps
+        updateStatusStep(1, 'active');
+        
+        // Make API call to process payroll
+        const response = await fetch("{{ url_for('hr_web.salary_processing') }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Update progress through steps
+            await simulateProcessingSteps(result.payroll.id);
+            currentPayrollId = result.payroll.id;
+            
+            // Show results
+            showResults(result.payroll);
+            
+
         } else {
-            payDateDisplay.textContent = "Select a period";
+            throw new Error(result.message);
         }
-    });
-
-    // Process payroll form submission
-    processForm.addEventListener('submit', async(e) => {
-        e.preventDefault();
-
-        const periodId = periodSelect.value;
-        if (!periodId) {
-            showToast('Please select a pay period', false);
-            return;
-        }
-
-        // Show processing status
-        processBtn.disabled = true;
-        processingStatus.classList.remove('hidden');
-        statusMessage.textContent = "Starting payroll calculation...";
-        progressDetails.textContent = "Preparing employee data";
-
-        try {
-            const formData = new FormData(processForm);
-            const data = Object.fromEntries(formData.entries());
-
-            // Simulate processing steps (in a real app, this would be API calls)
-            simulateProcessingSteps();
-
-            // In a real implementation, you would make an API call:
-            /*
-            const response = await fetch("{{ url_for('hr_web.salary_processing') }}", {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify(data)
-            });
-            
-            const result = await response.json();
-            
-            if (result.success) {
-                showResults(result.payroll);
-            } else {
-                throw new Error(result.message);
-            }
-            */
-
-        } catch (error) {
-            console.error('Error:', error);
-            showToast('Payroll processing failed: ' + error.message, false);
-            processingStatus.classList.add('hidden');
-            processBtn.disabled = false;
-        }
-    });
-
-    // Simulate processing steps for demo
-    function simulateProcessingSteps() {
-        let step = 0;
-        const steps = [
-            "Loading employee records",
-            "Calculating base salaries",
-            "Applying adjustments",
-            "Calculating taxes (PAYE)",
-            "Calculating NHIF deductions",
-            "Calculating NSSF deductions",
-            "Processing voluntary deductions",
-            "Generating payslips",
-            "Finalizing payroll batch"
-        ];
-
-        const interval = setInterval(() => {
-            if (step < steps.length) {
-                statusMessage.textContent = "Processing payroll...";
-                progressDetails.textContent = steps[step];
-                step++;
-            } else {
-                clearInterval(interval);
-
-                // Show results after delay
-                setTimeout(() => {
-                    processingStatus.classList.add('hidden');
-                    showResults({
-                        id: Math.floor(Math.random() * 10000),
-                        gross: 1528745.32,
-                        deductions: 384567.21,
-                        net: 1144178.11,
-                        employees: 87
-                    });
-                }, 1500);
-            }
-        }, 800);
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('Payroll processing failed: ' + error.message, false);
+        resetProcessing();
     }
+}
 
-    // Show results after processing
-    function showResults(data) {
-        grossTotal.textContent = "KES " + data.gross.toLocaleString('en-US', {
-            minimumFractionDigits: 2
-        });
-        deductionsTotal.textContent = "KES " + data.deductions.toLocaleString('en-US', {
-            minimumFractionDigits: 2
-        });
-        netTotal.textContent = "KES " + data.net.toLocaleString('en-US', {
-            minimumFractionDigits: 2
-        });
-        employeeTotal.textContent = data.employees;
-        payrollId.textContent = "#" + data.id;
-
-        resultsCard.classList.remove('hidden');
-        processBtn.disabled = false;
-
-        showToast('Payroll processed successfully!', true);
+// Simulate processing steps with real progress
+async function simulateProcessingSteps(payrollId) {
+    const steps = [
+        { progress: 10, message: 'Loading employee data...', step: 1 },
+        { progress: 25, message: 'Calculating base salaries...', step: 2 },
+        { progress: 40, message: 'Applying adjustments...', step: 2 },
+        { progress: 55, message: 'Calculating statutory deductions...', step: 3 },
+        { progress: 70, message: 'Processing voluntary deductions...', step: 3 },
+        { progress: 85, message: 'Generating payslips...', step: 4 },
+        { progress: 95, message: 'Finalizing payroll batch...', step: 5 },
+        { progress: 100, message: 'Payroll processed successfully!', step: 5 }
+    ];
+    
+    for (const step of steps) {
+        await delay(800); // Simulate processing time
+        updateProgress(step.progress, step.message);
+        updateStatusStep(step.step, 'active');
     }
+    
+    // Mark all steps as completed
+    document.querySelectorAll('.status-step').forEach(step => {
+        step.classList.add('completed');
+    });
+}
 
-    // Approve payroll
-    approveBtn.addEventListener('click', async() => {
-        const payrollId = document.getElementById('payrollId').textContent.replace('#', '');
-        if (!payrollId) return;
+// Update progress bar and message
+function updateProgress(percentage, message) {
+    elements.progressBar.style.width = `${percentage}%`;
+    elements.progressText.textContent = `${percentage}%`;
+    elements.statusMessage.textContent = message;
+    elements.progressDetails.textContent = getProgressDetails(percentage);
+}
 
-        try {
-            // In a real implementation:
-            /*
-            const response = await fetch(`/hr/payroll/approve/${payrollId}`, {
-                method: 'POST'
-            });
+// Update status step
+function updateStatusStep(stepNumber, status) {
+    const stepElement = document.querySelector(`.status-step[data-step="${stepNumber}"] .status-circle`);
+    if (stepElement) {
+        stepElement.classList.remove('bg-gray-100', 'text-gray-500');
+        if (status === 'active') {
+            stepElement.classList.add('bg-indigo-600', 'text-white');
+        }
+    }
+}
+
+// Start timer
+function startTimer() {
+    let seconds = 0;
+    elements.processingTime.textContent = '00:00';
+    
+    if (processingInterval) clearInterval(processingInterval);
+    
+    processingInterval = setInterval(() => {
+        seconds++;
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        elements.processingTime.textContent = 
+            `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+    }, 1000);
+}
+
+// Show results after processing
+function showResults(payroll) {
+    // Stop timer
+    if (processingInterval) clearInterval(processingInterval);
+    
+    // Hide processing status
+    elements.processingStatus.classList.add('hidden');
+    
+    // Update results
+    elements.grossTotal.textContent = formatCurrency(payroll.total_gross);
+    elements.deductionsTotal.textContent = formatCurrency(payroll.total_deductions);
+    elements.netTotal.textContent = formatCurrency(payroll.total_net);
+    elements.employeeTotal.textContent = payroll.employee_count;
+    elements.payrollId.textContent = `#${payroll.id}`;
+    elements.resultsTimestamp.textContent = `Processed at: ${formatDateTime(payroll.processed_at)}`;
+    
+    // Update status badge
+    updateStatusBadge(payroll.status);
+    
+    // Update action buttons
+    updateActionButtons(payroll.status, payroll.id);
+    
+    // Load payslips preview
+    loadPayslipsPreview(payroll.id);
+    
+    // Show results card
+    elements.resultsCard.classList.remove('hidden');
+    
+    // Reset process button
+    elements.processBtn.disabled = false;
+    
+    // Show success toast
+    showToast('Payroll processed successfully!', true);
+}
+
+// Update status badge
+function updateStatusBadge(status) {
+    let badgeClass = '';
+    let badgeText = '';
+    
+    switch(status) {
+        case 'Processed':
+            badgeClass = 'bg-blue-100 text-blue-800';
+            badgeText = 'Processed';
+            break;
+        case 'Approved':
+            badgeClass = 'bg-green-100 text-green-800';
+            badgeText = 'Approved';
+            break;
+        case 'Paid':
+            badgeClass = 'bg-purple-100 text-purple-800';
+            badgeText = 'Paid';
+            break;
+        default:
+            badgeClass = 'bg-gray-100 text-gray-800';
+            badgeText = status;
+    }
+    
+    elements.statusBadge.innerHTML = `
+        <span class="px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full ${badgeClass}">
+            ${badgeText}
+        </span>
+    `;
+}
+
+// Update action buttons based on status
+function updateActionButtons(status, payrollId) {
+    let buttonsHTML = '';
+    
+    switch(status) {
+        case 'Processed':
+            buttonsHTML = `
+                <button id="downloadBtn" class="px-5 py-2 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition-colors">
+                    <i class="fas fa-file-pdf mr-2"></i> Download Report
+                </button>
+                <button id="approveBtn" class="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors" data-id="${payrollId}">
+                    <i class="fas fa-check-circle mr-2"></i> Approve Payroll
+                </button>
+            `;
+            break;
+        case 'Approved':
+            buttonsHTML = `
+                <button id="downloadBtn" class="px-5 py-2 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition-colors">
+                    <i class="fas fa-file-pdf mr-2"></i> Download Report
+                </button>
+                <button id="markPaidBtn" class="px-5 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors" data-id="${payrollId}">
+                    <i class="fas fa-money-check-alt mr-2"></i> Mark as Paid
+                </button>
+            `;
+            break;
+        case 'Paid':
+            buttonsHTML = `
+                <button id="downloadBtn" class="px-5 py-2 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition-colors">
+                    <i class="fas fa-file-pdf mr-2"></i> Download Report
+                </button>
+                <button class="px-5 py-2 bg-gray-300 text-gray-700 rounded-lg cursor-not-allowed" disabled>
+                    <i class="fas fa-check mr-2"></i> Paid
+                </button>
+            `;
+            break;
+    }
+    
+    elements.actionButtons.innerHTML = buttonsHTML;
+    
+    // Add event listeners to dynamic buttons
+    if (document.getElementById('approveBtn')) {
+        document.getElementById('approveBtn').addEventListener('click', approvePayroll);
+    }
+    if (document.getElementById('markPaidBtn')) {
+        document.getElementById('markPaidBtn').addEventListener('click', markPayrollAsPaid);
+    }
+    if (document.getElementById('downloadBtn')) {
+        document.getElementById('downloadBtn').addEventListener('click', downloadPayrollReport);
+    }
+}
+
+// Load payslips preview
+async function loadPayslipsPreview(payrollId) {
+    try {
+        const response = await fetch(`/hr/payroll/${payrollId}/details`);
+        const result = await response.json();
+        
+        if (result.success) {
+            const payslipsHTML = result.payslips.map(payslip => `
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        ${payslip.employee_name}
+                        <div class="text-xs text-gray-500">${payslip.employee_id}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        ${formatCurrency(payslip.gross_earnings)}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        ${formatCurrency(payslip.total_deductions)}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        ${formatCurrency(payslip.net_pay)}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
+                            ${payslip.status === 'Paid' ? 'bg-green-100 text-green-800' : 
+                              payslip.status === 'Approved' ? 'bg-blue-100 text-blue-800' : 
+                              'bg-gray-100 text-gray-800'}">
+                            ${payslip.status}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
             
-            const result = await response.json();
-            */
+            elements.payslipsList.innerHTML = payslipsHTML;
+            elements.periodInfo.textContent = result.payroll.period;
+        }
+    } catch (error) {
+        console.error('Error loading payslips:', error);
+        elements.payslipsList.innerHTML = `
+            <tr>
+                <td colspan="5" class="px-6 py-4 text-center text-gray-500">
+                    Error loading payslips
+                </td>
+            </tr>
+        `;
+    }
+}
 
-            // Simulate success
+// Approve payroll
+async function approvePayroll(e) {
+    const payrollId = e.target.dataset.id;
+    
+    if (!confirm('Are you sure you want to approve this payroll? This action cannot be undone.')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/hr/payroll/${payrollId}/approve`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
             showToast('Payroll approved successfully!', true);
+            
+            // If this is the current payroll in results card, update it
+            if (currentPayrollId == payrollId) {
+                updateStatusBadge('Approved');
+                updateActionButtons('Approved', payrollId);
+            }
+            
+            // Update the recent payrolls table row
+            updatePayrollRowStatus(payrollId, 'Approved');
+            
 
-            // Update UI to show approved status
-            approveBtn.classList.add('hidden');
-            document.querySelector('.status-badge').textContent = 'Approved';
-            document.querySelector('.status-badge').classList.remove('bg-yellow-100', 'text-yellow-800');
-            document.querySelector('.status-badge').classList.add('bg-green-100', 'text-green-800');
-
-        } catch (error) {
-            console.error('Error:', error);
-            showToast('Failed to approve payroll: ' + error.message, false);
-        }
-    });
-
-    // Toast notification
-    function showToast(message, isSuccess) {
-        if (isSuccess) {
-            document.getElementById('toastMessage').textContent = message;
-            successToast.classList.remove('hidden');
-            setTimeout(() => successToast.classList.add('hidden'), 3000);
         } else {
-            document.getElementById('errorToastMessage').textContent = message;
-            errorToast.classList.remove('hidden');
-            setTimeout(() => errorToast.classList.add('hidden'), 3000);
+            throw new Error(result.message);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('Failed to approve payroll: ' + error.message, false);
+    }
+}
+
+// Mark payroll as paid
+async function markPayrollAsPaid(e) {
+    const payrollId = e.target.dataset.id;
+    
+    if (!confirm('Are you sure you want to mark this payroll as paid? This will update all payslips and close the period.')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/hr/payroll/${payrollId}/mark-paid`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showToast('Payroll marked as paid successfully!', true);
+            
+            // If this is the current payroll in results card, update it
+            if (currentPayrollId == payrollId) {
+                updateStatusBadge('Paid');
+                updateActionButtons('Paid', payrollId);
+            }
+            
+            // Update the recent payrolls table row
+            updatePayrollRowStatus(payrollId, 'Paid');
+
+        } else {
+            throw new Error(result.message);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('Failed to mark payroll as paid: ' + error.message, false);
+    }
+}
+
+// Update payroll row in table
+function updatePayrollRowStatus(payrollId, status) {
+    const statusCell = document.getElementById(`payroll-status-${payrollId}`);
+    const actionsCell = document.getElementById(`payroll-actions-${payrollId}`);
+    
+    if (statusCell) {
+        let badgeClass = '';
+        let badgeText = '';
+        
+        switch(status) {
+            case 'Approved':
+                badgeClass = 'bg-green-100 text-green-800';
+                badgeText = 'Approved';
+                break;
+            case 'Paid':
+                badgeClass = 'bg-purple-100 text-purple-800';
+                badgeText = 'Paid';
+                break;
+        }
+        
+        statusCell.innerHTML = `
+            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${badgeClass}">
+                ${badgeText}
+            </span>
+        `;
+    }
+    
+    if (actionsCell) {
+        let buttonsHTML = `
+            <button class="view-payroll text-indigo-600 hover:text-indigo-900 mr-3" data-id="${payrollId}">
+                <i class="fas fa-eye"></i>
+            </button>
+        `;
+        
+        if (status === 'Approved') {
+            buttonsHTML += `
+                <button class="mark-paid-payroll text-purple-600 hover:text-purple-900" data-id="${payrollId}">
+                    <i class="fas fa-money-check-alt"></i>
+                </button>
+            `;
+        }
+        
+        actionsCell.innerHTML = buttonsHTML;
+        
+        // Re-attach event listeners
+        actionsCell.querySelector('.view-payroll').addEventListener('click', viewPayrollDetails);
+        if (actionsCell.querySelector('.mark-paid-payroll')) {
+            actionsCell.querySelector('.mark-paid-payroll').addEventListener('click', markPayrollAsPaid);
         }
     }
+}
 
-    // Close toasts
-    document.querySelectorAll('#successToast button, #errorToast button').forEach(btn => {
-        btn.addEventListener('click', function() {
-            this.closest('div').classList.add('hidden');
-        });
+// View payroll details
+async function viewPayrollDetails(e) {
+    const payrollId = e.target.closest('button').dataset.id;
+    
+    try {
+        const response = await fetch(`/hr/payroll/${payrollId}/details`);
+        const result = await response.json();
+        
+        if (result.success) {
+            // Create a modal to show payroll details
+            showPayrollDetailsModal(result);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('Failed to load payroll details', false);
+    }
+}
+
+// Show payroll details modal
+function showPayrollDetailsModal(data) {
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50';
+    modal.innerHTML = `
+        <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-gray-800">Payroll Details #${data.payroll.id}</h3>
+                <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="mb-6">
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <p class="text-sm text-gray-500">Period</p>
+                        <p class="font-medium">${data.payroll.period}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Status</p>
+                        <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
+                            ${data.payroll.status === 'Paid' ? 'bg-purple-100 text-purple-800' : 
+                              data.payroll.status === 'Approved' ? 'bg-green-100 text-green-800' : 
+                              'bg-blue-100 text-blue-800'}">
+                            ${data.payroll.status}
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-3 gap-4 mb-6">
+                    <div class="bg-green-50 p-3 rounded">
+                        <p class="text-sm text-green-800">Gross Total</p>
+                        <p class="text-lg font-bold text-green-700">KES ${parseFloat(data.payroll.total_gross).toLocaleString()}</p>
+                    </div>
+                    <div class="bg-red-50 p-3 rounded">
+                        <p class="text-sm text-red-800">Deductions</p>
+                        <p class="text-lg font-bold text-red-700">KES ${parseFloat(data.payroll.total_deductions).toLocaleString()}</p>
+                    </div>
+                    <div class="bg-blue-50 p-3 rounded">
+                        <p class="text-sm text-blue-800">Net Pay</p>
+                        <p class="text-lg font-bold text-blue-700">KES ${parseFloat(data.payroll.total_net).toLocaleString()}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="max-h-96 overflow-y-auto">
+                <h4 class="text-lg font-semibold mb-3">Payslips (${data.payslips.length})</h4>
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Employee</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Gross</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Net</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        ${data.payslips.map(payslip => `
+                            <tr>
+                                <td class="px-4 py-2">
+                                    <div class="text-sm font-medium">${payslip.employee_name}</div>
+                                    <div class="text-xs text-gray-500">${payslip.payment_method}</div>
+                                </td>
+                                <td class="px-4 py-2 text-sm">KES ${parseFloat(payslip.gross_earnings).toLocaleString()}</td>
+                                <td class="px-4 py-2 text-sm font-medium">KES ${parseFloat(payslip.net_pay).toLocaleString()}</td>
+                                <td class="px-4 py-2">
+                                    <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                        ${payslip.status === 'Paid' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
+                                        ${payslip.status}
+                                    </span>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="mt-6 flex justify-end">
+                <button onclick="this.closest('.fixed').remove()" 
+                        class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 mr-2">
+                    Close
+                </button>
+                <button onclick="window.location.href='/hr/payroll/${data.payroll.id}/export'" 
+                        class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                    <i class="fas fa-download mr-2"></i> Export
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Close modal when clicking outside
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.remove();
+        }
     });
+}
+
+// Download payroll report
+async function downloadPayrollReport() {
+    if (!currentPayrollId) return;
+    
+    showToast('Generating payroll report...', true);
+    
+    // Simulate report generation
+    setTimeout(() => {
+        showToast('Report generated successfully!', true);
+        // In real implementation: window.open(`/payroll/${currentPayrollId}/report`);
+    }, 1500);
+}
+
+// Cancel processing
+elements.cancelBtn.addEventListener('click', () => {
+    if (confirm('Are you sure you want to cancel payroll processing?')) {
+        resetProcessing();
+        showToast('Payroll processing cancelled', false);
+    }
+});
+
+// Reset processing state
+function resetProcessing() {
+    if (processingInterval) clearInterval(processingInterval);
+    elements.processingStatus.classList.add('hidden');
+    elements.processBtn.disabled = false;
+    
+    // Reset progress bar
+    updateProgress(0, '');
+    
+    // Reset status steps
+    document.querySelectorAll('.status-step').forEach(step => {
+        step.querySelector('.status-circle').classList.remove('bg-indigo-600', 'text-white');
+        step.querySelector('.status-circle').classList.add('bg-gray-100', 'text-gray-500');
+    });
+}
+
+// Utility functions
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function formatDateTime(dateTimeString) {
+    const date = new Date(dateTimeString);
+    return date.toLocaleString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+function formatCurrency(amount) {
+    return 'KES ' + parseFloat(amount).toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+}
+
+function getProgressDetails(percentage) {
+    if (percentage < 25) return 'Loading employee records...';
+    if (percentage < 50) return 'Calculating salaries and allowances...';
+    if (percentage < 75) return 'Processing deductions and taxes...';
+    if (percentage < 90) return 'Generating payslips...';
+    return 'Finalizing payroll batch...';
+}
+
+function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// Toast notification - FIXED
+function showToast(message, isSuccess) {
+    const toastId = isSuccess ? 'successToast' : 'errorToast';
+    const toast = document.getElementById(toastId);
+    const messageElement = document.getElementById(`${toastId}Message`);
+    
+    if (messageElement) {
+        messageElement.textContent = message;
+    }
+    
+    toast.classList.remove('hidden', 'translate-x-full');
+    
+    // Slide in
+    setTimeout(() => {
+        toast.classList.remove('translate-x-full');
+    }, 10);
+    
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+        hideToast(toastId);
+    }, 5000);
+}
+
+// Hide toast
+function hideToast(toastId) {
+    const toast = document.getElementById(toastId);
+    toast.classList.add('translate-x-full');
+    setTimeout(() => {
+        toast.classList.add('hidden');
+    }, 300);
+}
+
+// Add event listeners to existing recent payroll buttons
+document.addEventListener('DOMContentLoaded', () => {
+    // Approve buttons in recent payrolls
+    document.querySelectorAll('.approve-payroll').forEach(btn => {
+        btn.addEventListener('click', approvePayroll);
+    });
+    
+    // Mark as paid buttons in recent payrolls
+    document.querySelectorAll('.mark-paid-payroll').forEach(btn => {
+        btn.addEventListener('click', markPayrollAsPaid);
+    });
+    
+    // View payroll buttons
+    document.querySelectorAll('.view-payroll').forEach(btn => {
+        btn.addEventListener('click', viewPayrollDetails);
+    });
+});
 </script>
 
 <style>
-    /* Animation for processing spinner */
-    
-    @keyframes spin {
-        0% {
-            transform: rotate(0deg);
-        }
-        100% {
-            transform: rotate(360deg);
-        }
+.status-step.completed .status-circle {
+    background-color: #10b981 !important;
+    color: white !important;
+}
+
+.status-step.active .status-circle {
+    background-color: #4f46e5 !important;
+    color: white !important;
+}
+
+.progress-transition {
+    transition: width 0.5s ease-in-out;
+}
+
+#successToast, #errorToast {
+    transform: translateX(100%);
+    transition: transform 0.3s ease-out;
+}
+
+#successToast:not(.hidden), #errorToast:not(.hidden) {
+    transform: translateX(0);
+}
+
+/* Smooth animations */
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .status-step p {
+        font-size: 0.75rem;
     }
     
-    .animate-spin {
-        animation: spin 1.5s linear infinite;
+    .status-circle {
+        width: 8px;
+        height: 8px;
     }
-    /* Gradient backgrounds */
-    
-    .bg-gradient-to-r {
-        background-image: linear-gradient(to right, var(--tw-gradient-stops));
-    }
-    /* Hover effects */
-    
-    tr:hover {
-        background-color: #f9fafb;
-    }
-    /* Card shadows */
-    
-    .shadow-lg {
-        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-    }
-    /* Toast animations */
-    
-    #successToast,
-    #errorToast {
-        animation: slideIn 0.3s ease-out;
-    }
-    
-    @keyframes slideIn {
-        from {
-            transform: translateX(100%);
-            opacity: 0;
-        }
-        to {
-            transform: translateX(0);
-            opacity: 1;
-        }
-    }
+}
 </style>
 {% endblock %}

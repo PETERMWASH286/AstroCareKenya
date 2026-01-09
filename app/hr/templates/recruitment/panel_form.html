@@ -1,0 +1,357 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - AstroCare HR{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white shadow">
+        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+            <div class="md:flex md:items-center md:justify-between">
+                <div class="flex-1 min-w-0">
+                    <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
+                        {{ title }}
+                    </h2>
+                    <div class="mt-1 flex flex-col sm:flex-row sm:flex-wrap sm:mt-0 sm:space-x-6">
+                        <div class="mt-2 flex items-center text-sm text-gray-500">
+                            <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd" />
+                            </svg>
+                            {{ job.title }}
+                        </div>
+                        <div class="mt-2 flex items-center text-sm text-gray-500">
+                            <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
+                            </svg>
+                            {{ job.reference_no }}
+                        </div>
+                        <div class="mt-2 flex items-center text-sm text-gray-500">
+                            <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+                            </svg>
+                            {{ job.department.name if job.department else 'No Department' }}
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-4 flex md:mt-0 md:ml-4">
+                    <a href="{{ url_for('hr_web.job_panels', job_id=job.id) }}" class="ml-3 inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <svg class="-ml-1 mr-2 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+                        </svg>
+                        Back to Panels
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div class="px-4 py-6 sm:px-0">
+            <div class="md:grid md:grid-cols-3 md:gap-6">
+                <!-- Left Panel - Instructions -->
+                <div class="md:col-span-1">
+                    <div class="px-4 sm:px-0">
+                        <h3 class="text-lg font-medium leading-6 text-gray-900">Panel Setup Guide</h3>
+                        <div class="mt-4 space-y-4">
+                            <div class="bg-blue-50 border-l-4 border-blue-400 p-4">
+                                <div class="flex">
+                                    <div class="flex-shrink-0">
+                                        <svg class="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                                        </svg>
+                                    </div>
+                                    <div class="ml-3">
+                                        <p class="text-sm text-blue-700">
+                                            Interview panels should include diverse stakeholders from different departments for comprehensive evaluation.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+                                <div class="px-4 py-5 sm:p-6">
+                                    <h4 class="text-sm font-medium text-gray-900">Panel Types</h4>
+                                    <dl class="mt-4 space-y-4">
+                                        <div>
+                                            <dt class="text-sm font-medium text-gray-500">Technical Panel</dt>
+                                            <dd class="text-sm text-gray-900 mt-1">Assesses technical skills and expertise. Include senior engineers or subject matter experts.</dd>
+                                        </div>
+                                        <div>
+                                            <dt class="text-sm font-medium text-gray-500">HR Panel</dt>
+                                            <dd class="text-sm text-gray-900 mt-1">Evaluates cultural fit and soft skills. Typically includes HR managers.</dd>
+                                        </div>
+                                        <div>
+                                            <dt class="text-sm font-medium text-gray-500">Management Panel</dt>
+                                            <dd class="text-sm text-gray-900 mt-1">Final decision-making panel with department heads and executives.</dd>
+                                        </div>
+                                        <div>
+                                            <dt class="text-sm font-medium text-gray-500">Final Panel</dt>
+                                            <dd class="text-sm text-gray-900 mt-1">Comprehensive evaluation combining all aspects before job offer.</dd>
+                                        </div>
+                                    </dl>
+                                </div>
+                            </div>
+
+                            <div class="bg-gray-50 rounded-lg p-4">
+                                <h4 class="text-sm font-medium text-gray-900 mb-2">Best Practices</h4>
+                                <ul class="text-sm text-gray-600 space-y-2">
+                                    <li class="flex items-start">
+                                        <svg class="h-4 w-4 text-green-500 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                        </svg>
+                                        Include 3-5 members for optimal discussion
+                                    </li>
+                                    <li class="flex items-start">
+                                        <svg class="h-4 w-4 text-green-500 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                        </svg>
+                                        Assign a Chairperson to lead discussions
+                                    </li>
+                                    <li class="flex items-start">
+                                        <svg class="h-4 w-4 text-green-500 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                        </svg>
+                                        Include members from different seniority levels
+                                    </li>
+                                    <li class="flex items-start">
+                                        <svg class="h-4 w-4 text-green-500 mr-2 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                        </svg>
+                                        Schedule availability checks before finalizing
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Panel - Form -->
+                <div class="mt-5 md:mt-0 md:col-span-2">
+                    <form action="{{ url_for('hr_web.create_interview_panel', job_id=job.id) }}" method="POST" class="space-y-6">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="shadow sm:rounded-md sm:overflow-hidden">
+                            <div class="px-4 py-5 bg-white space-y-6 sm:p-6">
+                                <!-- Success/Error Messages -->
+                                {% with messages = get_flashed_messages(with_categories=true) %}
+                                    {% if messages %}
+                                        {% for category, message in messages %}
+                                            <div class="rounded-md {% if category == 'success' %}bg-green-50 border-l-4 border-green-400{% else %}bg-red-50 border-l-4 border-red-400{% endif %} p-4">
+                                                <div class="flex">
+                                                    <div class="flex-shrink-0">
+                                                        {% if category == 'success' %}
+                                                            <svg class="h-5 w-5 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                                            </svg>
+                                                        {% else %}
+                                                            <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                                                            </svg>
+                                                        {% endif %}
+                                                    </div>
+                                                    <div class="ml-3">
+                                                        <p class="text-sm font-medium {% if category == 'success' %}text-green-800{% else %}text-red-800{% endif %}">
+                                                            {{ message }}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    {% endif %}
+                                {% endwith %}
+
+                                <!-- Panel Name -->
+                                <div>
+                                    <label for="name" class="block text-sm font-medium text-gray-700">
+                                        Panel Name *
+                                    </label>
+                                    <div class="mt-1">
+                                        {{ form.name(class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md", placeholder="e.g., Senior Developer Technical Panel") }}
+                                        {% if form.name.errors %}
+                                            {% for error in form.name.errors %}
+                                                <p class="mt-2 text-sm text-red-600">{{ error }}</p>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                    <p class="mt-2 text-sm text-gray-500">
+                                        Use a descriptive name that identifies the panel's purpose and composition.
+                                    </p>
+                                </div>
+
+                                <!-- Panel Type -->
+                                <div>
+                                    <label for="panel_type" class="block text-sm font-medium text-gray-700">
+                                        Panel Type *
+                                    </label>
+                                    <div class="mt-1">
+                                        {{ form.panel_type(class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md") }}
+                                        {% if form.panel_type.errors %}
+                                            {% for error in form.panel_type.errors %}
+                                                <p class="mt-2 text-sm text-red-600">{{ error }}</p>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <!-- Description -->
+                                <div>
+                                    <label for="description" class="block text-sm font-medium text-gray-700">
+                                        Description
+                                    </label>
+                                    <div class="mt-1">
+                                        {{ form.description(class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border border-gray-300 rounded-md", rows="4", placeholder="Describe the panel's purpose, focus areas, and any special instructions...") }}
+                                        {% if form.description.errors %}
+                                            {% for error in form.description.errors %}
+                                                <p class="mt-2 text-sm text-red-600">{{ error }}</p>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                    <p class="mt-2 text-sm text-gray-500">
+                                        Optional: Include evaluation criteria, interview format, or special considerations.
+                                    </p>
+                                </div>
+
+                                <!-- Preview Card -->
+                                <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                    <h4 class="text-sm font-medium text-gray-900 mb-3">Panel Preview</h4>
+                                    <div class="space-y-3">
+                                        <div class="flex items-center space-x-3">
+                                            <div class="flex-shrink-0">
+                                                <div class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                                                    <svg class="h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                                    </svg>
+                                                </div>
+                                            </div>
+                                            <div class="flex-1 min-w-0">
+                                                <p id="preview-name" class="text-sm font-medium text-gray-900 truncate">Enter panel name</p>
+                                                <p id="preview-type" class="text-sm text-gray-500">Select panel type</p>
+                                            </div>
+                                        </div>
+                                        <div class="text-sm text-gray-600">
+                                            <p id="preview-description" class="text-gray-500 italic">Description will appear here...</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Form Actions -->
+                            <div class="px-4 py-3 bg-gray-50 text-right sm:px-6">
+                                <div class="flex justify-end space-x-3">
+                                    <a href="{{ url_for('hr_web.job_panels', job_id=job.id) }}" class="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                        Cancel
+                                    </a>
+                                    <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                        <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                        </svg>
+                                        Create Interview Panel
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- JavaScript for Live Preview -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Get form elements
+    const nameInput = document.querySelector('#name');
+    const typeSelect = document.querySelector('#panel_type');
+    const descriptionInput = document.querySelector('#description');
+    
+    // Get preview elements
+    const previewName = document.querySelector('#preview-name');
+    const previewType = document.querySelector('#preview-type');
+    const previewDescription = document.querySelector('#preview-description');
+    
+    // Panel type labels
+    const typeLabels = {
+        'Technical': 'Technical Evaluation Panel',
+        'HR': 'HR & Cultural Fit Panel',
+        'Management': 'Management Review Panel',
+        'Final': 'Final Selection Panel',
+        'Other': 'Custom Panel'
+    };
+    
+    // Update preview on input
+    function updatePreview() {
+        // Update name
+        previewName.textContent = nameInput.value || 'Enter panel name';
+        
+        // Update type
+        const selectedType = typeSelect.value;
+        previewType.textContent = typeLabels[selectedType] || 'Select panel type';
+        
+        // Update description
+        if (descriptionInput.value) {
+            previewDescription.textContent = descriptionInput.value;
+            previewDescription.classList.remove('italic', 'text-gray-500');
+            previewDescription.classList.add('text-gray-600');
+        } else {
+            previewDescription.textContent = 'Description will appear here...';
+            previewDescription.classList.add('italic', 'text-gray-500');
+            previewDescription.classList.remove('text-gray-600');
+        }
+    }
+    
+    // Add event listeners
+    nameInput.addEventListener('input', updatePreview);
+    typeSelect.addEventListener('change', updatePreview);
+    descriptionInput.addEventListener('input', updatePreview);
+    
+    // Initialize preview
+    updatePreview();
+    
+    // Form validation enhancement
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(event) {
+        if (!nameInput.value.trim()) {
+            event.preventDefault();
+            nameInput.focus();
+            
+            // Show error
+            if (!nameInput.parentNode.querySelector('.text-red-600')) {
+                const errorDiv = document.createElement('p');
+                errorDiv.className = 'mt-2 text-sm text-red-600';
+                errorDiv.textContent = 'Panel name is required';
+                nameInput.parentNode.appendChild(errorDiv);
+            }
+        }
+    });
+});
+</script>
+
+<style>
+/* Custom scrollbar */
+select::-webkit-scrollbar {
+    width: 8px;
+}
+
+select::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+select::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+select::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Focus styles */
+input:focus, textarea:focus, select:focus {
+    outline: none;
+    ring-width: 2px;
+}
+</style>
+{% endblock %}

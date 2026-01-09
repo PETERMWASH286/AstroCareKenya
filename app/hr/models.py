@@ -1,6 +1,8 @@
 from datetime import datetime, date
 from decimal import Decimal
 from enum import Enum
+
+from sqlalchemy import text
 from app.extensions import db
 
 class PaymentFrequency(Enum):
@@ -42,7 +44,8 @@ class Payroll(db.Model):
     total_net = db.Column(db.Numeric(12, 2), default=0.00)
     status = db.Column(db.Enum('Draft', 'Approved', 'Processed', 'Paid'), default='Draft')
     notes = db.Column(db.Text)
-    
+    employee_count = db.Column(db.Integer, default=0)  # Add this if missing
+
     payslips = db.relationship('Payslip', backref='payroll', lazy=True)
     
     def __repr__(self):
@@ -64,6 +67,31 @@ class Payslip(db.Model):
     
     earnings = db.relationship('PayslipEarning', backref='payslip', lazy=True, cascade='all, delete-orphan')
     deductions = db.relationship('PayslipDeduction', backref='payslip', lazy=True, cascade='all, delete-orphan')
+    employee = db.relationship('User', backref='payslips')
+    
+    def calculate_totals(self):
+        """Calculate gross earnings, total deductions, and net pay"""
+        # Start with basic salary
+        gross = Decimal(str(self.basic_salary or 0))
+        
+        # Add all earnings
+        for earning in self.earnings:
+            gross += Decimal(str(earning.amount or 0))
+        
+        self.gross_earnings = gross
+        self.gross_earnings = gross
+        
+        # Calculate total deductions
+        total_deductions = Decimal('0')
+        for deduction in self.deductions:
+            total_deductions += Decimal(str(deduction.amount or 0))
+        
+        self.total_deductions = total_deductions
+        
+        # Calculate net pay
+        self.net_pay = gross - total_deductions
+        
+        return self
     
     def __repr__(self):
         return f"<Payslip #{self.id} for Employee {self.employee_id}>"
@@ -78,7 +106,7 @@ class EarningType(db.Model):
     is_statutory = db.Column(db.Boolean, default=False)
     is_recurring = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
+
     payslip_earnings = db.relationship('PayslipEarning', backref='earning_type', lazy=True)
     
     def __repr__(self):
@@ -93,7 +121,7 @@ class DeductionType(db.Model):
     is_statutory = db.Column(db.Boolean, default=False)  # True for PAYE, NHIF, NSSF
     is_voluntary = db.Column(db.Boolean, default=False)  # True for loans, advances
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
+
     payslip_deductions = db.relationship('PayslipDeduction', backref='deduction_type', lazy=True)
     
     def __repr__(self):
@@ -121,6 +149,35 @@ class PayslipDeduction(db.Model):
     def __repr__(self):
         return f"<PayslipDeduction {self.deduction_type.name}: KES {self.amount}>"
 
+class EmployeeEarningAssignment(db.Model):
+    """Assign specific earnings to employees"""
+    __tablename__ = 'employee_earning_assignments'
+    id = db.Column(db.Integer, primary_key=True)
+    employee_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    earning_type_id = db.Column(db.Integer, db.ForeignKey('earning_types.id'), nullable=False)
+    amount = db.Column(db.Numeric(10, 2))  # Override default amount
+    is_active = db.Column(db.Boolean, default=True)
+    effective_date = db.Column(db.Date, default=date.today)
+    end_date = db.Column(db.Date)
+    
+    employee = db.relationship('User', backref='earning_assignments')
+    earning_type = db.relationship('EarningType')
+
+class EmployeeDeductionAssignment(db.Model):
+    """Assign specific deductions to employees (loans, advances, etc.)"""
+    __tablename__ = 'employee_deduction_assignments'
+    id = db.Column(db.Integer, primary_key=True)
+    employee_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    deduction_type_id = db.Column(db.Integer, db.ForeignKey('deduction_types.id'), nullable=False)
+    amount = db.Column(db.Numeric(10, 2))
+    balance = db.Column(db.Numeric(10, 2))  # For loans
+    is_active = db.Column(db.Boolean, default=True)
+    effective_date = db.Column(db.Date, default=date.today)
+    end_date = db.Column(db.Date)
+    
+    employee = db.relationship('User', backref='deduction_assignments')
+    deduction_type = db.relationship('DeductionType')
+
 # Kenya-specific Statutory Models
 class PAYEBand(db.Model):
     __tablename__ = 'paye_bands'
@@ -145,6 +202,20 @@ class NHIFRate(db.Model):
     def __repr__(self):
         return f"<NHIFRate {self.lower_bound}-{self.upper_bound or '∞'}: KES {self.amount}>"
 
+# Remove NHIFRate and create SHARate model
+class SHARate(db.Model):
+    """Social Health Authority (SHA) rates - replaced NHIF in Kenya"""
+    __tablename__ = 'sha_rates'
+    id = db.Column(db.Integer, primary_key=True)
+    rate = db.Column(db.Numeric(5, 2), nullable=False, default=2.75)  # Percentage (2.75%)
+    minimum_amount = db.Column(db.Numeric(10, 2), nullable=False, default=300.00)  # Minimum KES 300
+    effective_date = db.Column(db.Date, default=date.today)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def __repr__(self):
+        return f"<SHARate {self.rate}% (Min: KES {self.minimum_amount})>"
+
+
 class NSSFRate(db.Model):
     __tablename__ = 'nssf_rates'
     id = db.Column(db.Integer, primary_key=True)
@@ -162,6 +233,8 @@ class EmployeePayrollInfo(db.Model):
     __tablename__ = 'employee_payroll_info'
     id = db.Column(db.Integer, primary_key=True)
     employee_id = db.Column(db.Integer, db.ForeignKey('user.id'), unique=True, nullable=False)
+    staff_no = db.Column(db.String(32), unique=True, index=True, nullable=False)
+
     bank_name = db.Column(db.String(100))
     bank_branch = db.Column(db.String(100))
     bank_account = db.Column(db.String(50))
@@ -169,6 +242,15 @@ class EmployeePayrollInfo(db.Model):
     kra_pin = db.Column(db.String(20))
     nhif_number = db.Column(db.String(20))
     nssf_number = db.Column(db.String(20))
+    sha_number = db.Column(db.String(20))
+    # SHA Specific - if both spouses are employed
+    is_spouse_employed = db.Column(db.Boolean, default=False)
+    # Statutory information
+    nssf_tier = db.Column(
+        db.Enum('I', 'II', name='nssf_tier_enum'),
+        nullable=False,
+        server_default=text("'II'")
+    )    
     basic_salary = db.Column(db.Numeric(10, 2), nullable=False)
     housing_allowance = db.Column(db.Numeric(10, 2), default=0.00)
     transport_allowance = db.Column(db.Numeric(10, 2), default=0.00)
@@ -179,9 +261,15 @@ class EmployeePayrollInfo(db.Model):
     
     employee = db.relationship('User', backref=db.backref('payroll_info', uselist=False))
     
+    def calculate_gross_salary(self):
+        """Calculate total gross salary"""
+        return (self.basic_salary or Decimal('0')) + \
+               (self.housing_allowance or Decimal('0')) + \
+               (self.transport_allowance or Decimal('0')) + \
+               (self.other_allowance or Decimal('0'))
+    
     def __repr__(self):
         return f"<PayrollInfo for Employee {self.employee_id}>"
-
 class PayrollAdjustment(db.Model):
     __tablename__ = 'payroll_adjustments'
     id = db.Column(db.Integer, primary_key=True)
@@ -225,7 +313,9 @@ class LoanRepayment(db.Model):
     amount = db.Column(db.Numeric(10, 2), nullable=False)
     payment_date = db.Column(db.Date, nullable=False)
     payslip_id = db.Column(db.Integer, db.ForeignKey('payslips.id'))
+    description = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'))  # Add this field
     
     def __repr__(self):
         return f"<LoanRepayment #{self.id} for Loan {self.loan_id}>"
@@ -659,3 +749,386 @@ class HRInventory(db.Model):
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    
+    
+    
+    
+# Recruitment Models
+class JobCategory(db.Model):
+    __tablename__ = 'job_categories'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False, unique=True)
+    description = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    job_postings = db.relationship('JobPosting', backref='category', lazy=True)
+    
+    def __repr__(self):
+        return f"<JobCategory {self.name}>"
+
+class JobPosting(db.Model):
+    __tablename__ = 'job_postings'
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    reference_no = db.Column(db.String(50), unique=True, nullable=False)
+    category_id = db.Column(db.Integer, db.ForeignKey('job_categories.id'))
+    department_id = db.Column(db.Integer, db.ForeignKey('departments.id'))
+    
+    # Job Details
+    description = db.Column(db.Text, nullable=False)
+    requirements = db.Column(db.Text)
+    responsibilities = db.Column(db.Text)
+    benefits = db.Column(db.Text)
+    
+    # Job Specifications
+    employment_type = db.Column(db.Enum('Full-Time', 'Part-Time', 'Contract', 'Internship', 'Temporary', name='employment_type_enum'))
+    experience_level = db.Column(db.Enum('Entry', 'Mid', 'Senior', 'Executive', name='experience_level_enum'))
+    education_level = db.Column(db.Enum('Certificate', 'Diploma', 'Bachelor', 'Master', 'PhD', 'None', name='education_level_enum'))
+    
+    # Salary Information
+    salary_range_min = db.Column(db.Numeric(10, 2))
+    salary_range_max = db.Column(db.Numeric(10, 2))
+    salary_currency = db.Column(db.String(3), default='KES')
+    salary_disclosure = db.Column(db.Enum('Confidential', 'Negotiable', 'Fixed', 'Range', name='salary_disclosure_enum'), default='Confidential')
+    
+    # Recruitment Details
+    positions_available = db.Column(db.Integer, default=1)
+    application_deadline = db.Column(db.Date, nullable=False)
+    start_date = db.Column(db.Date)
+    
+    # Status
+    status = db.Column(db.Enum('Draft', 'Published', 'Closed', 'Archived', 'Cancelled', name='job_posting_status_enum'), default='Draft')
+    is_remote = db.Column(db.Boolean, default=False)
+    location = db.Column(db.String(200))
+    
+    # Metadata
+    views_count = db.Column(db.Integer, default=0)
+    applications_count = db.Column(db.Integer, default=0)
+    shortlisted_count = db.Column(db.Integer, default=0)
+    
+    # Timestamps
+    published_at = db.Column(db.DateTime)
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    candidates = db.relationship('Candidate', backref='job_posting', lazy=True)
+    interview_panels = db.relationship('InterviewPanel', backref='job_posting', lazy=True)
+    department = db.relationship('Department', backref='job_postings')
+    
+    def __repr__(self):
+        return f"<JobPosting {self.reference_no}: {self.title}>"
+    
+    @property
+    def is_active(self):
+        return self.status == 'Published' and datetime.utcnow().date() <= self.application_deadline
+    
+    @property
+    def formatted_salary(self):
+        if self.salary_disclosure == 'Confidential':
+            return 'Confidential'
+        elif self.salary_disclosure == 'Negotiable':
+            return 'Negotiable'
+        elif self.salary_disclosure == 'Fixed' and self.salary_range_min:
+            return f"{self.salary_currency} {self.salary_range_min:,.2f}"
+        elif self.salary_disclosure == 'Range' and self.salary_range_min and self.salary_range_max:
+            return f"{self.salary_currency} {self.salary_range_min:,.2f} - {self.salary_range_max:,.2f}"
+        return 'Not Specified'
+
+class Candidate(db.Model):
+    __tablename__ = 'candidates'
+    id = db.Column(db.Integer, primary_key=True)
+    job_posting_id = db.Column(db.Integer, db.ForeignKey('job_postings.id'), nullable=False)
+    
+    # Personal Information
+    first_name = db.Column(db.String(100), nullable=False)
+    last_name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(120), nullable=False)
+    phone = db.Column(db.String(20))
+    date_of_birth = db.Column(db.Date)
+    nationality = db.Column(db.String(50))
+    gender = db.Column(db.Enum('Male', 'Female', 'Other', 'Prefer not to say', name='gender_enum'))
+    
+    # Contact Information
+    address = db.Column(db.Text)
+    city = db.Column(db.String(100))
+    country = db.Column(db.String(100))
+    postal_code = db.Column(db.String(20))
+    
+    # Professional Information
+    current_company = db.Column(db.String(200))
+    current_position = db.Column(db.String(200))
+    current_salary = db.Column(db.Numeric(10, 2))
+    expected_salary = db.Column(db.Numeric(10, 2))
+    notice_period = db.Column(db.Integer)  # In days
+    years_of_experience = db.Column(db.Integer)
+    
+    # Education
+    highest_qualification = db.Column(db.String(200))
+    institution = db.Column(db.String(200))
+    graduation_year = db.Column(db.Integer)
+    
+    # Application Details
+    application_date = db.Column(db.DateTime, default=datetime.utcnow)
+    source = db.Column(db.Enum('Website', 'LinkedIn', 'Referral', 'Agency', 'Other', name='application_source_enum'))
+    cover_letter = db.Column(db.Text)
+    
+    # Documents
+    resume_path = db.Column(db.String(500))
+    cover_letter_path = db.Column(db.String(500))
+    portfolio_url = db.Column(db.String(500))
+    linkedin_url = db.Column(db.String(500))
+    
+    # Status
+    status = db.Column(db.Enum(
+        'Applied', 
+        'Under Review', 
+        'Shortlisted', 
+        'Interview Scheduled', 
+        'Interviewed', 
+        'Reference Check', 
+        'Offer Extended', 
+        'Offer Accepted', 
+        'Offer Rejected', 
+        'Rejected', 
+        'On Hold', 
+        'Withdrawn',
+        name='candidate_status_enum'
+    ), default='Applied')
+    
+    # Interview Details
+    interview_date = db.Column(db.DateTime)
+    interview_location = db.Column(db.String(200))
+    interview_notes = db.Column(db.Text)
+    
+    # Assessment Scores
+    resume_score = db.Column(db.Numeric(5, 2), default=0)
+    technical_score = db.Column(db.Numeric(5, 2), default=0)
+    communication_score = db.Column(db.Numeric(5, 2), default=0)
+    cultural_fit_score = db.Column(db.Numeric(5, 2), default=0)
+    overall_score = db.Column(db.Numeric(5, 2), default=0)
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    hired_at = db.Column(db.DateTime)
+    
+    # Relationships
+    interviews = db.relationship('Interview', backref='candidate', lazy=True)
+    
+    @property
+    def full_name(self):
+        return f"{self.first_name} {self.last_name}"
+    
+    @property
+    def age(self):
+        if self.date_of_birth:
+            today = date.today()
+            return today.year - self.date_of_birth.year - ((today.month, today.day) < (self.date_of_birth.month, self.date_of_birth.day))
+        return None
+    
+    def calculate_overall_score(self):
+        """Calculate overall score from all assessment scores"""
+        scores = [
+            self.resume_score or 0,
+            self.technical_score or 0,
+            self.communication_score or 0,
+            self.cultural_fit_score or 0
+        ]
+        valid_scores = [s for s in scores if s > 0]
+        if valid_scores:
+            self.overall_score = sum(valid_scores) / len(valid_scores)
+        return self.overall_score
+
+class InterviewPanel(db.Model):
+    __tablename__ = 'interview_panels'
+    id = db.Column(db.Integer, primary_key=True)
+    job_posting_id = db.Column(db.Integer, db.ForeignKey('job_postings.id'), nullable=False)
+    name = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
+    panel_type = db.Column(db.Enum('Technical', 'HR', 'Management', 'Final', 'Other', name='panel_type_enum'))
+    
+    # Status
+    is_active = db.Column(db.Boolean, default=True)
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    panel_members = db.relationship('InterviewPanelMember', backref='panel', lazy=True, cascade='all, delete-orphan')
+    interviews = db.relationship('Interview', backref='panel', lazy=True)
+    
+    def __repr__(self):
+        return f"<InterviewPanel {self.name}>"
+
+class InterviewPanelMember(db.Model):
+    __tablename__ = 'interview_panel_members'
+    id = db.Column(db.Integer, primary_key=True)
+    panel_id = db.Column(db.Integer, db.ForeignKey('interview_panels.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    
+    # Role in panel
+    role = db.Column(db.Enum('Chairperson', 'Member', 'Recorder', 'Observer', name='panel_role_enum'), default='Member')
+    is_required = db.Column(db.Boolean, default=True)  # Whether their presence is required
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    user = db.relationship('User', backref='panel_memberships')
+    interview_scores = db.relationship('InterviewScore', backref='panel_member', lazy=True)
+    
+    def __repr__(self):
+        return f"<InterviewPanelMember {self.user.full_name} in Panel {self.panel_id}>"
+
+class Interview(db.Model):
+    __tablename__ = 'interviews'
+    id = db.Column(db.Integer, primary_key=True)
+    candidate_id = db.Column(db.Integer, db.ForeignKey('candidates.id'), nullable=False)
+    panel_id = db.Column(db.Integer, db.ForeignKey('interview_panels.id'), nullable=False)
+    
+    # Interview Details
+    interview_type = db.Column(db.Enum('Phone', 'Video', 'In-Person', 'Group', 'Panel', name='interview_type_enum'), default='In-Person')
+    scheduled_date = db.Column(db.DateTime, nullable=False)
+    duration_minutes = db.Column(db.Integer, default=60)
+    location = db.Column(db.String(200))
+    meeting_link = db.Column(db.String(500))
+    
+    # Status
+    status = db.Column(db.Enum(
+        'Scheduled', 
+        'Confirmed', 
+        'In Progress', 
+        'Completed', 
+        'Cancelled', 
+        'No Show', 
+        'Rescheduled',
+        name='interview_status_enum'
+    ), default='Scheduled')
+    
+    # Interview Results
+    overall_feedback = db.Column(db.Text)
+    recommendation = db.Column(db.Enum('Strong Hire', 'Hire', 'Neutral', 'No Hire', 'Strong No Hire', name='recommendation_enum'))
+    
+    # Timestamps
+    actual_start_time = db.Column(db.DateTime)
+    actual_end_time = db.Column(db.DateTime)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    scores = db.relationship('InterviewScore', backref='interview', lazy=True, cascade='all, delete-orphan')
+    
+    @property
+    def duration_hours(self):
+        return self.duration_minutes / 60 if self.duration_minutes else 0
+    
+    @property
+    def is_completed(self):
+        return self.status == 'Completed'
+    
+    def calculate_average_score(self):
+        scores = [score.score for score in self.scores if score.score is not None]
+        return sum(scores) / len(scores) if scores else 0
+
+class InterviewScore(db.Model):
+    __tablename__ = 'interview_scores'
+    id = db.Column(db.Integer, primary_key=True)
+    interview_id = db.Column(db.Integer, db.ForeignKey('interviews.id'), nullable=False)
+    panel_member_id = db.Column(db.Integer, db.ForeignKey('interview_panel_members.id'), nullable=False)
+    
+    # Score Criteria
+    technical_competence = db.Column(db.Numeric(5, 2))
+    communication_skills = db.Column(db.Numeric(5, 2))
+    problem_solving = db.Column(db.Numeric(5, 2))
+    cultural_fit = db.Column(db.Numeric(5, 2))
+    leadership_potential = db.Column(db.Numeric(5, 2))
+    
+    # Overall Score
+    score = db.Column(db.Numeric(5, 2))  # Calculated average
+    
+    # Qualitative Feedback
+    strengths = db.Column(db.Text)
+    weaknesses = db.Column(db.Text)
+    overall_feedback = db.Column(db.Text)
+    recommendation = db.Column(db.Enum('Strong Hire', 'Hire', 'Neutral', 'No Hire', 'Strong No Hire', name='score_recommendation_enum'))
+    
+    # Timestamps
+    submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def calculate_score(self):
+        """Calculate overall score from all criteria"""
+        scores = []
+        if self.technical_competence is not None:
+            scores.append(float(self.technical_competence))
+        if self.communication_skills is not None:
+            scores.append(float(self.communication_skills))
+        if self.problem_solving is not None:
+            scores.append(float(self.problem_solving))
+        if self.cultural_fit is not None:
+            scores.append(float(self.cultural_fit))
+        if self.leadership_potential is not None:
+            scores.append(float(self.leadership_potential))
+        
+        if scores:
+            self.score = sum(scores) / len(scores)
+        return self.score
+
+class OfferLetter(db.Model):
+    __tablename__ = 'offer_letters'
+    id = db.Column(db.Integer, primary_key=True)
+    candidate_id = db.Column(db.Integer, db.ForeignKey('candidates.id'), nullable=False)
+    
+    # Offer Details
+    offer_title = db.Column(db.String(200))
+    department_id = db.Column(db.Integer, db.ForeignKey('departments.id'))
+    position = db.Column(db.String(200))
+    employment_type = db.Column(db.Enum('Full-Time', 'Part-Time', 'Contract', 'Internship', name='offer_employment_type_enum'))
+    
+    # Salary Details
+    base_salary = db.Column(db.Numeric(10, 2), nullable=False)
+    currency = db.Column(db.String(3), default='KES')
+    bonus = db.Column(db.Numeric(10, 2), default=0)
+    allowances = db.Column(db.Numeric(10, 2), default=0)
+    benefits = db.Column(db.Text)
+    
+    # Contract Details
+    start_date = db.Column(db.Date, nullable=False)
+    probation_period_months = db.Column(db.Integer, default=3)
+    reporting_to = db.Column(db.String(200))
+    work_location = db.Column(db.String(200))
+    
+    # Status
+    status = db.Column(db.Enum('Draft', 'Sent', 'Accepted', 'Rejected', 'Expired', 'Withdrawn', name='offer_status_enum'), default='Draft')
+    
+    # Documents
+    offer_document_path = db.Column(db.String(500))
+    
+    # Timestamps
+    sent_date = db.Column(db.DateTime)
+    response_date = db.Column(db.DateTime)
+    expiry_date = db.Column(db.DateTime)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    candidate = db.relationship('Candidate', backref='offers')
+    department = db.relationship('Department', backref='offers')
+    
+    @property
+    def total_compensation(self):
+        return (self.base_salary or 0) + (self.bonus or 0) + (self.allowances or 0)
+    
+    @property
+    def is_active(self):
+        if self.status in ['Accepted', 'Rejected', 'Withdrawn']:
+            return False
+        if self.expiry_date and datetime.utcnow() > self.expiry_date:
+            return False
+        return True    

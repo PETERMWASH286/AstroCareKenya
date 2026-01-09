@@ -23,59 +23,165 @@
         <!-- Form Card -->
         <div class="bg-white shadow-xl rounded-lg overflow-hidden">
             <form method="POST" class="divide-y divide-gray-200">
-                <!-- Personal Information Section -->
-                <div class="px-6 py-8">
-                    <div class="flex items-center justify-between">
-                        <h2 class="text-lg font-medium text-gray-900">Personal Information</h2>
-                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800">
-              Required
-            </span>
-                    </div>
-                    <p class="mt-1 text-sm text-gray-500">Basic personal details about the employee.</p>
+<!-- Personal Information Section -->
+<div class="px-6 py-8">
+    <div class="flex items-center justify-between">
+        <h2 class="text-lg font-medium text-gray-900">Personal Information</h2>
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800">
+            Required
+        </span>
+    </div>
 
-                    <div class="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-                        <div class="sm:col-span-3">
-                            <label for="gender" class="block text-sm font-medium text-gray-700">Gender</label>
-                            <select id="gender" name="gender" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+    <p class="mt-1 text-sm text-gray-500">
+        Basic personal details about the employee.
+    </p>
+
+    <div class="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+
+        <!-- Gender -->
+        <div class="sm:col-span-3">
+            <label for="gender" class="block text-sm font-medium text-gray-700">
+                Gender
+            </label>
+            <select id="gender" name="gender"
+                class="mt-1 block w-full rounded-md border border-gray-300 bg-white py-2 pl-3 pr-10 text-sm shadow-sm
+                focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
                 <option value="">Select gender</option>
                 <option value="Male" {% if bio and bio.gender == 'Male' %}selected{% endif %}>Male</option>
                 <option value="Female" {% if bio and bio.gender == 'Female' %}selected{% endif %}>Female</option>
                 <option value="Other" {% if bio and bio.gender == 'Other' %}selected{% endif %}>Other</option>
-              </select>
-                        </div>
+            </select>
+        </div>
 
-                        <div class="sm:col-span-3">
-                            <label for="dob" class="block text-sm font-medium text-gray-700">Date of Birth</label>
-                            <input type="date" id="dob" name="dob" value="{{ bio.dob if bio and bio.dob else '' }}" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                        </div>
+        <!-- Date of Birth -->
+        <div class="sm:col-span-3">
+            <label for="dob" class="block text-sm font-medium text-gray-700">
+                Date of Birth
+            </label>
+            <input type="date" id="dob" name="dob"
+                value="{{ bio.dob if bio and bio.dob else '' }}"
+                class="mt-1 block w-full rounded-md border border-gray-300 py-2 px-3 text-sm shadow-sm
+                focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+        </div>
 
-                        <div class="sm:col-span-3">
-                            <label for="marital_status" class="block text-sm font-medium text-gray-700">Marital Status</label>
-                            <select id="marital_status" name="marital_status" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+        <!-- Age (Auto-calculated) -->
+        <div class="sm:col-span-3">
+            <label for="age" class="block text-sm font-medium text-gray-700">
+                Age
+            </label>
+            <input type="text" id="age" readonly
+                class="mt-1 block w-full rounded-md border border-gray-300 bg-gray-100 py-2 px-3 text-sm text-gray-700 shadow-sm"
+                placeholder="Auto-calculated">
+        </div>
+
+        <!-- Date of Employment -->
+        <div class="sm:col-span-3">
+            <label for="employment_date" class="block text-sm font-medium text-gray-700">
+                Date of Employment
+            </label>
+            <input type="date" id="employment_date" name="employment_date"
+                value="{{ bio.employment_date if bio and bio.employment_date else '' }}"
+                class="mt-1 block w-full rounded-md border border-gray-300 py-2 px-3 text-sm shadow-sm
+                focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+        </div>
+
+        <!-- Marital Status -->
+        <div class="sm:col-span-3">
+            <label for="marital_status" class="block text-sm font-medium text-gray-700">
+                Marital Status
+            </label>
+            <select id="marital_status" name="marital_status"
+                class="mt-1 block w-full rounded-md border border-gray-300 bg-white py-2 pl-3 pr-10 text-sm shadow-sm
+                focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
                 <option value="">Select status</option>
                 <option value="Single" {% if bio and bio.marital_status == 'Single' %}selected{% endif %}>Single</option>
                 <option value="Married" {% if bio and bio.marital_status == 'Married' %}selected{% endif %}>Married</option>
                 <option value="Divorced" {% if bio and bio.marital_status == 'Divorced' %}selected{% endif %}>Divorced</option>
                 <option value="Widowed" {% if bio and bio.marital_status == 'Widowed' %}selected{% endif %}>Widowed</option>
-              </select>
-                        </div>
+            </select>
+        </div>
 
-                        <div class="sm:col-span-3">
-                            <label for="blood_type" class="block text-sm font-medium text-gray-700">Blood Type</label>
-                            <input type="text" id="blood_type" name="blood_type" value="{{ bio.blood_type if bio and bio.blood_type else '' }}" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                        </div>
+        <!-- Place of Worship -->
+        <div class="sm:col-span-3">
+            <label for="place_of_worship" class="block text-sm font-medium text-gray-700">
+                Place of Worship <span class="text-gray-400 text-xs"></span>
+            </label>
+            <input type="text" id="place_of_worship" name="place_of_worship"
+                value="{{ bio.place_of_worship if bio and bio.place_of_worship else '' }}"
+                placeholder="e.g. St. Peter’s Church"
+                class="mt-1 block w-full rounded-md border border-gray-300 py-2 px-3 text-sm shadow-sm
+                focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+        </div>
 
-                        <div class="sm:col-span-3">
-                            <label for="national_id" class="block text-sm font-medium text-gray-700">National ID</label>
-                            <input type="text" id="national_id" name="national_id" value="{{ bio.national_id if bio and bio.national_id else '' }}" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                        </div>
+        <!-- Blood Type -->
+        <div class="sm:col-span-3">
+            <label for="blood_type" class="block text-sm font-medium text-gray-700">
+                Blood Type
+            </label>
+            <input type="text" id="blood_type" name="blood_type"
+                value="{{ bio.blood_type if bio and bio.blood_type else '' }}"
+                class="mt-1 block w-full rounded-md border border-gray-300 py-2 px-3 text-sm shadow-sm
+                focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+        </div>
 
-                        <div class="sm:col-span-3">
-                            <label for="passport_number" class="block text-sm font-medium text-gray-700">Passport Number</label>
-                            <input type="text" id="passport_number" name="passport_number" value="{{ bio.passport_number if bio and bio.passport_number else '' }}" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                        </div>
-                    </div>
-                </div>
+        <!-- National ID -->
+        <div class="sm:col-span-3">
+            <label for="national_id" class="block text-sm font-medium text-gray-700">
+                National ID
+            </label>
+            <input type="text" id="national_id" name="national_id"
+                value="{{ bio.national_id if bio and bio.national_id else '' }}"
+                class="mt-1 block w-full rounded-md border border-gray-300 py-2 px-3 text-sm shadow-sm
+                focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+        </div>
+
+        <!-- Passport Number -->
+        <div class="sm:col-span-3">
+            <label for="passport_number" class="block text-sm font-medium text-gray-700">
+                Passport Number
+            </label>
+            <input type="text" id="passport_number" name="passport_number"
+                value="{{ bio.passport_number if bio and bio.passport_number else '' }}"
+                class="mt-1 block w-full rounded-md border border-gray-300 py-2 px-3 text-sm shadow-sm
+                focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+        </div>
+
+    </div>
+</div>
+
+<script>
+    function calculateAge(dobValue) {
+        if (!dobValue) return '';
+
+        const today = new Date();
+        const dob = new Date(dobValue);
+
+        let age = today.getFullYear() - dob.getFullYear();
+        const monthDiff = today.getMonth() - dob.getMonth();
+
+        if (
+            monthDiff < 0 ||
+            (monthDiff === 0 && today.getDate() < dob.getDate())
+        ) {
+            age--;
+        }
+
+        return age >= 0 ? age : '';
+    }
+
+    const dobInput = document.getElementById('dob');
+    const ageInput = document.getElementById('age');
+
+    // Recalculate when DOB changes
+    dobInput.addEventListener('change', function () {
+        ageInput.value = calculateAge(this.value);
+    });
+
+    // Auto-calculate on page load (edit mode)
+    if (dobInput.value) {
+        ageInput.value = calculateAge(dobInput.value);
+    }
+</script>
 
                 <!-- Contact Information Section -->
                 <div class="px-6 py-8">
@@ -124,49 +230,173 @@
                         </div>
                     </div>
                 </div>
+<!-- Next of Kin Section -->
+<div class="px-6 py-8">
+    <div class="flex items-center justify-between">
+        <h2 class="text-lg font-medium text-gray-900">Next of Kin</h2>
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800">
+            Required
+        </span>
+    </div>
 
-                <!-- Financial Information Section -->
-                <div class="px-6 py-8 bg-gray-50">
-                    <div class="flex items-center justify-between">
-                        <h2 class="text-lg font-medium text-gray-900">Financial Information</h2>
-                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800">
-              Confidential
-            </span>
-                    </div>
-                    <p class="mt-1 text-sm text-gray-500">Banking and tax information for payroll processing.</p>
+    <p class="mt-1 text-sm text-gray-500">
+        Primary next of kin details for official and emergency purposes.
+    </p>
 
-                    <div class="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-                        <div class="sm:col-span-3">
-                            <label for="bank_name" class="block text-sm font-medium text-gray-700">Bank Name</label>
-                            <input type="text" id="bank_name" name="bank_name" value="{{ bio.bank_name if bio and bio.bank_name else '' }}" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                        </div>
+    <div class="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
 
-                        <div class="sm:col-span-3">
-                            <label for="bank_branch" class="block text-sm font-medium text-gray-700">Bank Branch</label>
-                            <input type="text" id="bank_branch" name="bank_branch" value="{{ bio.bank_branch if bio and bio.bank_branch else '' }}" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                        </div>
+        <!-- Full Name -->
+        <div class="sm:col-span-3">
+            <label for="nok_full_name" class="block text-sm font-medium text-gray-700">
+                Full Name
+            </label>
+            <input
+                type="text"
+                id="nok_full_name"
+                name="nok_full_name"
+                value="{{ bio.nok_full_name if bio and bio.nok_full_name else '' }}"
+                class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm py-2 px-3
+                focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                placeholder="e.g. Jane Doe"
+            >
+        </div>
 
-                        <div class="sm:col-span-3">
-                            <label for="bank_account_number" class="block text-sm font-medium text-gray-700">Account Number</label>
-                            <input type="text" id="bank_account_number" name="bank_account_number" value="{{ bio.bank_account_number if bio and bio.bank_account_number else '' }}" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                        </div>
+        <!-- Relationship -->
+        <div class="sm:col-span-3">
+            <label for="nok_relationship" class="block text-sm font-medium text-gray-700">
+                Relationship
+            </label>
+            <input
+                type="text"
+                id="nok_relationship"
+                name="nok_relationship"
+                value="{{ bio.nok_relationship if bio and bio.nok_relationship else '' }}"
+                class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm py-2 px-3
+                focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                placeholder="e.g. Spouse, Parent, Sibling"
+            >
+        </div>
 
-                        <div class="sm:col-span-3">
-                            <label for="bank_routing_number" class="block text-sm font-medium text-gray-700">Routing Number</label>
-                            <input type="text" id="bank_routing_number" name="bank_routing_number" value="{{ bio.bank_routing_number if bio and bio.bank_routing_number else '' }}" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                        </div>
+        <!-- Phone Number -->
+        <div class="sm:col-span-3">
+            <label for="nok_phone" class="block text-sm font-medium text-gray-700">
+                Phone Number
+            </label>
+            <input
+                type="tel"
+                id="nok_phone"
+                name="nok_phone"
+                value="{{ bio.nok_phone if bio and bio.nok_phone else '' }}"
+                class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm py-2 px-3
+                focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                placeholder="+254 7XX XXX XXX"
+            >
+        </div>
 
-                        <div class="sm:col-span-3">
-                            <label for="tax_id" class="block text-sm font-medium text-gray-700">Tax ID</label>
-                            <input type="text" id="tax_id" name="tax_id" value="{{ bio.tax_id if bio and bio.tax_id else '' }}" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                        </div>
+        <!-- Optional Address -->
+        <div class="sm:col-span-3">
+            <label for="nok_address" class="block text-sm font-medium text-gray-700">
+                Address <span class="text-xs text-gray-400">(Optional)</span>
+            </label>
+            <input
+                type="text"
+                id="nok_address"
+                name="nok_address"
+                value="{{ bio.nok_address if bio and bio.nok_address else '' }}"
+                class="mt-1 block w-full rounded-md border border-gray-300 shadow-sm py-2 px-3
+                focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                placeholder="Residential address"
+            >
+        </div>
 
-                        <div class="sm:col-span-3">
-                            <label for="social_security_number" class="block text-sm font-medium text-gray-700">Social Security #</label>
-                            <input type="text" id="social_security_number" name="social_security_number" value="{{ bio.social_security_number if bio and bio.social_security_number else '' }}" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                        </div>
-                    </div>
-                </div>
+    </div>
+</div>
+
+<!-- Financial Information Section -->
+<div class="px-6 py-8 bg-gray-50">
+    <div class="flex items-center justify-between">
+        <h2 class="text-lg font-medium text-gray-900">Financial Information</h2>
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800">
+            Confidential
+        </span>
+    </div>
+
+    <p class="mt-1 text-sm text-gray-500">
+        Banking and statutory information for payroll processing.
+    </p>
+
+    <div class="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+
+        <!-- Bank Name -->
+        <div class="sm:col-span-3">
+            <label for="bank_name" class="block text-sm font-medium text-gray-700">Bank Name</label>
+            <input
+                type="text"
+                id="bank_name"
+                name="bank_name"
+                value="{{ bio.bank_name if bio and bio.bank_name else '' }}"
+                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3
+                focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            >
+        </div>
+
+        <!-- Bank Branch -->
+        <div class="sm:col-span-3">
+            <label for="bank_branch" class="block text-sm font-medium text-gray-700">Bank Branch</label>
+            <input
+                type="text"
+                id="bank_branch"
+                name="bank_branch"
+                value="{{ bio.bank_branch if bio and bio.bank_branch else '' }}"
+                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3
+                focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            >
+        </div>
+
+        <!-- Account Number -->
+        <div class="sm:col-span-3">
+            <label for="bank_account_number" class="block text-sm font-medium text-gray-700">Account Number</label>
+            <input
+                type="text"
+                id="bank_account_number"
+                name="bank_account_number"
+                value="{{ bio.bank_account_number if bio and bio.bank_account_number else '' }}"
+                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3
+                focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            >
+        </div>
+
+        <!-- KRA PIN -->
+        <div class="sm:col-span-3">
+            <label for="tax_id" class="block text-sm font-medium text-gray-700">KRA PIN</label>
+            <input
+                type="text"
+                id="tax_id"
+                name="tax_id"
+                value="{{ bio.tax_id if bio and bio.tax_id else '' }}"
+                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3
+                focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                placeholder="e.g. A123456789X"
+            >
+        </div>
+
+        <!-- NSSF Number -->
+        <div class="sm:col-span-3">
+            <label for="nssf_no" class="block text-sm font-medium text-gray-700">NSSF Number</label>
+            <input
+                type="text"
+                id="nssf_no"
+                name="nssf_no"
+                value="{{ bio.nssf_no if bio and bio.nssf_no else '' }}"
+                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3
+                focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                placeholder="e.g. 12345678901"
+            >
+        </div>
+
+    </div>
+</div>
+
 
                 <!-- Emergency Contact Section -->
                 <div class="px-6 py-8">

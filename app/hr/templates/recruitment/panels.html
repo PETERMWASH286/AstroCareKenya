@@ -1,0 +1,462 @@
+{% extends "base.html" %}
+
+{% block title %}Interview Panels - {{ job.title }} - AstroCare HR{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white shadow">
+        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+            <div class="md:flex md:items-center md:justify-between">
+                <div class="flex-1 min-w-0">
+                    <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
+                        Interview Panels
+                    </h2>
+                    <div class="mt-1 flex flex-col sm:flex-row sm:flex-wrap sm:mt-0 sm:space-x-6">
+                        <div class="mt-2 flex items-center text-sm text-gray-500">
+                            <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd" />
+                            </svg>
+                            {{ job.title }}
+                        </div>
+                        <div class="mt-2 flex items-center text-sm text-gray-500">
+                            <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
+                            </svg>
+                            {{ job.reference_no }}
+                        </div>
+                        <div class="mt-2 flex items-center text-sm text-gray-500">
+                            <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+                            </svg>
+                            {{ job.department.name if job.department else 'No Department' }}
+                        </div>
+                        <div class="mt-2 flex items-center text-sm text-gray-500">
+                            <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M6 6V5a3 3 0 013-3h2a3 3 0 013 3v1h2a2 2 0 012 2v3.57A22.952 22.952 0 0110 13a22.95 22.95 0 01-8-1.43V8a2 2 0 012-2h2zm2-1a1 1 0 011-1h2a1 1 0 011 1v1H8V5zm1 5a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clip-rule="evenodd" />
+                                <path d="M2 13.692V16a2 2 0 002 2h12a2 2 0 002-2v-2.308A24.974 24.974 0 0110 15c-2.796 0-5.487-.46-8-1.308z" />
+                            </svg>
+                            {{ panels|length }} Panel{{ 's' if panels|length != 1 else '' }}
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-4 flex md:mt-0 md:ml-4 space-x-3">
+                    <a href="{{ url_for('hr_web.view_job_posting', job_id=job.id) }}" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <svg class="-ml-1 mr-2 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                        </svg>
+                        Back to Job
+                    </a>
+                    <a href="{{ url_for('hr_web.create_interview_panel', job_id=job.id) }}" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                        </svg>
+                        New Panel
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div class="px-4 py-6 sm:px-0">
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="mb-6">
+                        {% for category, message in messages %}
+                            <div class="rounded-md {% if category == 'success' %}bg-green-50 border-l-4 border-green-400 p-4{% elif category == 'error' %}bg-red-50 border-l-4 border-red-400 p-4{% else %}bg-blue-50 border-l-4 border-blue-400 p-4{% endif %}">
+                                <div class="flex">
+                                    <div class="flex-shrink-0">
+                                        {% if category == 'success' %}
+                                            <svg class="h-5 w-5 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                            </svg>
+                                        {% elif category == 'error' %}
+                                            <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                                            </svg>
+                                        {% else %}
+                                            <svg class="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                                            </svg>
+                                        {% endif %}
+                                    </div>
+                                    <div class="ml-3">
+                                        <p class="text-sm font-medium {% if category == 'success' %}text-green-800{% elif category == 'error' %}text-red-800{% else %}text-blue-800{% endif %}">
+                                            {{ message }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            <!-- Empty State -->
+            {% if not panels %}
+            <div class="text-center py-12">
+                <svg class="mx-auto h-12 w-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">No interview panels</h3>
+                <p class="mt-1 text-sm text-gray-500">Get started by creating a new interview panel.</p>
+                <div class="mt-6">
+                    <a href="{{ url_for('hr_web.create_interview_panel', job_id=job.id) }}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                        </svg>
+                        Create Interview Panel
+                    </a>
+                </div>
+            </div>
+            {% else %}
+            <!-- Statistics Cards -->
+            <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+                <!-- Total Panels -->
+                <div class="bg-white overflow-hidden shadow rounded-lg">
+                    <div class="p-5">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <div class="h-10 w-10 rounded-md bg-blue-100 flex items-center justify-center">
+                                    <svg class="h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="ml-5 w-0 flex-1">
+                                <dl>
+                                    <dt class="text-sm font-medium text-gray-500 truncate">
+                                        Total Panels
+                                    </dt>
+                                    <dd class="text-lg font-medium text-gray-900">
+                                        {{ panels|length }}
+                                    </dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active Panels -->
+                <div class="bg-white overflow-hidden shadow rounded-lg">
+                    <div class="p-5">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <div class="h-10 w-10 rounded-md bg-green-100 flex items-center justify-center">
+                                    <svg class="h-6 w-6 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="ml-5 w-0 flex-1">
+                                <dl>
+                                    <dt class="text-sm font-medium text-gray-500 truncate">
+                                        Active Panels
+                                    </dt>
+                                    <dd class="text-lg font-medium text-gray-900">
+                                        {{ panels|selectattr('is_active')|list|length }}
+                                    </dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Total Members -->
+                <div class="bg-white overflow-hidden shadow rounded-lg">
+                    <div class="p-5">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <div class="h-10 w-10 rounded-md bg-purple-100 flex items-center justify-center">
+                                    <svg class="h-6 w-6 text-purple-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5 2.205a10 10 0 01-2.25.566c-1.378.167-2.692.113-3.894-.263M4.5 19.205a10 10 0 002.25.566c1.378.167 2.692.113 3.894-.263" />
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="ml-5 w-0 flex-1">
+                                <dl>
+                                    <dt class="text-sm font-medium text-gray-500 truncate">
+                                        Total Members
+                                    </dt>
+                                    <dd class="text-lg font-medium text-gray-900">
+                                        {% set total_members = [] %}
+                                        {% for panel in panels %}
+                                            {% set _ = total_members.append(panel.panel_members|length) %}
+                                        {% endfor %}
+                                        {{ total_members|sum }}
+                                    </dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Interviews Scheduled -->
+                <div class="bg-white overflow-hidden shadow rounded-lg">
+                    <div class="p-5">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <div class="h-10 w-10 rounded-md bg-orange-100 flex items-center justify-center">
+                                    <svg class="h-6 w-6 text-orange-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="ml-5 w-0 flex-1">
+                                <dl>
+                                    <dt class="text-sm font-medium text-gray-500 truncate">
+                                        Interviews Scheduled
+                                    </dt>
+                                    <dd class="text-lg font-medium text-gray-900">
+                                        {% set total_interviews = [] %}
+                                        {% for panel in panels %}
+                                            {% set _ = total_interviews.append(panel.interviews|length) %}
+                                        {% endfor %}
+                                        {{ total_interviews|sum }}
+                                    </dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel Grid -->
+            <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {% for panel in panels %}
+                <div class="bg-white overflow-hidden shadow rounded-lg border border-gray-200 hover:shadow-lg transition-shadow duration-200">
+                    <div class="p-6">
+                        <!-- Panel Header -->
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex-1 min-w-0">
+                                <h3 class="text-lg font-medium text-gray-900 truncate">{{ panel.name }}</h3>
+                                <div class="flex items-center mt-1">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-{{ 'blue' if panel.panel_type == 'Technical' else 'green' if panel.panel_type == 'HR' else 'purple' if panel.panel_type == 'Management' else 'pink' if panel.panel_type == 'Final' else 'gray' }}-100 text-{{ 'blue' if panel.panel_type == 'Technical' else 'green' if panel.panel_type == 'HR' else 'purple' if panel.panel_type == 'Management' else 'pink' if panel.panel_type == 'Final' else 'gray' }}-800">
+                                        {{ panel.panel_type }}
+                                    </span>
+                                    {% if panel.is_active %}
+                                    <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                        Active
+                                    </span>
+                                    {% else %}
+                                    <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                        Inactive
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="ml-4 flex-shrink-0">
+                                <div class="h-12 w-12 rounded-md bg-gradient-to-r from-blue-100 to-blue-200 flex items-center justify-center">
+                                    <svg class="h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Panel Description -->
+                        {% if panel.description %}
+                        <p class="text-sm text-gray-600 mb-4 line-clamp-2">{{ panel.description }}</p>
+                        {% endif %}
+
+                        <!-- Panel Stats -->
+                        <div class="grid grid-cols-3 gap-4 mb-4">
+                            <div class="text-center">
+                                <div class="text-lg font-semibold text-gray-900">{{ panel.panel_members|length }}</div>
+                                <div class="text-xs text-gray-500">Members</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-lg font-semibold text-gray-900">{{ panel.interviews|length }}</div>
+                                <div class="text-xs text-gray-500">Interviews</div>
+                            </div>
+                            <div class="text-center">
+                                {% set completed_interviews = panel.interviews|selectattr('status', 'equalto', 'Completed')|list|length %}
+                                <div class="text-lg font-semibold text-gray-900">{{ completed_interviews }}</div>
+                                <div class="text-xs text-gray-500">Completed</div>
+                            </div>
+                        </div>
+
+                        <!-- Recent Members -->
+                        <div class="mb-4">
+                            <h4 class="text-sm font-medium text-gray-500 mb-2">Panel Members</h4>
+                            <div class="flex -space-x-2">
+                                {% for member in panel.panel_members[:5] %}
+                                <div class="relative">
+                                    <div class="h-8 w-8 rounded-full bg-gray-300 border-2 border-white flex items-center justify-center text-xs font-medium text-gray-700" title="{{ member.user.full_name }}">
+                                        {{ member.user.full_name[:1] }}
+                                    </div>
+                                    {% if member.role == 'Chairperson' %}
+                                    <div class="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-yellow-400 border-2 border-white flex items-center justify-center">
+                                        <svg class="h-2 w-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                        </svg>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                                {% if panel.panel_members|length > 5 %}
+                                <div class="h-8 w-8 rounded-full bg-gray-200 border-2 border-white flex items-center justify-center text-xs font-medium text-gray-600">
+                                    +{{ panel.panel_members|length - 5 }}
+                                </div>
+                                {% endif %}
+                                {% if panel.panel_members|length == 0 %}
+                                <p class="text-sm text-gray-500 italic">No members added yet</p>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="flex justify-between pt-4 border-t border-gray-100">
+                            <a href="{{ url_for('hr_web.view_interview_panel', panel_id=panel.id) }}" class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                View Details
+                            </a>
+                            <div class="flex space-x-2">
+                                <a href="{{ url_for('hr_web.view_interview_panel', panel_id=panel.id) }}#members" class="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                    <svg class="-ml-0.5 mr-1 h-3 w-3 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z" />
+                                    </svg>
+                                    Add Member
+                                </a>
+                                <a href="{{ url_for('hr_web.schedule_interview') }}?panel_id={{ panel.id }}" class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                    <svg class="-ml-0.5 mr-1 h-3 w-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd" />
+                                    </svg>
+                                    Schedule
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </main>
+</div>
+
+<!-- JavaScript for interactivity -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Panel card hover effects
+    const panelCards = document.querySelectorAll('.bg-white.overflow-hidden.shadow');
+    
+    panelCards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.classList.add('ring-2', 'ring-blue-500');
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.classList.remove('ring-2', 'ring-blue-500');
+        });
+    });
+
+    // Copy panel ID to clipboard functionality
+    const copyButtons = document.querySelectorAll('[data-copy-panel-id]');
+    copyButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const panelId = this.getAttribute('data-copy-panel-id');
+            navigator.clipboard.writeText(panelId).then(() => {
+                // Show success message
+                const originalHTML = this.innerHTML;
+                this.innerHTML = '<svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>';
+                this.classList.remove('text-gray-400');
+                this.classList.add('text-green-500');
+                
+                setTimeout(() => {
+                    this.innerHTML = originalHTML;
+                    this.classList.remove('text-green-500');
+                    this.classList.add('text-gray-400');
+                }, 2000);
+            });
+        });
+    });
+
+    // Search functionality
+    const searchInput = document.getElementById('search-panels');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            const panels = document.querySelectorAll('.bg-white.overflow-hidden.shadow');
+            
+            panels.forEach(panel => {
+                const panelName = panel.querySelector('h3').textContent.toLowerCase();
+                const panelType = panel.querySelector('[class*="text-"]').textContent.toLowerCase();
+                const panelDesc = panel.querySelector('.text-gray-600')?.textContent.toLowerCase() || '';
+                
+                if (panelName.includes(searchTerm) || panelType.includes(searchTerm) || panelDesc.includes(searchTerm)) {
+                    panel.style.display = 'block';
+                } else {
+                    panel.style.display = 'none';
+                }
+            });
+        });
+    }
+
+    // Filter functionality
+    const filterButtons = document.querySelectorAll('[data-filter-type]');
+    filterButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const filterType = this.getAttribute('data-filter-type');
+            const panels = document.querySelectorAll('.bg-white.overflow-hidden.shadow');
+            
+            // Remove active class from all buttons
+            filterButtons.forEach(btn => btn.classList.remove('bg-blue-100', 'text-blue-700'));
+            filterButtons.forEach(btn => btn.classList.add('text-gray-700', 'hover:bg-gray-100'));
+            
+            // Add active class to clicked button
+            this.classList.remove('text-gray-700', 'hover:bg-gray-100');
+            this.classList.add('bg-blue-100', 'text-blue-700');
+            
+            panels.forEach(panel => {
+                if (filterType === 'all') {
+                    panel.style.display = 'block';
+                } else if (filterType === 'active') {
+                    const isActive = panel.querySelector('[class*="bg-green-100"]');
+                    panel.style.display = isActive ? 'block' : 'none';
+                } else {
+                    const panelType = panel.querySelector('[class*="text-"]').textContent;
+                    panel.style.display = panelType === filterType ? 'block' : 'none';
+                }
+            });
+        });
+    });
+});
+</script>
+
+<style>
+/* Custom styles */
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Smooth transitions */
+.bg-white {
+    transition: all 0.3s ease;
+}
+
+/* Custom scrollbar for panels */
+@media (min-width: 1024px) {
+    .grid-cols-3 {
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    }
+}
+
+/* Print styles */
+@media print {
+    .bg-white {
+        box-shadow: none !important;
+        border: 1px solid #ddd !important;
+    }
+    
+    .flex.justify-between {
+        display: none !important;
+    }
+}
+</style>
+{% endblock %}

@@ -1,0 +1,399 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
+  <div class="bg-white w-full max-w-4xl rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
+    
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-6">
+      <h2 class="text-3xl font-extrabold">Update Payroll Information</h2>
+      <p class="mt-1 text-indigo-200">Update salary, allowances, and statutory information</p>
+    </div>
+
+    <!-- Employee Details -->
+    <div class="px-8 py-6 space-y-4 bg-gray-50">
+      <h3 class="text-xl font-semibold text-gray-800">Employee Details</h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-gray-700">
+        <p><i class="fas fa-user mr-2 text-indigo-500"></i><span class="font-medium">Name:</span> {{ employee.full_name }}</p>
+        <p><i class="fas fa-id-badge mr-2 text-indigo-500"></i><span class="font-medium">Staff No:</span> {{ employee.bio.staff_no if employee.bio else 'N/A' }}</p>
+        <p><i class="fas fa-phone mr-2 text-indigo-500"></i><span class="font-medium">Phone:</span> {{ employee.bio.phone if employee.bio else 'N/A' }}</p>
+        <p><i class="fas fa-envelope mr-2 text-indigo-500"></i><span class="font-medium">Email:</span> {{ employee.email }}</p>
+      </div>
+
+      <h3 class="text-xl font-semibold text-gray-800 mt-4">Bank & Payment Details</h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-gray-700">
+        <p><i class="fas fa-university mr-2 text-green-500"></i><span class="font-medium">Bank:</span> {{ payroll_info.bank_name if payroll_info else employee.bio.bank_name if employee.bio else 'N/A' }}</p>
+        <p><i class="fas fa-code-branch mr-2 text-green-500"></i><span class="font-medium">Branch:</span> {{ payroll_info.bank_branch if payroll_info else employee.bio.bank_branch if employee.bio else 'N/A' }}</p>
+        <p><i class="fas fa-credit-card mr-2 text-green-500"></i><span class="font-medium">Account:</span> {{ payroll_info.bank_account if payroll_info else employee.bio.bank_account_number if employee.bio else 'N/A' }}</p>
+        <p><i class="fas fa-mobile-alt mr-2 text-green-500"></i><span class="font-medium">M-Pesa:</span> {{ payroll_info.mpesa_number if payroll_info else '' }}</p>
+      </div>
+
+      <h3 class="text-xl font-semibold text-gray-800 mt-4">Tax & Social Security</h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-gray-700">
+        <p><i class="fas fa-file-invoice mr-2 text-yellow-500"></i><span class="font-medium">KRA PIN:</span> {{ payroll_info.kra_pin if payroll_info else employee.bio.tax_id if employee.bio else 'N/A' }}</p>
+        <p><i class="fas fa-heartbeat mr-2 text-red-500"></i><span class="font-medium">SHA Number:</span> {{ payroll_info.sha_number if payroll_info else 'N/A' }}</p>
+        <p><i class="fas fa-shield-alt mr-2 text-blue-500"></i><span class="font-medium">NSSF Number:</span> {{ payroll_info.nssf_number if payroll_info else employee.bio.nssf_no if employee.bio else 'N/A' }}</p>
+        <p><i class="fas fa-layer-group mr-2 text-blue-500"></i><span class="font-medium">NSSF Tier:</span> 
+          {% if payroll_info and payroll_info.nssf_tier %}
+            Tier {{ payroll_info.nssf_tier }}
+          {% else %}
+            Not Set
+          {% endif %}
+        </p>
+      </div>
+    </div>
+
+    <!-- Update Payroll Form -->
+    <div class="px-8 py-6 border-t border-gray-200">
+      <form method="POST" class="space-y-6">
+        <!-- Salary Section -->
+        <div>
+          <h4 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-money-bill-wave mr-2 text-green-600"></i>
+            Salary & Allowances
+          </h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label for="basic_salary" class="block text-sm font-medium text-gray-700 mb-1">
+                Basic Salary (KES) *
+              </label>
+<div class="relative">
+  <div class="absolute inset-y-0 left-0 pl-3 pr-2 flex items-center border-r border-gray-300 pointer-events-none">
+    <span class="text-gray-500 text-sm font-medium">KES</span>
+  </div>
+  <input 
+    type="number"
+    step="0.01"
+    min="0"
+    name="basic_salary"
+    id="basic_salary"
+    value="{{ payroll_info.basic_salary if payroll_info else '' }}"
+    class="pl-20 pr-4 mt-1 block w-full py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+    required
+  >
+</div>
+
+            </div>
+
+<div>
+  <label for="housing_allowance" class="block text-sm font-medium text-gray-700 mb-1">
+    Housing Allowance (KES)
+  </label>
+  <div class="relative">
+    <div class="absolute inset-y-0 left-0 pl-3 pr-2 flex items-center border-r border-gray-300 pointer-events-none">
+      <span class="text-gray-500 text-sm font-medium">KES</span>
+    </div>
+    <input 
+      type="number" 
+      step="0.01" 
+      min="0"
+      name="housing_allowance" 
+      id="housing_allowance"
+      value="{{ payroll_info.housing_allowance if payroll_info else '' }}" 
+      class="pl-20 pr-4 mt-1 block w-full py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+    >
+  </div>
+</div>
+
+<div>
+  <label for="transport_allowance" class="block text-sm font-medium text-gray-700 mb-1">
+    Transport Allowance (KES)
+  </label>
+  <div class="relative">
+    <div class="absolute inset-y-0 left-0 pl-3 pr-2 flex items-center border-r border-gray-300 pointer-events-none">
+      <span class="text-gray-500 text-sm font-medium">KES</span>
+    </div>
+    <input 
+      type="number" 
+      step="0.01" 
+      min="0"
+      name="transport_allowance" 
+      id="transport_allowance"
+      value="{{ payroll_info.transport_allowance if payroll_info else '' }}" 
+      class="pl-20 pr-4 mt-1 block w-full py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+    >
+  </div>
+</div>
+
+<div>
+  <label for="other_allowance" class="block text-sm font-medium text-gray-700 mb-1">
+    Other Allowance (KES)
+  </label>
+  <div class="relative">
+    <div class="absolute inset-y-0 left-0 pl-3 pr-2 flex items-center border-r border-gray-300 pointer-events-none">
+      <span class="text-gray-500 text-sm font-medium">KES</span>
+    </div>
+    <input 
+      type="number" 
+      step="0.01" 
+      min="0"
+      name="other_allowance" 
+      id="other_allowance"
+      value="{{ payroll_info.other_allowance if payroll_info else '' }}" 
+      class="pl-20 pr-4 mt-1 block w-full py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+    >
+  </div>
+</div>
+
+          </div>
+        </div>
+
+        <!-- Statutory Information Section -->
+        <div>
+          <h4 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-file-contract mr-2 text-blue-600"></i>
+            Statutory Information
+          </h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- NSSF Tier -->
+            <div>
+              <label for="nssf_tier" class="block text-sm font-medium text-gray-700 mb-1">
+                NSSF Tier *
+              </label>
+              <select 
+                name="nssf_tier" 
+                id="nssf_tier"
+                class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                required
+              >
+                <option value="" disabled>Select NSSF Tier</option>
+                <option value="I" {% if payroll_info and payroll_info.nssf_tier == 'I' %}selected{% endif %}>Tier I (Lower Earnings)</option>
+                <option value="II" {% if payroll_info and payroll_info.nssf_tier == 'II' %}selected{% endif %}>Tier II (Higher Earnings)</option>
+              </select>
+              <p class="mt-1 text-xs text-gray-500">
+                Tier I: KES 0-6,000 | Tier II: KES 6,001-216,000
+              </p>
+            </div>
+
+            <!-- SHA Number -->
+            <div>
+              <label for="sha_number" class="block text-sm font-medium text-gray-700 mb-1">
+                SHA Number (Social Health Authority)
+              </label>
+              <input 
+                type="text" 
+                name="sha_number" 
+                id="sha_number"
+                value="{{ payroll_info.sha_number if payroll_info else '' }}" 
+                class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                placeholder="e.g., SHA-123456789"
+              >
+              <p class="mt-1 text-xs text-gray-500">
+                Required for Social Health Authority contributions (2.75% of gross)
+              </p>
+            </div>
+
+            <!-- Spouse Employment Status -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">
+                Spouse Employment Status
+              </label>
+              <div class="flex items-center space-x-4">
+                <div class="flex items-center">
+                  <input 
+                    type="radio" 
+                    id="spouse_employed_yes" 
+                    name="is_spouse_employed" 
+                    value="true"
+                    {% if payroll_info and payroll_info.is_spouse_employed %}checked{% endif %}
+                    class="h-4 w-4 text-indigo-600 focus:ring-indigo-500"
+                  >
+                  <label for="spouse_employed_yes" class="ml-2 text-sm text-gray-700">
+                    Spouse is employed
+                  </label>
+                </div>
+                <div class="flex items-center">
+                  <input 
+                    type="radio" 
+                    id="spouse_employed_no" 
+                    name="is_spouse_employed" 
+                    value="false"
+                    {% if not payroll_info or not payroll_info.is_spouse_employed %}checked{% endif %}
+                    class="h-4 w-4 text-indigo-600 focus:ring-indigo-500"
+                  >
+                  <label for="spouse_employed_no" class="ml-2 text-sm text-gray-700">
+                    Spouse not employed
+                  </label>
+                </div>
+              </div>
+              <p class="mt-1 text-xs text-gray-500">
+                Required for accurate statutory deduction calculations
+              </p>
+            </div>
+
+            <!-- Payment Method -->
+            <div>
+              <label for="payment_method" class="block text-sm font-medium text-gray-700 mb-1">
+                Preferred Payment Method *
+              </label>
+              <select 
+                name="payment_method" 
+                id="payment_method"
+                class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                required
+              >
+                <option value="" disabled>Select Payment Method</option>
+                <option value="Bank Transfer" {% if payroll_info and payroll_info.payment_method.value == 'Bank Transfer' %}selected{% endif %}>Bank Transfer</option>
+                <option value="M-Pesa" {% if payroll_info and payroll_info.payment_method.value == 'M-Pesa' %}selected{% endif %}>M-Pesa</option>
+                <option value="Cheque" {% if payroll_info and payroll_info.payment_method.value == 'Cheque' %}selected{% endif %}>Cheque</option>
+                <option value="Cash" {% if payroll_info and payroll_info.payment_method.value == 'Cash' %}selected{% endif %}>Cash</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Additional Information Section -->
+        <div>
+          <h4 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-info-circle mr-2 text-indigo-600"></i>
+            Additional Information
+          </h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- KRA PIN -->
+            <div>
+              <label for="kra_pin" class="block text-sm font-medium text-gray-700 mb-1">
+                KRA PIN
+              </label>
+              <input 
+                type="text" 
+                name="kra_pin" 
+                id="kra_pin"
+                value="{{ payroll_info.kra_pin if payroll_info else (employee.bio.tax_id if employee.bio else '') }}" 
+                class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                placeholder="e.g., A123456789X"
+              >
+            </div>
+
+            <!-- NSSF Number -->
+            <div>
+              <label for="nssf_number" class="block text-sm font-medium text-gray-700 mb-1">
+                NSSF Number
+              </label>
+              <input 
+                type="text" 
+                name="nssf_number" 
+                id="nssf_number"
+                value="{{ payroll_info.nssf_number if payroll_info else (employee.bio.nssf_no if employee.bio else '') }}" 
+                class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                placeholder="e.g., 123456789"
+              >
+            </div>
+          </div>
+        </div>
+
+        <!-- Bank Details Section (Read-only) -->
+        <div class="bg-blue-50 rounded-lg p-4 border border-blue-100">
+          <h4 class="text-md font-semibold text-blue-800 mb-2 flex items-center">
+            <i class="fas fa-university mr-2"></i>
+            Bank Details (for reference - update in Employee Profile)
+          </h4>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm text-blue-700">
+            <div>
+              <span class="font-medium">Bank:</span> {{ payroll_info.bank_name if payroll_info else employee.bio.bank_name if employee.bio else 'N/A' }}
+            </div>
+            <div>
+              <span class="font-medium">Branch:</span> {{ payroll_info.bank_branch if payroll_info else employee.bio.bank_branch if employee.bio else 'N/A' }}
+            </div>
+            <div>
+              <span class="font-medium">Account:</span> {{ payroll_info.bank_account if payroll_info else employee.bio.bank_account_number if employee.bio else 'N/A' }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex space-x-4 pt-4">
+          <button type="submit" class="flex-1 flex justify-center items-center px-4 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-lg shadow-lg hover:from-indigo-700 hover:to-purple-700 transition transform hover:-translate-y-0.5">
+            <i class="fas fa-save mr-2"></i> Save All Payroll Information
+          </button>
+          
+          <a href="{{ url_for('hr_web.employee_payroll') }}" class="flex-1 flex justify-center items-center px-4 py-3 bg-gray-200 text-gray-800 font-semibold rounded-lg shadow hover:bg-gray-300 transition">
+            <i class="fas fa-times mr-2"></i> Cancel
+          </a>
+        </div>
+
+        <!-- Info Note -->
+        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mt-4">
+          <div class="flex">
+            <div class="flex-shrink-0">
+              <i class="fas fa-exclamation-circle text-yellow-400"></i>
+            </div>
+            <div class="ml-3">
+              <p class="text-sm text-yellow-700">
+                <strong>Important:</strong> Changes to salary and statutory information will affect future payroll calculations.
+                NSSF Tier determines the contribution rate (Tier II: 6% of pensionable earnings up to KES 216,000).
+              </p>
+            </div>
+          </div>
+        </div>
+
+      </form>
+    </div>
+
+    <!-- Preview Section (optional) -->
+    {% if payroll_info %}
+    <div class="px-8 py-4 border-t border-gray-200 bg-gray-50">
+      <h4 class="text-md font-semibold text-gray-700 mb-2">Salary Preview</h4>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+        <div class="bg-white p-3 rounded-lg shadow">
+          <p class="font-medium text-gray-600">Gross Salary</p>
+          <p class="text-lg font-bold text-green-600">
+            KES {{ ((payroll_info.basic_salary or 0) + (payroll_info.housing_allowance or 0) + (payroll_info.transport_allowance or 0) + (payroll_info.other_allowance or 0))|format_currency }}
+          </p>
+        </div>
+        <div class="bg-white p-3 rounded-lg shadow">
+          <p class="font-medium text-gray-600">Statutory Tier</p>
+          <p class="text-lg font-bold text-blue-600">
+            NSSF Tier {{ payroll_info.nssf_tier if payroll_info.nssf_tier else 'II' }}
+          </p>
+        </div>
+        <div class="bg-white p-3 rounded-lg shadow">
+          <p class="font-medium text-gray-600">Payment Method</p>
+          <p class="text-lg font-bold text-indigo-600">
+            {{ payroll_info.payment_method.value if payroll_info.payment_method else 'Bank Transfer' }}
+          </p>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+
+<!-- Flash Messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<div id="flash-messages" class="fixed bottom-4 right-4 z-50 space-y-2">
+  {% for category, message in messages %}
+  <div class="{% if category == 'success' %}bg-green-500{% else %}bg-red-500{% endif %} text-white px-4 py-2 rounded-md shadow-lg flex items-start max-w-md">
+    <div class="flex-1">
+      <p class="text-sm font-medium">{{ message }}</p>
+    </div>
+    <button type="button" class="ml-4 flex-shrink-0 text-white hover:text-gray-200 focus:outline-none" onclick="this.parentElement.remove()">
+      <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+      </svg>
+    </button>
+  </div>
+  {% endfor %}
+</div>
+<script>
+  setTimeout(() => {
+    const flashMessages = document.getElementById('flash-messages');
+    if (flashMessages) flashMessages.remove();
+  }, 5000);
+</script>
+{% endif %}
+{% endwith %}
+
+<!-- Currency Formatting Helper -->
+<script>
+  // Simple currency formatter for preview
+  function formatCurrency(value) {
+    if (!value) return '0.00';
+    return parseFloat(value).toLocaleString('en-KE', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  }
+</script>
+{% endblock %}

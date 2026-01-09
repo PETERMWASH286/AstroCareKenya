@@ -67,7 +67,61 @@ def datetimeformat(value, format='%d/%m/%Y'):
         return value.strftime(format)
     return value  # fallback if not a datetime object
 
+def time_until_filter(dt):
+    """Convert datetime to 'time until' string"""
+    if dt is None:
+        return "N/A"
+    
+    now = datetime.utcnow()
+    
+    # If date is in the past
+    if dt < now:
+        diff = now - dt
+        if diff.days > 0:
+            return f"{diff.days} day{'s' if diff.days > 1 else ''} ago"
+        elif diff.seconds > 3600:
+            hours = diff.seconds // 3600
+            return f"{hours} hour{'s' if hours > 1 else ''} ago"
+        elif diff.seconds > 60:
+            minutes = diff.seconds // 60
+            return f"{minutes} minute{'s' if minutes > 1 else ''} ago"
+        else:
+            return "just now"
+    
+    # If date is in the future
+    diff = dt - now
+    
+    if diff.days > 365:
+        years = diff.days // 365
+        return f"{years} year{'s' if years > 1 else ''}"
+    elif diff.days > 30:
+        months = diff.days // 30
+        return f"{months} month{'s' if months > 1 else ''}"
+    elif diff.days > 0:
+        return f"{diff.days} day{'s' if diff.days > 1 else ''}"
+    elif diff.seconds > 3600:
+        hours = diff.seconds // 3600
+        return f"{hours} hour{'s' if hours > 1 else ''}"
+    elif diff.seconds > 60:
+        minutes = diff.seconds // 60
+        return f"{minutes} minute{'s' if minutes > 1 else ''}"
+    else:
+        return "now"
 
+def nl2br_filter(value):
+    """Convert newlines to <br> tags for HTML display"""
+    if value:
+        return value.replace('\n', '<br>')
+    return value
+
+def average_filter(sequence):
+    """Calculate average of a sequence of numbers"""
+    if not sequence:
+        return 0
+    valid_numbers = [x for x in sequence if x is not None]
+    if not valid_numbers:
+        return 0
+    return sum(valid_numbers) / len(valid_numbers)
 
 def time_ago(value):
     now = datetime.utcnow()
@@ -277,6 +331,9 @@ def create_app(config_name='default'):
     app.jinja_env.filters['number_format'] = format_number
     app.jinja_env.filters['time_ago'] = time_ago
     app.jinja_env.globals['datetime'] = datetime 
+    app.jinja_env.filters['time_until'] = time_until_filter
+    app.jinja_env.filters['nl2br'] = nl2br_filter
+    app.jinja_env.filters['average'] = average_filter
 
     # Add custom Jinja filters
     @app.template_filter('mask_email')

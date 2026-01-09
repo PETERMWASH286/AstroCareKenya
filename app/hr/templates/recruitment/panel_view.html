@@ -1,0 +1,902 @@
+{% extends "base.html" %}
+
+{% block title %}{{ panel.name }} - Interview Panel - AstroCare HR{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white shadow">
+        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+            <div class="md:flex md:items-center md:justify-between">
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center">
+                        <div class="mr-4">
+                            <div class="h-14 w-14 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center">
+                                <svg class="h-8 w-8 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                </svg>
+                            </div>
+                        </div>
+                        <div>
+                            <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
+                                {{ panel.name }}
+                            </h2>
+                            <div class="mt-1 flex flex-col sm:flex-row sm:flex-wrap sm:mt-0 sm:space-x-6">
+                                <div class="mt-2 flex items-center text-sm text-gray-500">
+                                    <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd" />
+                                    </svg>
+                                    Created {{ panel.created_at.strftime('%B %d, %Y') }}
+                                </div>
+                                <div class="mt-2 flex items-center text-sm text-gray-500">
+                                    <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                                    </svg>
+                                    {{ panel_members|length }} member{{ 's' if panel_members|length != 1 else '' }}
+                                </div>
+                                <div class="mt-2 flex items-center text-sm text-gray-500">
+                                    <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                                    </svg>
+                                    {{ interviews|length }} interview{{ 's' if interviews|length != 1 else '' }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-4 flex md:mt-0 md:ml-4 space-x-3">
+                    <a href="{{ url_for('hr_web.job_panels', job_id=panel.job_posting_id) }}" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <svg class="-ml-1 mr-2 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+                        </svg>
+                        Back to Panels
+                    </a>
+                    <a href="{{ url_for('hr_web.schedule_interview') }}?panel_id={{ panel.id }}" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd" />
+                        </svg>
+                        Schedule Interview
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div class="px-4 py-6 sm:px-0">
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="mb-6">
+                        {% for category, message in messages %}
+                            <div class="rounded-md {% if category == 'success' %}bg-green-50 border-l-4 border-green-400 p-4{% elif category == 'error' %}bg-red-50 border-l-4 border-red-400 p-4{% else %}bg-blue-50 border-l-4 border-blue-400 p-4{% endif %}">
+                                <div class="flex">
+                                    <div class="flex-shrink-0">
+                                        {% if category == 'success' %}
+                                            <svg class="h-5 w-5 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                            </svg>
+                                        {% elif category == 'error' %}
+                                            <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                                            </svg>
+                                        {% else %}
+                                            <svg class="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                                            </svg>
+                                        {% endif %}
+                                    </div>
+                                    <div class="ml-3">
+                                        <p class="text-sm font-medium {% if category == 'success' %}text-green-800{% elif category == 'error' %}text-red-800{% else %}text-blue-800{% endif %}">
+                                            {{ message }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            <!-- Panel Details & Statistics -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                <!-- Panel Information -->
+                <div class="lg:col-span-2">
+                    <div class="bg-white shadow rounded-lg">
+                        <div class="px-6 py-5">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-medium text-gray-900">Panel Information</h3>
+                                <div class="flex items-center space-x-2">
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium {% if panel.panel_type == 'Technical' %}bg-blue-100 text-blue-800{% elif panel.panel_type == 'HR' %}bg-green-100 text-green-800{% elif panel.panel_type == 'Management' %}bg-purple-100 text-purple-800{% elif panel.panel_type == 'Final' %}bg-pink-100 text-pink-800{% else %}bg-gray-100 text-gray-800{% endif %}">
+                                        {{ panel.panel_type }}
+                                    </span>
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium {% if panel.is_active %}bg-green-100 text-green-800{% else %}bg-gray-100 text-gray-800{% endif %}">
+                                        {% if panel.is_active %}Active{% else %}Inactive{% endif %}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <h4 class="text-sm font-medium text-gray-500 mb-2">Job Details</h4>
+                                    <div class="space-y-3">
+                                        <div class="flex items-center">
+                                            <svg class="h-5 w-5 text-gray-400 mr-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fill-rule="evenodd" d="M6 6V5a3 3 0 013-3h2a3 3 0 013 3v1h2a2 2 0 012 2v3.57A22.952 22.952 0 0110 13a22.95 22.95 0 01-8-1.43V8a2 2 0 012-2h2zm2-1a1 1 0 011-1h2a1 1 0 011 1v1H8V5zm1 5a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clip-rule="evenodd" />
+                                            </svg>
+                                            <div>
+                                                <p class="text-sm font-medium text-gray-900">{{ panel.job_posting.title }}</p>
+                                                <p class="text-xs text-gray-500">{{ panel.job_posting.reference_no }}</p>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center">
+                                            <svg class="h-5 w-5 text-gray-400 mr-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 110 2h-3a1 1 0 01-1-1v-2a1 1 0 00-1-1H9a1 1 0 00-1 1v2a1 1 0 01-1 1H4a1 1 0 110-2V4zm3 1h2v2H7V5zm2 4H7v2h2V9zm2-4h2v2h-2V5zm2 4h-2v2h2V9z" clip-rule="evenodd" />
+                                            </svg>
+                                            <div>
+                                                <p class="text-sm font-medium text-gray-900">{{ panel.job_posting.department.name if panel.job_posting.department else 'No Department' }}</p>
+                                                <p class="text-xs text-gray-500">{{ panel.job_posting.category.name if panel.job_posting.category else 'No Category' }}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <h4 class="text-sm font-medium text-gray-500 mb-2">Panel Description</h4>
+                                    {% if panel.description %}
+                                    <p class="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg">{{ panel.description }}</p>
+                                    {% else %}
+                                    <p class="text-sm text-gray-500 italic">No description provided</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Statistics -->
+                <div class="bg-white shadow rounded-lg">
+                    <div class="px-6 py-5">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Panel Statistics</h3>
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <div class="h-10 w-10 rounded-md bg-blue-100 flex items-center justify-center mr-3">
+                                        <svg class="h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5 2.205a10 10 0 01-2.25.566c-1.378.167-2.692.113-3.894-.263M4.5 19.205a10 10 0 002.25.566c1.378.167 2.692.113 3.894-.263" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-900">{{ panel_members|length }}</p>
+                                        <p class="text-xs text-gray-500">Panel Members</p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-sm font-medium text-gray-900">
+                                        {% set chairperson_count = panel_members|selectattr('role', 'equalto', 'Chairperson')|list|length %}
+                                        {{ chairperson_count }} Chair{{ 's' if chairperson_count != 1 else '' }}
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <div class="h-10 w-10 rounded-md bg-green-100 flex items-center justify-center mr-3">
+                                        <svg class="h-5 w-5 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-900">{{ interviews|length }}</p>
+                                        <p class="text-xs text-gray-500">Total Interviews</p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-sm font-medium text-gray-900">
+                                        {% set upcoming_interviews = interviews|selectattr('status', 'in', ['Scheduled', 'Confirmed'])|list|length %}
+                                        {{ upcoming_interviews }} Upcoming
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <div class="h-10 w-10 rounded-md bg-purple-100 flex items-center justify-center mr-3">
+                                        <svg class="h-5 w-5 text-purple-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-900">
+                                            {% set completed_interviews = interviews|selectattr('status', 'equalto', 'Completed')|list|length %}
+                                            {{ completed_interviews }}
+                                        </p>
+                                        <p class="text-xs text-gray-500">Completed</p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-sm font-medium text-gray-900">
+                                        {% set average_score = [] %}
+                                        {% for interview in interviews %}
+                                            {% if interview.scores %}
+                                                {% set scores = interview.scores|map(attribute='score')|list %}
+                                                {% if scores %}
+                                                    {% set _ = average_score.append(scores|sum / scores|length) %}
+                                                {% endif %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        {% if average_score %}
+                                            {{ (average_score|sum / average_score|length)|round(1) }}/5
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    </p>
+                                    <p class="text-xs text-gray-500">Avg Score</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabs Navigation -->
+            <div class="mb-6 border-b border-gray-200">
+                <nav class="-mb-px flex space-x-8">
+                    <a href="#members" class="tab-link border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                        <svg class="h-5 w-5 inline-block mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5 2.205a10 10 0 01-2.25.566c-1.378.167-2.692.113-3.894-.263M4.5 19.205a10 10 0 002.25.566c1.378.167 2.692.113 3.894-.263" />
+                        </svg>
+                        Panel Members ({{ panel_members|length }})
+                    </a>
+                    <a href="#interviews" class="tab-link border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                        <svg class="h-5 w-5 inline-block mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        Interviews ({{ interviews|length }})
+                    </a>
+                    <a href="#add-member" class="tab-link border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                        <svg class="h-5 w-5 inline-block mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                        </svg>
+                        Add Member
+                    </a>
+                </nav>
+            </div>
+
+            <!-- Tab Content -->
+            <div id="tab-content">
+                <!-- Panel Members Tab -->
+                <div id="members" class="tab-pane active">
+                    <div class="bg-white shadow rounded-lg">
+                        <div class="px-6 py-5">
+                            <div class="flex items-center justify-between mb-6">
+                                <h3 class="text-lg font-medium text-gray-900">Panel Members</h3>
+                                <span class="text-sm text-gray-500">Click member name to view profile</span>
+                            </div>
+                            
+                            {% if panel_members %}
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col" class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Member
+                                            </th>
+                                            <th scope="col" class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Role
+                                            </th>
+                                            <th scope="col" class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Department
+                                            </th>
+                                            <th scope="col" class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Required
+                                            </th>
+                                            <th scope="col" class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Status
+                                            </th>
+                                            <th scope="col" class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Actions
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white divide-y divide-gray-200">
+                                        {% for member in panel_members %}
+                                        <tr class="hover:bg-gray-50 transition-colors duration-150">
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <div class="flex items-center">
+                                                    <div class="flex-shrink-0 h-10 w-10">
+                                                        <div class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                                                            <span class="font-medium text-blue-600 text-sm">{{ member.user.full_name[:2] }}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="ml-4">
+                                                        <div class="text-sm font-medium text-gray-900">
+                                                            <a href="#" class="hover:text-blue-600 transition-colors">{{ member.user.full_name }}</a>
+                                                        </div>
+                                                        <div class="text-sm text-gray-500">{{ member.user.email }}</div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                                    {% if member.role == 'Chairperson' %}bg-yellow-100 text-yellow-800
+                                                    {% elif member.role == 'Recorder' %}bg-blue-100 text-blue-800
+                                                    {% elif member.role == 'Observer' %}bg-gray-100 text-gray-800
+                                                    {% else %}bg-green-100 text-green-800{% endif %}">
+                                                    {{ member.role }}
+                                                </span>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                {{ member.user.department.name if member.user.department else 'N/A' }}
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                {% if member.is_required %}
+                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                                    Required
+                                                </span>
+                                                {% else %}
+                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                                                    Optional
+                                                </span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                {% if member.user.is_active %}
+                                                <span class="inline-flex items-center">
+                                                    <span class="h-2 w-2 rounded-full bg-green-400 mr-2"></span>
+                                                    Active
+                                                </span>
+                                                {% else %}
+                                                <span class="inline-flex items-center">
+                                                    <span class="h-2 w-2 rounded-full bg-red-400 mr-2"></span>
+                                                    Inactive
+                                                </span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                                <button type="button" onclick="showEditMemberModal({{ member.id }}, '{{ member.role }}', {{ 'true' if member.is_required else 'false' }})" class="text-blue-600 hover:text-blue-900 mr-4">Edit</button>
+                                                <button type="button" onclick="confirmRemoveMember({{ member.id }}, '{{ member.user.full_name }}')" class="text-red-600 hover:text-red-900">Remove</button>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-12">
+                                <svg class="mx-auto h-12 w-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                                <h3 class="mt-2 text-sm font-medium text-gray-900">No panel members</h3>
+                                <p class="mt-1 text-sm text-gray-500">Add members to this panel to get started.</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Interviews Tab -->
+                <div id="interviews" class="tab-pane hidden">
+                    <div class="bg-white shadow rounded-lg">
+                        <div class="px-6 py-5">
+                            <div class="flex items-center justify-between mb-6">
+                                <h3 class="text-lg font-medium text-gray-900">Scheduled Interviews</h3>
+                                <a href="{{ url_for('hr_web.schedule_interview') }}?panel_id={{ panel.id }}" class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                    <svg class="-ml-0.5 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                                    </svg>
+                                    Schedule Interview
+                                </a>
+                            </div>
+                            
+                            {% if interviews %}
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col" class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Candidate
+                                            </th>
+                                            <th scope="col" class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Date & Time
+                                            </th>
+                                            <th scope="col" class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Type
+                                            </th>
+                                            <th scope="col" class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Status
+                                            </th>
+                                            <th scope="col" class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Duration
+                                            </th>
+                                            <th scope="col" class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Actions
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white divide-y divide-gray-200">
+                                        {% for interview in interviews %}
+                                        <tr class="hover:bg-gray-50 transition-colors duration-150">
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <div class="flex items-center">
+                                                    <div class="flex-shrink-0 h-10 w-10">
+                                                        <div class="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                                                            <span class="font-medium text-green-600 text-sm">{{ interview.candidate.full_name[:2] }}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="ml-4">
+                                                        <div class="text-sm font-medium text-gray-900">
+                                                            {{ interview.candidate.full_name }}
+                                                        </div>
+                                                        <div class="text-sm text-gray-500">{{ interview.candidate.email }}</div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <div class="text-sm text-gray-900">{{ interview.scheduled_date.strftime('%B %d, %Y') }}</div>
+                                                <div class="text-sm text-gray-500">{{ interview.scheduled_date.strftime('%I:%M %p') }}</div>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                                    {{ interview.interview_type }}
+                                                </span>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                                    {% if interview.status == 'Scheduled' %}bg-yellow-100 text-yellow-800
+                                                    {% elif interview.status == 'Confirmed' %}bg-green-100 text-green-800
+                                                    {% elif interview.status == 'Completed' %}bg-blue-100 text-blue-800
+                                                    {% elif interview.status == 'Cancelled' %}bg-red-100 text-red-800
+                                                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                                    {{ interview.status }}
+                                                </span>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                {{ interview.duration_minutes }} minutes
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                                {% if interview.status == 'Scheduled' or interview.status == 'Confirmed' %}
+                                                <a href="{{ url_for('hr_web.score_interview', interview_id=interview.id) }}" class="text-blue-600 hover:text-blue-900 mr-4">Score</a>
+                                                {% elif interview.status == 'Completed' %}
+                                                <a href="{{ url_for('hr_web.score_interview', interview_id=interview.id) }}" class="text-green-600 hover:text-green-900 mr-4">View Scores</a>
+                                                {% endif %}
+                                                <a href="{{ url_for('hr_web.view_candidate', candidate_id=interview.candidate_id) }}" class="text-gray-600 hover:text-gray-900">Candidate</a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-12">
+                                <svg class="mx-auto h-12 w-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <h3 class="mt-2 text-sm font-medium text-gray-900">No interviews scheduled</h3>
+                                <p class="mt-1 text-sm text-gray-500">Schedule an interview for this panel to get started.</p>
+                                <div class="mt-6">
+                                    <a href="{{ url_for('hr_web.schedule_interview') }}?panel_id={{ panel.id }}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                        Schedule Interview
+                                    </a>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Add Member Tab -->
+                <div id="add-member" class="tab-pane hidden">
+                    <div class="bg-white shadow rounded-lg">
+                        <div class="px-6 py-5">
+                            <h3 class="text-lg font-medium text-gray-900 mb-6">Add Panel Member</h3>
+                            
+                            <form action="{{ url_for('hr_web.add_panel_member', panel_id=panel.id) }}" method="POST" class="space-y-6">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            Select Employee
+                                        </label>
+                                        <div class="relative">
+                                            <select name="user_id" id="user-select" required
+                                                    class="mt-1 block w-full pl-3 pr-10 py-3 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
+                                                <option value="">Select an employee...</option>
+                                                {% for user in available_users %}
+                                                <option value="{{ user.id }}">
+                                                    {{ user.full_name }} - {{ user.department.name if user.department else 'No Department' }}
+                                                </option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        {% if not available_users %}
+                                        <p class="mt-2 text-sm text-gray-500 italic">All active employees are already panel members.</p>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            Role
+                                        </label>
+                                        <select name="role" required
+                                                class="mt-1 block w-full pl-3 pr-10 py-3 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
+                                            <option value="Member">Member</option>
+                                            <option value="Chairperson">Chairperson</option>
+                                            <option value="Recorder">Recorder</option>
+                                            <option value="Observer">Observer</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <div class="flex items-center mb-4">
+                                        <input type="checkbox" name="is_required" id="is_required" checked
+                                               class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                        <label for="is_required" class="ml-2 block text-sm text-gray-900">
+                                            Required for interview quorum
+                                        </label>
+                                    </div>
+                                    <p class="text-sm text-gray-500">
+                                        Required members must be present for the interview to proceed. Optional members can be absent.
+                                    </p>
+                                </div>
+                                
+                                <div class="pt-4 border-t border-gray-200">
+                                    <div class="flex justify-end space-x-3">
+                                        <button type="button" onclick="switchTab('members')" class="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                            Cancel
+                                        </button>
+                                        <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                            <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z" />
+                                            </svg>
+                                            Add to Panel
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Edit Member Modal -->
+<div id="edit-member-modal" class="fixed z-10 inset-0 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        <div class="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+            <form id="edit-member-form" method="POST" class="space-y-6">
+                <div>
+                    <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                        Edit Panel Member
+                    </h3>
+                    <p class="mt-2 text-sm text-gray-500">
+                        Update the role and requirements for <span id="member-name" class="font-medium"></span>.
+                    </p>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Role
+                    </label>
+                    <select name="role" id="edit-role" required
+                            class="mt-1 block w-full pl-3 pr-10 py-3 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
+                        <option value="Member">Member</option>
+                        <option value="Chairperson">Chairperson</option>
+                        <option value="Recorder">Recorder</option>
+                        <option value="Observer">Observer</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <div class="flex items-center">
+                        <input type="checkbox" name="is_required" id="edit-is-required"
+                               class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                        <label for="edit-is-required" class="ml-2 block text-sm text-gray-900">
+                            Required for interview quorum
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
+                    <button type="button" onclick="closeEditModal()" class="w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:col-start-1 sm:text-sm">
+                        Cancel
+                    </button>
+                    <button type="submit" class="mt-3 w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:col-start-2 sm:text-sm">
+                        Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript -->
+<script>
+// Tab functionality
+function switchTab(tabName) {
+    // Update tab links
+    document.querySelectorAll('.tab-link').forEach(link => {
+        link.classList.remove('border-blue-500', 'text-blue-600');
+        link.classList.add('border-transparent', 'text-gray-500');
+    });
+    
+    // Activate clicked tab
+    const activeLink = document.querySelector(`a[href="#${tabName}"]`);
+    activeLink.classList.remove('border-transparent', 'text-gray-500');
+    activeLink.classList.add('border-blue-500', 'text-blue-600');
+    
+    // Show/hide tab content
+    document.querySelectorAll('.tab-pane').forEach(pane => {
+        pane.classList.add('hidden');
+        pane.classList.remove('active');
+    });
+    
+    const activePane = document.getElementById(tabName);
+    activePane.classList.remove('hidden');
+    activePane.classList.add('active');
+    
+    // Update URL hash without scrolling
+    history.replaceState(null, null, `#${tabName}`);
+}
+
+// Initialize tabs
+document.addEventListener('DOMContentLoaded', function() {
+    // Set initial tab based on URL hash
+    const hash = window.location.hash.substring(1);
+    const validTabs = ['members', 'interviews', 'add-member'];
+    const initialTab = validTabs.includes(hash) ? hash : 'members';
+    switchTab(initialTab);
+    
+    // Add click handlers to tab links
+    document.querySelectorAll('.tab-link').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const tabName = this.getAttribute('href').substring(1);
+            switchTab(tabName);
+        });
+    });
+    
+    // Initialize Select2 for user selection
+    const userSelect = document.getElementById('user-select');
+    if (userSelect) {
+        // Add search functionality
+        userSelect.addEventListener('keyup', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const options = userSelect.querySelectorAll('option');
+            options.forEach(option => {
+                if (option.value && option.text.toLowerCase().includes(searchTerm)) {
+                    option.style.display = '';
+                } else if (option.value) {
+                    option.style.display = 'none';
+                }
+            });
+        });
+    }
+});
+
+// Edit Member Modal
+let currentMemberId = null;
+
+function showEditMemberModal(memberId, currentRole, isRequired) {
+    currentMemberId = memberId;
+    
+    // Get member name from table
+    const memberRow = document.querySelector(`button[onclick*="showEditMemberModal(${memberId}"]`).closest('tr');
+    const memberName = memberRow.querySelector('.text-sm.font-medium a').textContent;
+    
+    // Set modal content
+    document.getElementById('member-name').textContent = memberName;
+    document.getElementById('edit-role').value = currentRole;
+    document.getElementById('edit-is-required').checked = isRequired === 'true';
+    
+    // Show modal
+    document.getElementById('edit-member-modal').classList.remove('hidden');
+    document.body.classList.add('overflow-hidden');
+}
+
+function closeEditModal() {
+    document.getElementById('edit-member-modal').classList.add('hidden');
+    document.body.classList.remove('overflow-hidden');
+    currentMemberId = null;
+}
+
+// Handle edit form submission
+document.getElementById('edit-member-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    formData.append('member_id', currentMemberId);
+    
+    fetch(`/recruitment/panels/{{ panel.id }}/edit-member`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred. Please try again.');
+    });
+});
+
+// Remove member confirmation
+function confirmRemoveMember(memberId, memberName) {
+    if (confirm(`Are you sure you want to remove ${memberName} from this panel?`)) {
+        fetch(`/recruitment/panels/{{ panel.id }}/remove-member`, {
+            method: 'POST',
+            body: JSON.stringify({ member_id: memberId }),
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred. Please try again.');
+        });
+    }
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    // Ctrl + 1 for members tab
+    if (e.ctrlKey && e.key === '1') {
+        e.preventDefault();
+        switchTab('members');
+    }
+    // Ctrl + 2 for interviews tab
+    else if (e.ctrlKey && e.key === '2') {
+        e.preventDefault();
+        switchTab('interviews');
+    }
+    // Ctrl + 3 for add member tab
+    else if (e.ctrlKey && e.key === '3') {
+        e.preventDefault();
+        switchTab('add-member');
+    }
+    // Escape to close modal
+    else if (e.key === 'Escape') {
+        const modal = document.getElementById('edit-member-modal');
+        if (!modal.classList.contains('hidden')) {
+            closeEditModal();
+        }
+    }
+});
+
+// Auto-refresh interviews every 30 seconds if on interviews tab
+let refreshInterval;
+function startAutoRefresh() {
+    if (window.location.hash === '#interviews') {
+        refreshInterval = setInterval(() => {
+            const interviewsTab = document.getElementById('interviews');
+            if (!interviewsTab.classList.contains('hidden')) {
+                // You could implement a more targeted refresh here
+                console.log('Auto-refreshing interviews...');
+            }
+        }, 30000);
+    }
+}
+
+// Start auto-refresh
+startAutoRefresh();
+
+// Stop auto-refresh when leaving page
+window.addEventListener('beforeunload', function() {
+    if (refreshInterval) {
+        clearInterval(refreshInterval);
+    }
+});
+</script>
+
+<style>
+/* Custom styles */
+.tab-link {
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.tab-link::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background-color: transparent;
+    transition: background-color 0.2s ease;
+}
+
+.tab-link.border-blue-500::after {
+    background-color: #3b82f6;
+}
+
+.tab-pane {
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Smooth scrolling for anchor links */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Custom scrollbar for tables */
+.overflow-x-auto::-webkit-scrollbar {
+    height: 8px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Hover effects */
+tr {
+    transition: background-color 0.15s ease;
+}
+
+tr:hover {
+    background-color: #f9fafb;
+}
+
+/* Modal animation */
+#edit-member-modal {
+    animation: modalFadeIn 0.3s ease;
+}
+
+@keyframes modalFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Print styles */
+@media print {
+    .bg-white {
+        box-shadow: none !important;
+        border: 1px solid #ddd !important;
+    }
+    
+    .flex.justify-between, 
+    .tab-link, 
+    button, 
+    a:not(.print-link) {
+        display: none !important;
+    }
+}
+</style>
+{% endblock %}

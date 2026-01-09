@@ -1,0 +1,1001 @@
+{% extends "base.html" %}
+
+{% block title %}Interviews - Recruitment{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-2 text-gray-800">Interviews</h1>
+            <p class="mb-4">Schedule and manage candidate interviews</p>
+        </div>
+        <div>
+            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#filterModal">
+                <i class="fas fa-filter mr-2"></i>Filter
+            </button>
+            <a href="{{ url_for('hr_web.new_interview') }}" class="btn btn-success">
+                <i class="fas fa-plus mr-2"></i>Schedule Interview
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Interviews</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_interviews }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-comments fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Upcoming Interviews</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ upcoming_interviews }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-calendar-alt fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Today's Interviews</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ interviews_today }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-calendar-day fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Completed</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ completed_interviews }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Status Filter -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                <a href="{{ url_for('hr_web.recruitment_interviews', status='upcoming') }}" 
+                   class="btn btn-outline-primary {% if status_filter == 'upcoming' %}active{% endif %}">
+                    <i class="fas fa-clock mr-2"></i>Upcoming
+                </a>
+                <a href="{{ url_for('hr_web.recruitment_interviews', status='today') }}" 
+                   class="btn btn-outline-info {% if status_filter == 'today' %}active{% endif %}">
+                    <i class="fas fa-calendar-day mr-2"></i>Today
+                </a>
+                <a href="{{ url_for('hr_web.recruitment_interviews', status='past') }}" 
+                   class="btn btn-outline-secondary {% if status_filter == 'past' %}active{% endif %}">
+                    <i class="fas fa-history mr-2"></i>Past
+                </a>
+                <a href="{{ url_for('hr_web.recruitment_interviews', status='completed') }}" 
+                   class="btn btn-outline-success {% if status_filter == 'completed' %}active{% endif %}">
+                    <i class="fas fa-check mr-2"></i>Completed
+                </a>
+                <a href="{{ url_for('hr_web.recruitment_interviews', status='cancelled') }}" 
+                   class="btn btn-outline-danger {% if status_filter == 'cancelled' %}active{% endif %}">
+                    <i class="fas fa-times mr-2"></i>Cancelled
+                </a>
+                <a href="{{ url_for('hr_web.recruitment_interviews', status='all') }}" 
+                   class="btn btn-outline-dark {% if status_filter == 'all' %}active{% endif %}">
+                    <i class="fas fa-list mr-2"></i>All
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interviews Table -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                {% if status_filter == 'upcoming' %}Upcoming Interviews
+                {% elif status_filter == 'today' %}Today's Interviews
+                {% elif status_filter == 'past' %}Past Interviews
+                {% elif status_filter == 'completed' %}Completed Interviews
+                {% elif status_filter == 'cancelled' %}Cancelled Interviews
+                {% else %}All Interviews
+                {% endif %}
+            </h6>
+        </div>
+        <div class="card-body">
+<div class="table-responsive rounded-lg border border-gray-200 shadow-sm">
+    <table class="table table-hover mb-0" id="dataTable" width="100%" cellspacing="0">
+        <thead class="bg-gradient-primary text-white">
+            <tr>
+                <th class="py-3 px-4 border-b border-gray-200 font-semibold text-sm uppercase tracking-wider">
+                    <div class="flex items-center">
+                        <i class="fas fa-user mr-2 text-xs"></i>
+                        Candidate
+                    </div>
+                </th>
+                <th class="py-3 px-4 border-b border-gray-200 font-semibold text-sm uppercase tracking-wider">
+                    <div class="flex items-center">
+                        <i class="fas fa-briefcase mr-2 text-xs"></i>
+                        Job Position
+                    </div>
+                </th>
+                <th class="py-3 px-4 border-b border-gray-200 font-semibold text-sm uppercase tracking-wider">
+                    <div class="flex items-center">
+                        <i class="fas fa-users mr-2 text-xs"></i>
+                        Panel
+                    </div>
+                </th>
+                <th class="py-3 px-4 border-b border-gray-200 font-semibold text-sm uppercase tracking-wider">
+                    <div class="flex items-center">
+                        <i class="fas fa-calendar-alt mr-2 text-xs"></i>
+                        Scheduled Date & Time
+                    </div>
+                </th>
+                <th class="py-3 px-4 border-b border-gray-200 font-semibold text-sm uppercase tracking-wider">
+                    <div class="flex items-center">
+                        <i class="fas fa-comments mr-2 text-xs"></i>
+                        Type
+                    </div>
+                </th>
+                <th class="py-3 px-4 border-b border-gray-200 font-semibold text-sm uppercase tracking-wider">
+                    <div class="flex items-center">
+                        <i class="fas fa-flag mr-2 text-xs"></i>
+                        Status
+                    </div>
+                </th>
+                <th class="py-3 px-4 border-b border-gray-200 font-semibold text-sm uppercase tracking-wider">
+                    <div class="flex items-center">
+                        <i class="fas fa-clock mr-2 text-xs"></i>
+                        Duration
+                    </div>
+                </th>
+                <th class="py-3 px-4 border-b border-gray-200 font-semibold text-sm uppercase tracking-wider text-center">
+                    <div class="flex items-center justify-center">
+                        <i class="fas fa-cogs mr-2 text-xs"></i>
+                        Actions
+                    </div>
+                </th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+            {% for interview in interviews %}
+            <tr class="hover:bg-blue-50 transition-colors duration-200 {% if interview.status == 'Completed' %}bg-green-50/30{% elif interview.status == 'Cancelled' %}bg-red-50/30{% endif %}">
+                <!-- Candidate Column -->
+                <td class="py-3 px-4 border-b border-gray-100">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 mr-3">
+                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white flex items-center justify-center font-bold shadow-sm">
+                                {{ interview.candidate.first_name[0] }}{{ interview.candidate.last_name[0] }}
+                            </div>
+                        </div>
+                        <div class="min-w-0">
+                            <div class="font-semibold text-gray-800 text-sm truncate">
+                                <a href="{{ url_for('hr_web.view_candidate', candidate_id=interview.candidate.id) }}" 
+                                   class="hover:text-blue-600 hover:underline transition-colors duration-200">
+                                    {{ interview.candidate.full_name }}
+                                </a>
+                            </div>
+                            <div class="text-xs text-gray-500 truncate mt-1">
+                                <i class="fas fa-envelope mr-1"></i>{{ interview.candidate.email }}
+                            </div>
+                        </div>
+                    </div>
+                </td>
+                
+                <!-- Job Position Column -->
+                <td class="py-3 px-4 border-b border-gray-100">
+                    {% if interview.candidate.job_posting %}
+                    <div class="group">
+                        <a href="{{ url_for('hr_web.view_job_posting', job_id=interview.candidate.job_posting.id) }}"
+                           class="inline-flex items-center px-3 py-1.5 rounded-full bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors duration-200 group-hover:shadow-sm text-sm font-medium">
+                            <i class="fas fa-briefcase mr-2 text-xs"></i>
+                            <span class="truncate max-w-[150px]">{{ interview.candidate.job_posting.title|truncate(30) }}</span>
+                        </a>
+                        <div class="text-xs text-gray-500 mt-1">
+                            {{ interview.candidate.job_posting.reference_no }}
+                        </div>
+                    </div>
+                    {% else %}
+                    <span class="text-gray-400 italic text-sm">N/A</span>
+                    {% endif %}
+                </td>
+                
+                <!-- Interview Panel Column -->
+                <td class="py-3 px-4 border-b border-gray-100">
+                    {% if interview.panel %}
+                    <div class="inline-flex items-center px-3 py-1.5 rounded-full bg-indigo-50 text-indigo-800 border border-indigo-100 text-sm font-medium">
+                        <i class="fas fa-users mr-2 text-xs"></i>
+                        <span class="truncate max-w-[120px]">{{ interview.panel.name }}</span>
+                    </div>
+                    {% else %}
+                    <span class="inline-flex items-center px-3 py-1.5 rounded-full bg-gray-100 text-gray-600 border border-gray-200 text-sm italic">
+                        <i class="fas fa-times-circle mr-2 text-xs"></i>
+                        No Panel
+                    </span>
+                    {% endif %}
+                </td>
+                
+                <!-- Scheduled Date & Time Column -->
+                <td class="py-3 px-4 border-b border-gray-100">
+                    <div class="space-y-1">
+                        <div class="flex items-center">
+                            <i class="fas fa-calendar-day text-blue-500 mr-2 text-sm"></i>
+                            <span class="font-semibold text-gray-800 text-sm">
+                                {{ interview.scheduled_date.strftime('%d %b %Y') }}
+                            </span>
+                        </div>
+                        <div class="flex items-center">
+                            <i class="fas fa-clock text-purple-500 mr-2 text-sm"></i>
+                            <span class="text-gray-700 text-sm">
+                                {{ interview.scheduled_date.strftime('%I:%M %p') }}
+                            </span>
+                        </div>
+                        {% if interview.scheduled_date < now %}
+                        <div class="flex items-center text-red-600 text-xs mt-1">
+                            <i class="fas fa-history mr-1.5"></i>
+                            <span class="font-medium">Past</span>
+                            <span class="mx-1">•</span>
+                            <span class="text-gray-600">
+                                {% set diff = now - interview.scheduled_date %}
+                                {% if diff.days > 0 %}
+                                    {{ diff.days }}d ago
+                                {% else %}
+                                    {{ (diff.seconds // 3600) }}h ago
+                                {% endif %}
+                            </span>
+                        </div>
+                        {% else %}
+                        <div class="flex items-center text-green-600 text-xs mt-1">
+                            <i class="fas fa-clock mr-1.5"></i>
+                            <span class="font-medium">In</span>
+                            <span class="mx-1">•</span>
+                            <span class="text-gray-600">
+                                {% set diff = interview.scheduled_date - now %}
+                                {% if diff.days > 0 %}
+                                    {{ diff.days }}d
+                                {% else %}
+                                    {{ (diff.seconds // 3600) }}h
+                                {% endif %}
+                            </span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </td>
+                
+                <!-- Type Column -->
+                <td class="py-3 px-4 border-b border-gray-100">
+                    {% set type_colors = {
+                        'Phone': 'bg-green-100 text-green-800 border-green-200',
+                        'Video': 'bg-purple-100 text-purple-800 border-purple-200',
+                        'In-Person': 'bg-blue-100 text-blue-800 border-blue-200',
+                        'Group': 'bg-orange-100 text-orange-800 border-orange-200',
+                        'Panel': 'bg-indigo-100 text-indigo-800 border-indigo-200'
+                    } %}
+                    
+                    {% set type_icons = {
+                        'Phone': 'phone',
+                        'Video': 'video',
+                        'In-Person': 'user',
+                        'Group': 'user-friends',
+                        'Panel': 'users'
+                    } %}
+                    
+                    <div class="inline-flex items-center px-3 py-1.5 rounded-full {{ type_colors.get(interview.interview_type, 'bg-gray-100 text-gray-800 border-gray-200') }} border text-sm font-medium shadow-sm">
+                        <i class="fas fa-{{ type_icons.get(interview.interview_type, 'comments') }} mr-2 text-xs"></i>
+                        {{ interview.interview_type }}
+                    </div>
+                </td>
+                
+                <!-- Status Column -->
+                <td class="py-3 px-4 border-b border-gray-100">
+                    {% set status_colors = {
+                        'Scheduled': 'bg-blue-100 text-blue-800 border-blue-200',
+                        'Confirmed': 'bg-teal-100 text-teal-800 border-teal-200',
+                        'In Progress': 'bg-yellow-100 text-yellow-800 border-yellow-200',
+                        'Completed': 'bg-green-100 text-green-800 border-green-200',
+                        'Cancelled': 'bg-red-100 text-red-800 border-red-200',
+                        'No Show': 'bg-gray-100 text-gray-800 border-gray-200',
+                        'Rescheduled': 'bg-orange-100 text-orange-800 border-orange-200'
+                    } %}
+                    
+                    <div class="space-y-1.5">
+                        <div class="inline-flex items-center px-3 py-1.5 rounded-full {{ status_colors.get(interview.status, 'bg-gray-100 text-gray-800') }} border font-medium text-sm shadow-sm">
+                            <i class="fas fa-circle mr-2 text-xs"></i>
+                            {{ interview.status }}
+                        </div>
+                        
+                        {% if interview.recommendation %}
+                        {% set rec_colors = {
+                            'Strong Hire': 'bg-gradient-to-r from-green-500 to-emerald-600 text-white',
+                            'Hire': 'bg-green-100 text-green-800 border-green-200',
+                            'Neutral': 'bg-yellow-100 text-yellow-800 border-yellow-200',
+                            'No Hire': 'bg-red-100 text-red-800 border-red-200',
+                            'Strong No Hire': 'bg-gradient-to-r from-red-500 to-red-600 text-white'
+                        } %}
+                        <div class="inline-flex items-center px-2.5 py-1 rounded-full {{ rec_colors.get(interview.recommendation, 'bg-gray-100 text-gray-800') }} border text-xs font-semibold">
+                            {{ interview.recommendation }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </td>
+                
+                <!-- Duration Column -->
+                <td class="py-3 px-4 border-b border-gray-100">
+                    <div class="space-y-1">
+                        <div class="flex items-center text-gray-800">
+                            <i class="fas fa-hourglass-half text-amber-500 mr-2"></i>
+                            <span class="font-semibold text-sm">{{ interview.duration_minutes }} mins</span>
+                        </div>
+                        {% if interview.actual_start_time and interview.actual_end_time %}
+                        {% set actual_duration = (interview.actual_end_time - interview.actual_start_time).seconds // 60 %}
+                        <div class="flex items-center text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded">
+                            <i class="fas fa-check-circle text-green-500 mr-1.5 text-xs"></i>
+                            <span>Actual: {{ actual_duration }}m</span>
+                            {% if actual_duration > interview.duration_minutes %}
+                            <i class="fas fa-exclamation-triangle text-red-500 ml-1.5 text-xs" title="Over time"></i>
+                            {% elif actual_duration < interview.duration_minutes %}
+                            <i class="fas fa-check text-green-500 ml-1.5 text-xs" title="Under time"></i>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </td>
+                
+                <!-- Actions Column -->
+                <td class="py-3 px-4 border-b border-gray-100 text-center">
+                    <div class="flex items-center justify-center space-x-1">
+                        <!-- View Button -->
+                        <a href="{{ url_for('hr_web.view_interview', interview_id=interview.id) }}" 
+                           class="btn-action bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200" 
+                           title="View Details">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                        
+                        {% if interview.status in ['Scheduled', 'Confirmed'] %}
+                        <!-- Edit Button -->
+                        <a href="{{ url_for('hr_web.edit_interview', interview_id=interview.id) }}" 
+                           class="btn-action bg-yellow-50 text-yellow-600 hover:bg-yellow-100 border border-yellow-200" 
+                           title="Edit Interview">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        
+                        <!-- Cancel Button -->
+                        <button type="button" 
+                                class="btn-action bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 cancel-interview" 
+                                data-interview-id="{{ interview.id }}"
+                                data-candidate-name="{{ interview.candidate.full_name }}"
+                                title="Cancel Interview">
+                            <i class="fas fa-times"></i>
+                        </button>
+                        {% endif %}
+                        
+                        {% if interview.status == 'Completed' %}
+                        <!-- Score Button -->
+                        <a href="{{ url_for('hr_web.score_interview', interview_id=interview.id) }}" 
+                           class="btn-action bg-purple-50 text-purple-600 hover:bg-purple-100 border border-purple-200" 
+                           title="Submit Score">
+                            <i class="fas fa-star"></i>
+                        </a>
+                        {% elif interview.status in ['Scheduled', 'Confirmed', 'In Progress'] %}
+                        <!-- Complete Button -->
+                        <button type="button" 
+                                class="btn-action bg-green-50 text-green-600 hover:bg-green-100 border border-green-200 complete-interview" 
+                                data-interview-id="{{ interview.id }}"
+                                title="Mark Complete">
+                            <i class="fas fa-check"></i>
+                        </button>
+                        {% endif %}
+                        
+                        {% if interview.meeting_link %}
+                        <!-- Meeting Link Button -->
+                        <a href="{{ interview.meeting_link }}" target="_blank" 
+                           class="btn-action bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-200" 
+                           title="Join Meeting">
+                            <i class="fas fa-video"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% else %}
+            <!-- Empty State -->
+            <tr>
+                <td colspan="8" class="py-16 text-center">
+                    <div class="flex flex-col items-center justify-center">
+                        <div class="w-24 h-24 rounded-full bg-blue-50 flex items-center justify-center mb-4">
+                            <i class="fas fa-calendar-times text-blue-400 text-3xl"></i>
+                        </div>
+                        <h4 class="text-lg font-semibold text-gray-700 mb-2">No interviews found</h4>
+                        <p class="text-gray-500 max-w-md mb-6">
+                            Try adjusting your filters or schedule a new interview to get started.
+                        </p>
+                        <a href="{{ url_for('hr_web.new_interview') }}" 
+                           class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-300 shadow hover:shadow-md">
+                            <i class="fas fa-plus mr-2"></i>
+                            Schedule New Interview
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<style>
+/* Custom button styling */
+.btn-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    font-size: 0.875rem;
+}
+
+.btn-action:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Table row hover effect */
+tbody tr {
+    transition: all 0.2s ease;
+}
+
+tbody tr:hover {
+    background-color: rgba(59, 130, 246, 0.05) !important;
+}
+
+/* Header gradient */
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+}
+
+/* Status badges with better contrast */
+.bg-blue-100 { background-color: rgba(59, 130, 246, 0.1) !important; }
+.bg-teal-100 { background-color: rgba(20, 184, 166, 0.1) !important; }
+.bg-yellow-100 { background-color: rgba(245, 158, 11, 0.1) !important; }
+.bg-green-100 { background-color: rgba(34, 197, 94, 0.1) !important; }
+.bg-red-100 { background-color: rgba(239, 68, 68, 0.1) !important; }
+.bg-orange-100 { background-color: rgba(249, 115, 22, 0.1) !important; }
+.bg-purple-100 { background-color: rgba(168, 85, 247, 0.1) !important; }
+.bg-indigo-100 { background-color: rgba(99, 102, 241, 0.1) !important; }
+
+/* Text colors with better visibility */
+.text-blue-800 { color: #1e40af !important; }
+.text-teal-800 { color: #115e59 !important; }
+.text-yellow-800 { color: #92400e !important; }
+.text-green-800 { color: #166534 !important; }
+.text-red-800 { color: #991b1b !important; }
+.text-orange-800 { color: #9a3412 !important; }
+.text-purple-800 { color: #5b21b6 !important; }
+.text-indigo-800 { color: #3730a3 !important; }
+
+/* Table borders */
+.table {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    border-top: none;
+}
+
+.table tbody td {
+    border-top: 1px solid #f1f5f9;
+}
+
+/* Avatar circle */
+.w-10.h-10 {
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+}
+
+/* Truncation */
+.truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.max-w-\[150px\] {
+    max-width: 150px;
+}
+
+.max-w-\[120px\] {
+    max-width: 120px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+    
+    .btn-action {
+        width: 32px;
+        height: 32px;
+        font-size: 0.75rem;
+    }
+}
+</style>
+            
+            <!-- Pagination -->
+            {% if interviews_pagination.pages > 1 %}
+            <div class="d-flex justify-content-center mt-4">
+                <nav>
+                    <ul class="pagination">
+                        {% if interviews_pagination.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('hr_web.recruitment_interviews', page=interviews_pagination.prev_num, 
+                                                                status=status_filter, job_id=job_id, candidate_id=candidate_id,
+                                                                panel_id=panel_id, date_from=date_from, date_to=date_to) }}">
+                                Previous
+                            </a>
+                        </li>
+                        {% endif %}
+                        
+                        {% for page_num in interviews_pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                            {% if page_num %}
+                                {% if page_num == interviews_pagination.page %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ page_num }}</span>
+                                </li>
+                                {% else %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('hr_web.recruitment_interviews', page=page_num,
+                                                                        status=status_filter, job_id=job_id, candidate_id=candidate_id,
+                                                                        panel_id=panel_id, date_from=date_from, date_to=date_to) }}">
+                                        {{ page_num }}
+                                    </a>
+                                </li>
+                                {% endif %}
+                            {% else %}
+                                <li class="page-item disabled"><span class="page-link">…</span></li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if interviews_pagination.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('hr_web.recruitment_interviews', page=interviews_pagination.next_num,
+                                                                status=status_filter, job_id=job_id, candidate_id=candidate_id,
+                                                                panel_id=panel_id, date_from=date_from, date_to=date_to) }}">
+                                Next
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+            
+            {% if not interviews %}
+            <div class="text-center py-5">
+                <i class="fas fa-comments fa-3x text-gray-300 mb-3"></i>
+                <h5 class="text-gray-500">No interviews found</h5>
+                <p class="text-gray-400">Try adjusting your filters or schedule a new interview.</p>
+                <a href="{{ url_for('hr_web.new_interview') }}" class="btn btn-primary">
+                    <i class="fas fa-plus mr-2"></i>Schedule Interview
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Calendar View (Optional) -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Interview Calendar</h6>
+        </div>
+        <div class="card-body">
+            <div id="calendar"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Modal -->
+<div class="modal fade" id="filterModal" tabindex="-1" role="dialog" aria-labelledby="filterModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="filterModalLabel">Filter Interviews</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="get" action="{{ url_for('hr_web.recruitment_interviews') }}">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="job_id">Job Position</label>
+                        <select class="form-control" id="job_id" name="job_id">
+                            <option value="">All Jobs</option>
+                            {% for job in jobs %}
+                            <option value="{{ job.id }}" {% if job_id == job.id %}selected{% endif %}>
+                                {{ job.reference_no }} - {{ job.title }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="candidate_id">Candidate</label>
+                        <select class="form-control" id="candidate_id" name="candidate_id">
+                            <option value="">All Candidates</option>
+                            {% for candidate in candidates %}
+                            <option value="{{ candidate.id }}" {% if candidate_id == candidate.id %}selected{% endif %}>
+                                {{ candidate.full_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="panel_id">Interview Panel</label>
+                        <select class="form-control" id="panel_id" name="panel_id">
+                            <option value="">All Panels</option>
+                            {% for panel in panels %}
+                            <option value="{{ panel.id }}" {% if panel_id == panel.id %}selected{% endif %}>
+                                {{ panel.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="date_from">From Date</label>
+                                <input type="date" class="form-control" id="date_from" name="date_from" value="{{ date_from or '' }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="date_to">To Date</label>
+                                <input type="date" class="form-control" id="date_to" name="date_to" value="{{ date_to or '' }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <a href="{{ url_for('hr_web.recruitment_interviews') }}" class="btn btn-secondary">Clear Filters</a>
+                    <button type="submit" class="btn btn-primary">Apply Filters</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Cancel Interview Confirmation Modal -->
+<div class="modal fade" id="cancelInterviewModal" tabindex="-1" role="dialog" aria-labelledby="cancelInterviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="cancelInterviewModalLabel">Cancel Interview</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to cancel the interview with <span id="cancelCandidateName"></span>?</p>
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    This action cannot be undone. The candidate will be notified.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-danger" id="confirmCancelInterview">Cancel Interview</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Complete Interview Confirmation Modal -->
+<div class="modal fade" id="completeInterviewModal" tabindex="-1" role="dialog" aria-labelledby="completeInterviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="completeInterviewModalLabel">Mark Interview as Complete</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to mark this interview as completed?</p>
+                <p class="text-muted">This will change the candidate's status to "Interviewed".</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-success" id="confirmCompleteInterview">Mark Complete</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<!-- Page level plugins -->
+<script src="{{ url_for('static', filename='vendor/fullcalendar/main.min.js') }}"></script>
+<link href="{{ url_for('static', filename='vendor/fullcalendar/main.min.css') }}" rel="stylesheet">
+
+<script>
+// Set max date for date_to as today
+document.addEventListener('DOMContentLoaded', function() {
+    const dateToInput = document.getElementById('date_to');
+    if (dateToInput && !dateToInput.value) {
+        dateToInput.max = new Date().toISOString().split('T')[0];
+    }
+    
+    // Initialize calendar
+    initializeCalendar();
+    
+    // Initialize interview action handlers
+    initializeInterviewActions();
+});
+
+function initializeCalendar() {
+    const calendarEl = document.getElementById('calendar');
+    if (!calendarEl) return;
+    
+    const calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,timeGridWeek,timeGridDay'
+        },
+        events: [
+            {% for interview in interviews %}
+            {
+                title: '{{ interview.candidate.full_name }} - {{ interview.interview_type }}',
+                start: '{{ interview.scheduled_date.isoformat() }}',
+                end: '{{ (interview.scheduled_date + timedelta(minutes=interview.duration_minutes)).isoformat() }}',
+                url: '{{ url_for("hr_web.view_interview", interview_id=interview.id) }}',
+                color: '{{ 
+                    "#007bff" if interview.status == "Scheduled"
+                    else "#17a2b8" if interview.status == "Confirmed"
+                    else "#ffc107" if interview.status == "In Progress"
+                    else "#28a745" if interview.status == "Completed"
+                    else "#dc3545" if interview.status == "Cancelled"
+                    else "#6c757d"
+                }}',
+                textColor: 'white'
+            },
+            {% endfor %}
+        ],
+        eventClick: function(info) {
+            info.jsEvent.preventDefault();
+            window.open(info.event.url, '_blank');
+        }
+    });
+    
+    calendar.render();
+}
+
+function initializeInterviewActions() {
+    // Cancel interview
+    $('.cancel-interview').click(function() {
+        const interviewId = $(this).data('interview-id');
+        const candidateName = $(this).data('candidate-name');
+        
+        $('#cancelCandidateName').text(candidateName);
+        $('#confirmCancelInterview').data('interview-id', interviewId);
+        $('#cancelInterviewModal').modal('show');
+    });
+    
+    $('#confirmCancelInterview').click(function() {
+        const interviewId = $(this).data('interview-id');
+        
+        $.ajax({
+            url: '{{ url_for("hr_web.cancel_interview", interview_id=0) }}'.replace('0', interviewId),
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({}),
+            success: function(response) {
+                if (response.success) {
+                    showToast('success', response.message);
+                    setTimeout(function() {
+                        location.reload();
+                    }, 1500);
+                } else {
+                    showToast('error', response.message);
+                }
+                $('#cancelInterviewModal').modal('hide');
+            },
+            error: function() {
+                showToast('error', 'An error occurred while cancelling the interview.');
+                $('#cancelInterviewModal').modal('hide');
+            }
+        });
+    });
+    
+    // Complete interview
+    $('.complete-interview').click(function() {
+        const interviewId = $(this).data('interview-id');
+        
+        $('#confirmCompleteInterview').data('interview-id', interviewId);
+        $('#completeInterviewModal').modal('show');
+    });
+    
+    $('#confirmCompleteInterview').click(function() {
+        const interviewId = $(this).data('interview-id');
+        
+        $.ajax({
+            url: '{{ url_for("hr_web.complete_interview", interview_id=0) }}'.replace('0', interviewId),
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({}),
+            success: function(response) {
+                if (response.success) {
+                    showToast('success', response.message);
+                    setTimeout(function() {
+                        location.reload();
+                    }, 1500);
+                } else {
+                    showToast('error', response.message);
+                }
+                $('#completeInterviewModal').modal('hide');
+            },
+            error: function() {
+                showToast('error', 'An error occurred while completing the interview.');
+                $('#completeInterviewModal').modal('hide');
+            }
+        });
+    });
+}
+
+// DataTable initialization
+$(document).ready(function() {
+    $('#dataTable').DataTable({
+        pageLength: 20,
+        lengthMenu: [[10, 20, 50, 100, -1], [10, 20, 50, 100, "All"]],
+        order: [[3, 'asc']], // Default sort by scheduled date
+        columnDefs: [
+            { orderable: false, targets: [7] } // Disable sorting for actions column
+        ]
+    });
+});
+
+// Toast notification function
+function showToast(type, message) {
+    const toast = $(`
+        <div class="toast align-items-center text-white bg-${type} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">
+                    ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    `);
+    
+    $('#toastContainer').append(toast);
+    const bsToast = new bootstrap.Toast(toast[0]);
+    bsToast.show();
+    
+    // Remove toast after it hides
+    toast.on('hidden.bs.toast', function() {
+        $(this).remove();
+    });
+}
+</script>
+
+<style>
+.avatar-circle-sm {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+.badge {
+    font-size: 0.85em;
+    padding: 0.35em 0.65em;
+}
+
+.fc-event {
+    cursor: pointer;
+}
+
+.fc-daygrid-event {
+    padding: 2px 4px;
+    font-size: 0.85em;
+}
+
+#calendar {
+    min-height: 400px;
+}
+
+.btn-group-toggle .btn {
+    margin-right: 5px;
+    margin-bottom: 5px;
+}
+
+.btn-group-toggle .btn.active {
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    min-width: 300px;
+}
+
+.table th {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.card {
+    border: none;
+    border-radius: 0.5rem;
+}
+
+.shadow {
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15) !important;
+}
+
+.border-left-primary {
+    border-left: 0.25rem solid #4e73df !important;
+}
+
+.border-left-success {
+    border-left: 0.25rem solid #1cc88a !important;
+}
+
+.border-left-info {
+    border-left: 0.25rem solid #36b9cc !important;
+}
+
+.border-left-warning {
+    border-left: 0.25rem solid #f6c23e !important;
+}
+</style>
+
+<div id="toastContainer" class="position-fixed top-0 end-0 p-3" style="z-index: 9999"></div>
+{% endblock %}

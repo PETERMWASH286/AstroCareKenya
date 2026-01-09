@@ -1,0 +1,1013 @@
+<!-- app/hr/templates/recruitment/candidate_form.html -->
+{% extends 'base.html' %}
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    
+    <!-- Header -->
+    <div class="mb-8">
+      <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center gap-4">
+          <div class="h-14 w-14 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-xl flex items-center justify-center shadow-lg">
+            <i class="fas fa-user-plus text-white text-2xl"></i>
+          </div>
+          <div>
+            <h1 class="text-3xl font-bold text-gray-900">{{ title }}</h1>
+            <div class="flex items-center gap-3 mt-1">
+              <p class="text-gray-600">Adding candidate to:</p>
+              <a href="{{ url_for('hr_web.view_job_posting', job_id=job.id) }}" 
+                 class="inline-flex items-center px-3 py-1 bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 rounded-lg font-medium hover:shadow-sm transition-all">
+                <i class="fas fa-briefcase mr-2 text-sm"></i>
+                {{ job.title }}
+              </a>
+            </div>
+          </div>
+        </div>
+        <a href="{{ url_for('hr_web.view_job_posting', job_id=job.id) }}" 
+           class="inline-flex items-center px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 font-medium shadow-sm transition-all duration-200">
+          <i class="fas fa-arrow-left mr-2"></i>
+          Back to Job
+        </a>
+      </div>
+    </div>
+
+    <!-- AI Assistant Panel -->
+    <div class="mb-8 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-2xl p-6 border border-blue-200">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3">
+          <div class="h-10 w-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
+            <i class="fas fa-robot text-white"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-gray-900">AI Candidate Assistant</h3>
+            <p class="text-sm text-gray-600">Automated candidate screening & profile enhancement</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="runResumeAnalysis()" 
+                  class="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl hover:shadow-lg transition-all duration-200 text-sm font-medium">
+            <i class="fas fa-bolt mr-2"></i> Analyze Resume
+          </button>
+          <button onclick="autoFillFromLinkedIn()" 
+                  class="px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl hover:shadow-lg transition-all duration-200 text-sm font-medium">
+            <i class="fab fa-linkedin mr-2"></i> Import LinkedIn
+          </button>
+        </div>
+      </div>
+      
+      <div id="aiStatus" class="hidden p-4 bg-white rounded-xl border border-blue-200">
+        <div class="flex items-center gap-3">
+          <div class="h-6 w-6 rounded-full bg-green-100 flex items-center justify-center">
+            <i class="fas fa-check text-green-600 text-xs"></i>
+          </div>
+          <p class="text-sm text-gray-700" id="aiMessage"></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form Container -->
+    <div class="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-200">
+      <form method="POST" action="" enctype="multipart/form-data" class="space-y-0">
+        {{ form.hidden_tag() }}
+        
+        <!-- Progress Indicator -->
+        <div class="border-b border-gray-200 px-8 py-6 bg-gradient-to-r from-blue-50 to-cyan-50">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-xl font-bold text-gray-900">Candidate Information</h2>
+            <span class="text-sm font-medium text-blue-600">Step 1 of 3</span>
+          </div>
+          <div class="w-full bg-gray-200 rounded-full h-2">
+            <div class="bg-gradient-to-r from-blue-500 to-cyan-500 h-2 rounded-full w-1/3"></div>
+          </div>
+        </div>
+
+        <!-- Main Form Content -->
+        <div class="p-8">
+          
+          <!-- Personal Information Section -->
+          <div class="mb-10" id="section-personal">
+            <h3 class="text-lg font-bold text-gray-900 mb-6 pb-3 border-b border-gray-200 flex items-center">
+              <i class="fas fa-user-circle text-blue-600 mr-3"></i>
+              Personal Information
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- First Name -->
+              <div class="space-y-2">
+                <label for="first_name" class="block text-sm font-medium text-gray-700">
+                  First Name *
+                </label>
+                {{ form.first_name(class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200", placeholder="John") }}
+                {% if form.first_name.errors %}
+                  <div class="text-red-500 text-sm mt-1">{{ form.first_name.errors[0] }}</div>
+                {% endif %}
+              </div>
+
+              <!-- Last Name -->
+              <div class="space-y-2">
+                <label for="last_name" class="block text-sm font-medium text-gray-700">
+                  Last Name *
+                </label>
+                {{ form.last_name(class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200", placeholder="Doe") }}
+                {% if form.last_name.errors %}
+                  <div class="text-red-500 text-sm mt-1">{{ form.last_name.errors[0] }}</div>
+                {% endif %}
+              </div>
+
+              <!-- Email -->
+              <div class="space-y-2">
+                <label for="email" class="block text-sm font-medium text-gray-700">
+                  Email Address *
+                </label>
+                {{ form.email(class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200", placeholder="john.doe@example.com", type="email") }}
+                {% if form.email.errors %}
+                  <div class="text-red-500 text-sm mt-1">{{ form.email.errors[0] }}</div>
+                {% endif %}
+              </div>
+
+              <!-- Phone -->
+              <div class="space-y-2">
+                <label for="phone" class="block text-sm font-medium text-gray-700">
+                  Phone Number
+                </label>
+                {{ form.phone(class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200", placeholder="+254 700 000 000") }}
+              </div>
+
+              <!-- Date of Birth -->
+              <div class="space-y-2">
+                <label for="date_of_birth" class="block text-sm font-medium text-gray-700">
+                  Date of Birth
+                </label>
+                <div class="relative">
+                  {{ form.date_of_birth(class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200", type="date") }}
+                  <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-400">
+                    <i class="fas fa-calendar"></i>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Gender -->
+              <div class="space-y-2">
+                <label for="gender" class="block text-sm font-medium text-gray-700">
+                  Gender
+                </label>
+                <div class="relative">
+                  {{ form.gender(class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 appearance-none bg-white") }}
+                  <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-400">
+                    <i class="fas fa-chevron-down"></i>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Nationality -->
+              <div class="space-y-2">
+                <label for="nationality" class="block text-sm font-medium text-gray-700">
+                  Nationality
+                </label>
+                {{ form.nationality(class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200", placeholder="e.g., Kenyan") }}
+              </div>
+
+              <!-- Age Display (Auto-calculated) -->
+              <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700">
+                  Age (Auto-calculated)
+                </label>
+                <div class="w-full px-4 py-3 border border-gray-300 rounded-xl bg-gray-50 text-gray-500">
+                  <span id="ageDisplay">Enter date of birth to calculate</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Contact Information Section -->
+          <div class="mb-10" id="section-contact">
+            <h3 class="text-lg font-bold text-gray-900 mb-6 pb-3 border-b border-gray-200 flex items-center">
+              <i class="fas fa-address-card text-green-600 mr-3"></i>
+              Contact Information
+            </h3>
+            
+            <div class="grid grid-cols-1 gap-6">
+              <!-- Address -->
+              <div class="space-y-2">
+                <label for="address" class="block text-sm font-medium text-gray-700">
+                  Full Address
+                </label>
+                {{ form.address(class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200", placeholder="123 Main Street, Nairobi", rows="2") }}
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- City -->
+                <div class="space-y-2">
+                  <label for="city" class="block text-sm font-medium text-gray-700">
+                    City
+                  </label>
+                  {{ form.city(class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200", placeholder="Nairobi") }}
+                </div>
+
+                <!-- Country -->
+                <div class="space-y-2">
+                  <label for="country" class="block text-sm font-medium text-gray-700">
+                    Country
+                  </label>
+                  {{ form.country(class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200", placeholder="Kenya") }}
+                </div>
+
+                <!-- Postal Code -->
+                <div class="space-y-2">
+                  <label for="postal_code" class="block text-sm font-medium text-gray-700">
+                    Postal Code
+                  </label>
+                  {{ form.postal_code(class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200", placeholder="00100") }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Professional Information Section -->
+          <div class="mb-10" id="section-professional">
+            <h3 class="text-lg font-bold text-gray-900 mb-6 pb-3 border-b border-gray-200 flex items-center">
+              <i class="fas fa-briefcase text-purple-600 mr-3"></i>
+              Professional Information
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- Current Company -->
+              <div class="space-y-2">
+                <label for="current_company" class="block text-sm font-medium text-gray-700">
+                  Current Company
+                </label>
+                {{ form.current_company(class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200", placeholder="e.g., Tech Solutions Ltd") }}
+              </div>
+
+              <!-- Current Position -->
+              <div class="space-y-2">
+                <label for="current_position" class="block text-sm font-medium text-gray-700">
+                  Current Position
+                </label>
+                {{ form.current_position(class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200", placeholder="e.g., Senior Developer") }}
+              </div>
+
+              <!-- Years of Experience -->
+              <div class="space-y-2">
+                <label for="years_of_experience" class="block text-sm font-medium text-gray-700">
+                  Years of Experience
+                </label>
+                <div class="relative">
+                  {{ form.years_of_experience(class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200", type="number", min="0", max="50", placeholder="5") }}
+                  <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-400">
+                    <span class="text-sm">years</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Notice Period -->
+              <div class="space-y-2">
+                <label for="notice_period" class="block text-sm font-medium text-gray-700">
+                  Notice Period (Days)
+                </label>
+                <div class="relative">
+                  {{ form.notice_period(class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200", type="number", min="0", max="180", placeholder="30") }}
+                  <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-400">
+                    <span class="text-sm">days</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Current Salary -->
+              <div class="space-y-2">
+                <label for="current_salary" class="block text-sm font-medium text-gray-700">
+                  Current Salary
+                </label>
+                <div class="relative">
+                  <span class="absolute left-3 top-3 text-gray-500">KES</span>
+                  {{ form.current_salary(class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200", placeholder="0.00") }}
+                </div>
+              </div>
+
+              <!-- Expected Salary -->
+              <div class="space-y-2">
+                <label for="expected_salary" class="block text-sm font-medium text-gray-700">
+                  Expected Salary
+                </label>
+                <div class="relative">
+                  <span class="absolute left-3 top-3 text-gray-500">KES</span>
+                  {{ form.expected_salary(class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200", placeholder="0.00") }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Education Section -->
+          <div class="mb-10" id="section-education">
+            <h3 class="text-lg font-bold text-gray-900 mb-6 pb-3 border-b border-gray-200 flex items-center">
+              <i class="fas fa-graduation-cap text-amber-600 mr-3"></i>
+              Education
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- Highest Qualification -->
+              <div class="space-y-2">
+                <label for="highest_qualification" class="block text-sm font-medium text-gray-700">
+                  Highest Qualification
+                </label>
+                {{ form.highest_qualification(class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all duration-200", placeholder="e.g., Bachelor of Science in Computer Science") }}
+              </div>
+
+              <!-- Institution -->
+              <div class="space-y-2">
+                <label for="institution" class="block text-sm font-medium text-gray-700">
+                  Institution
+                </label>
+                {{ form.institution(class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all duration-200", placeholder="e.g., University of Nairobi") }}
+              </div>
+
+              <!-- Graduation Year -->
+              <div class="space-y-2">
+                <label for="graduation_year" class="block text-sm font-medium text-gray-700">
+                  Graduation Year
+                </label>
+                {{ form.graduation_year(class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all duration-200", type="number", min="1900", max="2024", placeholder="2020") }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Application Details Section -->
+          <div class="mb-10" id="section-application">
+            <h3 class="text-lg font-bold text-gray-900 mb-6 pb-3 border-b border-gray-200 flex items-center">
+              <i class="fas fa-file-alt text-red-600 mr-3"></i>
+              Application Details
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- Application Source -->
+              <div class="space-y-2">
+                <label for="source" class="block text-sm font-medium text-gray-700">
+                  How did they apply?
+                </label>
+                <div class="relative">
+                  {{ form.source(class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 appearance-none bg-white") }}
+                  <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-400">
+                    <i class="fas fa-chevron-down"></i>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Status -->
+              <div class="space-y-2">
+                <label for="status" class="block text-sm font-medium text-gray-700">
+                  Application Status *
+                </label>
+                <div class="relative">
+                  {{ form.status(class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 appearance-none bg-white") }}
+                  <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-400">
+                    <i class="fas fa-chevron-down"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Cover Letter -->
+            <div class="mt-6 space-y-2">
+              <label for="cover_letter" class="block text-sm font-medium text-gray-700">
+                Cover Letter / Notes
+              </label>
+              {{ form.cover_letter(class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 h-32 resize-y", placeholder="Candidate's cover letter or additional notes...") }}
+            </div>
+          </div>
+
+          <!-- Documents & Links Section -->
+          <div class="mb-10" id="section-documents">
+            <h3 class="text-lg font-bold text-gray-900 mb-6 pb-3 border-b border-gray-200 flex items-center">
+              <i class="fas fa-paperclip text-indigo-600 mr-3"></i>
+              Documents & Links
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- Resume Upload -->
+              <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700">
+                  Resume/CV Upload
+                </label>
+                <div class="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-indigo-400 transition-colors duration-200 cursor-pointer" 
+                     onclick="document.getElementById('resumeUpload').click()">
+                  <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-3"></i>
+                  <p class="text-sm text-gray-600 mb-2">Click to upload resume</p>
+                  <p class="text-xs text-gray-500">PDF, DOC, DOCX (Max 10MB)</p>
+                  <input type="file" id="resumeUpload" name="resume" class="hidden" accept=".pdf,.doc,.docx" onchange="handleResumeUpload(this)">
+                </div>
+                <div id="resumePreview" class="hidden mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                      <i class="fas fa-file-pdf text-green-600"></i>
+                      <span class="text-sm font-medium text-green-800" id="resumeName"></span>
+                    </div>
+                    <button type="button" onclick="removeResume()" class="text-red-500 hover:text-red-700">
+                      <i class="fas fa-times"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Cover Letter Upload -->
+              <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700">
+                  Cover Letter Upload (Optional)
+                </label>
+                <div class="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-indigo-400 transition-colors duration-200 cursor-pointer"
+                     onclick="document.getElementById('coverLetterUpload').click()">
+                  <i class="fas fa-file-alt text-3xl text-gray-400 mb-3"></i>
+                  <p class="text-sm text-gray-600 mb-2">Click to upload cover letter</p>
+                  <p class="text-xs text-gray-500">PDF, DOC, DOCX (Max 5MB)</p>
+                  <input type="file" id="coverLetterUpload" name="cover_letter_file" class="hidden" accept=".pdf,.doc,.docx" onchange="handleCoverLetterUpload(this)">
+                </div>
+                <div id="coverLetterPreview" class="hidden mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                      <i class="fas fa-file-alt text-blue-600"></i>
+                      <span class="text-sm font-medium text-blue-800" id="coverLetterName"></span>
+                    </div>
+                    <button type="button" onclick="removeCoverLetter()" class="text-red-500 hover:text-red-700">
+                      <i class="fas fa-times"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Portfolio URL -->
+              <div class="space-y-2">
+                <label for="portfolio_url" class="block text-sm font-medium text-gray-700">
+                  Portfolio/Website URL
+                </label>
+                {{ form.portfolio_url(class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200", placeholder="https://portfolio.example.com") }}
+              </div>
+
+              <!-- LinkedIn URL -->
+              <div class="space-y-2">
+                <label for="linkedin_url" class="block text-sm font-medium text-gray-700">
+                  LinkedIn Profile
+                </label>
+                {{ form.linkedin_url(class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200", placeholder="https://linkedin.com/in/username") }}
+              </div>
+            </div>
+          </div>
+
+          <!-- AI Matching Score -->
+          <div class="mb-10 bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-6 border border-purple-200">
+            <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center">
+              <i class="fas fa-brain text-purple-600 mr-3"></i>
+              AI Job Match Prediction
+            </h3>
+            
+            <div class="space-y-4">
+              <div>
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-sm font-medium text-gray-700">Match Score (Auto-calculated)</span>
+                  <span class="text-lg font-bold text-purple-600" id="matchScore">0%</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-3">
+                  <div id="matchBar" class="bg-gradient-to-r from-purple-500 to-pink-500 h-3 rounded-full w-0 transition-all duration-1000"></div>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-white rounded-xl p-4 border border-gray-200">
+                  <div class="flex items-center gap-3 mb-2">
+                    <div class="h-8 w-8 bg-green-100 rounded-lg flex items-center justify-center">
+                      <i class="fas fa-check text-green-600"></i>
+                    </div>
+                    <span class="font-medium text-gray-900">Skills Match</span>
+                  </div>
+                  <div class="text-2xl font-bold text-gray-900" id="skillsScore">0%</div>
+                </div>
+
+                <div class="bg-white rounded-xl p-4 border border-gray-200">
+                  <div class="flex items-center gap-3 mb-2">
+                    <div class="h-8 w-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <i class="fas fa-graduation-cap text-blue-600"></i>
+                    </div>
+                    <span class="font-medium text-gray-900">Experience</span>
+                  </div>
+                  <div class="text-2xl font-bold text-gray-900" id="experienceScore">0%</div>
+                </div>
+
+                <div class="bg-white rounded-xl p-4 border border-gray-200">
+                  <div class="flex items-center gap-3 mb-2">
+                    <div class="h-8 w-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                      <i class="fas fa-star text-purple-600"></i>
+                    </div>
+                    <span class="font-medium text-gray-900">Cultural Fit</span>
+                  </div>
+                  <div class="text-2xl font-bold text-gray-900" id="cultureScore">0%</div>
+                </div>
+              </div>
+
+              <button type="button" onclick="calculateMatchScore()" 
+                      class="w-full px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-xl hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
+                <i class="fas fa-calculator mr-2"></i>
+                Calculate Match Score
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Form Actions -->
+        <div class="bg-gray-50 px-8 py-6 border-t border-gray-200">
+          <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="text-sm text-gray-500">
+              <i class="fas fa-info-circle mr-2"></i>
+              All required fields are marked with *
+            </div>
+            <div class="flex items-center gap-4">
+              <a href="{{ url_for('hr_web.view_job_posting', job_id=job.id) }}" 
+                 class="px-6 py-3 border border-gray-300 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-all duration-200">
+                Cancel
+              </a>
+              <button type="submit" name="save_draft" value="true"
+                      class="px-6 py-3 bg-gray-600 text-white font-medium rounded-xl hover:bg-gray-700 transition-all duration-200">
+                Save as Draft
+              </button>
+              <button type="submit" name="submit" value="true"
+                      class="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-medium rounded-xl hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
+                <i class="fas fa-user-plus mr-2"></i>
+                Add Candidate
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </form>
+    </div>
+
+  </div>
+</div>
+
+<!-- JavaScript for AI Features -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Initialize form features
+  setupFormValidation();
+  setupAutoCalculations();
+  setupDragAndDrop();
+});
+
+// Setup form validation
+function setupFormValidation() {
+  const form = document.querySelector('form');
+  form.addEventListener('submit', function(event) {
+    const requiredFields = form.querySelectorAll('[required]');
+    let isValid = true;
+    
+    requiredFields.forEach(field => {
+      if (!field.value.trim()) {
+        field.classList.add('border-red-500');
+        isValid = false;
+      } else {
+        field.classList.remove('border-red-500');
+      }
+    });
+    
+    if (!isValid) {
+      event.preventDefault();
+      showNotification('Please fill in all required fields', 'error');
+    }
+  });
+}
+
+// Age calculation from date of birth
+const dobField = document.getElementById('date_of_birth');
+const ageDisplay = document.getElementById('ageDisplay');
+
+if (dobField && ageDisplay) {
+  dobField.addEventListener('change', function() {
+    if (this.value) {
+      const birthDate = new Date(this.value);
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      
+      ageDisplay.textContent = `${age} years old`;
+      ageDisplay.classList.remove('text-gray-500');
+      ageDisplay.classList.add('text-green-600', 'font-medium');
+    }
+  });
+}
+
+// File upload handling
+function handleResumeUpload(input) {
+  if (input.files && input.files[0]) {
+    const file = input.files[0];
+    const preview = document.getElementById('resumePreview');
+    const name = document.getElementById('resumeName');
+    
+    // Validate file size (10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      showNotification('File size exceeds 10MB limit', 'error');
+      input.value = '';
+      return;
+    }
+    
+    // Validate file type
+    const validTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    if (!validTypes.includes(file.type)) {
+      showNotification('Please upload PDF, DOC, or DOCX files only', 'error');
+      input.value = '';
+      return;
+    }
+    
+    name.textContent = file.name;
+    preview.classList.remove('hidden');
+    
+    // Auto-analyze resume
+    runResumeAnalysis(file);
+  }
+}
+
+function handleCoverLetterUpload(input) {
+  if (input.files && input.files[0]) {
+    const file = input.files[0];
+    const preview = document.getElementById('coverLetterPreview');
+    const name = document.getElementById('coverLetterName');
+    
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      showNotification('File size exceeds 5MB limit', 'error');
+      input.value = '';
+      return;
+    }
+    
+    name.textContent = file.name;
+    preview.classList.remove('hidden');
+  }
+}
+
+function removeResume() {
+  document.getElementById('resumeUpload').value = '';
+  document.getElementById('resumePreview').classList.add('hidden');
+}
+
+function removeCoverLetter() {
+  document.getElementById('coverLetterUpload').value = '';
+  document.getElementById('coverLetterPreview').classList.add('hidden');
+}
+
+// Drag and drop setup
+function setupDragAndDrop() {
+  const dropZones = document.querySelectorAll('[class*="border-dashed"]');
+  
+  dropZones.forEach(zone => {
+    zone.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      this.classList.add('border-indigo-400', 'bg-indigo-50');
+    });
+    
+    zone.addEventListener('dragleave', function(e) {
+      e.preventDefault();
+      this.classList.remove('border-indigo-400', 'bg-indigo-50');
+    });
+    
+    zone.addEventListener('drop', function(e) {
+      e.preventDefault();
+      this.classList.remove('border-indigo-400', 'bg-indigo-50');
+      
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        if (this.previousElementSibling && this.previousElementSibling.type === 'file') {
+          this.previousElementSibling.files = files;
+          if (this.previousElementSibling.id === 'resumeUpload') {
+            handleResumeUpload(this.previousElementSibling);
+          } else {
+            handleCoverLetterUpload(this.previousElementSibling);
+          }
+        }
+      }
+    });
+  });
+}
+
+// AI Features
+function runResumeAnalysis(file = null) {
+  showAIStatus('Analyzing resume... This may take a moment.', 'info');
+  
+  // Simulate API call to AI service
+  setTimeout(() => {
+    // Extract information from resume (simulated)
+    const mockData = {
+      skills: ['JavaScript', 'Python', 'React', 'Node.js', 'AWS'],
+      experience: 5,
+      education: 'Bachelor of Science in Computer Science',
+      score: 85
+    };
+    
+    // Auto-fill form fields with extracted data
+    autoFillFromResume(mockData);
+    showAIStatus('Resume analysis complete! Form fields have been auto-filled.', 'success');
+  }, 2000);
+}
+
+function autoFillFromResume(data) {
+  // Auto-fill years of experience
+  const expField = document.getElementById('years_of_experience');
+  if (expField && !expField.value) {
+    expField.value = data.experience;
+  }
+  
+  // Auto-fill highest qualification
+  const qualField = document.getElementById('highest_qualification');
+  if (qualField && !qualField.value) {
+    qualField.value = data.education;
+  }
+  
+  // Calculate match score
+  calculateMatchScore();
+}
+
+function autoFillFromLinkedIn() {
+  showAIStatus('Fetching LinkedIn profile...', 'info');
+  
+  const linkedinUrl = document.getElementById('linkedin_url').value;
+  if (!linkedinUrl) {
+    showAIStatus('Please enter a LinkedIn URL first', 'error');
+    return;
+  }
+  
+  // Simulate LinkedIn API call
+  setTimeout(() => {
+    const mockProfile = {
+      firstName: 'John',
+      lastName: 'Doe',
+      currentPosition: 'Senior Software Engineer',
+      currentCompany: 'Tech Solutions Ltd',
+      location: 'Nairobi, Kenya',
+      experience: 7
+    };
+    
+    // Auto-fill form fields
+    autoFillForm(mockProfile);
+    showAIStatus('LinkedIn profile imported successfully!', 'success');
+  }, 2500);
+}
+
+function autoFillForm(profile) {
+  // Auto-fill personal information
+  const firstNameField = document.getElementById('first_name');
+  const lastNameField = document.getElementById('last_name');
+  const positionField = document.getElementById('current_position');
+  const companyField = document.getElementById('current_company');
+  const expField = document.getElementById('years_of_experience');
+  
+  if (firstNameField && !firstNameField.value) firstNameField.value = profile.firstName;
+  if (lastNameField && !lastNameField.value) lastNameField.value = profile.lastName;
+  if (positionField && !positionField.value) positionField.value = profile.currentPosition;
+  if (companyField && !companyField.value) companyField.value = profile.currentCompany;
+  if (expField && !expField.value) expField.value = profile.experience;
+}
+
+// AI Match Score Calculation
+function calculateMatchScore() {
+  // Collect form data
+  const jobTitle = "{{ job.title }}".toLowerCase();
+  const jobDescription = "{{ job.description }}".toLowerCase();
+  
+  // Mock scoring algorithm
+  const skillsScore = Math.floor(Math.random() * 30) + 60; // 60-90%
+  const experienceScore = Math.floor(Math.random() * 40) + 50; // 50-90%
+  const cultureScore = Math.floor(Math.random() * 25) + 65; // 65-90%
+  
+  const totalScore = Math.round((skillsScore + experienceScore + cultureScore) / 3);
+  
+  // Update UI
+  document.getElementById('skillsScore').textContent = `${skillsScore}%`;
+  document.getElementById('experienceScore').textContent = `${experienceScore}%`;
+  document.getElementById('cultureScore').textContent = `${cultureScore}%`;
+  document.getElementById('matchScore').textContent = `${totalScore}%`;
+  
+  const matchBar = document.getElementById('matchBar');
+  matchBar.style.width = `${totalScore}%`;
+  
+  // Color coding based on score
+  if (totalScore >= 80) {
+    matchBar.className = 'bg-gradient-to-r from-green-500 to-emerald-500 h-3 rounded-full transition-all duration-1000';
+    document.getElementById('matchScore').className = 'text-lg font-bold text-green-600';
+  } else if (totalScore >= 60) {
+    matchBar.className = 'bg-gradient-to-r from-amber-500 to-orange-500 h-3 rounded-full transition-all duration-1000';
+    document.getElementById('matchScore').className = 'text-lg font-bold text-amber-600';
+  } else {
+    matchBar.className = 'bg-gradient-to-r from-red-500 to-pink-500 h-3 rounded-full transition-all duration-1000';
+    document.getElementById('matchScore').className = 'text-lg font-bold text-red-600';
+  }
+  
+  // Show recommendation
+  let recommendation = '';
+  if (totalScore >= 80) {
+    recommendation = 'Excellent match! Strong candidate for this position.';
+  } else if (totalScore >= 60) {
+    recommendation = 'Good match. Consider for next interview round.';
+  } else {
+    recommendation = 'Low match. Consider other candidates or different role.';
+  }
+  
+  showAIStatus(`Match score calculated: ${totalScore}% - ${recommendation}`, 'info');
+}
+
+// AI Status Display
+function showAIStatus(message, type = 'info') {
+  const statusDiv = document.getElementById('aiStatus');
+  const messageDiv = document.getElementById('aiMessage');
+  
+  statusDiv.classList.remove('hidden');
+  messageDiv.textContent = message;
+  
+  // Color coding
+  statusDiv.className = `p-4 rounded-xl border transition-all duration-300 ${
+    type === 'success' ? 'bg-green-50 border-green-200' :
+    type === 'error' ? 'bg-red-50 border-red-200' :
+    'bg-blue-50 border-blue-200'
+  }`;
+  
+  // Auto-hide after 10 seconds for non-error messages
+  if (type !== 'error') {
+    setTimeout(() => {
+      statusDiv.classList.add('hidden');
+    }, 10000);
+  }
+}
+
+// Setup auto-calculations
+function setupAutoCalculations() {
+  // Auto-calculate match when key fields change
+  const keyFields = ['years_of_experience', 'highest_qualification', 'current_position'];
+  keyFields.forEach(fieldId => {
+    const field = document.getElementById(fieldId);
+    if (field) {
+      field.addEventListener('change', calculateMatchScore);
+    }
+  });
+  
+  // Auto-format phone number
+  const phoneField = document.getElementById('phone');
+  if (phoneField) {
+    phoneField.addEventListener('input', function(e) {
+      let value = e.target.value.replace(/\D/g, '');
+      if (value.length > 0) {
+        value = '+254 ' + value.substring(0, 3) + ' ' + value.substring(3, 6) + ' ' + value.substring(6, 9);
+      }
+      e.target.value = value;
+    });
+  }
+}
+
+// Notification system
+function showNotification(message, type = 'info') {
+  // Remove existing notifications
+  document.querySelectorAll('.notification').forEach(n => n.remove());
+  
+  const notification = document.createElement('div');
+  notification.className = `notification fixed top-4 right-4 z-50 px-6 py-3 rounded-xl shadow-lg text-white font-medium animate-slide-in ${
+    type === 'success' ? 'bg-gradient-to-r from-green-500 to-emerald-500' :
+    type === 'error' ? 'bg-gradient-to-r from-red-500 to-orange-500' :
+    'bg-gradient-to-r from-blue-500 to-cyan-500'
+  }`;
+  
+  notification.innerHTML = `
+    <div class="flex items-center gap-3">
+      <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+      <span>${message}</span>
+    </div>
+  `;
+  
+  document.body.appendChild(notification);
+  
+  // Auto-remove after 5 seconds
+  setTimeout(() => {
+    notification.classList.add('animate-slide-out');
+    setTimeout(() => notification.remove(), 300);
+  }, 5000);
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(event) {
+  // Ctrl/Cmd + S to save draft
+  if ((event.ctrlKey || event.metaKey) && event.key === 's') {
+    event.preventDefault();
+    document.querySelector('[name="save_draft"]').click();
+  }
+  
+  // Ctrl/Cmd + Enter to submit
+  if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+    event.preventDefault();
+    document.querySelector('[name="submit"]').click();
+  }
+});
+
+// Form auto-save (optional)
+function setupAutoSave() {
+  const form = document.querySelector('form');
+  let autoSaveTimer;
+  
+  form.addEventListener('input', function() {
+    clearTimeout(autoSaveTimer);
+    autoSaveTimer = setTimeout(() => {
+      // Save form data to localStorage
+      const formData = new FormData(form);
+      const data = {};
+      formData.forEach((value, key) => {
+        data[key] = value;
+      });
+      localStorage.setItem('candidateFormDraft', JSON.stringify(data));
+      console.log('Form auto-saved');
+    }, 2000); // Save after 2 seconds of inactivity
+  });
+  
+  // Load draft on page load
+  const draft = localStorage.getItem('candidateFormDraft');
+  if (draft) {
+    if (confirm('Found a saved draft. Load it?')) {
+      const data = JSON.parse(draft);
+      Object.keys(data).forEach(key => {
+        const field = document.querySelector(`[name="${key}"]`);
+        if (field) field.value = data[key];
+      });
+    }
+  }
+}
+
+// Initialize auto-save on page load
+// setupAutoSave(); // Uncomment to enable auto-save feature
+</script>
+
+<style>
+@keyframes slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-out {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out;
+}
+
+.animate-slide-out {
+  animation: slide-out 0.3s ease-out;
+}
+
+/* Smooth transitions */
+* {
+  transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+
+/* Form focus styles */
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* File upload hover effect */
+[class*="border-dashed"]:hover {
+  border-color: #818cf8;
+  background-color: #f8fafc;
+}
+</style>
+{% endblock %}

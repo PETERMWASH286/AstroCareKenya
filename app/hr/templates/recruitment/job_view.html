@@ -1,0 +1,1268 @@
+<!-- app/hr/templates/recruitment/job_view.html -->
+{% extends 'base.html' %}
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    
+    <!-- Header -->
+    <div class="mb-8">
+      <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center gap-4">
+          <div class="h-14 w-14 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl flex items-center justify-center shadow-lg">
+            <i class="fas fa-briefcase text-white text-2xl"></i>
+          </div>
+          <div class="flex-1">
+            <div class="flex items-center gap-4 mb-2">
+              <h1 class="text-3xl font-bold text-gray-900">{{ job.title }}</h1>
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium 
+                {% if job.status == 'Published' %}bg-green-100 text-green-800
+                {% elif job.status == 'Draft' %}bg-yellow-100 text-yellow-800
+                {% elif job.status == 'Closed' %}bg-blue-100 text-blue-800
+                {% elif job.status == 'Archived' %}bg-gray-100 text-gray-800
+                {% else %}bg-red-100 text-red-800{% endif %}">
+                <i class="fas fa-circle mr-1 text-xs"></i>
+                {{ job.status }}
+              </span>
+              {% if job.is_remote %}
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                <i class="fas fa-home mr-1"></i> Remote
+              </span>
+              {% endif %}
+            </div>
+            <div class="flex items-center gap-4 text-gray-600">
+              <span class="flex items-center gap-2">
+                <i class="fas fa-hashtag text-gray-400"></i>
+                {{ job.reference_no }}
+              </span>
+              {% if job.location %}
+              <span class="flex items-center gap-2">
+                <i class="fas fa-map-marker-alt text-gray-400"></i>
+                {{ job.location }}
+              </span>
+              {% endif %}
+              {% if job.department %}
+              <span class="flex items-center gap-2">
+                <i class="fas fa-building text-gray-400"></i>
+                {{ job.department.name }}
+              </span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <a href="{{ url_for('hr_web.edit_job_posting', job_id=job.id) }}" 
+             class="inline-flex items-center px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 font-medium shadow-sm transition-all duration-200">
+            <i class="fas fa-edit mr-2"></i>
+            Edit Job
+          </a>
+          <a href="{{ url_for('hr_web.recruitment_jobs') }}" 
+             class="inline-flex items-center px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 font-medium shadow-sm transition-all duration-200">
+            <i class="fas fa-arrow-left mr-2"></i>
+            Back to Jobs
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats & Quick Actions -->
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+      <!-- Total Applications -->
+      <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-600">Total Applications</p>
+            <p class="text-2xl font-bold text-gray-900 mt-1">{{ candidate_stats.total }}</p>
+            <p class="text-xs text-blue-600 mt-1">{{ job.applications_count }} via portal</p>
+          </div>
+          <div class="h-10 w-10 bg-gradient-to-r from-blue-100 to-cyan-100 rounded-lg flex items-center justify-center">
+            <i class="fas fa-users text-blue-600"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Shortlisted -->
+      <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-600">Shortlisted</p>
+            <p class="text-2xl font-bold text-gray-900 mt-1">{{ candidate_stats.shortlisted }}</p>
+            <p class="text-xs text-green-600 mt-1">{{ (candidate_stats.shortlisted/candidate_stats.total*100 if candidate_stats.total > 0 else 0)|round(1) }}% rate</p>
+          </div>
+          <div class="h-10 w-10 bg-gradient-to-r from-green-100 to-emerald-100 rounded-lg flex items-center justify-center">
+            <i class="fas fa-user-check text-green-600"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Interviewed -->
+      <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-600">Interviewed</p>
+            <p class="text-2xl font-bold text-gray-900 mt-1">{{ candidate_stats.interviewed }}</p>
+            <p class="text-xs text-purple-600 mt-1">{{ (candidate_stats.interviewed/candidate_stats.total*100 if candidate_stats.total > 0 else 0)|round(1) }}% rate</p>
+          </div>
+          <div class="h-10 w-10 bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg flex items-center justify-center">
+            <i class="fas fa-comments text-purple-600"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hired -->
+      <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-600">Hired</p>
+            <p class="text-2xl font-bold text-gray-900 mt-1">{{ candidate_stats.hired }}</p>
+            <p class="text-xs text-amber-600 mt-1">{{ job.positions_available }} positions</p>
+          </div>
+          <div class="h-10 w-10 bg-gradient-to-r from-amber-100 to-yellow-100 rounded-lg flex items-center justify-center">
+            <i class="fas fa-trophy text-amber-600"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Deadline -->
+      <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-600">Deadline</p>
+            <p class="text-2xl font-bold text-gray-900 mt-1">{{ job.application_deadline.strftime('%d %b') }}</p>
+            {% set days_remaining = (job.application_deadline - today).days %}
+            <p class="text-xs {% if days_remaining < 0 %}text-red-600{% elif days_remaining < 7 %}text-amber-600{% else %}text-green-600{% endif %} mt-1">
+              {% if days_remaining > 0 %}
+                {{ days_remaining }} days left
+              {% elif days_remaining == 0 %}
+                Today
+              {% else %}
+                {{ -days_remaining }} days ago
+              {% endif %}
+            </p>
+          </div>
+          <div class="h-10 w-10 bg-gradient-to-r from-red-100 to-orange-100 rounded-lg flex items-center justify-center">
+            <i class="fas fa-clock text-red-600"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions Bar -->
+    <div class="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-2xl p-4 border border-blue-200 mb-8">
+      <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <div class="h-10 w-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
+            <i class="fas fa-bolt text-white"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-gray-900">Quick Actions</h3>
+            <p class="text-sm text-gray-600">Manage candidates and interviews</p>
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-3">
+          <a href="{{ url_for('hr_web.new_candidate', job_id=job.id) }}" 
+             class="inline-flex items-center px-4 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-medium rounded-xl hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
+            <i class="fas fa-user-plus mr-2"></i>
+            Add Candidate
+          </a>
+          <button onclick="runAutoScreening()" 
+                  class="inline-flex items-center px-4 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-xl hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
+            <i class="fas fa-robot mr-2"></i>
+            AI Screening
+          </button>
+          <button onclick="scheduleBulkInterviews()" 
+                  class="inline-flex items-center px-4 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-medium rounded-xl hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
+            <i class="fas fa-calendar-alt mr-2"></i>
+            Schedule Interviews
+          </button>
+          <div class="relative">
+            <button onclick="toggleMoreActions()" 
+                    class="inline-flex items-center px-4 py-2.5 bg-white border border-gray-300 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-all duration-200">
+              More Actions
+              <i class="fas fa-chevron-down ml-2 text-xs"></i>
+            </button>
+            <div id="moreActions" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 z-10">
+              <div class="py-1">
+                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700">Generate Report</a>
+                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700">Export Candidates</a>
+                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700">Post to Job Boards</a>
+                <div class="border-t border-gray-100"></div>
+                {% if job.status == 'Published' %}
+                <a href="{{ url_for('hr_web.close_job', job_id=job.id) }}" 
+                   class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                   onclick="return confirm('Close this job posting?')">
+                  Close Job
+                </a>
+                {% else %}
+                <a href="{{ url_for('hr_web.publish_job', job_id=job.id) }}" 
+                   class="block px-4 py-2 text-sm text-green-600 hover:bg-green-50"
+                   onclick="return confirm('Publish this job posting?')">
+                  Publish Job
+                </a>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content Tabs -->
+    <div x-data="{ activeTab: 'candidates' }" class="space-y-6">
+      <!-- Tabs Navigation -->
+      <div class="border-b border-gray-200">
+        <nav class="-mb-px flex space-x-8">
+          <button @click="activeTab = 'overview'"
+                  :class="activeTab === 'overview' ? 'border-purple-500 text-purple-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                  class="group inline-flex items-center py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200">
+            <i class="fas fa-info-circle mr-2"></i>
+            Job Overview
+          </button>
+          <button @click="activeTab = 'candidates'"
+                  :class="activeTab === 'candidates' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                  class="group inline-flex items-center py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200">
+            <i class="fas fa-users mr-2"></i>
+            Candidates
+            <span class="ml-2 bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">
+              {{ candidate_stats.total }}
+            </span>
+          </button>
+          <button @click="activeTab = 'panels'"
+                  :class="activeTab === 'panels' ? 'border-green-500 text-green-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                  class="group inline-flex items-center py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200">
+            <i class="fas fa-user-friends mr-2"></i>
+            Interview Panels
+            <span class="ml-2 bg-green-100 text-green-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">
+              {{ panels|length }}
+            </span>
+          </button>
+          <button @click="activeTab = 'analytics'"
+                  :class="activeTab === 'analytics' ? 'border-amber-500 text-amber-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                  class="group inline-flex items-center py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200">
+            <i class="fas fa-chart-bar mr-2"></i>
+            Analytics
+          </button>
+        </nav>
+      </div>
+
+      <!-- Overview Tab -->
+      <div x-show="activeTab === 'overview'" class="space-y-6">
+        <!-- Job Details Card -->
+        <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-bold text-gray-900">Job Details</h3>
+          </div>
+          <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <!-- Left Column -->
+              <div class="space-y-6">
+                <!-- Basic Info -->
+                <div>
+                  <h4 class="font-bold text-gray-900 mb-3 flex items-center">
+                    <i class="fas fa-info-circle text-blue-600 mr-2"></i>
+                    Basic Information
+                  </h4>
+                  <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                      <span class="text-sm text-gray-600">Reference Number:</span>
+                      <span class="font-medium text-gray-900">{{ job.reference_no }}</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                      <span class="text-sm text-gray-600">Category:</span>
+                      <span class="font-medium text-gray-900">{{ job.category.name if job.category else 'Not specified' }}</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                      <span class="text-sm text-gray-600">Department:</span>
+                      <span class="font-medium text-gray-900">{{ job.department.name if job.department else 'Not specified' }}</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                      <span class="text-sm text-gray-600">Employment Type:</span>
+                      <span class="font-medium text-gray-900">{{ job.employment_type or 'Not specified' }}</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                      <span class="text-sm text-gray-600">Experience Level:</span>
+                      <span class="font-medium text-gray-900">{{ job.experience_level or 'Not specified' }}</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                      <span class="text-sm text-gray-600">Education Level:</span>
+                      <span class="font-medium text-gray-900">{{ job.education_level or 'Not specified' }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Salary Information -->
+                {% if job.salary_disclosure != 'Confidential' %}
+                <div>
+                  <h4 class="font-bold text-gray-900 mb-3 flex items-center">
+                    <i class="fas fa-money-bill-wave text-green-600 mr-2"></i>
+                    Salary Information
+                  </h4>
+                  <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                      <span class="text-sm text-gray-600">Salary Disclosure:</span>
+                      <span class="font-medium text-gray-900">{{ job.salary_disclosure }}</span>
+                    </div>
+                    {% if job.formatted_salary != 'Not Specified' %}
+                    <div class="flex items-center justify-between">
+                      <span class="text-sm text-gray-600">Salary Range:</span>
+                      <span class="font-medium text-gray-900">{{ job.formatted_salary }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="flex items-center justify-between">
+                      <span class="text-sm text-gray-600">Positions Available:</span>
+                      <span class="font-medium text-gray-900">{{ job.positions_available }}</span>
+                    </div>
+                  </div>
+                </div>
+                {% endif %}
+              </div>
+
+              <!-- Right Column -->
+              <div class="space-y-6">
+                <!-- Dates -->
+                <div>
+                  <h4 class="font-bold text-gray-900 mb-3 flex items-center">
+                    <i class="fas fa-calendar-alt text-amber-600 mr-2"></i>
+                    Timeline
+                  </h4>
+                  <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                      <span class="text-sm text-gray-600">Application Deadline:</span>
+                      <span class="font-medium text-gray-900">{{ job.application_deadline.strftime('%d %b %Y') }}</span>
+                    </div>
+                    {% if job.start_date %}
+                    <div class="flex items-center justify-between">
+                      <span class="text-sm text-gray-600">Expected Start Date:</span>
+                      <span class="font-medium text-gray-900">{{ job.start_date.strftime('%d %b %Y') }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="flex items-center justify-between">
+                      <span class="text-sm text-gray-600">Created On:</span>
+                      <span class="font-medium text-gray-900">{{ job.created_at.strftime('%d %b %Y') }}</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                      <span class="text-sm text-gray-600">Last Updated:</span>
+                      <span class="font-medium text-gray-900">{{ job.updated_at.strftime('%d %b %Y') }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Job Status -->
+                <div>
+                  <h4 class="font-bold text-gray-900 mb-3 flex items-center">
+                    <i class="fas fa-chart-line text-purple-600 mr-2"></i>
+                    Job Performance
+                  </h4>
+                  <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                      <span class="text-sm text-gray-600">Total Views:</span>
+                      <span class="font-medium text-gray-900">{{ job.views_count }}</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                      <span class="text-sm text-gray-600">Applications:</span>
+                      <span class="font-medium text-gray-900">{{ job.applications_count }}</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                      <span class="text-sm text-gray-600">Shortlisted:</span>
+                      <span class="font-medium text-gray-900">{{ job.shortlisted_count }}</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                      <span class="text-sm text-gray-600">Conversion Rate:</span>
+                      <span class="font-medium text-gray-900">
+                        {% if job.applications_count > 0 %}
+                        {{ (job.shortlisted_count / job.applications_count * 100)|round(1) }}%
+                        {% else %}
+                        0%
+                        {% endif %}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Description & Requirements -->
+            <div class="mt-8 space-y-6">
+              <div>
+                <h4 class="font-bold text-gray-900 mb-3 flex items-center">
+                  <i class="fas fa-align-left text-blue-600 mr-2"></i>
+                  Job Description
+                </h4>
+                <div class="prose max-w-none bg-gray-50 p-4 rounded-lg border border-gray-200">
+                  {{ job.description|safe }}
+                </div>
+              </div>
+
+              {% if job.responsibilities %}
+              <div>
+                <h4 class="font-bold text-gray-900 mb-3 flex items-center">
+                  <i class="fas fa-tasks text-green-600 mr-2"></i>
+                  Key Responsibilities
+                </h4>
+                <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 whitespace-pre-line">
+                  {{ job.responsibilities }}
+                </div>
+              </div>
+              {% endif %}
+
+              {% if job.requirements %}
+              <div>
+                <h4 class="font-bold text-gray-900 mb-3 flex items-center">
+                  <i class="fas fa-clipboard-check text-red-600 mr-2"></i>
+                  Requirements & Qualifications
+                </h4>
+                <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 whitespace-pre-line">
+                  {{ job.requirements }}
+                </div>
+              </div>
+              {% endif %}
+
+              {% if job.benefits %}
+              <div>
+                <h4 class="font-bold text-gray-900 mb-3 flex items-center">
+                  <i class="fas fa-gift text-purple-600 mr-2"></i>
+                  Benefits & Perks
+                </h4>
+                <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 whitespace-pre-line">
+                  {{ job.benefits }}
+                </div>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Candidates Tab -->
+      <div x-show="activeTab === 'candidates'" class="space-y-6">
+        <!-- Candidates Statistics -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {% for status, count in {
+            'Applied': candidate_stats.applied,
+            'Shortlisted': candidate_stats.shortlisted,
+            'Interviewed': candidate_stats.interviewed,
+            'Offer Accepted': candidate_stats.hired
+          }.items() %}
+          <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-200 cursor-pointer" 
+               onclick="filterCandidates('{{ status }}')">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-gray-600">{{ status }}</p>
+                <p class="text-2xl font-bold text-gray-900 mt-1">{{ count }}</p>
+                <p class="text-xs text-gray-500 mt-1">
+                  {% if candidate_stats.total > 0 %}
+                  {{ (count / candidate_stats.total * 100)|round(1) }}% of total
+                  {% else %}
+                  0% of total
+                  {% endif %}
+                </p>
+              </div>
+              <div class="h-10 w-10 rounded-lg flex items-center justify-center
+                {% if status == 'Applied' %}bg-blue-100{% endif %}
+                {% if status == 'Shortlisted' %}bg-green-100{% endif %}
+                {% if status == 'Interviewed' %}bg-purple-100{% endif %}
+                {% if status == 'Offer Accepted' %}bg-amber-100{% endif %}">
+                <i class="fas 
+                  {% if status == 'Applied' %}fa-user text-blue-600{% endif %}
+                  {% if status == 'Shortlisted' %}fa-user-check text-green-600{% endif %}
+                  {% if status == 'Interviewed' %}fa-comments text-purple-600{% endif %}
+                  {% if status == 'Offer Accepted' %}fa-trophy text-amber-600{% endif %}"></i>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+
+        <!-- Candidates Table -->
+        <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="text-lg font-bold text-gray-900">Candidates</h3>
+                <p class="text-sm text-gray-600">Manage all applications for this job</p>
+              </div>
+              <div class="flex items-center gap-3">
+                <div class="relative">
+                  <input type="text" placeholder="Search candidates..." 
+                         class="pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                         id="searchCandidates">
+                  <i class="fas fa-search absolute left-3 top-2.5 text-gray-400"></i>
+                </div>
+                <select id="statusFilter" onchange="filterCandidates(this.value)"
+                        class="px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200">
+                  <option value="all">All Statuses</option>
+                  <option value="Applied">Applied</option>
+                  <option value="Shortlisted">Shortlisted</option>
+                  <option value="Interviewed">Interviewed</option>
+                  <option value="Offer Accepted">Offer Accepted</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Candidate
+                  </th>
+                  <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Contact
+                  </th>
+                  <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Professional Info
+                  </th>
+                  <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status & Score
+                  </th>
+                  <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Applied
+                  </th>
+                  <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                {% for candidate in candidates %}
+                <tr class="hover:bg-gray-50 transition-colors duration-150 candidate-row" data-status="{{ candidate.status }}">
+                  <td class="py-4 px-6">
+                    <div class="flex items-center space-x-4">
+                      <div class="h-10 w-10 bg-gradient-to-r from-blue-100 to-cyan-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-user text-blue-600"></i>
+                      </div>
+                      <div>
+                        <h4 class="font-bold text-gray-900 hover:text-blue-600 transition-colors">
+                          <a href="{{ url_for('hr_web.view_candidate', candidate_id=candidate.id) }}">{{ candidate.full_name }}</a>
+                        </h4>
+                        <p class="text-sm text-gray-500">{{ candidate.email }}</p>
+                        {% if candidate.age %}
+                        <p class="text-xs text-gray-400">{{ candidate.age }} years old</p>
+                        {% endif %}
+                      </div>
+                    </div>
+                  </td>
+                  <td class="py-4 px-6">
+                    <div class="space-y-1">
+                      {% if candidate.phone %}
+                      <div class="flex items-center text-sm text-gray-600">
+                        <i class="fas fa-phone mr-2 text-gray-400 text-xs"></i>
+                        {{ candidate.phone }}
+                      </div>
+                      {% endif %}
+                      {% if candidate.city %}
+                      <div class="flex items-center text-sm text-gray-600">
+                        <i class="fas fa-map-marker-alt mr-2 text-gray-400 text-xs"></i>
+                        {{ candidate.city }}
+                      </div>
+                      {% endif %}
+                      {% if candidate.linkedin_url %}
+                      <div class="flex items-center text-sm text-blue-600 hover:text-blue-800">
+                        <i class="fab fa-linkedin mr-2 text-xs"></i>
+                        LinkedIn
+                      </div>
+                      {% endif %}
+                    </div>
+                  </td>
+                  <td class="py-4 px-6">
+                    <div class="space-y-1">
+                      {% if candidate.current_company %}
+                      <div class="text-sm text-gray-900">
+                        {{ candidate.current_company }}
+                      </div>
+                      {% endif %}
+                      {% if candidate.current_position %}
+                      <div class="text-sm text-gray-600">
+                        {{ candidate.current_position }}
+                      </div>
+                      {% endif %}
+                      {% if candidate.years_of_experience %}
+                      <div class="text-xs text-gray-500">
+                        {{ candidate.years_of_experience }} years experience
+                      </div>
+                      {% endif %}
+                    </div>
+                  </td>
+                  <td class="py-4 px-6">
+                    <div class="space-y-2">
+                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                        {% if candidate.status == 'Shortlisted' %}bg-green-100 text-green-800
+                        {% elif candidate.status == 'Interviewed' %}bg-blue-100 text-blue-800
+                        {% elif candidate.status == 'Applied' %}bg-yellow-100 text-yellow-800
+                        {% elif candidate.status == 'Offer Accepted' %}bg-amber-100 text-amber-800
+                        {% elif candidate.status == 'Rejected' %}bg-red-100 text-red-800
+                        {% else %}bg-gray-100 text-gray-800{% endif %}">
+                        {{ candidate.status }}
+                      </span>
+                      {% if candidate.overall_score > 0 %}
+                      <div class="flex items-center gap-2">
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                          <div class="bg-gradient-to-r from-green-400 to-emerald-400 h-2 rounded-full" 
+                               style="width: {{ candidate.overall_score }}%"></div>
+                        </div>
+                        <span class="text-xs font-medium text-gray-700">{{ candidate.overall_score|round(1) }}%</span>
+                      </div>
+                      {% endif %}
+                    </div>
+                  </td>
+                  <td class="py-4 px-6">
+                    <div class="text-sm text-gray-900">
+                      {{ candidate.application_date.strftime('%d %b %Y') }}
+                    </div>
+                    <div class="text-xs text-gray-500">
+                      {{ candidate.application_date.strftime('%I:%M %p') }}
+                    </div>
+                  </td>
+                  <td class="py-4 px-6">
+                    <div class="flex items-center gap-2">
+                      <a href="{{ url_for('hr_web.view_candidate', candidate_id=candidate.id) }}" 
+                         class="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                         title="View Profile">
+                        <i class="fas fa-eye"></i>
+                      </a>
+                      <a href="{{ url_for('hr_web.schedule_interview', candidate_id=candidate.id) }}" 
+                         class="p-2 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                         title="Schedule Interview">
+                        <i class="fas fa-calendar-plus"></i>
+                      </a>
+                      <div class="relative">
+                        <button onclick="toggleCandidateActions({{ candidate.id }})" 
+                                class="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
+                          <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                        <div id="candidateActions-{{ candidate.id }}" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 z-10">
+                          <div class="py-1">
+                            <a href="{{ url_for('hr_web.edit_candidate', candidate_id=candidate.id) }}" 
+                               class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50">
+                              <i class="fas fa-edit mr-2"></i> Edit
+                            </a>
+                            {% if candidate.resume_path %}
+                            <a href="{{ url_for('hr_web.download_resume', candidate_id=candidate.id) }}" 
+                               class="block px-4 py-2 text-sm text-gray-700 hover:bg-green-50">
+                              <i class="fas fa-download mr-2"></i> Download Resume
+                            </a>
+                            {% endif %}
+                            <div class="border-t border-gray-100"></div>
+                            <button onclick="changeStatus({{ candidate.id }}, 'Shortlisted')" 
+                                    class="block w-full text-left px-4 py-2 text-sm text-green-600 hover:bg-green-50">
+                              <i class="fas fa-check mr-2"></i> Shortlist
+                            </button>
+                            <button onclick="changeStatus({{ candidate.id }}, 'Rejected')" 
+                                    class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                              <i class="fas fa-times mr-2"></i> Reject
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+                {% else %}
+                <tr>
+                  <td colspan="6" class="py-12 text-center">
+                    <div class="text-gray-400 mb-4">
+                      <i class="fas fa-users text-4xl"></i>
+                    </div>
+                    <h4 class="text-lg font-medium text-gray-900 mb-2">No candidates yet</h4>
+                    <p class="text-gray-500 mb-6">Start by adding candidates to this job posting.</p>
+                    <a href="{{ url_for('hr_web.new_candidate', job_id=job.id) }}" 
+                       class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-medium rounded-xl hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
+                      <i class="fas fa-user-plus mr-2"></i>
+                      Add First Candidate
+                    </a>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Table Footer -->
+          <div class="px-6 py-4 border-t border-gray-200 bg-gray-50">
+            <div class="flex items-center justify-between">
+              <div class="text-sm text-gray-600">
+                Showing <span class="font-medium">{{ candidates|length }}</span> candidates
+              </div>
+              <div class="flex items-center gap-2">
+                <button onclick="exportCandidates()" 
+                        class="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-medium rounded-xl hover:shadow-lg transition-all duration-200">
+                  <i class="fas fa-file-export mr-2"></i>
+                  Export Candidates
+                </button>
+                <button onclick="sendBulkEmails()" 
+                        class="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-xl hover:shadow-lg transition-all duration-200">
+                  <i class="fas fa-envelope mr-2"></i>
+                  Email All
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Interview Panels Tab -->
+      <div x-show="activeTab === 'panels'" class="space-y-6">
+        <!-- Create Panel Card -->
+        <div class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-6 border border-green-200">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-3">
+              <div class="h-12 w-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
+                <i class="fas fa-user-friends text-white text-xl"></i>
+              </div>
+              <div>
+                <h3 class="font-bold text-gray-900">Create Interview Panel</h3>
+                <p class="text-sm text-gray-600">Set up panels for different interview rounds</p>
+              </div>
+            </div>
+            <a href="{{ url_for('hr_web.create_interview_panel', job_id=job.id) }}" 
+               class="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-medium rounded-xl hover:shadow-lg transition-all duration-200">
+              <i class="fas fa-plus mr-2"></i>
+              New Panel
+            </a>
+          </div>
+        </div>
+
+        <!-- Panels Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {% for panel in panels %}
+          <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200 hover:shadow-xl transition-shadow duration-200">
+            <div class="p-6">
+              <div class="flex items-center justify-between mb-4">
+                <div>
+                  <h4 class="font-bold text-gray-900">{{ panel.name }}</h4>
+                  <p class="text-sm text-gray-600">{{ panel.panel_type }} Panel</p>
+                </div>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                  {% if panel.is_active %}bg-green-100 text-green-800{% else %}bg-gray-100 text-gray-800{% endif %}">
+                  {% if panel.is_active %}Active{% else %}Inactive{% endif %}
+                </span>
+              </div>
+              
+              {% if panel.description %}
+              <p class="text-sm text-gray-600 mb-4">{{ panel.description }}</p>
+              {% endif %}
+
+              <!-- Panel Members -->
+              <div class="mb-4">
+                <h5 class="text-sm font-medium text-gray-700 mb-2">Panel Members</h5>
+                <div class="space-y-2">
+                  {% for member in panel.panel_members %}
+                  <div class="flex items-center justify-between text-sm">
+                    <div class="flex items-center gap-2">
+                      <div class="h-6 w-6 bg-blue-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-user text-blue-600 text-xs"></i>
+                      </div>
+                      <span>{{ member.user.full_name }}</span>
+                    </div>
+                    <span class="text-xs text-gray-500">{{ member.role }}</span>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+
+              <!-- Interviews -->
+              <div class="mb-4">
+                <h5 class="text-sm font-medium text-gray-700 mb-2">Scheduled Interviews</h5>
+                {% set panel_interviews = panel.interviews|selectattr('status', 'in', ['Scheduled', 'Confirmed'])|list %}
+                {% if panel_interviews %}
+                <div class="text-sm text-gray-600">
+                  <i class="fas fa-calendar-alt mr-2 text-gray-400"></i>
+                  {{ panel_interviews|length }} upcoming
+                </div>
+                {% else %}
+                <div class="text-sm text-gray-400">No interviews scheduled</div>
+                {% endif %}
+              </div>
+
+              <div class="flex gap-2 pt-4 border-t border-gray-200">
+                <a href="" 
+                   class="flex-1 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors text-sm font-medium text-center">
+                  Edit
+                </a>
+                <a href="" 
+                   class="flex-1 px-3 py-1.5 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors text-sm font-medium text-center">
+                  Interviews
+                </a>
+              </div>
+            </div>
+          </div>
+          {% else %}
+          <div class="md:col-span-3 p-12 text-center bg-white rounded-2xl border border-gray-200">
+            <div class="text-gray-400 mb-4">
+              <i class="fas fa-user-friends text-4xl"></i>
+            </div>
+            <h4 class="text-lg font-medium text-gray-900 mb-2">No interview panels yet</h4>
+            <p class="text-gray-500 mb-6">Create panels to organize interviews for this job.</p>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Analytics Tab -->
+      <div x-show="activeTab === 'analytics'" class="space-y-6">
+        <!-- Analytics Overview -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <!-- Application Funnel -->
+          <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200 md:col-span-2">
+            <div class="px-6 py-4 border-b border-gray-200">
+              <h3 class="text-lg font-bold text-gray-900">Application Funnel</h3>
+            </div>
+            <div class="p-6">
+              <div class="flex items-center justify-between mb-6">
+                {% for stage, count in {
+                  'Applied': candidate_stats.applied,
+                  'Shortlisted': candidate_stats.shortlisted,
+                  'Interviewed': candidate_stats.interviewed,
+                  'Hired': candidate_stats.hired
+                }.items() %}
+                <div class="flex flex-col items-center text-center">
+                  <div class="h-12 w-12 rounded-full bg-gradient-to-r from-blue-100 to-cyan-100 flex items-center justify-center mb-2">
+                    <span class="font-bold text-gray-900">{{ count }}</span>
+                  </div>
+                  <span class="text-sm font-medium text-gray-700">{{ stage }}</span>
+                </div>
+                {% if not loop.last %}
+                <div class="flex-1 h-0.5 bg-gray-200 mx-2"></div>
+                {% endif %}
+                {% endfor %}
+              </div>
+
+              <!-- Conversion Rates -->
+              <div class="space-y-4">
+                {% set stages = [
+                  ('Application to Shortlist', candidate_stats.applied, candidate_stats.shortlisted),
+                  ('Shortlist to Interview', candidate_stats.shortlisted, candidate_stats.interviewed),
+                  ('Interview to Hire', candidate_stats.interviewed, candidate_stats.hired),
+                  ('Overall Hire Rate', candidate_stats.applied, candidate_stats.hired)
+                ] %}
+                {% for label, total, converted in stages %}
+                {% if total > 0 %}
+                <div>
+                  <div class="flex items-center justify-between mb-1">
+                    <span class="text-sm text-gray-700">{{ label }}</span>
+                    <span class="text-sm font-medium text-gray-900">{{ (converted / total * 100)|round(1) }}%</span>
+                  </div>
+                  <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div class="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full" 
+                         style="width: {{ (converted / total * 100)|round(1) }}%"></div>
+                  </div>
+                </div>
+                {% endif %}
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+
+          <!-- Time to Hire -->
+          <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200">
+            <div class="px-6 py-4 border-b border-gray-200">
+              <h3 class="text-lg font-bold text-gray-900">Time Metrics</h3>
+            </div>
+            <div class="p-6">
+              <div class="space-y-6">
+                <div>
+                  <div class="text-sm text-gray-600 mb-2">Average Time to Shortlist</div>
+                  <div class="text-2xl font-bold text-gray-900">3.2 days</div>
+                </div>
+                <div>
+                  <div class="text-sm text-gray-600 mb-2">Average Interview Process</div>
+                  <div class="text-2xl font-bold text-gray-900">14 days</div>
+                </div>
+                <div>
+                  <div class="text-sm text-gray-600 mb-2">Days Since Job Posted</div>
+                  <div class="text-2xl font-bold text-gray-900">{{ (today - job.created_at.date()).days }} days</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Source Analysis -->
+        <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-bold text-gray-900">Candidate Sources</h3>
+          </div>
+          <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {% for source in ['Website', 'LinkedIn', 'Referral', 'Agency'] %}
+              {% set source_count = candidates|selectattr('source', 'equalto', source)|list|length %}
+              <div class="text-center p-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
+                <div class="h-12 w-12 rounded-full bg-gradient-to-r from-blue-100 to-cyan-100 flex items-center justify-center mx-auto mb-3">
+                  <i class="fas 
+                    {% if source == 'Website' %}fa-globe text-blue-600
+                    {% elif source == 'LinkedIn' %}fa-linkedin text-blue-700
+                    {% elif source == 'Referral' %}fa-user-friends text-green-600
+                    {% else %}fa-briefcase text-purple-600{% endif %}"></i>
+                </div>
+                <div class="text-2xl font-bold text-gray-900">{{ source_count }}</div>
+                <div class="text-sm text-gray-600">{{ source }}</div>
+                {% if candidate_stats.total > 0 %}
+                <div class="text-xs text-gray-500 mt-1">
+                  {{ (source_count / candidate_stats.total * 100)|round(1) }}%
+                </div>
+                {% endif %}
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+
+        <!-- AI Recommendations -->
+        <div class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-6 border border-purple-200">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="h-12 w-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+              <i class="fas fa-robot text-white text-xl"></i>
+            </div>
+            <div>
+              <h3 class="text-lg font-bold text-gray-900">AI Recruitment Insights</h3>
+              <p class="text-sm text-gray-600">Smart recommendations for this job posting</p>
+            </div>
+          </div>
+          
+          <div class="space-y-4">
+            <div class="bg-white rounded-xl p-4 border border-gray-200">
+              <div class="flex items-start gap-3">
+                <div class="h-6 w-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <i class="fas fa-lightbulb text-green-600 text-xs"></i>
+                </div>
+                <div>
+                  <h4 class="font-medium text-gray-900 mb-1">Improve Candidate Quality</h4>
+                  <p class="text-sm text-gray-600">Consider adding specific technical skills requirements to attract better-qualified candidates.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-white rounded-xl p-4 border border-gray-200">
+              <div class="flex items-start gap-3">
+                <div class="h-6 w-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <i class="fas fa-chart-line text-blue-600 text-xs"></i>
+                </div>
+                <div>
+                  <h4 class="font-medium text-gray-900 mb-1">High Drop-off Rate</h4>
+                  <p class="text-sm text-gray-600">35% of candidates drop off after the first interview. Consider improving the interview experience.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-white rounded-xl p-4 border border-gray-200">
+              <div class="flex items-start gap-3">
+                <div class="h-6 w-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <i class="fas fa-bullseye text-purple-600 text-xs"></i>
+                </div>
+                <div>
+                  <h4 class="font-medium text-gray-900 mb-1">Target Audience</h4>
+                  <p class="text-sm text-gray-600">Most qualified candidates are coming from LinkedIn. Consider boosting your job post there.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- JavaScript for Interactive Features -->
+<script>
+// Initialize Alpine.js
+document.addEventListener('alpine:init', () => {
+  // Tab functionality is handled by x-data and x-show
+});
+
+// Candidate filtering
+function filterCandidates(status) {
+  const rows = document.querySelectorAll('.candidate-row');
+  const searchTerm = document.getElementById('searchCandidates').value.toLowerCase();
+  
+  rows.forEach(row => {
+    const candidateStatus = row.getAttribute('data-status');
+    const candidateName = row.querySelector('h4').textContent.toLowerCase();
+    const candidateEmail = row.querySelector('p').textContent.toLowerCase();
+    
+    let show = true;
+    
+    // Status filter
+    if (status !== 'all' && candidateStatus !== status) {
+      show = false;
+    }
+    
+    // Search filter
+    if (searchTerm && !candidateName.includes(searchTerm) && !candidateEmail.includes(searchTerm)) {
+      show = false;
+    }
+    
+    row.style.display = show ? '' : 'none';
+  });
+}
+
+// Search functionality
+const searchInput = document.getElementById('searchCandidates');
+if (searchInput) {
+  searchInput.addEventListener('input', () => {
+    const statusFilter = document.getElementById('statusFilter');
+    filterCandidates(statusFilter.value);
+  });
+}
+
+// Candidate actions dropdown
+function toggleCandidateActions(candidateId) {
+  const dropdown = document.getElementById(`candidateActions-${candidateId}`);
+  dropdown.classList.toggle('hidden');
+  
+  // Close other dropdowns
+  document.querySelectorAll('[id^="candidateActions-"]').forEach(el => {
+    if (el.id !== `candidateActions-${candidateId}`) {
+      el.classList.add('hidden');
+    }
+  });
+}
+
+// More actions dropdown
+function toggleMoreActions() {
+  const dropdown = document.getElementById('moreActions');
+  dropdown.classList.toggle('hidden');
+}
+
+// Close dropdowns when clicking outside
+document.addEventListener('click', function(event) {
+  // Close candidate action dropdowns
+  if (!event.target.closest('[id^="candidateActions-"]') && !event.target.closest('[onclick^="toggleCandidateActions"]')) {
+    document.querySelectorAll('[id^="candidateActions-"]').forEach(el => {
+      el.classList.add('hidden');
+    });
+  }
+  
+  // Close more actions dropdown
+  if (!event.target.closest('#moreActions') && !event.target.closest('[onclick="toggleMoreActions"]')) {
+    document.getElementById('moreActions').classList.add('hidden');
+  }
+});
+
+// Automation functions
+function runAutoScreening() {
+  showNotification('Running AI screening on all candidates...', 'info');
+  
+  // Simulate API call
+  setTimeout(() => {
+    const screened = Math.floor(Math.random() * 5) + 3;
+    showNotification(`AI screening complete! ${screened} candidates shortlisted.`, 'success');
+  }, 2000);
+}
+
+function scheduleBulkInterviews() {
+  const selected = getSelectedCandidates();
+  if (selected.length === 0) {
+    showNotification('Please select candidates to schedule interviews', 'error');
+    return;
+  }
+  
+  showNotification(`Scheduling interviews for ${selected.length} candidates...`, 'info');
+  
+  // Simulate API call
+  setTimeout(() => {
+    showNotification(`Interviews scheduled for ${selected.length} candidates!`, 'success');
+  }, 1500);
+}
+
+function getSelectedCandidates() {
+  // In a real implementation, get selected candidates from checkboxes
+  return Array.from(document.querySelectorAll('.candidate-checkbox:checked'))
+    .map(cb => cb.getAttribute('data-candidate-id'));
+}
+
+function changeStatus(candidateId, newStatus) {
+  if (confirm(`Change candidate status to ${newStatus}?`)) {
+    fetch(`/hr/recruitment/candidates/${candidateId}/status`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ status: newStatus })
+    })
+    .then(response => response.json())
+    .then(data => {
+      showNotification(data.message, 'success');
+      setTimeout(() => location.reload(), 1000);
+    })
+    .catch(error => {
+      showNotification('Error updating status', 'error');
+    });
+  }
+}
+
+function exportCandidates() {
+  showNotification('Preparing candidate export...', 'info');
+  
+  // Simulate export process
+  setTimeout(() => {
+    showNotification('Export ready! Downloading file...', 'success');
+    
+    // In real implementation, trigger file download
+    const link = document.createElement('a');
+    link.href = `/hr/recruitment/jobs/{{ job.id }}/export/candidates`;
+    link.download = `candidates_{{ job.reference_no }}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }, 1500);
+}
+
+function sendBulkEmails() {
+  const candidatesCount = {{ candidate_stats.total }};
+  if (candidatesCount === 0) {
+    showNotification('No candidates to email', 'error');
+    return;
+  }
+  
+  if (confirm(`Send emails to all ${candidatesCount} candidates?`)) {
+    showNotification('Sending bulk emails...', 'info');
+    
+    // Simulate API call
+    setTimeout(() => {
+      showNotification(`Emails sent to ${candidatesCount} candidates!`, 'success');
+    }, 2000);
+  }
+}
+
+// Notification system
+function showNotification(message, type = 'info') {
+  // Remove existing notifications
+  document.querySelectorAll('.notification').forEach(n => n.remove());
+  
+  const notification = document.createElement('div');
+  notification.className = `notification fixed top-4 right-4 z-50 px-6 py-3 rounded-xl shadow-lg text-white font-medium animate-slide-in ${
+    type === 'success' ? 'bg-gradient-to-r from-green-500 to-emerald-500' :
+    type === 'error' ? 'bg-gradient-to-r from-red-500 to-orange-500' :
+    'bg-gradient-to-r from-blue-500 to-cyan-500'
+  }`;
+  
+  notification.innerHTML = `
+    <div class="flex items-center gap-3">
+      <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+      <span>${message}</span>
+    </div>
+  `;
+  
+  document.body.appendChild(notification);
+  
+  // Auto-remove after 5 seconds
+  setTimeout(() => {
+    notification.classList.add('animate-slide-out');
+    setTimeout(() => notification.remove(), 300);
+  }, 5000);
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(event) {
+  // Ctrl/Cmd + F to search candidates
+  if ((event.ctrlKey || event.metaKey) && event.key === 'f') {
+    event.preventDefault();
+    const searchInput = document.getElementById('searchCandidates');
+    if (searchInput) searchInput.focus();
+  }
+  
+  // Ctrl/Cmd + E to export
+  if ((event.ctrlKey || event.metaKey) && event.key === 'e') {
+    event.preventDefault();
+    exportCandidates();
+  }
+  
+  // Escape to clear search
+  if (event.key === 'Escape') {
+    const searchInput = document.getElementById('searchCandidates');
+    if (searchInput) {
+      searchInput.value = '';
+      filterCandidates('all');
+    }
+  }
+});
+
+// Initialize date for deadline calculation
+window.today = new Date('{{ today.strftime("%Y-%m-%d") }}');
+</script>
+
+<style>
+@keyframes slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-out {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out;
+}
+
+.animate-slide-out {
+  animation: slide-out 0.3s ease-out;
+}
+
+/* Smooth transitions */
+* {
+  transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+
+/* Prose styles for job description */
+.prose {
+  line-height: 1.75;
+}
+
+.prose p {
+  margin-bottom: 1rem;
+}
+
+.prose ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.prose ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.prose li {
+  margin-bottom: 0.5rem;
+}
+</style>
+{% endblock %}

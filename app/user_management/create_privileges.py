@@ -70,6 +70,15 @@ def create_initial_privileges(session):
         ('hr:payroll:salary', 'Human Resources', 'Process Staff Salaries'),
         ('hr:payroll:payslips', 'Human Resources', 'Generate/View Payslips'),
         ('hr:payroll:reports', 'Human Resources', 'View Payroll Reports'),
+        # Recruitment Privileges - Added here
+        ('hr:recruitment:dashboard', 'Human Resources', 'Access recruitment dashboard'),
+        ('hr:recruitment:jobs', 'Human Resources', 'Manage job postings'),
+        ('hr:recruitment:candidates', 'Human Resources', 'Manage candidates'),
+        ('hr:recruitment:interviews', 'Human Resources', 'Manage interviews'),
+        ('hr:recruitment:selection', 'Human Resources', 'Manage candidate selection'),
+        ('hr:recruitment:reports', 'Human Resources', 'View recruitment reports'),
+        ('hr:recruitment:settings', 'Human Resources', 'Configure recruitment settings'),
+        # Keep the existing general recruitment privilege for backward compatibility
         ('hr:recruitment', 'Human Resources', 'Manage Recruitment'),
         ('inventory:dashboard', 'Inventory', 'View Inventory Dashboard'),
         ('inventory:manage_stock', 'Inventory', 'Manage Stock Levels'),

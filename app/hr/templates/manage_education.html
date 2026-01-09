@@ -22,53 +22,77 @@
 
             <form method="POST" class="px-6 py-8">
                 <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+
+                    <!-- Institution -->
                     <div class="sm:col-span-6">
-                        <label for="institution" class="block text-sm font-medium text-gray-700">Institution</label>
-                        <input type="text" id="institution" name="institution" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        <label class="block text-sm font-medium text-gray-700">Institution</label>
+                        <input type="text" name="institution" required
+                               class="mt-1 block w-full border rounded-md py-2 px-3">
                     </div>
 
+                    <!-- Degree -->
+                    <div class="sm:col-span-3">
+                        <label class="block text-sm font-medium text-gray-700">Degree / Certificate</label>
+                        <input type="text" name="degree" required
+                               class="mt-1 block w-full border rounded-md py-2 px-3">
+                    </div>
+
+                    <!-- Certificate Number -->
+                    <div class="sm:col-span-3">
+                        <label class="block text-sm font-medium text-gray-700">Certificate Number</label>
+                        <input type="text" name="certificate_no"
+                               placeholder="e.g. KCSE/2021/12345"
+                               class="mt-1 block w-full border rounded-md py-2 px-3">
+                    </div>
+
+                    <!-- Field of Study -->
                     <div class="sm:col-span-4">
-                        <label for="degree" class="block text-sm font-medium text-gray-700">Degree/Certificate</label>
-                        <input type="text" id="degree" name="degree" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        <label class="block text-sm font-medium text-gray-700">Field of Study</label>
+                        <input type="text" name="field_of_study"
+                               class="mt-1 block w-full border rounded-md py-2 px-3">
                     </div>
 
+                    <!-- Grade -->
                     <div class="sm:col-span-2">
-                        <label for="field_of_study" class="block text-sm font-medium text-gray-700">Field of Study</label>
-                        <input type="text" id="field_of_study" name="field_of_study" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        <label class="block text-sm font-medium text-gray-700">Grade / GPA</label>
+                        <input type="text" name="grade"
+                               class="mt-1 block w-full border rounded-md py-2 px-3">
+                    </div>
+
+                    <!-- Dates -->
+                    <div class="sm:col-span-3">
+                        <label class="block text-sm font-medium text-gray-700">Start Date</label>
+                        <input type="date" name="start_date" required
+                               class="mt-1 block w-full border rounded-md py-2 px-3">
                     </div>
 
                     <div class="sm:col-span-3">
-                        <label for="start_date" class="block text-sm font-medium text-gray-700">Start Date</label>
-                        <input type="date" id="start_date" name="start_date" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        <label class="block text-sm font-medium text-gray-700">End Date</label>
+                        <input type="date" name="end_date"
+                               class="mt-1 block w-full border rounded-md py-2 px-3">
                     </div>
 
-                    <div class="sm:col-span-3">
-                        <label for="end_date" class="block text-sm font-medium text-gray-700">End Date</label>
-                        <input type="date" id="end_date" name="end_date" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                    <!-- Current -->
+                    <div class="sm:col-span-6 flex items-center">
+                        <input type="checkbox" name="is_current"
+                               class="h-4 w-4 text-indigo-600 rounded">
+                        <label class="ml-2 text-sm text-gray-700">Currently enrolled</label>
                     </div>
 
-                    <div class="sm:col-span-2">
-                        <label for="grade" class="block text-sm font-medium text-gray-700">Grade/GPA</label>
-                        <input type="text" id="grade" name="grade" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                    </div>
-
-                    <div class="sm:col-span-4">
-                        <div class="flex items-center mt-6">
-                            <input id="is_current" name="is_current" type="checkbox" class="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
-                            <label for="is_current" class="ml-2 block text-sm text-gray-700">Currently enrolled</label>
-                        </div>
-                    </div>
-
+                    <!-- Description -->
                     <div class="sm:col-span-6">
-                        <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
-                        <textarea id="description" name="description" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"></textarea>
+                        <label class="block text-sm font-medium text-gray-700">Description</label>
+                        <textarea name="description" rows="3"
+                                  class="mt-1 block w-full border rounded-md py-2 px-3"></textarea>
                     </div>
+
                 </div>
 
                 <div class="mt-6 flex justify-end">
-                    <button type="submit" class="inline-flex justify-center py-2 px-8 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-            Add Education
-          </button>
+                    <button type="submit"
+                            class="px-8 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
+                        Add Education
+                    </button>
                 </div>
             </form>
         </div>
@@ -93,6 +117,11 @@
                             <div>
                                 <h3 class="text-lg font-semibold text-gray-900">{{ edu.degree }}</h3>
                                 <p class="text-sm text-indigo-600">{{ edu.institution }}</p>
+                                                    {% if edu.certificate_no %}
+                    <p class="text-sm text-gray-600 mt-1">
+                        <strong>Certificate No:</strong> {{ edu.certificate_no }}
+                    </p>
+                    {% endif %}
                                 <p class="text-sm text-gray-500 mt-1">
                                     {% if edu.field_of_study %}{{ edu.field_of_study }} • {% endif %} {{ edu.start_date.strftime('%b %Y') }} - {% if edu.end_date %}{{ edu.end_date.strftime('%b %Y') }} {% else %}Present{% endif %}
                                 </p>

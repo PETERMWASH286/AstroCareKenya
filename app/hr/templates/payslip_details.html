@@ -1,0 +1,710 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    
+    <!-- Header with Navigation -->
+    <div class="mb-8">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-4xl font-bold text-gray-900 mb-2">Payslip Details</h1>
+          <p class="text-gray-600">Complete breakdown of salary, earnings, and deductions</p>
+        </div>
+        <div class="flex items-center space-x-3">
+          <a href="{{ url_for('hr_web.payslips') }}" class="group relative inline-flex items-center px-5 py-2.5 bg-white text-gray-700 font-medium rounded-xl border border-gray-300 hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 shadow-sm hover:shadow">
+            <i class="fas fa-arrow-left mr-2.5"></i>
+            Back to Payslips
+          </a>
+          
+          <!-- Download PDF Button -->
+          <a href="{{ url_for('hr_web.download_payslip', payslip_id=payslip.id) }}" class="group relative inline-flex items-center px-5 py-2.5 bg-gradient-to-r from-green-500 to-green-600 text-white font-medium rounded-xl hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-sm hover:shadow">
+            <i class="fas fa-download mr-2.5"></i>
+            Download PDF
+          </a>
+          
+          <!-- Print Button -->
+          <button onclick="window.print()" class="group relative inline-flex items-center px-5 py-2.5 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white font-medium rounded-xl hover:from-indigo-600 hover:to-indigo-700 transition-all duration-200 shadow-sm hover:shadow">
+            <i class="fas fa-print mr-2.5"></i>
+            Print
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Payslip Container -->
+    <div class="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-200">
+      
+      <!-- Payslip Header -->
+      <div class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-8">
+        <div class="flex justify-between items-start">
+          <div>
+            <h2 class="text-2xl font-bold mb-2">SALARY PAYSLIP</h2>
+            <p class="text-indigo-100">{{ payslip.payroll.period.start_date.strftime('%B %d, %Y') }} - {{ payslip.payroll.period.end_date.strftime('%B %d, %Y') }}</p>
+          </div>
+          <div class="text-right">
+            <div class="text-xl font-bold">{{ payslip.employee.full_name }}</div>
+            <p class="text-indigo-100">Employee ID: {{ payslip.employee_id }}</p>
+            <p class="text-indigo-100">Payslip #{{ payslip.id }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Content -->
+      <div class="p-8">
+        
+        <!-- Status and Payment Info -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+          <!-- Left Column - Employee Info -->
+          <div class="space-y-4">
+            <div class="flex items-center space-x-4">
+              <div class="h-16 w-16 bg-gradient-to-r from-indigo-100 to-purple-100 rounded-xl flex items-center justify-center">
+                <i class="fas fa-user text-indigo-600 text-2xl"></i>
+              </div>
+              <div>
+                <h3 class="text-lg font-semibold text-gray-900">{{ payslip.employee.full_name }}</h3>
+                <p class="text-gray-600">{{ payslip.employee.department.name if payslip.employee.department else 'N/A' }}</p>
+                <p class="text-gray-600">{{ payslip.employee.job_title if payslip.employee.job_title else 'N/A' }}</p>
+              </div>
+            </div>
+            
+            <div class="bg-gray-50 rounded-xl p-4">
+              <h4 class="font-medium text-gray-900 mb-2">Contact Information</h4>
+              <div class="space-y-1 text-sm text-gray-600">
+                <p><i class="fas fa-envelope mr-2"></i>{{ payslip.employee.email }}</p>
+                <p><i class="fas fa-phone mr-2"></i>{{ payslip.employee.phone if payslip.employee.phone else 'N/A' }}</p>
+                {% if payslip.employee.payroll_info %}
+                  <p><i class="fas fa-id-card mr-2"></i>KRA PIN: {{ payslip.employee.payroll_info.kra_pin or 'N/A' }}</p>
+                  <p><i class="fas fa-hospital mr-2"></i>NHIF No: {{ payslip.employee.payroll_info.nhif_number or 'N/A' }}</p>
+                  <p><i class="fas fa-shield-alt mr-2"></i>NSSF No: {{ payslip.employee.payroll_info.nssf_number or 'N/A' }}</p>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column - Payment Details -->
+          <div class="space-y-4">
+            <!-- Payment Status -->
+            <div class="flex items-center justify-between">
+              <span class="text-gray-700">Payment Status:</span>
+              {% if payslip.is_paid %}
+              <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                <i class="fas fa-check-circle mr-1.5"></i> Paid
+              </span>
+              {% else %}
+              <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-amber-100 text-amber-800">
+                <i class="fas fa-clock mr-1.5"></i> Pending
+              </span>
+              {% endif %}
+            </div>
+
+            <!-- Payment Method -->
+            <div class="flex items-center justify-between">
+              <span class="text-gray-700">Payment Method:</span>
+              <span class="font-medium {% if payslip.payment_method.value == 'Bank Transfer' %}text-green-600
+                {% elif payslip.payment_method.value == 'M-Pesa' %}text-purple-600
+                {% elif payslip.payment_method.value == 'Cheque' %}text-blue-600
+                {% else %}text-gray-600{% endif %}">
+                {{ payslip.payment_method.value if payslip.payment_method else 'N/A' }}
+              </span>
+            </div>
+
+            <!-- Payment Reference -->
+            {% if payslip.payment_reference %}
+            <div class="flex items-center justify-between">
+              <span class="text-gray-700">Reference:</span>
+              <span class="font-medium text-gray-900">{{ payslip.payment_reference }}</span>
+            </div>
+            {% endif %}
+
+            <!-- Paid Date -->
+            {% if payslip.paid_at %}
+            <div class="flex items-center justify-between">
+              <span class="text-gray-700">Paid Date:</span>
+              <span class="font-medium text-gray-900">{{ payslip.paid_at.strftime('%B %d, %Y') }}</span>
+            </div>
+            {% endif %}
+
+            <!-- Bank Details -->
+            {% if payslip.employee.payroll_info %}
+            <div class="bg-gray-50 rounded-xl p-4 mt-4">
+              <h4 class="font-medium text-gray-900 mb-2">Banking Information</h4>
+              <div class="space-y-1 text-sm text-gray-600">
+                {% if payslip.employee.payroll_info.bank_name %}
+                <p><i class="fas fa-university mr-2"></i>{{ payslip.employee.payroll_info.bank_name }}
+                  {% if payslip.employee.payroll_info.bank_branch %}
+                  - {{ payslip.employee.payroll_info.bank_branch }}
+                  {% endif %}
+                </p>
+                {% endif %}
+                
+                {% if payslip.employee.payroll_info.bank_account %}
+                <p><i class="fas fa-credit-card mr-2"></i>Account: {{ payslip.employee.payroll_info.bank_account }}</p>
+                {% endif %}
+                
+                {% if payslip.employee.payroll_info.mpesa_number %}
+                <p><i class="fas fa-mobile-alt mr-2"></i>M-Pesa: {{ payslip.employee.payroll_info.mpesa_number }}</p>
+                {% endif %}
+              </div>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Salary Breakdown -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          
+<!-- Earnings Section -->
+<div class="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-6">
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h3 class="text-xl font-bold text-gray-900">Earnings</h3>
+      <p class="text-sm text-gray-600">Manage additional earnings for this payslip</p>
+    </div>
+    <div class="flex items-center space-x-3">
+      <span class="text-2xl font-bold text-green-700">KES {{ '{:,.2f}'.format(payslip.gross_earnings or 0) }}</span>
+      <!-- Add Earning Button -->
+      <button onclick="showAddEarningModal()" 
+              class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-medium rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all duration-200 shadow-sm hover:shadow">
+        <i class="fas fa-plus-circle mr-2"></i>
+        Add Earning
+      </button>
+    </div>
+  </div>
+  
+  <div class="space-y-3">
+    <!-- Basic Salary -->
+    <div class="flex justify-between items-center bg-white rounded-lg p-4 shadow-sm">
+      <div>
+        <p class="font-medium text-gray-900">Basic Salary</p>
+        <p class="text-sm text-gray-500">Monthly basic pay</p>
+      </div>
+      <span class="text-lg font-bold text-gray-900">KES {{ '{:,.2f}'.format(payslip.basic_salary or 0) }}</span>
+    </div>
+
+    <!-- Other Earnings -->
+    {% if payslip.earnings %}
+      {% for earning in payslip.earnings %}
+      <div class="flex justify-between items-center bg-white rounded-lg p-4 shadow-sm hover:bg-gray-50 transition-colors">
+        <div>
+          <p class="font-medium text-gray-900">
+            {% if earning.earning_type %}
+              {{ earning.earning_type.name }}
+              {% if earning.earning_type.is_statutory %}
+                <span class="ml-2 text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full">Statutory</span>
+              {% endif %}
+            {% else %}
+              {{ earning.description or 'Earning' }}
+            {% endif %}
+          </p>
+          {% if earning.description %}
+            <p class="text-sm text-gray-500">{{ earning.description }}</p>
+          {% endif %}
+        </div>
+        <div class="flex items-center space-x-3">
+          <span class="text-lg font-bold text-green-600">KES {{ '{:,.2f}'.format(earning.amount or 0) }}</span>
+          {% if not earning.earning_type or earning.earning_type.code not in ['BASIC', 'HOUSE_ALLOW', 'TRANS_ALLOW', 'OTHER_ALLOW'] %}
+          <form method="POST" class="inline">
+            <input type="hidden" name="action" value="delete_earning">
+            <input type="hidden" name="earning_id" value="{{ earning.id }}">
+            <button type="submit" onclick="return confirm('Remove this earning?')"
+                    class="text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-red-50 transition-colors">
+              <i class="fas fa-trash-alt text-sm"></i>
+            </button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="text-center py-4 text-gray-500">
+        <i class="fas fa-money-bill-wave text-2xl mb-2"></i>
+        <p>No additional earnings</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+          <!-- Deductions Section -->
+<!-- Deductions Section -->
+<div class="bg-gradient-to-br from-red-50 to-red-100 rounded-2xl p-6">
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h3 class="text-xl font-bold text-gray-900">Deductions</h3>
+      <p class="text-sm text-gray-600">Manage additional deductions for this payslip</p>
+    </div>
+    <div class="flex items-center space-x-3">
+      <span class="text-2xl font-bold text-red-700">KES {{ '{:,.2f}'.format(payslip.total_deductions or 0) }}</span>
+      <!-- Add Deduction Button -->
+      <button onclick="showAddDeductionModal()" 
+              class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-red-500 to-pink-500 text-white font-medium rounded-lg hover:from-red-600 hover:to-pink-600 transition-all duration-200 shadow-sm hover:shadow">
+        <i class="fas fa-minus-circle mr-2"></i>
+        Add Deduction
+      </button>
+    </div>
+  </div>
+  
+  <div class="space-y-3">
+    {% if payslip.deductions %}
+      {% for deduction in payslip.deductions %}
+      <div class="flex justify-between items-center bg-white rounded-lg p-4 shadow-sm hover:bg-gray-50 transition-colors">
+        <div>
+          <p class="font-medium text-gray-900">
+            {% if deduction.deduction_type %}
+              {{ deduction.deduction_type.name }}
+              {% if deduction.deduction_type.is_statutory %}
+                <span class="ml-2 text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full">Statutory</span>
+              {% endif %}
+              {% if deduction.deduction_type.is_voluntary %}
+                <span class="ml-2 text-xs px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full">Voluntary</span>
+              {% endif %}
+            {% else %}
+              {{ deduction.description or 'Deduction' }}
+            {% endif %}
+          </p>
+          {% if deduction.description %}
+            <p class="text-sm text-gray-500">{{ deduction.description }}</p>
+          {% endif %}
+        </div>
+        <div class="flex items-center space-x-3">
+          <span class="text-lg font-bold text-red-600">KES {{ '{:,.2f}'.format(deduction.amount or 0) }}</span>
+          {% if not deduction.deduction_type or deduction.deduction_type.code not in ['PAYE', 'NSSF', 'SHA'] %}
+          <form method="POST" class="inline">
+            <input type="hidden" name="action" value="delete_deduction">
+            <input type="hidden" name="deduction_id" value="{{ deduction.id }}">
+            <button type="submit" onclick="return confirm('Remove this deduction?')"
+                    class="text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-red-50 transition-colors">
+              <i class="fas fa-trash-alt text-sm"></i>
+            </button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="text-center py-4 text-gray-500">
+        <i class="fas fa-minus-circle text-2xl mb-2"></i>
+        <p>No deductions</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+        </div>
+<!-- In payslip_details.html, add this section: -->
+<!-- Add Earning Modal -->
+<div id="addEarningModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+  <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-2xl bg-white">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="text-xl font-bold text-gray-900">Add Additional Earning</h3>
+      <button onclick="hideAddEarningModal()" class="text-gray-400 hover:text-gray-600">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    
+    <form method="POST">
+      <input type="hidden" name="action" value="add_earning">
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Earning Type</label>
+          <select name="earning_type_id" required 
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <option value="">Select Earning Type</option>
+            {% for earning_type in earning_types %}
+            <option value="{{ earning_type.id }}">{{ earning_type.name }} ({{ earning_type.code }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Amount (KES)</label>
+          <input type="number" step="0.01" min="0" name="amount" required 
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Description (Optional)</label>
+          <textarea name="description" rows="2"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+        </div>
+        
+        <div class="flex justify-end space-x-3 pt-4">
+          <button type="button" onclick="hideAddEarningModal()" 
+                  class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+            Cancel
+          </button>
+          <button type="submit" 
+                  class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+            Add Earning
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Add Deduction Modal -->
+<div id="addDeductionModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+  <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-2xl bg-white">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="text-xl font-bold text-gray-900">Add Additional Deduction</h3>
+      <button onclick="hideAddDeductionModal()" class="text-gray-400 hover:text-gray-600">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    
+    <form method="POST">
+      <input type="hidden" name="action" value="add_deduction">
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Deduction Type</label>
+          <select name="deduction_type_id" required 
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500">
+            <option value="">Select Deduction Type</option>
+            {% for deduction_type in deduction_types %}
+            <option value="{{ deduction_type.id }}">{{ deduction_type.name }} ({{ deduction_type.code }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Amount (KES)</label>
+          <input type="number" step="0.01" min="0" name="amount" required 
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500">
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Description (Optional)</label>
+          <textarea name="description" rows="2"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"></textarea>
+        </div>
+        
+        <div class="flex justify-end space-x-3 pt-4">
+          <button type="button" onclick="hideAddDeductionModal()" 
+                  class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+            Cancel
+          </button>
+          <button type="submit" 
+                  class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+            Add Deduction
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+<!-- Calculation Details (Optional - can be hidden by default) -->
+<div class="mt-6 bg-gray-50 rounded-xl p-6">
+    <button id="showCalculationBtn" class="text-blue-600 hover:text-blue-800 flex items-center">
+        <i class="fas fa-calculator mr-2"></i>
+        Show Calculation Details
+    </button>
+    
+    <div id="calculationDetails" class="mt-4 hidden space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-white p-4 rounded-lg">
+                <h4 class="font-medium text-gray-900 mb-2">Gross Salary Calculation</h4>
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span>Basic Salary:</span>
+                        <span>KES {{ '{:,.2f}'.format(payslip.basic_salary) }}</span>
+                    </div>
+                    {% for earning in payslip.earnings %}
+                    {% if not earning.earning_type.is_statutory %}
+                    <div class="flex justify-between">
+                        <span>{{ earning.earning_type.name }}:</span>
+                        <span>KES {{ '{:,.2f}'.format(earning.amount) }}</span>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                    <div class="flex justify-between border-t pt-2 font-medium">
+                        <span>Total Gross:</span>
+                        <span>KES {{ '{:,.2f}'.format(payslip.gross_earnings) }}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white p-4 rounded-lg">
+                <h4 class="font-medium text-gray-900 mb-2">Statutory Calculations</h4>
+                <div class="space-y-2 text-sm">
+                    {% set nhif = payslip.deductions|selectattr('deduction_type.code', 'equalto', 'NHIF')|first %}
+                    {% set nssf = payslip.deductions|selectattr('deduction_type.code', 'equalto', 'NSSF')|first %}
+                    {% set paye = payslip.deductions|selectattr('deduction_type.code', 'equalto', 'PAYE')|first %}
+                    
+                    {% if nhif %}
+                    <div class="flex justify-between">
+                        <span>NHIF (Based on gross):</span>
+                        <span>KES {{ '{:,.2f}'.format(nhif.amount) }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    {% if nssf %}
+                    <div class="flex justify-between">
+                        <span>NSSF Employee (6% of pensionable):</span>
+                        <span>KES {{ '{:,.2f}'.format(nssf.amount) }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    {% if paye %}
+                    <div class="flex justify-between">
+                        <span>PAYE (After reliefs):</span>
+                        <span>KES {{ '{:,.2f}'.format(paye.amount) }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white p-4 rounded-lg">
+            <h4 class="font-medium text-gray-900 mb-2">Net Pay Calculation</h4>
+            <div class="space-y-2 text-sm">
+                <div class="flex justify-between">
+                    <span>Gross Salary:</span>
+                    <span class="font-medium">KES {{ '{:,.2f}'.format(payslip.gross_earnings) }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>Less: Total Deductions:</span>
+                    <span class="font-medium text-red-600">- KES {{ '{:,.2f}'.format(payslip.total_deductions) }}</span>
+                </div>
+                <div class="flex justify-between border-t pt-2 text-lg font-bold">
+                    <span>Net Pay:</span>
+                    <span class="text-indigo-700">KES {{ '{:,.2f}'.format(payslip.net_pay) }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('showCalculationBtn').addEventListener('click', function() {
+    const details = document.getElementById('calculationDetails');
+    if (details.classList.contains('hidden')) {
+        details.classList.remove('hidden');
+        this.innerHTML = '<i class="fas fa-calculator mr-2"></i> Hide Calculation Details';
+    } else {
+        details.classList.add('hidden');
+        this.innerHTML = '<i class="fas fa-calculator mr-2"></i> Show Calculation Details';
+    }
+});
+</script>
+        <!-- Summary Section -->
+        <div class="bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl p-8">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            <!-- Gross Earnings -->
+            <div class="text-center">
+              <p class="text-sm font-medium text-gray-600 mb-2">Total Gross Earnings</p>
+              <p class="text-3xl font-bold text-green-700">KES {{ '{:,.2f}'.format(payslip.gross_earnings or 0) }}</p>
+              <div class="mt-2 text-xs text-gray-500">
+                <p>Basic: KES {{ '{:,.2f}'.format(payslip.basic_salary or 0) }}</p>
+                <p>Allowances: KES {{ '{:,.2f}'.format((payslip.gross_earnings or 0) - (payslip.basic_salary or 0)) }}</p>
+              </div>
+            </div>
+
+            <!-- Total Deductions -->
+            <div class="text-center">
+              <p class="text-sm font-medium text-gray-600 mb-2">Total Deductions</p>
+              <p class="text-3xl font-bold text-red-700">KES {{ '{:,.2f}'.format(payslip.total_deductions or 0) }}</p>
+              <div class="mt-2 text-xs text-gray-500">
+                {% set statutory_deductions = payslip.deductions|selectattr('deduction_type.is_statutory', 'equalto', True)|list|sum(attribute='amount') %}
+                {% set voluntary_deductions = payslip.deductions|selectattr('deduction_type.is_voluntary', 'equalto', True)|list|sum(attribute='amount') %}
+                <p>Statutory: KES {{ '{:,.2f}'.format(statutory_deductions or 0) }}</p>
+                <p>Voluntary: KES {{ '{:,.2f}'.format(voluntary_deductions or 0) }}</p>
+              </div>
+            </div>
+
+            <!-- Net Pay -->
+            <div class="text-center">
+              <p class="text-sm font-medium text-gray-600 mb-2">Net Pay</p>
+              <p class="text-4xl font-bold text-indigo-700">KES {{ '{:,.2f}'.format(payslip.net_pay or 0) }}</p>
+              <div class="mt-2">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium 
+                  {% if payslip.payment_method.value == 'Bank Transfer' %}bg-green-100 text-green-800
+                  {% elif payslip.payment_method.value == 'M-Pesa' %}bg-purple-100 text-purple-800
+                  {% elif payslip.payment_method.value == 'Cheque' %}bg-blue-100 text-blue-800
+                  {% else %}bg-gray-100 text-gray-800{% endif %}">
+                  {{ payslip.payment_method.value if payslip.payment_method else 'N/A' }}
+                </span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Tax Calculation Summary -->
+        {% set statutory_deductions = payslip.deductions|selectattr('deduction_type.is_statutory', 'equalto', True)|list %}
+        {% if statutory_deductions %}
+        <div class="mt-8 bg-blue-50 rounded-2xl p-6 border border-blue-100">
+          <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center">
+            <i class="fas fa-file-invoice-dollar mr-2 text-blue-600"></i>
+            Statutory Deductions Summary
+          </h3>
+          
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {% for deduction in statutory_deductions %}
+            <div class="bg-white rounded-xl p-4 shadow-sm">
+              <div class="flex items-center justify-between">
+                <span class="font-medium text-gray-900">{{ deduction.deduction_type.name }}</span>
+                <span class="font-bold text-blue-700">KES {{ '{:,.2f}'.format(deduction.amount or 0) }}</span>
+              </div>
+              <div class="mt-2 text-sm text-gray-500">
+                {% if deduction.deduction_type.code == 'PAYE' %}
+                  <p>Based on taxable income of KES {{ '{:,.2f}'.format(payslip.gross_earnings or 0) }}</p>
+                {% elif deduction.deduction_type.code == 'NHIF' %}
+                  <p>Monthly NHIF contribution</p>
+                {% elif deduction.deduction_type.code == 'NSSF' %}
+                  <p>Employee pension contribution</p>
+                {% endif %}
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Notes Section -->
+        {% if payslip.payroll.notes %}
+        <div class="mt-8 bg-yellow-50 rounded-2xl p-6 border border-yellow-100">
+          <h3 class="text-lg font-bold text-gray-900 mb-2">Payroll Notes</h3>
+          <p class="text-gray-700">{{ payslip.payroll.notes }}</p>
+        </div>
+        {% endif %}
+
+        <!-- Footer Information -->
+        <div class="mt-8 pt-8 border-t border-gray-200">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div>
+              <h4 class="font-medium text-gray-900 mb-2">Payroll Information</h4>
+              <div class="space-y-1 text-sm text-gray-600">
+                <p>Payroll Period: {{ payslip.payroll.period.start_date.strftime('%B %d, %Y') }} - {{ payslip.payroll.period.end_date.strftime('%B %d, %Y') }}</p>
+                <p>Pay Date: {{ payslip.payroll.period.pay_date.strftime('%B %d, %Y') }}</p>
+                <p>Frequency: {{ payslip.payroll.period.frequency.value }}</p>
+                <p>Processed: {{ payslip.payroll.processed_at.strftime('%B %d, %Y %I:%M %p') }}</p>
+              </div>
+            </div>
+            
+            <div class="text-right">
+              <h4 class="font-medium text-gray-900 mb-2">Company Information</h4>
+              <div class="space-y-1 text-sm text-gray-600">
+                <p>{{ company_name or 'AstroCare Limited' }}</p>
+                <p>{{ company_address or 'Nairobi, Kenya' }}</p>
+                <p>{{ company_kra_pin or 'P051XXXXXX' }}</p>
+                <p>{{ company_phone or '+254 700 000 000' }}</p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Disclaimer -->
+          <div class="mt-6 text-center text-xs text-gray-500">
+            <p>This is a computer-generated document and does not require a signature.</p>
+            <p class="mt-1">For any queries, please contact the HR department.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="mt-8 flex justify-center space-x-4">
+      <a href="{{ url_for('hr_web.payslips') }}" class="px-6 py-3 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 transition-colors">
+        <i class="fas fa-arrow-left mr-2"></i> Back to Payslips
+      </a>
+      
+      {% if not payslip.is_paid %}
+      <form method="POST" action="" class="inline">
+        <button type="submit" 
+                class="px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-sm hover:shadow"
+                onclick="return confirm('Mark this payslip as paid?')">
+          <i class="fas fa-check-circle mr-2"></i> Mark as Paid
+        </button>
+      </form>
+      {% endif %}
+      
+      <a href="{{ url_for('hr_web.download_payslip', payslip_id=payslip.id) }}" class="px-6 py-3 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-xl hover:from-indigo-600 hover:to-indigo-700 transition-all duration-200 shadow-sm hover:shadow">
+        <i class="fas fa-download mr-2"></i> Download PDF
+      </a>
+    </div>
+
+  </div>
+</div>
+
+<!-- Print Styles -->
+<style media="print">
+  @media print {
+    body * {
+      visibility: hidden;
+    }
+    .bg-white, .bg-white * {
+      visibility: visible;
+    }
+    .bg-white {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      box-shadow: none !important;
+      border: none !important;
+    }
+    .no-print, .no-print * {
+      display: none !important;
+    }
+    .bg-gradient-to-r, .bg-gradient-to-br {
+      background: white !important;
+      color: black !important;
+    }
+    .text-white, .text-indigo-100 {
+      color: black !important;
+    }
+    .from-indigo-600, .to-purple-600 {
+      background: #f8f9fa !important;
+    }
+  }
+</style>
+
+<!-- Add this JavaScript for print functionality -->
+<script>
+  // Add print button functionality
+  document.addEventListener('DOMContentLoaded', function() {
+    // Make sure print button works
+    const printBtn = document.querySelector('button[onclick*="print"]');
+    if (printBtn) {
+      printBtn.addEventListener('click', function() {
+        window.print();
+      });
+    }
+    
+    // Add print-specific classes
+    const nonPrintableElements = document.querySelectorAll('.no-print');
+    nonPrintableElements.forEach(el => {
+      el.classList.add('no-print');
+    });
+  });
+  // Modal functions
+function showAddEarningModal() {
+  document.getElementById('addEarningModal').classList.remove('hidden');
+}
+
+function hideAddEarningModal() {
+  document.getElementById('addEarningModal').classList.add('hidden');
+}
+
+function showAddDeductionModal() {
+  document.getElementById('addDeductionModal').classList.remove('hidden');
+}
+
+function hideAddDeductionModal() {
+  document.getElementById('addDeductionModal').classList.add('hidden');
+}
+
+// Close modals when clicking outside
+window.onclick = function(event) {
+  const earningModal = document.getElementById('addEarningModal');
+  const deductionModal = document.getElementById('addDeductionModal');
+  
+  if (event.target == earningModal) {
+    hideAddEarningModal();
+  }
+  if (event.target == deductionModal) {
+    hideAddDeductionModal();
+  }
+}
+</script>
+{% endblock %}

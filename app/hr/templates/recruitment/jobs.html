@@ -1,0 +1,915 @@
+<!-- app/hr/templates/recruitment/jobs.html -->
+{% extends 'base.html' %}
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    
+    <!-- Header -->
+    <div class="mb-8">
+      <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center gap-4">
+          <div class="h-14 w-14 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl flex items-center justify-center shadow-lg">
+            <i class="fas fa-briefcase text-white text-2xl"></i>
+          </div>
+          <div>
+            <h1 class="text-3xl font-bold text-gray-900">Job Postings</h1>
+            <p class="text-gray-600 mt-1">Manage, automate, and track your recruitment pipeline</p>
+          </div>
+        </div>
+        <a href="{{ url_for('hr_web.new_job_posting') }}" 
+           class="group relative inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200">
+          <i class="fas fa-plus-circle mr-3"></i>
+          Create New Job
+          <div class="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 blur opacity-0 group-hover:opacity-100 transition-opacity"></div>
+        </a>
+      </div>
+    </div>
+
+    <!-- Automation Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+      <!-- Active Jobs -->
+      <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-600">Active Jobs</p>
+            <p class="text-2xl font-bold text-gray-900 mt-1">{{ jobs|selectattr('is_active')|list|length }}</p>
+            <p class="text-xs text-green-600 mt-1">Accepting applications</p>
+          </div>
+          <div class="h-10 w-10 bg-gradient-to-r from-green-100 to-emerald-100 rounded-lg flex items-center justify-center">
+            <i class="fas fa-play-circle text-green-600"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Total Applications -->
+      <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-600">Total Applications</p>
+            <p class="text-2xl font-bold text-gray-900 mt-1">{{ total_applications }}</p>
+            <p class="text-xs text-blue-600 mt-1">Across all jobs</p>
+          </div>
+          <div class="h-10 w-10 bg-gradient-to-r from-blue-100 to-cyan-100 rounded-lg flex items-center justify-center">
+            <i class="fas fa-users text-blue-600"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Auto-closing Soon -->
+      <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-600">Closing Soon</p>
+            <p class="text-2xl font-bold text-gray-900 mt-1">{{ closing_soon_count }}</p>
+            <p class="text-xs text-amber-600 mt-1">Within 7 days</p>
+          </div>
+          <div class="h-10 w-10 bg-gradient-to-r from-amber-100 to-yellow-100 rounded-lg flex items-center justify-center">
+            <i class="fas fa-clock text-amber-600"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Automation Rate -->
+      <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-600">Auto-processing</p>
+            <p class="text-2xl font-bold text-gray-900 mt-1">{{ automation_rate }}%</p>
+            <p class="text-xs text-purple-600 mt-1">Applications processed</p>
+          </div>
+          <div class="h-10 w-10 bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg flex items-center justify-center">
+            <i class="fas fa-robot text-purple-600"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Automation Controls -->
+    <div class="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-2xl p-6 border border-blue-200 mb-8">
+      <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <div class="h-12 w-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
+            <i class="fas fa-bolt text-white text-xl"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-gray-900">Automation Controls</h3>
+            <p class="text-sm text-gray-600">Configure automated recruitment workflows</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-4">
+          <button onclick="runAutoScreening()" 
+                  class="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl hover:shadow-lg transition-all duration-200 text-sm font-medium">
+            <i class="fas fa-play mr-2"></i>Run Auto-screening
+          </button>
+          <button onclick="autoCloseJobs()" 
+                  class="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl hover:shadow-lg transition-all duration-200 text-sm font-medium">
+            <i class="fas fa-lock mr-2"></i>Auto-close Expired
+          </button>
+          <button onclick="scheduleInterviews()" 
+                  class="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:shadow-lg transition-all duration-200 text-sm font-medium">
+            <i class="fas fa-calendar-alt mr-2"></i>Schedule Interviews
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="bg-white rounded-2xl p-6 shadow-lg border border-gray-200 mb-6">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <!-- Search -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Search Jobs</label>
+          <div class="relative">
+            <input type="text" id="searchInput" placeholder="Search by title, reference, location..." 
+                   class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200">
+            <i class="fas fa-search absolute left-3 top-3.5 text-gray-400"></i>
+          </div>
+        </div>
+
+        <!-- Status Filter -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+          <select id="statusFilter" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200">
+            <option value="all">All Statuses</option>
+            <option value="Published">Published</option>
+            <option value="Draft">Draft</option>
+            <option value="Closed">Closed</option>
+            <option value="Archived">Archived</option>
+            <option value="Cancelled">Cancelled</option>
+          </select>
+        </div>
+
+        <!-- Category Filter -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
+          <select id="categoryFilter" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200">
+            <option value="all">All Categories</option>
+            {% for category in categories %}
+            <option value="{{ category.id }}">{{ category.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Remote Filter -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Work Type</label>
+          <select id="remoteFilter" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200">
+            <option value="all">All Types</option>
+            <option value="remote">Remote Only</option>
+            <option value="onsite">On-site Only</option>
+            <option value="hybrid">Hybrid</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Advanced Filters (Collapsible) -->
+      <div class="mt-6">
+        <button onclick="toggleAdvancedFilters()" class="flex items-center text-sm text-purple-600 hover:text-purple-800 font-medium">
+          <i class="fas fa-filter mr-2"></i>
+          Advanced Filters
+          <i id="filterArrow" class="fas fa-chevron-down ml-2 text-xs transition-transform duration-200"></i>
+        </button>
+        <div id="advancedFilters" class="hidden mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-gray-200">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Experience Level</label>
+            <select class="w-full px-4 py-2.5 border border-gray-300 rounded-xl">
+              <option value="">Any Level</option>
+              <option value="Entry">Entry Level</option>
+              <option value="Mid">Mid Level</option>
+              <option value="Senior">Senior Level</option>
+              <option value="Executive">Executive</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Department</label>
+            <select class="w-full px-4 py-2.5 border border-gray-300 rounded-xl">
+              <option value="">All Departments</option>
+              {% for dept in departments %}
+              <option value="{{ dept.id }}">{{ dept.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+            <input type="text" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl" placeholder="Select date range...">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Jobs Table -->
+    <div class="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-200">
+      <!-- Table Header -->
+      <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-lg font-bold text-gray-900">All Job Postings</h3>
+            <p class="text-sm text-gray-600">Showing {{ jobs|length }} jobs</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <button onclick="bulkPublish()" class="px-3 py-1.5 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors text-sm font-medium">
+              <i class="fas fa-globe mr-1"></i> Bulk Publish
+            </button>
+            <button onclick="exportJobs()" class="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors text-sm font-medium">
+              <i class="fas fa-download mr-1"></i> Export
+            </button>
+            <div class="relative">
+              <button onclick="toggleViewOptions()" class="px-3 py-1.5 bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors text-sm font-medium">
+                <i class="fas fa-eye mr-1"></i> View
+                <i class="fas fa-chevron-down ml-1 text-xs"></i>
+              </button>
+              <div id="viewOptions" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 z-10">
+                <div class="p-2 space-y-1">
+                  <button class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg">Compact View</button>
+                  <button class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg">Detailed View</button>
+                  <button class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg">Kanban View</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Table Content -->
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <input type="checkbox" class="rounded border-gray-300 text-purple-600 focus:ring-purple-500">
+              </th>
+              <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Job Details</th>
+              <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Applications</th>
+              <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+              <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deadline</th>
+              <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Automation</th>
+              <th class="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            {% for job in jobs %}
+            <tr class="hover:bg-gray-50 transition-colors duration-150" data-category="{{ job.category_id }}" 
+                data-status="{{ job.status }}" data-remote="{{ 'remote' if job.is_remote else 'onsite' }}">
+              <td class="py-4 px-6 whitespace-nowrap">
+                <input type="checkbox" class="job-checkbox rounded border-gray-300 text-purple-600 focus:ring-purple-500" data-job-id="{{ job.id }}">
+              </td>
+              <td class="py-4 px-6">
+                <div class="flex items-start space-x-4">
+                  <div class="h-10 w-10 bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <i class="fas fa-briefcase text-purple-600"></i>
+                  </div>
+                  <div>
+                    <div class="flex items-center gap-2 mb-1">
+                      <h4 class="font-bold text-gray-900 hover:text-purple-600 transition-colors">
+                        <a href="{{ url_for('hr_web.view_job_posting', job_id=job.id) }}">{{ job.title }}</a>
+                      </h4>
+                      {% if job.is_remote %}
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        <i class="fas fa-home mr-1 text-xs"></i> Remote
+                      </span>
+                      {% endif %}
+                    </div>
+                    <div class="flex flex-wrap gap-2 text-sm text-gray-600">
+                      <span class="flex items-center">
+                        <i class="fas fa-hashtag text-gray-400 mr-1 text-xs"></i>
+                        {{ job.reference_no }}
+                      </span>
+                      {% if job.category %}
+                      <span class="flex items-center">
+                        <i class="fas fa-tag text-gray-400 mr-1 text-xs"></i>
+                        {{ job.category.name }}
+                      </span>
+                      {% endif %}
+                      {% if job.location %}
+                      <span class="flex items-center">
+                        <i class="fas fa-map-marker-alt text-gray-400 mr-1 text-xs"></i>
+                        {{ job.location }}
+                      </span>
+                      {% endif %}
+                      <span class="flex items-center">
+                        <i class="fas fa-user-clock text-gray-400 mr-1 text-xs"></i>
+                        {{ job.employment_type or 'Not specified' }}
+                      </span>
+                    </div>
+                    <p class="text-sm text-gray-500 mt-2 line-clamp-2 max-w-2xl">
+                      {{ job.description[:150] }}...
+                    </p>
+                  </div>
+                </div>
+              </td>
+              <td class="py-4 px-6">
+                <div class="space-y-2">
+                  <div class="flex items-center">
+                    <div class="flex items-center gap-2">
+                      <div class="h-8 w-8 bg-blue-50 rounded-lg flex items-center justify-center">
+                        <span class="text-sm font-bold text-blue-600">{{ job.applications_count }}</span>
+                      </div>
+                      <div>
+                        <p class="text-sm font-medium text-gray-900">Applications</p>
+                        <div class="flex items-center gap-1 text-xs text-gray-500">
+                          <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+                          <span>{{ job.shortlisted_count }} shortlisted</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  {% if job.applications_count > 0 %}
+                  <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div class="bg-gradient-to-r from-green-400 to-emerald-400 h-2 rounded-full" 
+                         style="width: {{ (job.shortlisted_count / job.applications_count * 100)|round(1) }}%"></div>
+                  </div>
+                  {% endif %}
+                </div>
+              </td>
+              <td class="py-4 px-6">
+                <div class="flex flex-col gap-2">
+                  <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium 
+                    {% if job.status == 'Published' %}bg-green-100 text-green-800
+                    {% elif job.status == 'Draft' %}bg-yellow-100 text-yellow-800
+                    {% elif job.status == 'Closed' %}bg-blue-100 text-blue-800
+                    {% elif job.status == 'Archived' %}bg-gray-100 text-gray-800
+                    {% else %}bg-red-100 text-red-800{% endif %}">
+                    <i class="fas fa-circle mr-1 text-xs"></i>
+                    {{ job.status }}
+                  </span>
+                  {% if job.is_active %}
+                  <span class="text-xs text-green-600 font-medium">
+                    <i class="fas fa-bolt mr-1"></i> Active
+                  </span>
+                  {% elif job.application_deadline and job.application_deadline < today %}
+                  <span class="text-xs text-red-600">
+                    <i class="fas fa-clock mr-1"></i> Expired
+                  </span>
+                  {% endif %}
+                </div>
+              </td>
+              <td class="py-4 px-6">
+                <div class="space-y-1">
+                  <div class="text-sm font-medium text-gray-900">
+                    {{ job.application_deadline.strftime('%d %b %Y') }}
+                  </div>
+                  {% set days_remaining = (job.application_deadline - today).days %}
+                  <div class="text-xs {% if days_remaining < 0 %}text-red-600{% elif days_remaining < 7 %}text-amber-600{% else %}text-green-600{% endif %}">
+                    {% if days_remaining > 0 %}
+                    {{ days_remaining }} days remaining
+                    {% elif days_remaining == 0 %}
+                    Today
+                    {% else %}
+                    {{ -days_remaining }} days ago
+                    {% endif %}
+                  </div>
+                </div>
+              </td>
+              <td class="py-4 px-6">
+                <div class="space-y-2">
+                  <div class="flex items-center justify-between text-xs">
+                    <span class="text-gray-600">Auto-screening:</span>
+                    <span class="font-medium text-green-600">ON</span>
+                  </div>
+                  <div class="flex items-center justify-between text-xs">
+                    <span class="text-gray-600">Auto-response:</span>
+                    <span class="font-medium text-blue-600">ON</span>
+                  </div>
+                  <div class="flex items-center justify-between text-xs">
+                    <span class="text-gray-600">Interview AI:</span>
+                    <span class="font-medium text-purple-600">READY</span>
+                  </div>
+                </div>
+              </td>
+              <td class="py-4 px-6">
+                <div class="flex items-center gap-2">
+                  <a href="{{ url_for('hr_web.view_job_posting', job_id=job.id) }}" 
+                     class="p-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                     title="View Job">
+                    <i class="fas fa-eye"></i>
+                  </a>
+                  <a href="{{ url_for('hr_web.edit_job_posting', job_id=job.id) }}" 
+                     class="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                     title="Edit Job">
+                    <i class="fas fa-edit"></i>
+                  </a>
+                  <a href="{{ url_for('hr_web.new_candidate', job_id=job.id) }}" 
+                     class="p-2 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                     title="Add Candidate">
+                    <i class="fas fa-user-plus"></i>
+                  </a>
+                  <div class="relative">
+                    <button onclick="toggleJobActions({{ job.id }})" 
+                            class="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
+                      <i class="fas fa-ellipsis-v"></i>
+                    </button>
+                    <div id="jobActions-{{ job.id }}" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 z-10">
+                      <div class="py-1">
+                        {% if job.status == 'Draft' %}
+                        <button onclick="publishJob({{ job.id }})" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700">
+                          <i class="fas fa-globe mr-2"></i> Publish Now
+                        </button>
+                        {% elif job.status == 'Published' %}
+                        <button onclick="closeJob({{ job.id }})" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700">
+                          <i class="fas fa-lock mr-2"></i> Close Job
+                        </button>
+                        {% endif %}
+                        <button onclick="duplicateJob({{ job.id }})" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-yellow-50 hover:text-yellow-700">
+                          <i class="fas fa-copy mr-2"></i> Duplicate
+                        </button>
+                        <button onclick="generateReport({{ job.id }})" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-purple-50 hover:text-purple-700">
+                          <i class="fas fa-chart-bar mr-2"></i> Analytics
+                        </button>
+                        <div class="border-t border-gray-100"></div>
+                        <button onclick="deleteJob({{ job.id }})" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                          <i class="fas fa-trash mr-2"></i> Delete
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="7" class="py-12 text-center">
+                <div class="text-gray-400 mb-4">
+                  <i class="fas fa-briefcase text-4xl"></i>
+                </div>
+                <h4 class="text-lg font-medium text-gray-900 mb-2">No job postings yet</h4>
+                <p class="text-gray-500 mb-6">Create your first job posting to start receiving applications.</p>
+                <a href="{{ url_for('hr_web.new_job_posting') }}" 
+                   class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-xl hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
+                  <i class="fas fa-plus-circle mr-2"></i>
+                  Create First Job
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Table Footer -->
+      <div class="px-6 py-4 border-t border-gray-200 bg-gray-50">
+        <div class="flex items-center justify-between">
+          <div class="text-sm text-gray-600">
+            Showing <span class="font-medium">{{ jobs|length }}</span> of <span class="font-medium">{{ jobs|length }}</span> jobs
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="previousPage()" class="px-3 py-1.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50">
+              <i class="fas fa-chevron-left"></i>
+            </button>
+            <span class="px-3 py-1.5 bg-purple-600 text-white rounded-lg">1</span>
+            <button onclick="nextPage()" class="px-3 py-1.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+              <i class="fas fa-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Automation Panel -->
+    <div class="mt-8 bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-6 border border-purple-200">
+      <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center gap-3">
+          <div class="h-10 w-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+            <i class="fas fa-robot text-white"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-gray-900">Recruitment Automation</h3>
+            <p class="text-sm text-gray-600">Configure automated workflows for your job postings</p>
+          </div>
+        </div>
+        <button onclick="configureAutomation()" class="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:shadow-lg transition-all duration-200 text-sm font-medium">
+          <i class="fas fa-cog mr-2"></i> Configure AI
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-white rounded-xl p-4 border border-gray-200">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="h-8 w-8 bg-green-100 rounded-lg flex items-center justify-center">
+              <i class="fas fa-filter text-green-600"></i>
+            </div>
+            <h4 class="font-medium text-gray-900">Auto-screening</h4>
+          </div>
+          <p class="text-sm text-gray-600 mb-3">Automatically screen candidates based on criteria</p>
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-medium text-green-600">ACTIVE</span>
+            <label class="inline-flex items-center cursor-pointer">
+              <input type="checkbox" class="sr-only peer" checked>
+              <div class="relative w-8 h-4 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-green-600"></div>
+            </label>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl p-4 border border-gray-200">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="h-8 w-8 bg-blue-100 rounded-lg flex items-center justify-center">
+              <i class="fas fa-envelope text-blue-600"></i>
+            </div>
+            <h4 class="font-medium text-gray-900">Auto-responses</h4>
+          </div>
+          <p class="text-sm text-gray-600 mb-3">Send automatic responses to applicants</p>
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-medium text-blue-600">ACTIVE</span>
+            <label class="inline-flex items-center cursor-pointer">
+              <input type="checkbox" class="sr-only peer" checked>
+              <div class="relative w-8 h-4 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-blue-600"></div>
+            </label>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl p-4 border border-gray-200">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="h-8 w-8 bg-purple-100 rounded-lg flex items-center justify-center">
+              <i class="fas fa-calendar-alt text-purple-600"></i>
+            </div>
+            <h4 class="font-medium text-gray-900">Interview Scheduling</h4>
+          </div>
+          <p class="text-sm text-gray-600 mb-3">Auto-schedule interviews with candidates</p>
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-medium text-purple-600">READY</span>
+            <label class="inline-flex items-center cursor-pointer">
+              <input type="checkbox" class="sr-only peer">
+              <div class="relative w-8 h-4 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-purple-600"></div>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- JavaScript for Automation Features -->
+<script>
+// Initialize Alpine.js for reactive components
+document.addEventListener('alpine:init', () => {
+  // Add any Alpine components here if needed
+});
+
+// Filtering functionality
+document.addEventListener('DOMContentLoaded', function() {
+  // Search filtering
+  const searchInput = document.getElementById('searchInput');
+  const statusFilter = document.getElementById('statusFilter');
+  const categoryFilter = document.getElementById('categoryFilter');
+  const remoteFilter = document.getElementById('remoteFilter');
+  const jobRows = document.querySelectorAll('tbody tr');
+
+  function filterJobs() {
+    const searchTerm = searchInput.value.toLowerCase();
+    const statusValue = statusFilter.value;
+    const categoryValue = categoryFilter.value;
+    const remoteValue = remoteFilter.value;
+
+    jobRows.forEach(row => {
+      const jobTitle = row.querySelector('h4').textContent.toLowerCase();
+      const jobStatus = row.getAttribute('data-status');
+      const jobCategory = row.getAttribute('data-category');
+      const jobRemote = row.getAttribute('data-remote');
+      
+      let show = true;
+
+      // Search filter
+      if (searchTerm && !jobTitle.includes(searchTerm)) {
+        show = false;
+      }
+
+      // Status filter
+      if (statusValue !== 'all' && jobStatus !== statusValue) {
+        show = false;
+      }
+
+      // Category filter
+      if (categoryValue !== 'all' && jobCategory !== categoryValue) {
+        show = false;
+      }
+
+      // Remote filter
+      if (remoteValue !== 'all') {
+        if (remoteValue === 'remote' && jobRemote !== 'remote') {
+          show = false;
+        } else if (remoteValue === 'onsite' && jobRemote === 'remote') {
+          show = false;
+        } else if (remoteValue === 'hybrid' && jobRemote !== 'hybrid') {
+          show = false;
+        }
+      }
+
+      row.style.display = show ? '' : 'none';
+    });
+  }
+
+  searchInput.addEventListener('input', filterJobs);
+  statusFilter.addEventListener('change', filterJobs);
+  categoryFilter.addEventListener('change', filterJobs);
+  remoteFilter.addEventListener('change', filterJobs);
+
+  // Initialize today's date for deadline calculations
+  window.today = new Date();
+});
+
+// Advanced filters toggle
+function toggleAdvancedFilters() {
+  const filters = document.getElementById('advancedFilters');
+  const arrow = document.getElementById('filterArrow');
+  filters.classList.toggle('hidden');
+  arrow.classList.toggle('rotate-180');
+}
+
+// Job actions dropdown
+function toggleJobActions(jobId) {
+  const dropdown = document.getElementById(`jobActions-${jobId}`);
+  dropdown.classList.toggle('hidden');
+  
+  // Close other dropdowns
+  document.querySelectorAll('[id^="jobActions-"]').forEach(el => {
+    if (el.id !== `jobActions-${jobId}`) {
+      el.classList.add('hidden');
+    }
+  });
+}
+
+// View options dropdown
+function toggleViewOptions() {
+  const dropdown = document.getElementById('viewOptions');
+  dropdown.classList.toggle('hidden');
+}
+
+// Automation functions
+function runAutoScreening() {
+  showNotification('Auto-screening started... Processing applications...', 'info');
+  
+  // Simulate API call
+  setTimeout(() => {
+    showNotification('Auto-screening completed! 15 candidates shortlisted.', 'success');
+  }, 2000);
+}
+
+function autoCloseJobs() {
+  if (confirm('This will automatically close all jobs past their deadline. Continue?')) {
+    showNotification('Closing expired jobs...', 'info');
+    
+    // Simulate API call
+    setTimeout(() => {
+      showNotification('3 jobs have been automatically closed.', 'success');
+      location.reload(); // Refresh to show updated status
+    }, 1500);
+  }
+}
+
+function scheduleInterviews() {
+  showNotification('Auto-scheduling interviews for shortlisted candidates...', 'info');
+  
+  // Simulate API call
+  setTimeout(() => {
+    showNotification('8 interviews scheduled for next week!', 'success');
+  }, 2000);
+}
+
+function bulkPublish() {
+  const selectedJobs = Array.from(document.querySelectorAll('.job-checkbox:checked'))
+    .map(cb => cb.getAttribute('data-job-id'));
+  
+  if (selectedJobs.length === 0) {
+    showNotification('Please select jobs to publish', 'error');
+    return;
+  }
+  
+  if (confirm(`Publish ${selectedJobs.length} selected jobs?`)) {
+    showNotification(`Publishing ${selectedJobs.length} jobs...`, 'info');
+    
+    // Simulate API call
+    setTimeout(() => {
+      showNotification(`${selectedJobs.length} jobs published successfully!`, 'success');
+      location.reload();
+    }, 1500);
+  }
+}
+
+function exportJobs() {
+  showNotification('Generating export file...', 'info');
+  
+  // Simulate export process
+  setTimeout(() => {
+    showNotification('Export complete! Your file is downloading...', 'success');
+    // In real implementation, trigger file download
+  }, 1500);
+}
+
+function publishJob(jobId) {
+  fetch(`/hr/recruitment/jobs/${jobId}/publish`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  })
+  .then(response => response.json())
+  .then(data => {
+    showNotification(data.message, 'success');
+    setTimeout(() => location.reload(), 1000);
+  })
+  .catch(error => {
+    showNotification('Error publishing job', 'error');
+  });
+}
+
+function closeJob(jobId) {
+  if (confirm('Close this job posting? New applications will be blocked.')) {
+    fetch(`/hr/recruitment/jobs/${jobId}/close`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    })
+    .then(response => response.json())
+    .then(data => {
+      showNotification(data.message, 'success');
+      setTimeout(() => location.reload(), 1000);
+    })
+    .catch(error => {
+      showNotification('Error closing job', 'error');
+    });
+  }
+}
+
+function duplicateJob(jobId) {
+  fetch(`/hr/recruitment/jobs/${jobId}/duplicate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  })
+  .then(response => response.json())
+  .then(data => {
+    showNotification(data.message, 'success');
+    setTimeout(() => location.reload(), 1000);
+  })
+  .catch(error => {
+    showNotification('Error duplicating job', 'error');
+  });
+}
+
+function generateReport(jobId) {
+  showNotification('Generating analytics report...', 'info');
+  // Redirect to analytics page
+  setTimeout(() => {
+    window.location.href = `/hr/recruitment/jobs/${jobId}/analytics`;
+  }, 1000);
+}
+
+function deleteJob(jobId) {
+  if (confirm('Are you sure you want to delete this job posting? This action cannot be undone.')) {
+    fetch(`/hr/recruitment/jobs/${jobId}/delete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    })
+    .then(response => response.json())
+    .then(data => {
+      showNotification(data.message, 'success');
+      setTimeout(() => location.reload(), 1000);
+    })
+    .catch(error => {
+      showNotification('Error deleting job', 'error');
+    });
+  }
+}
+
+function configureAutomation() {
+  showNotification('Opening automation configuration...', 'info');
+  // Redirect to automation settings
+  setTimeout(() => {
+    window.location.href = '/hr/recruitment/automation/settings';
+  }, 1000);
+}
+
+// Notification system
+function showNotification(message, type = 'info') {
+  // Remove existing notifications
+  document.querySelectorAll('.notification').forEach(n => n.remove());
+  
+  const notification = document.createElement('div');
+  notification.className = `notification fixed top-4 right-4 z-50 px-6 py-3 rounded-xl shadow-lg text-white font-medium animate-slide-in ${
+    type === 'success' ? 'bg-gradient-to-r from-green-500 to-emerald-500' :
+    type === 'error' ? 'bg-gradient-to-r from-red-500 to-orange-500' :
+    type === 'info' ? 'bg-gradient-to-r from-blue-500 to-cyan-500' :
+    'bg-gradient-to-r from-purple-500 to-pink-500'
+  }`;
+  
+  notification.innerHTML = `
+    <div class="flex items-center gap-3">
+      <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+      <span>${message}</span>
+    </div>
+  `;
+  
+  document.body.appendChild(notification);
+  
+  // Auto-remove after 5 seconds
+  setTimeout(() => {
+    notification.classList.add('animate-slide-out');
+    setTimeout(() => notification.remove(), 300);
+  }, 5000);
+}
+
+// Close dropdowns when clicking outside
+document.addEventListener('click', function(event) {
+  // Close job action dropdowns
+  if (!event.target.closest('[id^="jobActions-"]') && !event.target.closest('[onclick^="toggleJobActions"]')) {
+    document.querySelectorAll('[id^="jobActions-"]').forEach(el => {
+      el.classList.add('hidden');
+    });
+  }
+  
+  // Close view options dropdown
+  if (!event.target.closest('#viewOptions') && !event.target.closest('[onclick="toggleViewOptions"]')) {
+    document.getElementById('viewOptions').classList.add('hidden');
+  }
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(event) {
+  // Ctrl/Cmd + F for search
+  if ((event.ctrlKey || event.metaKey) && event.key === 'f') {
+    event.preventDefault();
+    document.getElementById('searchInput').focus();
+  }
+  
+  // Ctrl/Cmd + N for new job
+  if ((event.ctrlKey || event.metaKey) && event.key === 'n') {
+    event.preventDefault();
+    window.location.href = '/hr/recruitment/jobs/new';
+  }
+  
+  // Escape to clear search
+  if (event.key === 'Escape') {
+    document.getElementById('searchInput').value = '';
+    filterJobs();
+  }
+});
+
+// Initialize tooltips
+document.addEventListener('DOMContentLoaded', function() {
+  // Initialize any tooltip libraries if needed
+});
+</script>
+
+<style>
+@keyframes slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-out {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out;
+}
+
+.animate-slide-out {
+  animation: slide-out 0.3s ease-out;
+}
+
+/* Line clamp for text truncation */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Smooth transitions */
+* {
+  transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+</style>
+{% endblock %}

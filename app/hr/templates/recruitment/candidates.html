@@ -1,0 +1,653 @@
+{% extends "base.html" %}
+
+{% block title %}Candidates - Recruitment{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-2 text-gray-800">Candidates</h1>
+            <p class="mb-4">Manage all job applicants and track their progress</p>
+        </div>
+        <div>
+            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#filterModal">
+                <i class="fas fa-filter mr-2"></i>Filter
+            </button>
+            <a href="{{ url_for('hr_web.recruitment_dashboard') }}" class="btn btn-secondary">
+                <i class="fas fa-chart-bar mr-2"></i>Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Candidates</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_candidates }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-users fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Shortlisted</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ status_counts['Shortlisted'] }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clipboard-check fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Interview Scheduled</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ status_counts['Interview Scheduled'] }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-calendar-alt fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Offers Accepted</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ status_counts['Offer Accepted'] }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-handshake fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Candidates Table -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">All Candidates</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Job Applied</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Status</th>
+                            <th>Application Date</th>
+                            <th>Score</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for candidate in candidates %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="mr-3">
+                                        <div class="avatar-circle-sm bg-primary text-white">
+                                            {{ candidate.first_name[0] }}{{ candidate.last_name[0] }}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="font-weight-bold">{{ candidate.full_name }}</div>
+                                        <small class="text-muted">{{ candidate.current_position }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                {% if candidate.job_posting %}
+                                <a href="{{ url_for('hr_web.view_job_posting', job_id=candidate.job_posting.id) }}">
+                                    {{ candidate.job_posting.title }}
+                                </a>
+                                <br>
+                                <small class="text-muted">{{ candidate.job_posting.reference_no }}</small>
+                                {% else %}
+                                <span class="text-muted">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="mailto:{{ candidate.email }}">{{ candidate.email }}</a>
+                            </td>
+                            <td>{{ candidate.phone or 'N/A' }}</td>
+                            <td>
+                                <span class="badge badge-{{ 
+                                    'secondary' if candidate.status == 'Applied' 
+                                    else 'info' if candidate.status == 'Under Review' 
+                                    else 'primary' if candidate.status == 'Shortlisted' 
+                                    else 'warning' if candidate.status == 'Interview Scheduled' 
+                                    else 'info' if candidate.status == 'Interviewed' 
+                                    else 'warning' if candidate.status == 'Reference Check' 
+                                    else 'success' if candidate.status == 'Offer Extended' 
+                                    else 'success' if candidate.status == 'Offer Accepted' 
+                                    else 'danger' if candidate.status == 'Rejected' 
+                                    else 'secondary' if candidate.status == 'On Hold' 
+                                    else 'dark' 
+                                }}">
+                                    {{ candidate.status }}
+                                </span>
+                            </td>
+                            <td>
+                                {{ candidate.application_date.strftime('%Y-%m-%d') }}
+                                <br>
+                                <small class="text-muted">{{ candidate.application_date|time_ago }}</small>
+                            </td>
+                            <td>
+                                {% if candidate.overall_score %}
+                                <div class="progress" style="height: 20px;">
+                                    <div class="progress-bar bg-success" role="progressbar" 
+                                         style="width: {{ candidate.overall_score }}%;" 
+                                         aria-valuenow="{{ candidate.overall_score }}" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                        {{ "%.1f"|format(candidate.overall_score) }}%
+                                    </div>
+                                </div>
+                                {% else %}
+                                <span class="text-muted">Not scored</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{{ url_for('hr_web.view_candidate', candidate_id=candidate.id) }}" 
+                                       class="btn btn-sm btn-info" title="View">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{{ url_for('hr_web.edit_candidate', candidate_id=candidate.id) }}" 
+                                       class="btn btn-sm btn-warning" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    {% if candidate.resume_path %}
+                                    <a href="{{ url_for('hr_web.download_resume', candidate_id=candidate.id) }}" 
+                                       class="btn btn-sm btn-primary" title="Download Resume">
+                                        <i class="fas fa-download"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if candidates_pagination.pages > 1 %}
+            <div class="d-flex justify-content-center mt-4">
+                <nav>
+                    <ul class="pagination">
+                        {% if candidates_pagination.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('hr_web.recruitment_candidates', page=candidates_pagination.prev_num, 
+                                                                job_id=job_id, status=status_filter, source=source_filter,
+                                                                date_from=date_from, date_to=date_to) }}">
+                                Previous
+                            </a>
+                        </li>
+                        {% endif %}
+                        
+                        {% for page_num in candidates_pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                            {% if page_num %}
+                                {% if page_num == candidates_pagination.page %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ page_num }}</span>
+                                </li>
+                                {% else %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('hr_web.recruitment_candidates', page=page_num, 
+                                                                        job_id=job_id, status=status_filter, source=source_filter,
+                                                                        date_from=date_from, date_to=date_to) }}">
+                                        {{ page_num }}
+                                    </a>
+                                </li>
+                                {% endif %}
+                            {% else %}
+                                <li class="page-item disabled"><span class="page-link">…</span></li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if candidates_pagination.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('hr_web.recruitment_candidates', page=candidates_pagination.next_num, 
+                                                                job_id=job_id, status=status_filter, source=source_filter,
+                                                                date_from=date_from, date_to=date_to) }}">
+                                Next
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+            
+            {% if not candidates %}
+            <div class="text-center py-5">
+                <i class="fas fa-users fa-3x text-gray-300 mb-3"></i>
+                <h5 class="text-gray-500">No candidates found</h5>
+                <p class="text-gray-400">Try adjusting your filters or check back later.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Status Distribution Chart -->
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Candidate Status Distribution</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-pie pt-4">
+                        <canvas id="statusChart"></canvas>
+                    </div>
+                    <div class="mt-4 text-center small">
+                        {% for status, count in status_counts.items() if count > 0 %}
+                        <span class="mr-3">
+                            <i class="fas fa-circle text-{{ 
+                                'secondary' if status == 'Applied' 
+                                else 'info' if status == 'Under Review' 
+                                else 'primary' if status == 'Shortlisted' 
+                                else 'warning' if status == 'Interview Scheduled' 
+                                else 'info' if status == 'Interviewed' 
+                                else 'warning' if status == 'Reference Check' 
+                                else 'success' if status == 'Offer Extended' 
+                                else 'success' if status == 'Offer Accepted' 
+                                else 'danger' if status == 'Rejected' 
+                                else 'secondary' if status == 'On Hold' 
+                                else 'dark' 
+                            }}"></i>
+                            {{ status }} ({{ count }})
+                        </span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Quick Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="card border-left-primary h-100">
+                                <div class="card-body">
+                                    <div class="text-center">
+                                        <i class="fas fa-user-plus fa-2x text-primary mb-3"></i>
+                                        <h5>Add Candidate</h5>
+                                        <p>Manually add a new candidate to the system</p>
+                                        {% if jobs %}
+                                        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addCandidateModal">
+                                            Add Candidate
+                                        </button>
+                                        {% else %}
+                                        <button type="button" class="btn btn-primary" disabled>
+                                            No Jobs Available
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card border-left-success h-100">
+                                <div class="card-body">
+                                    <div class="text-center">
+                                        <i class="fas fa-file-export fa-2x text-success mb-3"></i>
+                                        <h5>Export Data</h5>
+                                        <p>Export candidate data to CSV or Excel</p>
+                                        <a href="{{ url_for('hr_web.export_candidates', 
+                                                          job_id=job_id, status=status_filter, 
+                                                          source=source_filter, date_from=date_from, date_to=date_to) }}" 
+                                           class="btn btn-success">
+                                            Export
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Modal -->
+<div class="modal fade" id="filterModal" tabindex="-1" role="dialog" aria-labelledby="filterModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="filterModalLabel">Filter Candidates</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="get" action="{{ url_for('hr_web.recruitment_candidates') }}">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="job_id">Job Position</label>
+                        <select class="form-control" id="job_id" name="job_id">
+                            <option value="">All Jobs</option>
+                            {% for job in jobs %}
+                            <option value="{{ job.id }}" {% if job_id == job.id %}selected{% endif %}>
+                                {{ job.reference_no }} - {{ job.title }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="status">Status</label>
+                        <select class="form-control" id="status" name="status">
+                            <option value="">All Statuses</option>
+                            <option value="Applied" {% if status_filter == 'Applied' %}selected{% endif %}>Applied</option>
+                            <option value="Under Review" {% if status_filter == 'Under Review' %}selected{% endif %}>Under Review</option>
+                            <option value="Shortlisted" {% if status_filter == 'Shortlisted' %}selected{% endif %}>Shortlisted</option>
+                            <option value="Interview Scheduled" {% if status_filter == 'Interview Scheduled' %}selected{% endif %}>Interview Scheduled</option>
+                            <option value="Interviewed" {% if status_filter == 'Interviewed' %}selected{% endif %}>Interviewed</option>
+                            <option value="Reference Check" {% if status_filter == 'Reference Check' %}selected{% endif %}>Reference Check</option>
+                            <option value="Offer Extended" {% if status_filter == 'Offer Extended' %}selected{% endif %}>Offer Extended</option>
+                            <option value="Offer Accepted" {% if status_filter == 'Offer Accepted' %}selected{% endif %}>Offer Accepted</option>
+                            <option value="Rejected" {% if status_filter == 'Rejected' %}selected{% endif %}>Rejected</option>
+                            <option value="On Hold" {% if status_filter == 'On Hold' %}selected{% endif %}>On Hold</option>
+                            <option value="Withdrawn" {% if status_filter == 'Withdrawn' %}selected{% endif %}>Withdrawn</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="source">Source</label>
+                        <select class="form-control" id="source" name="source">
+                            <option value="">All Sources</option>
+                            {% for source in sources %}
+                            <option value="{{ source }}" {% if source_filter == source %}selected{% endif %}>{{ source }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="date_from">From Date</label>
+                                <input type="date" class="form-control" id="date_from" name="date_from" value="{{ date_from or '' }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="date_to">To Date</label>
+                                <input type="date" class="form-control" id="date_to" name="date_to" value="{{ date_to or '' }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <a href="{{ url_for('hr_web.recruitment_candidates') }}" class="btn btn-secondary">Clear Filters</a>
+                    <button type="submit" class="btn btn-primary">Apply Filters</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add Candidate Modal -->
+<div class="modal fade" id="addCandidateModal" tabindex="-1" role="dialog" aria-labelledby="addCandidateModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addCandidateModalLabel">Add New Candidate</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="post" action="{{ url_for('hr_web.new_candidate', job_id=0) }}" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="modal_job_id">Select Job *</label>
+                        <select class="form-control" id="modal_job_id" name="job_id" required>
+                            <option value="">Select a job...</option>
+                            {% for job in jobs %}
+                            <option value="{{ job.id }}">{{ job.reference_no }} - {{ job.title }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="first_name">First Name *</label>
+                                <input type="text" class="form-control" id="first_name" name="first_name" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="last_name">Last Name *</label>
+                                <input type="text" class="form-control" id="last_name" name="last_name" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="email">Email *</label>
+                                <input type="email" class="form-control" id="email" name="email" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="phone">Phone</label>
+                                <input type="tel" class="form-control" id="phone" name="phone">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="resume">Upload Resume</label>
+                        <input type="file" class="form-control-file" id="resume" name="resume" accept=".pdf,.doc,.docx">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="cover_letter">Cover Letter</label>
+                        <textarea class="form-control" id="cover_letter" name="cover_letter" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Candidate</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<!-- Page level plugins -->
+<script src="{{ url_for('static', filename='vendor/chart.js/Chart.min.js') }}"></script>
+
+<script>
+// Set max date for date_to as today
+document.addEventListener('DOMContentLoaded', function() {
+    const dateToInput = document.getElementById('date_to');
+    if (dateToInput && !dateToInput.value) {
+        dateToInput.max = new Date().toISOString().split('T')[0];
+    }
+    
+    // Initialize chart
+    initializeStatusChart();
+});
+
+function initializeStatusChart() {
+    // Chart data
+    const statusData = {
+        labels: [
+            {% for status, count in status_counts.items() if count > 0 %}
+            "{{ status }}",
+            {% endfor %}
+        ],
+        datasets: [{
+            data: [
+                {% for status, count in status_counts.items() if count > 0 %}
+                {{ count }},
+                {% endfor %}
+            ],
+            backgroundColor: [
+                {% for status, count in status_counts.items() if count > 0 %}
+                '{{ 
+                    "#6c757d" if status == "Applied"
+                    else "#17a2b8" if status == "Under Review"
+                    else "#007bff" if status == "Shortlisted"
+                    else "#ffc107" if status == "Interview Scheduled"
+                    else "#17a2b8" if status == "Interviewed"
+                    else "#ffc107" if status == "Reference Check"
+                    else "#28a745" if status == "Offer Extended"
+                    else "#28a745" if status == "Offer Accepted"
+                    else "#dc3545" if status == "Rejected"
+                    else "#6c757d" if status == "On Hold"
+                    else "#343a40"
+                }}',
+                {% endfor %}
+            ],
+            hoverBackgroundColor: [
+                {% for status, count in status_counts.items() if count > 0 %}
+                '{{ 
+                    "#5a6268" if status == "Applied"
+                    else "#138496" if status == "Under Review"
+                    else "#0069d9" if status == "Shortlisted"
+                    else "#e0a800" if status == "Interview Scheduled"
+                    else "#138496" if status == "Interviewed"
+                    else "#e0a800" if status == "Reference Check"
+                    else "#218838" if status == "Offer Extended"
+                    else "#218838" if status == "Offer Accepted"
+                    else "#c82333" if status == "Rejected"
+                    else "#5a6268" if status == "On Hold"
+                    else "#23272b"
+                }}',
+                {% endfor %}
+            ]
+        }]
+    };
+    
+    // Get chart context
+    const ctx = document.getElementById('statusChart');
+    if (ctx) {
+        new Chart(ctx, {
+            type: 'pie',
+            data: statusData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    }
+}
+
+// DataTable initialization
+$(document).ready(function() {
+    $('#dataTable').DataTable({
+        pageLength: 20,
+        lengthMenu: [[10, 20, 50, 100, -1], [10, 20, 50, 100, "All"]],
+        order: [[5, 'desc']], // Default sort by application date
+        columnDefs: [
+            { orderable: false, targets: [7] } // Disable sorting for actions column
+        ]
+    });
+});
+</script>
+
+<style>
+.avatar-circle-sm {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+.badge {
+    font-size: 0.85em;
+    padding: 0.35em 0.65em;
+}
+
+.progress {
+    border-radius: 10px;
+}
+
+.progress-bar {
+    border-radius: 10px;
+}
+
+.table th {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.card {
+    border: none;
+    border-radius: 0.5rem;
+}
+
+.shadow {
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15) !important;
+}
+
+.border-left-primary {
+    border-left: 0.25rem solid #4e73df !important;
+}
+
+.border-left-success {
+    border-left: 0.25rem solid #1cc88a !important;
+}
+
+.border-left-info {
+    border-left: 0.25rem solid #36b9cc !important;
+}
+
+.border-left-warning {
+    border-left: 0.25rem solid #f6c23e !important;
+}
+</style>
+{% endblock %}
