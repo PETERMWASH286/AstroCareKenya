@@ -182,30 +182,45 @@
                                 {% endfor %}
                             </div>
                         </td>
+<!-- Actions -->
+<td class="px-6 py-4 align-top">
+    <div class="flex flex-col space-y-3">
 
-                        <!-- Actions -->
-                        <td class="px-6 py-4 align-top">
-                            <div class="flex flex-col space-y-2">
-                                {% for consultation in visit.consultations %}
-                                    {% for med in consultation.medications %}
-                                    <div class="flex items-center gap-2">
-                                        {% if not med.is_dispensed %}
-                                        <button class="p-2 rounded-lg bg-green-100 hover:bg-green-200 dark:bg-green-900/50 dark:hover:bg-green-800 transition-colors relative dispense-btn" data-med-id="{{ med.id }}" data-status-id="status-{{ med.id }}">
-                                            <i class="fas fa-check-circle text-green-600 dark:text-green-400"></i>
-                                        </button> 
-                                        {% else %}
-                                        <span class="p-2 text-green-600 dark:text-green-400">
-                                            <i class="fas fa-check-circle"></i>
-                                        </span> 
-                                        {% endif %}
-                                        <button class="p-2 rounded-lg bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/50 dark:hover:bg-blue-800 transition-colors" data-tippy-content="View prescription details" @click="open = !open">
-                                            <i class="fas fa-file-prescription text-blue-600 dark:text-blue-400"></i>
-                                        </button>
-                                    </div>
-                                    {% endfor %}
-                                {% endfor %}
-                            </div>
-                        </td>
+        <!-- Medication dispense actions (per medication) -->
+        {% for consultation in visit.consultations %}
+            {% for med in consultation.medications %}
+                <div class="flex items-center gap-2">
+                    {% if not med.is_dispensed %}
+                        <button
+                            class="p-2 rounded-lg bg-green-100 hover:bg-green-200 dark:bg-green-900/50 dark:hover:bg-green-800 transition-colors dispense-btn"
+                            data-med-id="{{ med.id }}"
+                            data-status-id="status-{{ med.id }}"
+                            title="Dispense medication">
+                            <i class="fas fa-check-circle text-green-600 dark:text-green-400"></i>
+                        </button>
+                    {% else %}
+                        <span class="p-2 text-green-600 dark:text-green-400">
+                            <i class="fas fa-check-circle"></i>
+                        </span>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        {% endfor %}
+
+        <!-- ONE prescription view action per patient/visit -->
+        <a
+            href="{{ url_for('pharmacy_web.view_prescription', visit_id=visit.id) }}"
+            class="inline-flex items-center justify-center gap-2 p-2 rounded-lg bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/50 dark:hover:bg-blue-800 transition-colors"
+            title="View full prescription">
+            <i class="fas fa-file-prescription text-blue-600 dark:text-blue-400"></i>
+            <span class="text-sm font-medium text-blue-700 dark:text-blue-300">
+                View Prescription
+            </span>
+        </a>
+
+    </div>
+</td>
+
                     </tr>
                     {% else %}
                     <tr>

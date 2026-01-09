@@ -1,254 +1,302 @@
-<!-- app/pharmacy/templates/inventory_management.html -->
-{% extends "base.html" %} {% block content %}
-<div class="container mx-auto px-4 py-8">
-    <!-- Header Section -->
-    <div class="mb-8 text-center bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800  dark:bg-gray-900 dark:bg-gray-800 p-8 rounded-3xl shadow-2xl">
-        <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-2">Pharmacy Inventory Management</h1>
-        <p class="text-gray-600 dark:text-gray-300">Real-time stock monitoring and replenishment system</p>
-    </div>
+{% extends "base.html" %}
 
-    <!-- Inventory Controls -->
-    <div class="mb-6 bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800  dark:bg-gray-900 dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-gray-100 dark:border-gray-700">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-            <div class="relative">
-                <input type="text" id="searchInventory" placeholder="Search medications..." class="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white">
-                <i class="fas fa-search absolute left-4 top-4 text-gray-500 dark:text-gray-400"></i>
-            </div>
+{% block title %}Pharmacy Inventory Management{% endblock %}
 
-            <div class="flex flex-col space-y-2">
-                <label class="text-sm text-gray-600 dark:text-gray-300">Stock Status</label>
-                <select class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white">
-                    <option value="all">All Items</option>
-                    <option value="low">Low Stock</option>
-                    <option value="critical">Critical Stock</option>
-                    <option value="adequate">Adequate Stock</option>
-                </select>
-            </div>
-
-            <button class="bg-blue-500 hover:bg-blue-600 text-white py-3 px-6 rounded-xl font-semibold transition-all" data-tippy-content="Request stock from main store" @click="showRequestModal = true">
-                <i class="fas fa-truck mr-2"></i>Request Stock
+{% block content %}
+<div class="container-fluid px-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-2 text-gray-800">Pharmacy Inventory Management</h1>
+            <p class="mb-4">Manage pharmaceutical stock, track expiry dates, and monitor inventory levels</p>
+        </div>
+        <div>
+            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#filterModal">
+                <i class="fas fa-filter mr-2"></i>Filter
             </button>
+            <a href="" class="btn btn-success">
+                <i class="fas fa-plus mr-2"></i>Add New Item
+            </a>
         </div>
     </div>
 
-    <!-- Inventory Summary Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
         <!-- Total Medications -->
-        <div class="bg-green-100 dark:bg-green-900 p-6 rounded-2xl">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-green-800 dark:text-green-200">Total Medications</p>
-                    <p class="text-3xl font-bold text-green-600 dark:text-green-300">{{ total_medications }}</p>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Medications</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_medications }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-pills fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
                 </div>
-                <i class="fas fa-capsules text-green-500 text-2xl"></i>
             </div>
         </div>
 
-        <!-- Low Stock Items -->
-        <div class="bg-yellow-100 dark:bg-yellow-900 p-6 rounded-2xl">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-yellow-800 dark:text-yellow-200">Low Stock Items</p>
-                    <p class="text-3xl font-bold text-yellow-600 dark:text-yellow-300">{{ low_stock_items }}</p>
+        <!-- Low Stock -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Low Stock Items</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ low_stock_items }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
                 </div>
-                <i class="fas fa-exclamation-triangle text-yellow-500 text-2xl"></i>
+            </div>
+        </div>
+
+        <!-- Expiring Soon -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-danger shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                                Expiring Soon (30 days)</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ expiring_soon_items }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-calendar-times fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
         <!-- Pending Requests -->
-        <div class="bg-blue-100 dark:bg-blue-900 p-6 rounded-2xl">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-blue-800 dark:text-blue-200">Pending Requests</p>
-                    <p class="text-3xl font-bold text-blue-600 dark:text-blue-300">{{ pending_requests }}</p>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Pending Requests</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ pending_requests }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clipboard-list fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
                 </div>
-                <i class="fas fa-clipboard-list text-blue-500 text-2xl"></i>
             </div>
         </div>
     </div>
-
 
     <!-- Inventory Table -->
-    <div class="bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800  dark:bg-gray-900 dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-gray-100 dark:border-gray-700">
-        <div class="overflow-x-auto">
-            <table class="w-full">
-                <thead class="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-gray-700 dark:to-gray-800">
-                    <tr>
-                        <th class="px-6 py-4 text-left text-blue-600 dark:text-blue-400 font-semibold">Medication</th>
-                        <th class="px-6 py-4 text-left text-blue-600 dark:text-blue-400 font-semibold">Description</th>
-                        <th class="px-6 py-4 text-left text-blue-600 dark:text-blue-400 font-semibold">Form & Strength</th>
-                        <th class="px-6 py-4 text-left text-blue-600 dark:text-blue-400 font-semibold">Category</th>
-                        <th class="px-6 py-4 text-left text-blue-600 dark:text-blue-400 font-semibold">In Stock</th>
-                        <th class="px-6 py-4 text-left text-blue-600 dark:text-blue-400 font-semibold">Reorder Level</th>
-                        <th class="px-6 py-4 text-left text-blue-600 dark:text-blue-400 font-semibold">Expires In</th>
-                        <th class="px-6 py-4 text-left text-blue-600 dark:text-blue-400 font-semibold">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                    {% for item in inventory %}
-                    <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition-colors">
-                        <!-- Medication Name -->
-                        <td class="px-6 py-4">
-                            <div class="flex items-center space-x-4">
-                                <i class="fas fa-pills text-blue-400 text-xl"></i>
-                                <div>
-                                    <div class="font-semibold text-gray-800 dark:text-white">{{ item.name }}</div>
-                                    <div class="text-sm text-gray-600 dark:text-gray-300">{{ item.ndc or 'No NDC' }}</div>
-                                </div>
-                            </div>
-                        </td>
-
-                        <!-- Description -->
-                        <td class="px-6 py-4 max-w-xs">
-                            <div class="text-gray-800 dark:text-gray-200 text-sm line-clamp-2">
-                                {{ item.description or 'No description' }}
-                            </div>
-                        </td>
-
-                        <!-- Dosage Form & Strength -->
-                        <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-200">
-                            {{ item.dosage_form or 'N/A' }} | {{ item.strength or 'N/A' }}
-                        </td>
-
-                        <!-- Item Category -->
-                        <td class="px-6 py-4">
-                            <span class="px-3 py-1 rounded-full bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 text-sm">
-                                {{ item.item_category or 'Uncategorized' }}
-                            </span>
-                        </td>
-
-                        <!-- Current Stock -->
-                        <td class="px-6 py-4">
-                            <div class="flex items-center space-x-3">
-                                <div class="relative w-24">
-                                    <div class="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                                        {% set qty = item.quantity_in_stock | default(0, true) %}
-                                        <div class="h-full bg-blue-500" style="width: {{ (qty / (qty + 1)) * 100 }}%"></div>
-                                    </div>
-                                </div>
-                                <span class="{% if item.low_stock %}text-red-600 dark:text-red-400{% else %}text-gray-800 dark:text-gray-200{% endif %}">
-                                    {{ item.quantity_in_stock }} units
-                                </span>
-                            </div>
-                        </td>
-
-                        <!-- Reorder Level -->
-                        <td class="px-6 py-4 text-gray-800 dark:text-gray-200">
-                            {{ item.min_stock_level }} units
-                        </td>
-
-                        <!-- Expiration -->
-                        <td class="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
-                            {{ item.expiration_status }}
-                        </td>
-
-                        <!-- Actions -->
-                        <td class="px-6 py-4">
-                            <div class="flex space-x-2">
-                                <a href="{{ url_for('pharmacy_web.edit_inventory', item_id=item.id) }}" class="p-2 rounded-lg bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/50 dark:hover:bg-blue-800 transition-colors" data-tippy-content="Edit details">
-                                    <i class="fas fa-edit text-blue-600 dark:text-blue-400"></i>
-                                </a>
-
-                                <button class="p-2 rounded-lg bg-green-100 hover:bg-green-200 dark:bg-green-900/50 dark:hover:bg-green-800 transition-colors" data-tippy-content="Request stock" @click="showRequestSingleModal('{{ item.id }}')">
-                                    <i class="fas fa-cart-plus text-green-600 dark:text-green-400"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="8" class="px-6 py-12 text-center">
-                            <div class="text-gray-500 dark:text-gray-400">
-                                <i class="fas fa-box-open text-4xl mb-4"></i>
-                                <div class="text-xl">No pharmacy items in stock</div>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-
-        </div>
-    </div>
-
-    <!-- Request Stock Modal -->
-    <div x-show="showRequestModal" class="hidden inset-0 bg-black/50 flex items-center justify-center p-4 z-50" x-cloak>
-        <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 w-full max-w-lg">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xl font-bold text-gray-800 dark:text-white">New Stock Request</h3>
-                <button @click="showRequestModal = false" class="text-gray-500 hover:text-gray-700 dark:text-gray-400">
-                    <i class="fas fa-times"></i>
-                </button>
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold text-primary">Pharmacy Inventory Items</h6>
+            <div class="btn-group" role="group">
+                <a href="" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-file-export mr-1"></i>Export
+                </a>
+                <a href="" class="btn btn-sm btn-outline-info">
+                    <i class="fas fa-chart-bar mr-1"></i>Reports
+                </a>
             </div>
-
-            <form class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Medication</label>
-                    <select class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700">
-                        <option value="">Select medication</option>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="inventoryTable" width="100%" cellspacing="0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Item Name</th>
+                            <th>Category</th>
+                            <th>Strength/Form</th>
+                            <th>Quantity</th>
+                            <th>Batch No.</th>
+                            <th>Expiry Date</th>
+                            <th>Supplier</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
                         {% for item in inventory %}
-                        <option value="{{ item.id }}">{{ item.name }}</option>
+                        <tr class="{% if item.is_expired %}table-danger{% elif item.is_expiring_soon %}table-warning{% elif item.is_low_stock %}table-warning{% endif %}">
+                            <td>
+                                <div class="font-weight-bold text-gray-800">{{ item.item_name }}</div>
+                                {% if item.generic_name %}
+                                <small class="text-muted">{{ item.generic_name }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="font-weight-bold text-gray-800">{{ item.category }}</span>
+                            </td>
+                            <td>
+                                <div>{{ item.strength }}</div>
+                                <small class="text-muted">{{ item.dosage_form }}</small>
+                            </td>
+                            <td>
+                                <div class="font-weight-bold">{{ item.quantity }} {{ item.unit_of_measure or 'units' }}</div>
+                                {% if item.reorder_level %}
+                                <div class="progress" style="height: 5px;">
+                                    <div class="progress-bar bg-{{ 'danger' if item.is_low_stock else 'success' }}" 
+                                         role="progressbar" 
+                                         style="width: {{ (item.quantity / (item.reorder_level * 3) * 100) if item.reorder_level > 0 else 100 }}%;"></div>
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td>{{ item.batch_number or 'N/A' }}</td>
+                            <td>
+                                {% if item.expiry_date %}
+                                <div class="{% if item.is_expired %}text-danger{% elif item.is_expiring_soon %}text-warning{% else %}text-success{% endif %}">
+                                    {{ item.expiry_date.strftime('%d/%m/%Y') }}
+                                </div>
+                                {% if item.days_to_expiry is not none %}
+                                <small class="text-muted">{{ item.days_to_expiry }} days</small>
+                                {% endif %}
+                                {% else %}
+                                <span class="text-muted">No expiry</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ item.supplier or 'N/A' }}</td>
+                            <td>
+                                <span class="badge badge-{{ badge_color }}">{{ badge_text }}</span>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <button type="button" class="btn btn-info" data-toggle="modal" 
+                                            data-target="#viewItemModal{{ item.id }}" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <a href="" 
+                                       class="btn btn-warning" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-success" data-toggle="modal" 
+                                            data-target="#restockModal{{ item.id }}" title="Restock">
+                                        <i class="fas fa-plus-circle"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-primary" data-toggle="modal" 
+                                            data-target="#adjustModal{{ item.id }}" title="Adjust Stock">
+                                        <i class="fas fa-exchange-alt"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
                         {% endfor %}
-                    </select>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Quantity Needed</label>
-                    <input type="number" class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700">
-                </div>
-
-                <div class="flex justify-end space-x-3">
-                    <button type="button" @click="showRequestModal = false" class="px-6 py-2 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
-                        Cancel
-                    </button>
-                    <button type="submit" class="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-xl">
-                        Submit Request
-                    </button>
-                </div>
-            </form>
+                    </tbody>
+                </table>
+            </div>
+            
+            {% if not inventory %}
+            <div class="text-center py-5">
+                <i class="fas fa-pills fa-3x text-gray-300 mb-3"></i>
+                <h5 class="text-gray-500">No inventory items found</h5>
+                <p class="text-gray-400">Add your first pharmacy inventory item to get started.</p>
+                <a href="" class="btn btn-primary">
+                    <i class="fas fa-plus mr-2"></i>Add Inventory Item
+                </a>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>
 
+<!-- Filter Modal -->
+<div class="modal fade" id="filterModal" tabindex="-1" role="dialog" aria-labelledby="filterModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="filterModalLabel">Filter Inventory</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="filterForm">
+                    <div class="form-group">
+                        <label for="categoryFilter">Category</label>
+                        <select class="form-control" id="categoryFilter">
+                            <option value="">All Categories</option>
+                            <option value="Tablet">Tablet</option>
+                            <option value="Capsule">Capsule</option>
+                            <option value="Syrup">Syrup</option>
+                            <option value="Injection">Injection</option>
+                            <option value="Ointment">Ointment</option>
+                            <option value="Drops">Drops</option>
+                            <option value="Inhaler">Inhaler</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="statusFilter">Status</label>
+                        <select class="form-control" id="statusFilter">
+                            <option value="">All Status</option>
+                            <option value="low_stock">Low Stock</option>
+                            <option value="expiring_soon">Expiring Soon</option>
+                            <option value="expired">Expired</option>
+                            <option value="in_stock">In Stock</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="searchFilter">Search Item</label>
+                        <input type="text" class="form-control" id="searchFilter" placeholder="Search by item name...">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="applyFilters()">Apply Filters</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript for filtering -->
 <script>
-    document.addEventListener('alpine:init', () => {
-        Alpine.data('inventory', () => ({
-            showRequestModal: false,
-
-            init() {
-                // Initialize any required components
-            },
-
-
-            showRequestSingleModal(itemId) {
-                // Handle single item request
-                console.log('Requesting stock for:', itemId);
-                this.showRequestModal = true;
-            }
-        }));
+$(document).ready(function() {
+    // Initialize DataTable
+    $('#inventoryTable').DataTable({
+        pageLength: 25,
+        lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+        order: [[0, 'asc']],
+        columnDefs: [
+            { orderable: false, targets: [8] } // Disable sorting for actions column
+        ]
     });
-</script>
+});
 
-<style>
-    .line-clamp-2 {
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
+function applyFilters() {
+    const category = $('#categoryFilter').val();
+    const status = $('#statusFilter').val();
+    const search = $('#searchFilter').val().toLowerCase();
+    
+    const table = $('#inventoryTable').DataTable();
+    
+    // Reset all filters
+    table.search('').columns().search('').draw();
+    
+    // Apply category filter
+    if (category) {
+        table.column(1).search(category).draw();
     }
     
-    table {
-        border-spacing: 0 0.75rem;
-        border-collapse: separate;
+    // Apply search filter
+    if (search) {
+        table.search(search).draw();
     }
     
-    th,
-    td {
-        @apply transition-colors duration-200;
-    }
-    
-    tr {
-        @apply bg-white dark: bg-gray-800;
-    }
-</style>
+    // Close modal
+    $('#filterModal').modal('hide');
+}
+
+// Auto-refresh inventory every 5 minutes
+setTimeout(function() {
+    location.reload();
+}, 300000); // 5 minutes
+</script>
 {% endblock %}

@@ -6,7 +6,7 @@ from flask import request, redirect, url_for, flash, current_app
 from requests import Response
 from wtforms import ValidationError
 
-from app.auth.models import User
+from app.auth.models import Role, User, user_roles
 from app.hr.forms import CandidateForm, DisciplinaryActionForm, InterviewPanelForm, InterviewScoreForm, JobPostingForm
 from app.user_management.models import Department, EmployeeBio, EmployeeCertification, EmployeeEducation, EmployeeWorkHistory, EmployeeRelative, BioAttachment
 from app import db  # Import the db object from your application
@@ -44,32 +44,57 @@ def staff_directory():
         db.joinedload(User.bio)
     ).order_by(User.full_name.asc()).all()
     
+    # For each staff member, load their roles separately
+    # Since roles is a dynamic relationship, we need to query them separately
+    for employee in staff:
+        employee._roles = employee.roles.all()  # Load roles for each user
+    
     # Calculate statistics
     total_staff = User.query.count()
     active_staff = User.query.filter_by(is_active=True).count()
     departments_count = Department.query.count()
     
-    # Calculate average tenure (in years)
-    avg_tenure = 0  # Placeholder - you'd need a start_date field in User model
+    # Calculate role distribution using a separate query
+    role_distribution = db.session.query(
+        Role.name.label('role_name'),
+        db.func.count(User.id).label('staff_count')
+    ).join(user_roles, Role.id == user_roles.c.role_id)\
+     .join(User, User.id == user_roles.c.user_id)\
+     .group_by(Role.name)\
+     .order_by(db.func.count(User.id).desc())\
+     .all()
+    
+    role_labels = [role.role_name for role in role_distribution]
+    role_values = [role.staff_count for role in role_distribution]
     
     # Calculate department distribution
     dept_distribution = db.session.query(
         Department.name.label('dept_name'),
-        func.count(User.id).label('staff_count')
+        db.func.count(User.id).label('staff_count')
     ).outerjoin(User, Department.id == User.department_id)\
      .group_by(Department.name)\
-     .order_by(func.count(User.id).desc())\
+     .order_by(db.func.count(User.id).desc())\
      .all()
     
     dept_labels = [dept.dept_name for dept in dept_distribution]
     dept_values = [dept.staff_count for dept in dept_distribution]
+    
+    # Get top roles (most staff)
+    top_roles = sorted(role_distribution, key=lambda x: x.staff_count, reverse=True)[:5]
+    
+    # Count staff with roles
+    staff_with_roles = db.session.query(db.func.count(db.distinct(User.id)))\
+        .join(user_roles, User.id == user_roles.c.user_id)\
+        .scalar() or 0
     
     stats = {
         'total_staff': total_staff,
         'active_staff': active_staff,
         'active_percentage': round((active_staff / total_staff) * 100) if total_staff else 0,
         'departments': departments_count,
-        'avg_tenure': avg_tenure
+        'top_roles': top_roles,
+        'total_roles': len(role_labels),
+        'staff_with_roles': staff_with_roles
     }
     
     return render_template(
@@ -77,7 +102,9 @@ def staff_directory():
         staff=staff,
         stats=stats,
         dept_labels=dept_labels,
-        dept_values=dept_values
+        dept_values=dept_values,
+        role_labels=role_labels,
+        role_values=role_values
     )
 
 
@@ -242,6 +269,7 @@ def staff_bio(user_id):
                 payroll_info.nssf_number = bio.nssf_no or payroll_info.nssf_number
 
             db.session.commit()
+            return redirect(url_for('hr_web.staff_directory'))
 
         except IntegrityError:
             db.session.rollback()

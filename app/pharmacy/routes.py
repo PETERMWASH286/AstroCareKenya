@@ -1,11 +1,12 @@
 # app/pharmacy/routes.py
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask import current_app, flash, json, make_response, redirect, render_template, url_for
 from flask import render_template, request, jsonify
 from flask_login import current_user
 from sqlalchemy import and_, exists, func
 from app import db
 from app.auth.models import User
+from app.pharmacy.models import PharmacyInventory
 from app.store.models import Stock, StockRequest  # Import the db object
 from . import pharmacy_web_bp
 from app.patients.models import Consultation, Patient, Service, Visit, Medication
@@ -15,6 +16,9 @@ from app.patients.models import Consultation, Patient, Service, Visit, Medicatio
 def pharmacy_dashboard():
     """Main pharmacy dashboard route"""
     return render_template('dashboard.html')
+
+
+
 @pharmacy_web_bp.route('/pharmacy/dispense')
 def dispense_medication():
     """
@@ -76,31 +80,52 @@ def dispense_single_medication(medication_id):
 
 @pharmacy_web_bp.route('/pharmacy/inventory')
 def manage_inventory():
-    """Inventory management route: fetch real-time data and stats."""
-    # 1. Fetch all pharmacy products
+    """Inventory management route: fetch real-time data from PharmacyInventory model."""
+    from datetime import date
+    
+    # 1. Fetch all pharmacy inventory items
     inventory = (
-        Service.query
-        .filter(Service.category == 'Pharmacy')            # only pharmacy items
-        .order_by(Service.name.asc())
+        PharmacyInventory.query
+        .order_by(PharmacyInventory.item_name.asc())
         .all()
     )
 
     # 2. Compute summary stats
-    total_medications   = len(inventory)
-    low_stock_items     = sum(1 for item in inventory if item.low_stock)
-    # pending_requests: if you have a StockRequest model, uncomment:
-    # pending_requests = StockRequest.query.filter_by(status='pending').count()
-    pending_requests    = 0
+    total_medications = len(inventory)
+    
+    # Low stock items (quantity less than 10)
+    low_stock_items = sum(1 for item in inventory if item.quantity < 10)
+    
+    # Expired or expiring soon items
+    today = date.today()
+    expired_items = sum(1 for item in inventory 
+                       if item.expiry_date and item.expiry_date < today)
+    
+    # Items expiring within 30 days
+    expiring_soon_items = sum(1 for item in inventory 
+                             if item.expiry_date and 
+                             today <= item.expiry_date <= (today + timedelta(days=30)))
+    
+    # Pending stock requests
+    pending_requests = StockRequest.query.filter_by(
+        department='Pharmacy',
+        status='pending'
+    ).count()
 
-    # 3. Render template with real data
+    # 3. Calculate total value (if we had unit price)
+    total_value = sum(item.quantity * getattr(item, 'unit_price', 0) for item in inventory)
+
     return render_template(
         'inventory_management.html',
         inventory=inventory,
         total_medications=total_medications,
         low_stock_items=low_stock_items,
-        pending_requests=pending_requests
+        expired_items=expired_items,
+        expiring_soon_items=expiring_soon_items,
+        pending_requests=pending_requests,
+        total_value=total_value,
+        today=today
     )
-
 @pharmacy_web_bp.route('/pharmacy/prescriptions')
 def track_prescriptions():
     """Prescription tracking route"""
@@ -386,3 +411,104 @@ def dispense_history():
 
 
 
+@pharmacy_web_bp.route('/pharmacy/prescription/<int:visit_id>')
+def view_prescription(visit_id):
+    """View prescription details for a specific visit"""
+    # Get the visit
+    visit = Visit.query.get_or_404(visit_id)
+    
+    # Get all medications for this visit (both via consultation and direct)
+    medications = []
+    
+    # Get medications via consultations
+    for consultation in visit.consultations:
+        for med in consultation.medications:
+            medications.append({
+                'id': med.id,
+                'service_name': med.service.name if med.service else 'Unknown Medication',
+                'service': med.service,
+                'dose': med.dose,
+                'frequency': med.frequency,
+                'duration': med.duration,
+                'quantity': med.quantity,
+                'price': med.price,
+                'is_dispensed': med.is_dispensed,
+                'dispensed_at': med.dispensed_at,
+                'dispensed_by': med.dispenser.full_name if med.dispenser else None,
+                'notes': getattr(med, 'notes', ''),
+                'via': 'consultation'
+            })
+    
+    # Get medications directly linked to visit
+    for med in visit.medications:
+        medications.append({
+            'id': med.id,
+            'service_name': med.service.name if med.service else 'Unknown Medication',
+            'service': med.service,
+            'dose': med.dose,
+            'frequency': med.frequency,
+            'duration': med.duration,
+            'quantity': med.quantity,
+            'price': med.price,
+            'is_dispensed': med.is_dispensed,
+            'dispensed_at': med.dispensed_at,
+            'dispensed_by': med.dispenser.full_name if med.dispenser else None,
+            'notes': getattr(med, 'notes', ''),
+            'via': 'direct'
+        })
+    
+    # Get consultation details
+    consultation_details = None
+    if visit.consultations:
+        latest_consultation = visit.consultations[-1]  # Get most recent consultation
+        consultation_details = {
+            'history': latest_consultation.history,
+            'examination': latest_consultation.examination,
+            'diagnosis': latest_consultation.diagnosis,
+            'treatment_plan': latest_consultation.treatment_plan,
+            'notes': latest_consultation.notes,
+            'doctor': latest_consultation.treated_by.full_name if latest_consultation.treated_by else None,
+            'created_at': latest_consultation.created_at
+        }
+    
+    # Get vitals
+    vitals_details = None
+    if visit.vitals:
+        latest_vitals = visit.vitals[-1]  # Get most recent vitals
+        vitals_details = {
+            'temperature': latest_vitals.temperature,
+            'heart_rate': latest_vitals.heart_rate,
+            'bp_systolic': latest_vitals.bp_systolic,
+            'bp_diastolic': latest_vitals.bp_diastolic,
+            'spo2': latest_vitals.spo2,
+            'resp_rate': latest_vitals.resp_rate,
+            'weight': latest_vitals.weight,
+            'height': latest_vitals.height,
+            'bmi': latest_vitals.bmi,
+            'recorded_at': latest_vitals.recorded_at,
+            'allergy_food': latest_vitals.allergy_food,
+            'allergy_drugs': latest_vitals.allergy_drugs,
+            'chronic_conditions': latest_vitals.chronic_conditions,
+            'current_medications': latest_vitals.current_medications,
+            'notes': latest_vitals.notes
+        }
+    
+    # Calculate totals
+    total_medications = len(medications)
+    dispensed_count = sum(1 for med in medications if med['is_dispensed'])
+    pending_count = total_medications - dispensed_count
+    
+    # Calculate total price
+    total_price = sum(med['price'] or 0 for med in medications)
+    
+
+    return render_template('prescription_view.html',
+                         visit=visit,
+                         patient=visit.patient,
+                         medications=medications,
+                         consultation_details=consultation_details,
+                         vitals_details=vitals_details,
+                         total_medications=total_medications,
+                         dispensed_count=dispensed_count,
+                         pending_count=pending_count,
+                         total_price=total_price)
