@@ -1,0 +1,628 @@
+{% extends "base.html" %}
+
+{% block title %}Payroll Payment{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Header with gradient -->
+    <div class="bg-gradient-success text-white p-4 rounded-4 mb-4 shadow-sm">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+            <div>
+                <h1 class="display-6 fw-bold">Payroll Payment</h1>
+                <p class="text-white-80 mb-0">View and pay approved payrolls</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards (for approved) -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-primary mb-1">Approved Payrolls</p>
+                            <h2 class="mb-0 fw-bold">{{ approved_count }}</h2>
+                        </div>
+                        <div class="icon-circle bg-primary bg-opacity-10">
+                            <i class="fas fa-check-circle text-primary fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-success mb-1">Total Net Pay</p>
+                            <h2 class="mb-0 fw-bold">KSh {{ "{:,.2f}".format(total_approved_net) }}</h2>
+                        </div>
+                        <div class="icon-circle bg-success bg-opacity-10">
+                            <i class="fas fa-coins text-success fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-info mb-1">Employees</p>
+                            <h2 class="mb-0 fw-bold">{{ total_approved_employees }}</h2>
+                        </div>
+                        <div class="icon-circle bg-info bg-opacity-10">
+                            <i class="fas fa-users text-info fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+                <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-secondary mb-1">Paid Payrolls</p>
+                            <h2 class="mb-0 fw-bold">{{ total_paid_count }}</h2>
+                            <small class="text-muted">Total: KSh {{ "{:,.2f}".format(total_paid_net) }}</small>
+                        </div>
+                        <div class="icon-circle bg-secondary bg-opacity-10">
+                            <i class="fas fa-check-double text-secondary fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Global Search -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <input type="text" id="payrollSearch" class="form-control form-control-lg rounded-3" placeholder="Search by ID or period...">
+        </div>
+    </div>
+
+    <!-- Approved Payrolls (with action) -->
+    <div class="card border-0 shadow-sm rounded-4 mb-5">
+        <div class="card-header bg-success bg-opacity-10 border-0 pt-4 px-4">
+            <h5 class="fw-bold text-success"><i class="fas fa-check-circle me-2"></i>Approved Payrolls – Ready for Payment</h5>
+        </div>
+        <div class="card-body p-4">
+            {% if approved_payrolls %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle payroll-table" id="approvedTable">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Period</th>
+                            <th>Pay Date</th>
+                            <th>Employees</th>
+                            <th class="text-end">Gross</th>
+                            <th class="text-end">Deductions</th>
+                            <th class="text-end">Net Pay</th>
+                            <th>Approved By</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in approved_payrolls %}
+                        <tr class="payroll-row" data-search="{{ p.id }} {{ p.period.start_date }} {{ p.period.end_date }}">
+                            <td>#{{ p.id }}</td>
+                            <td>{{ p.period.start_date.strftime('%d %b') }} – {{ p.period.end_date.strftime('%d %b %Y') }}</td>
+                            <td>{{ p.period.pay_date.strftime('%d %b %Y') }}</td>
+                            <td>{{ p.employee_count or p.payslips|length }}</td>
+                            <td class="text-end">KSh {{ "{:,.2f}".format(p.total_gross) }}</td>
+                            <td class="text-end">KSh {{ "{:,.2f}".format(p.total_deductions) }}</td>
+                            <td class="text-end fw-bold">KSh {{ "{:,.2f}".format(p.total_net) }}</td>
+                            <td>{{ p.approved_by_user.full_name if p.approved_by_user else '—' }}</td>
+                            <td>
+                                <div class="d-flex gap-2">
+<a href="{{ url_for('finance_web_bp.payroll_process_payment', payroll_id=p.id) }}" class="btn btn-sm btn-warning rounded-pill px-3">
+    <i class="fas fa-cog me-1"></i>Process Payment
+</a>
+                                    <button class="btn btn-sm btn-outline-info rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#viewPayroll{{ p.id }}">
+                                        <i class="fas fa-eye"></i> View
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-center text-muted py-5">No approved payrolls waiting for payment.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Processed Payrolls (view only) -->
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-warning bg-opacity-10 border-0 pt-4 px-4">
+            <h5 class="fw-bold text-warning"><i class="fas fa-hourglass-half me-2"></i>Processed Payrolls – Awaiting Approval</h5>
+        </div>
+        <div class="card-body p-4">
+            {% if processed_payrolls %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle payroll-table" id="processedTable">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Period</th>
+                            <th>Pay Date</th>
+                            <th>Employees</th>
+                            <th class="text-end">Gross</th>
+                            <th class="text-end">Deductions</th>
+                            <th class="text-end">Net Pay</th>
+                            <th>Processed By</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in processed_payrolls %}
+                        <tr class="payroll-row" data-search="{{ p.id }} {{ p.period.start_date }} {{ p.period.end_date }}">
+                            <td>#{{ p.id }}</td>
+                            <td>{{ p.period.start_date.strftime('%d %b') }} – {{ p.period.end_date.strftime('%d %b %Y') }}</td>
+                            <td>{{ p.period.pay_date.strftime('%d %b %Y') }}</td>
+                            <td>{{ p.employee_count or p.payslips|length }}</td>
+                            <td class="text-end">KSh {{ "{:,.2f}".format(p.total_gross) }}</td>
+                            <td class="text-end">KSh {{ "{:,.2f}".format(p.total_deductions) }}</td>
+                            <td class="text-end fw-bold">KSh {{ "{:,.2f}".format(p.total_net) }}</td>
+                            <td>{{ p.processed_by_user.full_name if p.processed_by_user else '—' }}</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-info rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#viewPayroll{{ p.id }}">
+                                    <i class="fas fa-eye"></i> View
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-center text-muted py-5">No processed payrolls found.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+<!-- Paid Payrolls -->
+<div class="card border-0 shadow-sm rounded-4 mt-5">
+    <div class="card-header bg-gradient-secondary text-white p-4 rounded-4 mb-0" style="background: linear-gradient(135deg, #2c3e50 0%, #1e2a36 100%);">
+        <div class="d-flex align-items-center">
+            <i class="fas fa-history fa-2x me-3"></i>
+            <div>
+                <h4 class="mb-0 fw-bold">Paid Payrolls</h4>
+                <p class="text-white-80 mb-0">Complete payment history with employee details</p>
+            </div>
+        </div>
+    </div>
+    <div class="card-body p-4">
+        {% if paid_payrolls %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle" id="paidPayrollsTable">
+                <thead class="bg-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>Period</th>
+                        <th>Paid On</th>
+                        <th>Employees</th>
+                        <th class="text-end">Gross</th>
+                        <th class="text-end">Deductions</th>
+                        <th class="text-end">Net</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in paid_payrolls %}
+                    <tr>
+                        <td><span class="badge bg-secondary">#{{ p.id }}</span></td>
+                        <td>{{ p.period.start_date.strftime('%d %b %Y') }} – {{ p.period.end_date.strftime('%d %b %Y') }}</td>
+                        <td>{{ p.paid_at.strftime('%d %b %Y') if p.paid_at else '' }}</td>
+                        <td>{{ p.employee_count or p.payslips|length }}</td>
+                        <td class="text-end">KSh {{ "{:,.2f}".format(p.total_gross) }}</td>
+                        <td class="text-end">KSh {{ "{:,.2f}".format(p.total_deductions) }}</td>
+                        <td class="text-end fw-bold">KSh {{ "{:,.2f}".format(p.total_net) }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#paymentsModal{{ p.id }}">
+                                <i class="fas fa-credit-card me-1"></i> Payments
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#viewPayroll{{ p.id }}">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-receipt fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">No paid payrolls yet</h5>
+            <p class="text-muted">Completed payments will appear here.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Payment Details Modals (one per payroll) -->
+{% for p in paid_payrolls %}
+<div class="modal fade" id="paymentsModal{{ p.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title">Payroll #{{ p.id }} – Payment Breakdown</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Summary -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-3">
+                        <div class="bg-light rounded-3 p-3">
+                            <small class="text-muted">Employees</small>
+                            <h5 class="mb-0">{{ p.employee_count or p.payslips|length }}</h5>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="bg-light rounded-3 p-3">
+                            <small class="text-muted">Total Gross</small>
+                            <h5 class="mb-0">KSh {{ "{:,.2f}".format(p.total_gross) }}</h5>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="bg-light rounded-3 p-3">
+                            <small class="text-muted">Total Deductions</small>
+                            <h5 class="mb-0">KSh {{ "{:,.2f}".format(p.total_deductions) }}</h5>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="bg-light rounded-3 p-3">
+                            <small class="text-muted">Total Net</small>
+                            <h5 class="mb-0 text-success">KSh {{ "{:,.2f}".format(p.total_net) }}</h5>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Records Table -->
+                <h6 class="fw-bold mb-3">Payment Details</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover align-middle">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>Method</th>
+                                <th>Amount</th>
+                                <th>Reference</th>
+                                <th>Bank Account</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for pay in p.payments_list %}
+                            <tr>
+                                <td>
+                                    <span class="badge bg-{{ 'primary' if pay.payment_method.name == 'BANK_TRANSFER' else 'success' if pay.payment_method.name == 'M_PESA' else 'warning' if pay.payment_method.name == 'CASH' else 'info' }} px-3 py-2">
+                                        {{ pay.payment_method.value }}
+                                    </span>
+                                </td>
+                                <td class="text-end fw-bold">KSh {{ "{:,.2f}".format(pay.amount) }}</td>
+                                <td><code>{{ pay.reference or '—' }}</code></td>
+                                <td>
+                                    {% if pay.bank_account %}
+                                        {{ pay.bank_account.bank_name }}<br>
+                                        <small class="text-muted">{{ pay.bank_account.account_number }}</small>
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                </td>
+                                <td>{{ pay.transaction_date.strftime('%d %b %Y %H:%M') }}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#employeesModal{{ pay.id }}">
+                                        <i class="fas fa-users me-1"></i> Employees
+                                    </button>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="6" class="text-center text-muted py-3">No payment records found.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Employee List Modals (one per payment) -->
+{% for pay in p.payments_list %}
+<div class="modal fade" id="employeesModal{{ pay.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">Employees Paid via {{ pay.payment_method.value }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Staff No.</th>
+                                <th class="text-end">Net Pay</th>
+                                <th>Bank Details</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for emp in p.method_employees[pay.payment_method.name] %}
+                            <tr>
+                                <td>{{ emp.name }}</td>
+                                <td>{{ emp.staff_no or 'N/A' }}</td>
+                                <td class="text-end">KSh {{ "{:,.2f}".format(emp.net) }}</td>
+                                <td>
+                                    {% if emp.bank and emp.account %}
+                                        {{ emp.bank }} ({{ emp.account }})
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="4" class="text-center text-muted py-3">No employees recorded for this method.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endfor %}
+<!-- Modals for payroll details -->
+{% for p in approved_payrolls + processed_payrolls + paid_payrolls %}
+<!-- Main Payroll Modal -->
+<div class="modal fade" id="viewPayroll{{ p.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title">Payroll #{{ p.id }} – {{ p.period.start_date.strftime('%d %b %Y') }} to {{ p.period.end_date.strftime('%d %b %Y') }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <p><strong>Status:</strong> 
+                            <span class="badge bg-{{ 'success' if p.status == 'Approved' else 'warning' }}">{{ p.status }}</span>
+                        </p>
+                        <p><strong>Pay Date:</strong> {{ p.period.pay_date.strftime('%d %b %Y') }}</p>
+                        <p><strong>Employees:</strong> {{ p.employee_count or p.payslips|length }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Total Gross:</strong> KSh {{ "{:,.2f}".format(p.total_gross) }}</p>
+                        <p><strong>Total Deductions:</strong> KSh {{ "{:,.2f}".format(p.total_deductions) }}</p>
+                        <p><strong>Total Net:</strong> KSh {{ "{:,.2f}".format(p.total_net) }}</p>
+                    </div>
+                </div>
+                <hr>
+                <h6>Payslip Breakdown</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>Employee</th>
+                                <th>Gross</th>
+                                <th>Deductions</th>
+                                <th>Net</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for slip in p.payslips %}
+                            <tr>
+                                <td>{{ slip.employee.full_name }}</td>
+                                <td class="text-end">KSh {{ "{:,.2f}".format(slip.gross_earnings) }}</td>
+                                <td class="text-end">KSh {{ "{:,.2f}".format(slip.total_deductions) }}</td>
+                                <td class="text-end">KSh {{ "{:,.2f}".format(slip.net_pay) }}</td>
+                                <td><span class="badge bg-{{ 'success' if slip.is_paid else 'secondary' }}">{{ 'Paid' if slip.is_paid else 'Pending' }}</span></td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#viewPayslip{{ slip.id }}">
+                                        <i class="fas fa-eye"></i> Details
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Payslip Detail Modals (one per payslip) -->
+{% for slip in p.payslips %}
+<div class="modal fade" id="viewPayslip{{ slip.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">Payslip – {{ slip.employee.full_name }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Employee:</strong> {{ slip.employee.full_name }}</p>
+                        <p><strong>Staff No:</strong> {{ slip.employee.payroll_info.staff_no if slip.employee.payroll_info else 'N/A' }}</p>
+                        <p><strong>Payment Method:</strong> {{ slip.payment_method.value }}</p>
+                        {% if slip.payment_method.name == 'BANK_TRANSFER' and slip.employee.payroll_info %}
+                        <p><strong>Bank:</strong> {{ slip.employee.payroll_info.bank_name }} ({{ slip.employee.payroll_info.bank_account }})</p>
+                        {% elif slip.payment_method.name == 'M_PESA' and slip.employee.payroll_info %}
+                        <p><strong>M‑PESA:</strong> {{ slip.employee.payroll_info.mpesa_number }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Period:</strong> {{ p.period.start_date.strftime('%d %b %Y') }} – {{ p.period.end_date.strftime('%d %b %Y') }}</p>
+                        <p><strong>Pay Date:</strong> {{ p.period.pay_date.strftime('%d %b %Y') }}</p>
+                        <p><strong>Basic Salary:</strong> KSh {{ "{:,.2f}".format(slip.basic_salary) }}</p>
+                    </div>
+                </div>
+
+                <hr>
+                <h6>Earnings</h6>
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Description</th>
+                            <th class="text-end">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for e in slip.earnings %}
+                        <tr>
+                            <td>{{ e.earning_type.name }}</td>
+                            <td>{{ e.description or '' }}</td>
+                            <td class="text-end">KSh {{ "{:,.2f}".format(e.amount) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <th colspan="2" class="text-end">Total Earnings</th>
+                            <th class="text-end">KSh {{ "{:,.2f}".format(slip.gross_earnings) }}</th>
+                        </tr>
+                    </tfoot>
+                </table>
+
+                <h6 class="mt-3">Deductions</h6>
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Description</th>
+                            <th class="text-end">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for d in slip.deductions %}
+                        <tr>
+                            <td>{{ d.deduction_type.name }}</td>
+                            <td>{{ d.description or '' }}</td>
+                            <td class="text-end">KSh {{ "{:,.2f}".format(d.amount) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <th colspan="2" class="text-end">Total Deductions</th>
+                            <th class="text-end">KSh {{ "{:,.2f}".format(slip.total_deductions) }}</th>
+                        </tr>
+                    </tfoot>
+                </table>
+
+                <hr>
+                <div class="row">
+                    <div class="col-md-6 offset-md-6">
+                        <table class="table table-sm">
+                            <tr>
+                                <th>Gross Earnings</th>
+                                <td class="text-end">KSh {{ "{:,.2f}".format(slip.gross_earnings) }}</td>
+                            </tr>
+                            <tr>
+                                <th>Total Deductions</th>
+                                <td class="text-end">KSh {{ "{:,.2f}".format(slip.total_deductions) }}</td>
+                            </tr>
+                            <tr class="fw-bold">
+                                <th>Net Pay</th>
+                                <td class="text-end">KSh {{ "{:,.2f}".format(slip.net_pay) }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endfor %}
+
+<!-- Search Script -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('payrollSearch');
+    const tables = document.querySelectorAll('.payroll-table');
+
+    searchInput.addEventListener('keyup', function() {
+        const value = this.value.toLowerCase();
+        tables.forEach(table => {
+            const rows = table.querySelectorAll('.payroll-row');
+            rows.forEach(row => {
+                const searchText = row.getAttribute('data-search') || '';
+                row.style.display = searchText.includes(value) ? '' : 'none';
+            });
+        });
+    });
+});
+
+$(document).ready(function() {
+    $('#paidPayrollsTable').DataTable({
+        order: [[2, 'desc']],  // sort by paid date desc
+        pageLength: 10,
+        lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "All"]],
+        columnDefs: [
+            { type: 'num', targets: [4,5,6] }
+        ]
+    });
+});
+</script>
+
+<!-- Custom CSS -->
+<style>
+    .bg-gradient-success {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    }
+    .text-white-80 {
+        color: rgba(255,255,255,0.8);
+    }
+    .icon-circle {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .hover-lift {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hover-lift:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.75rem 1.5rem rgba(0,0,0,0.1) !important;
+    }
+    .badge {
+        font-weight: 500;
+        padding: 0.5em 0.8em;
+    }
+    .payroll-table th {
+        white-space: nowrap;
+    }
+</style>
+{% endblock %}

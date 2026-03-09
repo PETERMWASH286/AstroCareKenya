@@ -167,8 +167,19 @@ class DoctorPayment(db.Model):
     paid_by = db.Column(db.Integer, db.ForeignKey('user.id'))
     status = db.Column(db.String(20), default='completed')  # 'pending', 'completed', 'failed'
     
+    # NEW: Account tracking
+    account_type = db.Column(db.String(20), nullable=True)  # 'bank' or 'cash'
+    account_id = db.Column(db.Integer, nullable=True)  # ID of the bank or cash account
+    bank_transaction_id = db.Column(db.Integer, db.ForeignKey('bank_transactions.id'), nullable=True)
+    cash_transaction_id = db.Column(db.Integer, db.ForeignKey('cash_transactions.id'), nullable=True)
+
     # Relationships
     paid_by_user = db.relationship('User', foreign_keys=[paid_by])
+    # Relationship to assignment (already exists via backref)
+    bank_transaction = db.relationship('BankTransaction', foreign_keys=[bank_transaction_id])
+    cash_transaction = db.relationship('CashTransaction', foreign_keys=[cash_transaction_id])
+    
+    
 class Transaction(db.Model):
     __tablename__ = 'transactions'
     __audit_trail__ = True  # Enable auditing
@@ -548,7 +559,9 @@ class Medication(db.Model):
 
     # The above check constraint requires that either consultation_id is NOT NULL and visit_id IS NULL,
     # OR consultation_id IS NULL and visit_id IS NOT NULL. This ensures a medication always belongs to one path.
-
+    # ✅ Add standard timestamp columns
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 # In LabTest model
 class LabTest(db.Model):
@@ -569,12 +582,20 @@ class LabTest(db.Model):
     notes = db.Column(db.Text)
     doctor_signature = db.Column(db.Text)
     interpretation = db.Column(db.Text)
+    
+        # ✅ Add price column
+    price = db.Column(db.Float, nullable=False, default=0.0)
     is_paid = db.Column(db.Boolean, default=False)  # Added
     payment_status = db.Column(db.String(20), default='pending')  # Added
     verified_by = db.Column(db.Integer, db.ForeignKey('user.id'))  # Fixed table name
     verified_at = db.Column(db.DateTime)
     requested_at = db.Column(db.DateTime, default=datetime.utcnow)
     completed_at = db.Column(db.DateTime)
+    
+    
+    # ✅ Add standard timestamp columns
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # ───────── Done By ─────────
     done_by_id      = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
@@ -614,7 +635,8 @@ class Radiology(db.Model):
     thumbnails = db.Column(db.Text)    # comma-separated PNG thumbnail names
     interpretation = db.Column(db.Text)
     doctor_signature = db.Column(db.Text)
-
+    # ✅ Add price column
+    price = db.Column(db.Float, nullable=False, default=0.0)
     is_paid = db.Column(db.Boolean, default=False)  # Added
     payment_status = db.Column(db.String(20), default='pending')  # Added
     requested_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -628,7 +650,9 @@ class Radiology(db.Model):
     results_data = db.Column(MutableDict.as_mutable(db.JSON))
     verified_by = db.Column(db.Integer, db.ForeignKey('user.id'))  # Ensure this line exists
     verified_at = db.Column(db.DateTime)
-    
+    # ✅ Add standard timestamp columns
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # ───────── Done By ─────────
     done_by_id      = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)

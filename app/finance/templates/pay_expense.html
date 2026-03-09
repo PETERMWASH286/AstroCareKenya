@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block title %}Pay Expense #{{ expense.id }}{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Confirm Expense Payment</h1>
+        <p class="mt-2 text-gray-600 dark:text-gray-400">You are about to pay expense <strong>#{{ expense.id }}</strong>. Please review the details and provide payment information.</p>
+    </div>
+
+    <!-- Expense Summary Card -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden mb-6">
+        <div class="px-6 py-4 bg-gray-50 dark:bg-gray-750 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-lg font-semibold text-gray-800 dark:text-white">Expense Summary</h2>
+        </div>
+        <div class="p-6">
+            <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                <div>
+                    <dt class="text-sm text-gray-500 dark:text-gray-400">Description</dt>
+                    <dd class="mt-1 text-base font-medium text-gray-900 dark:text-white">{{ expense.description }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm text-gray-500 dark:text-gray-400">Amount (incl. tax)</dt>
+                    <dd class="mt-1 text-2xl font-bold text-blue-600 dark:text-blue-400">{{ expense.currency }} {{ "{:,.2f}".format(expense.amount + expense.tax_amount) }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm text-gray-500 dark:text-gray-400">Category</dt>
+                    <dd class="mt-1 text-base text-gray-900 dark:text-white">{{ expense.category.name }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm text-gray-500 dark:text-gray-400">Department</dt>
+                    <dd class="mt-1 text-base text-gray-900 dark:text-white">{{ expense.department.name }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm text-gray-500 dark:text-gray-400">Payment Method</dt>
+                    <dd class="mt-1 text-base text-gray-900 dark:text-white">{{ expense.payment_method }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm text-gray-500 dark:text-gray-400">Account</dt>
+                    <dd class="mt-1 text-base font-medium text-gray-900 dark:text-white">
+                        {% if expense.account_type == 'bank' %}
+                            {{ account.bank_name }} – {{ account.account_number }}
+                        {% elif expense.account_type == 'cash' %}
+                            {{ account.name }} ({{ account.account_type|title }})
+                        {% endif %}
+                    </dd>
+                    <dd class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        Balance: {{ expense.currency }} {{ "{:,.2f}".format(account.current_balance) }}
+                    </dd>
+                </div>
+            </dl>
+        </div>
+    </div>
+
+    <!-- Payment Form -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div class="px-6 py-4 bg-gray-50 dark:bg-gray-750 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-lg font-semibold text-gray-800 dark:text-white">Payment Details</h2>
+        </div>
+        <form method="POST" class="p-6">
+            <div class="space-y-5">
+                <!-- Supplier Receipt Number -->
+                <div>
+                    <label for="supplier_receipt" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Supplier Receipt Number</label>
+                    <input type="text" id="supplier_receipt" name="supplier_receipt"
+                           value="{{ expense.receipt_number or '' }}"
+                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                           placeholder="e.g., INV-12345 from supplier">
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">The receipt number you received from the supplier.</p>
+                </div>
+
+                <!-- Payment Reference (internal) -->
+                <div>
+                    <label for="payment_ref" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Payment Reference (optional)</label>
+                    <input type="text" id="payment_ref" name="payment_ref"
+                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                           placeholder="e.g., bank transfer ref, cheque number">
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Your internal reference (bank transaction ID, cheque number, etc.)</p>
+                </div>
+
+                <!-- Additional Notes -->
+                <div>
+                    <label for="notes" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Additional Notes</label>
+                    <textarea id="notes" name="notes" rows="3"
+                              class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                              placeholder="Any extra information about this payment">{{ expense.notes or '' }}</textarea>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="mt-8 flex justify-end space-x-3">
+                <a href="{{ url_for('finance_web_bp.expenses') }}" 
+                   class="px-5 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    Cancel
+                </a>
+                <button type="submit" 
+                        class="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+                    <i class="fas fa-check mr-2"></i>Confirm Payment
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Insufficient Balance Warning (if any) -->
+    {% if account and account.current_balance < expense.amount %}
+    <div class="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <i class="fas fa-exclamation-triangle text-red-600 dark:text-red-400"></i>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-sm font-medium text-red-800 dark:text-red-200">Insufficient Balance</h3>
+                <p class="mt-1 text-sm text-red-700 dark:text-red-300">
+                    The selected account does not have enough funds to cover this expense. 
+                    Current balance: {{ expense.currency }} {{ "{:,.2f}".format(account.current_balance) }}
+                </p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

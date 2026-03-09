@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Offer - {{ offer.offer_title }} | AstroCare</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            padding: 20px 0;
+        }
+        
+        .offer-container {
+            max-width: 800px;
+            margin: 0 auto;
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .offer-header {
+            background: white;
+            border-radius: 15px 15px 0 0;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .offer-logo {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+        }
+        
+        .offer-logo i {
+            font-size: 32px;
+            color: white;
+        }
+        
+        .offer-body {
+            background: #f8f9fa;
+            padding: 40px;
+            border-radius: 0 0 15px 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .offer-card {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            border-left: 4px solid #667eea;
+        }
+        
+        .deadline-alert {
+            background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
+            border: none;
+            color: #333;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .btn-accept {
+            background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
+            border: none;
+            padding: 15px 40px;
+            font-size: 18px;
+            font-weight: 600;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .btn-accept:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(76, 175, 80, 0.3);
+        }
+        
+        .btn-reject {
+            background: linear-gradient(135deg, #f44336 0%, #c62828 100%);
+            border: none;
+            padding: 15px 40px;
+            font-size: 18px;
+            font-weight: 600;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .btn-reject:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(244, 67, 54, 0.3);
+        }
+        
+        .info-row {
+            border-bottom: 1px solid #eee;
+            padding: 15px 0;
+        }
+        
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        
+        .salary-highlight {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .modal-content {
+            border-radius: 15px;
+            border: none;
+        }
+        
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px 15px 0 0;
+        }
+        
+        .rejection-form {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        
+        .countdown-timer {
+            font-size: 32px;
+            font-weight: bold;
+            color: #f44336;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        @media print {
+            body {
+                background: white !important;
+            }
+            .offer-header, .offer-body {
+                box-shadow: none !important;
+                border: 1px solid #ddd;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="offer-container">
+        <!-- Header -->
+        <div class="offer-header">
+            <div class="offer-logo">
+                <i class="fas fa-briefcase"></i>
+            </div>
+            <h1 class="mb-3">Job Offer</h1>
+            <p class="lead text-muted mb-0">From AstroCare HR</p>
+        </div>
+        
+        <!-- Body -->
+        <div class="offer-body">
+            {% if days_remaining is not none and days_remaining <= 0 %}
+                <div class="alert alert-danger text-center">
+                    <h4><i class="fas fa-exclamation-triangle me-2"></i>This offer has expired</h4>
+                    <p class="mb-0">The offer period ended {{ -days_remaining }} days ago.</p>
+                </div>
+            {% else %}
+                <!-- Deadline Alert -->
+                {% if days_remaining is not none %}
+                <div class="deadline-alert">
+                    <div class="d-flex align-items-center">
+                        <div class="me-3">
+                            <i class="fas fa-clock fa-2x"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-1">Offer Expires Soon!</h5>
+                            <p class="mb-0">
+                                You have <strong>{{ days_remaining }} day{{ 's' if days_remaining != 1 else '' }}</strong> 
+                                to respond to this offer.
+                            </p>
+                            <div class="countdown-timer">
+                                {{ days_remaining }} DAY{{ 'S' if days_remaining != 1 else '' }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Candidate Info -->
+                <div class="offer-card mb-4">
+                    <h4 class="mb-4">
+                        <i class="fas fa-user-circle me-2 text-primary"></i>
+                        For: {{ offer.candidate.full_name }}
+                    </h4>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="info-row">
+                                <small class="text-muted">Position</small>
+                                <h5 class="mb-0">{{ offer.position }}</h5>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-row">
+                                <small class="text-muted">Start Date</small>
+                                <h5 class="mb-0">{{ offer.start_date.strftime('%B %d, %Y') }}</h5>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-row">
+                                <small class="text-muted">Department</small>
+                                <h5 class="mb-0">{{ offer.department.name if offer.department else 'To be assigned' }}</h5>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-row">
+                                <small class="text-muted">Employment Type</small>
+                                <h5 class="mb-0">{{ offer.employment_type }}</h5>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Compensation Package -->
+                <div class="offer-card mb-4">
+                    <h4 class="mb-4">
+                        <i class="fas fa-money-bill-wave me-2 text-success"></i>
+                        Compensation Package
+                    </h4>
+                    
+                    <div class="salary-highlight">
+                        <h3 class="mb-2">Total Monthly Compensation</h3>
+                        <h1 class="display-4 mb-0">{{ offer.currency }} {{ "{:,.2f}".format(offer.total_compensation) }}</h1>
+                        <p class="mb-0">per month</p>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table">
+                            <tbody>
+                                <tr>
+                                    <td><strong>Base Salary</strong></td>
+                                    <td class="text-end">{{ offer.currency }} {{ "{:,.2f}".format(offer.base_salary) }} / month</td>
+                                </tr>
+                                {% if offer.bonus > 0 %}
+                                <tr>
+                                    <td><strong>Performance Bonus</strong></td>
+                                    <td class="text-end">{{ offer.currency }} {{ "{:,.2f}".format(offer.bonus) }} / year</td>
+                                </tr>
+                                {% endif %}
+                                {% if offer.allowances > 0 %}
+                                <tr>
+                                    <td><strong>Allowances</strong></td>
+                                    <td class="text-end">{{ offer.currency }} {{ "{:,.2f}".format(offer.allowances) }} / month</td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="text-center mt-3">
+                        <small class="text-muted">
+                            Total Annual Compensation: {{ offer.currency }} {{ "{:,.2f}".format(offer.total_compensation * 12) }}
+                        </small>
+                    </div>
+                </div>
+                
+                <!-- Contract Details -->
+                <div class="offer-card mb-4">
+                    <h4 class="mb-4">
+                        <i class="fas fa-file-contract me-2 text-info"></i>
+                        Contract Details
+                    </h4>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="info-row">
+                                <small class="text-muted">Probation Period</small>
+                                <h5 class="mb-0">{{ offer.probation_period_months }} months</h5>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-row">
+                                <small class="text-muted">Reporting To</small>
+                                <h5 class="mb-0">{{ offer.reporting_to or 'To be assigned' }}</h5>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-row">
+                                <small class="text-muted">Work Location</small>
+                                <h5 class="mb-0">{{ offer.work_location or 'To be assigned' }}</h5>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-row">
+                                <small class="text-muted">Offer ID</small>
+                                <h5 class="mb-0">#{{ offer.id }}</h5>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if offer.benefits %}
+                    <div class="mt-4">
+                        <h5><i class="fas fa-gift me-2 text-warning"></i>Benefits & Perks</h5>
+                        <div class="mt-2 p-3 bg-light rounded">
+                            {{ offer.benefits|safe|replace('\n', '<br>') }}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="text-center mt-5 no-print">
+                    <h4 class="mb-4">What would you like to do?</h4>
+                    <div class="d-grid gap-3 d-md-flex justify-content-md-center">
+                        <button type="button" class="btn btn-accept btn-lg" data-bs-toggle="modal" data-bs-target="#acceptModal">
+                            <i class="fas fa-check-circle me-2"></i>Accept Offer
+                        </button>
+                        
+                        <button type="button" class="btn btn-reject btn-lg" data-bs-toggle="modal" data-bs-target="#rejectModal">
+                            <i class="fas fa-times-circle me-2"></i>Decline Offer
+                        </button>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <button onclick="window.print()" class="btn btn-outline-secondary">
+                            <i class="fas fa-print me-2"></i>Print Offer
+                        </button>
+<!-- Replace line 342 in accept_offer.html with this: -->
+{% if offer.offer_document_path %}
+<a href="{{ url_for('static', filename=offer.offer_document_path) }}" target="_blank" 
+   class="btn btn-outline-primary ms-2">
+    <i class="fas fa-file-pdf me-2"></i>Download PDF
+</a>
+{% else %}
+<button class="btn btn-outline-primary ms-2" disabled>
+    <i class="fas fa-file-pdf me-2"></i>PDF Not Available
+</button>
+{% endif %}
+                    </div>
+                </div>
+            {% endif %}
+            
+            <!-- Footer -->
+            <div class="mt-5 pt-4 border-top text-center text-muted">
+                <p class="mb-1">AstroCare HR Department</p>
+                <p class="small mb-0">
+                    Need help? Contact HR at hr@astrocare.com or call +254 700 000 000
+                </p>
+                <p class="small mt-2">
+                    Offer ID: #{{ offer.id }} | Generated: {{ offer.created_at.strftime('%B %d, %Y') }}
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Accept Offer Modal -->
+    <div class="modal fade" id="acceptModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-check-circle me-2"></i>Accept Offer
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST">
+                    <div class="modal-body">
+                        <div class="text-center mb-4">
+                            <i class="fas fa-party-horn fa-4x text-success mb-3"></i>
+                            <h4>Congratulations!</h4>
+                            <p>Are you sure you want to accept this job offer?</p>
+                        </div>
+                        
+                        <div class="alert alert-success">
+                            <h6><i class="fas fa-info-circle me-2"></i>What happens next:</h6>
+                            <ul class="mb-0 ps-3">
+                                <li>Our HR team will contact you within 48 hours</li>
+                                <li>You'll receive onboarding documents</li>
+                                <li>Your start date is {{ offer.start_date.strftime('%B %d, %Y') }}</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="form-check mt-3">
+                            <input class="form-check-input" type="checkbox" id="confirmTerms" required>
+                            <label class="form-check-label" for="confirmTerms">
+                                I have read and agree to the terms of this offer
+                            </label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" name="action" value="accept" class="btn btn-success">
+                            Yes, Accept Offer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Reject Offer Modal -->
+    <div class="modal fade" id="rejectModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-times-circle me-2"></i>Decline Offer
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST">
+                    <div class="modal-body">
+                        <div class="text-center mb-4">
+                            <i class="fas fa-sad-tear fa-4x text-danger mb-3"></i>
+                            <h4>We're sorry to see you go</h4>
+                            <p>Please let us know why you're declining this offer (optional):</p>
+                        </div>
+                        
+                        <div class="rejection-form">
+                            <div class="mb-3">
+                                <label for="rejectionReason" class="form-label">Reason for declining:</label>
+                                <select class="form-select" id="rejectionReason" name="reason">
+                                    <option value="" selected>Select a reason...</option>
+                                    <option value="Accepted another offer">Accepted another job offer</option>
+                                    <option value="Salary expectations">Salary doesn't meet expectations</option>
+                                    <option value="Location">Location doesn't work for me</option>
+                                    <option value="Career path">Not aligned with career goals</option>
+                                    <option value="Personal reasons">Personal reasons</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="additionalComments" class="form-label">Additional comments:</label>
+                                <textarea class="form-control" id="additionalComments" name="comments" 
+                                          rows="3" placeholder="Any feedback you'd like to share..."></textarea>
+                            </div>
+                            
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="futureConsideration" name="future_consideration" value="true">
+                                <label class="form-check-label" for="futureConsideration">
+                                    Keep me in mind for future opportunities
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" name="action" value="reject" class="btn btn-danger">
+                            Decline Offer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Handle form submission
+        document.querySelectorAll('form').forEach(form => {
+            form.addEventListener('submit', function(e) {
+                const action = new FormData(this).get('action');
+                if (action === 'reject') {
+                    if (!confirm('Are you sure you want to decline this offer?')) {
+                        e.preventDefault();
+                    }
+                }
+            });
+        });
+        
+        // Update countdown timer
+        function updateCountdown() {
+            const days = {{ days_remaining if days_remaining is not none else 0 }};
+            if (days > 0) {
+                const countdownElement = document.querySelector('.countdown-timer');
+                if (countdownElement) {
+                    countdownElement.textContent = `${days} DAY${days !== 1 ? 'S' : ''}`;
+                    
+                    // Change color based on days remaining
+                    if (days <= 3) {
+                        countdownElement.style.color = '#f44336';
+                        countdownElement.classList.add('animate__pulse');
+                    } else if (days <= 7) {
+                        countdownElement.style.color = '#ff9800';
+                    } else {
+                        countdownElement.style.color = '#4CAF50';
+                    }
+                }
+            }
+        }
+        
+        // Initialize tooltips
+        document.addEventListener('DOMContentLoaded', function() {
+            updateCountdown();
+            
+            // Update every hour
+            setInterval(updateCountdown, 3600000);
+            
+            // Auto-focus on first modal input when opened
+            const acceptModal = document.getElementById('acceptModal');
+            const rejectModal = document.getElementById('rejectModal');
+            
+            if (acceptModal) {
+                acceptModal.addEventListener('shown.bs.modal', function() {
+                    document.getElementById('confirmTerms').focus();
+                });
+            }
+            
+            if (rejectModal) {
+                rejectModal.addEventListener('shown.bs.modal', function() {
+                    document.getElementById('rejectionReason').focus();
+                });
+            }
+        });
+    </script>
+</body>
+</html>

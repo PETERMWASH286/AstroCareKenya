@@ -82,14 +82,48 @@ class LabInventory(db.Model):
     item_name = db.Column(db.String(100), nullable=False)
     category = db.Column(db.String(50), nullable=False)  # Reagent, Consumable, Equipment
     quantity = db.Column(db.Integer, default=0)
-    low_stock_threshold = db.Column(db.Integer, default=5)
+    unit = db.Column(db.String(20), default='piece')     # mL, test, box, etc.
     expiry_date = db.Column(db.Date)
     supplier = db.Column(db.String(100))
+
+    # New fields
+    buying_price = db.Column(db.Float, nullable=False, default=0.0)
+    selling_price = db.Column(db.Float, nullable=True)
+    reorder_level = db.Column(db.Integer, default=5)
+    low_stock_threshold = db.Column(db.Integer, default=5)
+    manufacturer = db.Column(db.String(100))
+    batch_number = db.Column(db.String(50))
+    location = db.Column(db.String(100))
+    storage_conditions = db.Column(db.String(100))       # e.g., "2-8°C", "Room temp"
+
+    # Link to Service
+    service_id = db.Column(db.Integer, db.ForeignKey('services.id'), nullable=True)
+    service = db.relationship('Service', backref='lab_items')
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    def __repr__(self):
+        return f'<LabInventory {self.item_name} (qty: {self.quantity})>'
 
+    @property
+    def current_value(self):
+        return self.quantity * self.buying_price
+
+    @property
+    def is_low_stock(self):
+        return self.quantity <= self.low_stock_threshold
+    
+    
+    @property
+    def valuation_at_cost(self):
+        """Total cost value (buying price × quantity)"""
+        return (self.quantity or 0) * (self.buying_price or 0)
+
+    @property
+    def valuation_at_selling_price(self):
+        """Total potential revenue (selling price × quantity)"""
+        return (self.quantity or 0) * (self.selling_price or 0)
 # Equipment model
 class LabEquipment(db.Model):
     __tablename__ = 'lab_equipments'

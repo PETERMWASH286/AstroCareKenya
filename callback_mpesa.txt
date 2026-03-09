@@ -1,4 +1,4 @@
-curl -X POST http://uzalendo.localhost:5000/patients/mpesa-callback \
+curl -X POST http://localhost:5000/patients/mpesa-callback \
 -H "Content-Type: application/json" \
 -d '{
   "Body": {
@@ -11,7 +11,7 @@ curl -X POST http://uzalendo.localhost:5000/patients/mpesa-callback \
         "Item": [
           {
             "Name": "Amount",
-            "Value": 3900
+            "Value": 100
           },
           {
             "Name": "MpesaReceiptNumber",
@@ -49,3 +49,9 @@ curl -g -X POST "http://localhost:5000/patients/mpesa-callback" ^
      -H "Content-Type: application/json" ^
      -d @payload.json
 
+
+
+
+curl.exe -X POST http://localhost:5000/patients/mpesa-callback `
+-H "Content-Type: application/json" `
+-d "@callback.json"

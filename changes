@@ -43,3 +43,12 @@ def create_default_earning_types():
     
     db.session.commit()
     print("Default earning types created.")
+    
+    
+    
+    
+INSERT INTO deduction_types
+(name, code, description, is_statutory, is_voluntary, created_at)
+VALUES
+('Loan Repayment', 'LOAN_REPAYMENT', 'Loan repayment deduction', false, true, NOW())
+ON DUPLICATE KEY UPDATE code = code;

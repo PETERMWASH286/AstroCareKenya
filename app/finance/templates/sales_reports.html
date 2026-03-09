@@ -1,0 +1,376 @@
+{% extends "base.html" %}
+
+{% block title %}Sales Reports{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="display-6 fw-bold text-gradient">Sales Reports</h1>
+            <p class="text-muted">Comprehensive view of sales, filtered by date, department, and cashier</p>
+        </div>
+        <div class="btn-group shadow-sm">
+            <button class="btn btn-outline-secondary" onclick="window.print()">
+                <i class="fas fa-print me-2"></i>Print
+            </button>
+            <a href="" class="btn btn-success">
+                <i class="fas fa-download me-2"></i>Export
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter Card with Auto-apply -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-light">
+        <div class="card-body p-4">
+            <h6 class="text-uppercase text-primary fw-bold mb-3">
+                <i class="fas fa-sliders-h me-2"></i>Filter Reports
+            </h6>
+            <form id="filterForm" method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">From</label>
+                    <input type="date" class="form-control form-control-lg rounded-3" name="start_date" value="{{ start_date }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">To</label>
+                    <input type="date" class="form-control form-control-lg rounded-3" name="end_date" value="{{ end_date }}">
+                </div>
+                <div class="col-md-3">
+    <label class="form-label fw-semibold">Patient Category</label>
+    <select class="form-select form-select-lg rounded-3" name="patient_category">
+        <option value="">All Categories</option>
+        {% for cat in distinct_categories %}
+        <option value="{{ cat }}" {% if cat == selected_patient_category %}selected{% endif %}>{{ cat|title }}</option>
+        {% endfor %}
+    </select>
+</div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Department</label>
+                    <select class="form-select form-select-lg rounded-3" name="department">
+                        <option value="">All Departments</option>
+                        {% for dept in all_departments %}
+                        <option value="{{ dept }}" {% if dept == selected_department %}selected{% endif %}>{{ dept }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Cashier</label>
+                    <select class="form-select form-select-lg rounded-3" name="served_by">
+                        <option value="">All Cashiers</option>
+                        {% for cashier in distinct_cashiers %}
+                        <option value="{{ cashier }}" {% if cashier == served_by_filter %}selected{% endif %}>{{ cashier }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <!-- No submit button – auto‑apply via JavaScript -->
+            </form>
+            <div class="text-end mt-3">
+                <a href="{{ url_for('finance_web_bp.sales_reports') }}" class="btn btn-outline-secondary rounded-3">
+                    <i class="fas fa-undo me-2"></i>Reset
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-4 mb-5">
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-primary mb-1">Total Sales</p>
+                            <h2 class="mb-0 fw-bold">KSh {{ "{:,.2f}".format(grand_total) }}</h2>
+                        </div>
+                        <div class="icon-circle bg-primary bg-opacity-10">
+                            <i class="fas fa-dollar-sign text-primary fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-success mb-1">Pharmacy Profit</p>
+                            <h2 class="mb-0 fw-bold">KSh {{ "{:,.2f}".format(total_profit) }}</h2>
+                        </div>
+                        <div class="icon-circle bg-success bg-opacity-10">
+                            <i class="fas fa-chart-line text-success fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-info mb-1">Transactions</p>
+                            <h2 class="mb-0 fw-bold">{{ reports|length }}</h2>
+                        </div>
+                        <div class="icon-circle bg-info bg-opacity-10">
+                            <i class="fas fa-receipt text-info fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-warning mb-1">Items Sold</p>
+                            <h2 class="mb-0 fw-bold">{{ items|length }}</h2>
+                        </div>
+                        <div class="icon-circle bg-warning bg-opacity-10">
+                            <i class="fas fa-boxes text-warning fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+<!-- Category Summary Cards -->
+<div class="row g-4 mb-5">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <p class="text-uppercase small fw-bold text-info mb-1">General Patients</p>
+                        <h3 class="mb-0 fw-bold">KSh {{ "{:,.2f}".format(category_totals.get('general', {}).get('total', 0)) }}</h3>
+                        <small class="text-muted">{{ category_totals.get('general', {}).get('count', 0) }} items</small>
+                    </div>
+                    <div class="icon-circle bg-info bg-opacity-10">
+                        <i class="fas fa-user text-info fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <p class="text-uppercase small fw-bold text-warning mb-1">Walk‑in Patients</p>
+                        <h3 class="mb-0 fw-bold">KSh {{ "{:,.2f}".format(category_totals.get('walkin', {}).get('total', 0)) }}</h3>
+                        <small class="text-muted">{{ category_totals.get('walkin', {}).get('count', 0) }} items</small>
+                    </div>
+                    <div class="icon-circle bg-warning bg-opacity-10">
+                        <i class="fas fa-walking text-warning fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <p class="text-uppercase small fw-bold text-success mb-1">Special Clinic</p>
+                        <h3 class="mb-0 fw-bold">KSh {{ "{:,.2f}".format(category_totals.get('special_clinic', {}).get('total', 0)) }}</h3>
+                        <small class="text-muted">{{ category_totals.get('special_clinic', {}).get('count', 0) }} items</small>
+                    </div>
+                    <div class="icon-circle bg-success bg-opacity-10">
+                        <i class="fas fa-star text-success fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+    <!-- Department Breakdown & Pharmacy Profit -->
+    <div class="row g-4 mb-5">
+<div class="col-lg-12">
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+            <h6 class="text-uppercase fw-bold text-primary"><i class="fas fa-chart-pie me-2"></i>Sales by Department & Patient Category</h6>
+        </div>
+        <div class="card-body p-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Department</th>
+                            <th class="text-end">General</th>
+                            <th class="text-end">Walk‑in</th>
+                            <th class="text-end">Special Clinic</th>
+                            <th class="text-end">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for dept, cat_data in dept_category_matrix.items() %}
+                        <tr>
+                            <td class="fw-semibold">{{ dept }}</td>
+                            <td class="text-end">{{ "{:,.2f}".format(cat_data.get('general', {}).get('total', 0)) }}</td>
+                            <td class="text-end">{{ "{:,.2f}".format(cat_data.get('walkin', {}).get('total', 0)) }}</td>
+                            <td class="text-end">{{ "{:,.2f}".format(cat_data.get('special_clinic', {}).get('total', 0)) }}</td>
+                            <td class="text-end fw-bold">{{ "{:,.2f}".format(dept_totals[dept].total) }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="5" class="text-center text-muted py-4">No data for selected period</td></tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot class="bg-light">
+                        <tr>
+                            <th>Total</th>
+                            <th class="text-end">{{ "{:,.2f}".format(category_totals.get('general', {}).get('total', 0)) }}</th>
+                            <th class="text-end">{{ "{:,.2f}".format(category_totals.get('walkin', {}).get('total', 0)) }}</th>
+                            <th class="text-end">{{ "{:,.2f}".format(category_totals.get('special_clinic', {}).get('total', 0)) }}</th>
+                            <th class="text-end">{{ "{:,.2f}".format(grand_total) }}</th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h6 class="text-uppercase fw-bold text-success"><i class="fas fa-pills me-2"></i>Pharmacy Profit Breakdown</h6>
+                </div>
+                <div class="card-body p-4">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>Item</th>
+                                    <th class="text-end">Qty</th>
+                                    <th class="text-end">Selling</th>
+                                    <th class="text-end">Buying</th>
+                                    <th class="text-end">Profit</th>
+                                    <th>Cashier</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for p in profit_data %}
+                                <tr>
+                                    <td class="fw-semibold">{{ p.item_name }}</td>
+                                    <td class="text-end">{{ p.quantity }}</td>
+                                    <td class="text-end">{{ "{:,.2f}".format(p.selling_price) }}</td>
+                                    <td class="text-end">{{ "{:,.2f}".format(p.buying_price) }}</td>
+                                    <td class="text-end text-success fw-bold">{{ "{:,.2f}".format(p.profit) }}</td>
+                                    <td>{{ p.served_by }}</td>
+                                </tr>
+                                {% else %}
+                                <tr><td colspan="6" class="text-center text-muted py-4">No pharmacy sales in this period</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Transactions Table -->
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+            <h6 class="text-uppercase fw-bold text-primary"><i class="fas fa-list me-2"></i>Sales Transactions</h6>
+        </div>
+        <div class="card-body p-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle" id="salesTable">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>Patient</th>
+                            <th>Reg No</th>
+                            <th>Visit Type</th>
+                            <th>Category</th>
+                            <th>Cashier</th>
+                            <th>Payment</th>
+                            <th>Receipt</th>
+                            <th class="text-end">Amount</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for report in reports %}
+                        <tr>
+                            <td>{{ report.sale_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td class="fw-semibold">{{ report.patient_name }}</td>
+                            <td>{{ report.patient_reg_no }}</td>
+                            <td>{{ report.visit_type_category }}</td>
+                            <td>{{ report.patient_category }}</td>
+                            <td>{{ report.served_by }}</td>
+                            <td><span class="badge bg-light text-dark">{{ report.payment_method }}</span></td>
+                            <td>{{ report.receipt_number or 'N/A' }}</td>
+                            <td class="text-end fw-bold">{{ "{:,.2f}".format(report.total_amount) }}</td>
+                            <td class="text-center">
+                                <a href="{{ url_for('finance_web_bp.view_invoice', invoice_id=report.invoice_id) }}" class="btn btn-sm btn-outline-info rounded-circle" target="_blank" title="View Invoice">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="10" class="text-center text-muted py-4">No transactions found</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Auto‑apply filters on change -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const filterForm = document.getElementById('filterForm');
+    const inputs = filterForm.querySelectorAll('input, select');
+
+    inputs.forEach(input => {
+        input.addEventListener('change', function() {
+            filterForm.submit();  // Auto‑submit when any filter changes
+        });
+    });
+
+    // Initialize DataTable with options
+    $('#salesTable').DataTable({
+        order: [[0, 'desc']],
+        pageLength: 25,
+        lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+        responsive: true
+    });
+});
+</script>
+
+<!-- Custom CSS for modern touches -->
+<style>
+    .text-gradient {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    .icon-circle {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .hover-lift {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hover-lift:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 1.5rem rgba(0,0,0,0.1) !important;
+    }
+    .table-hover tbody tr:hover {
+        background-color: rgba(102, 126, 234, 0.05);
+    }
+    .badge {
+        font-weight: 500;
+        padding: 0.5em 0.8em;
+    }
+</style>
+{% endblock %}

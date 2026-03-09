@@ -1,10 +1,12 @@
 # app/hr/routes.py
 import json
 import uuid
+from venv import logger
 from flask import abort, render_template, send_file, send_from_directory
 from flask import request, redirect, url_for, flash, current_app
 from requests import Response
 from wtforms import ValidationError
+from app.utils.notifications import notification_manager
 
 from app.auth.models import Role, User, user_roles
 from app.hr.forms import CandidateForm, DisciplinaryActionForm, InterviewPanelForm, InterviewScoreForm, JobPostingForm
@@ -18,9 +20,9 @@ from flask_login import login_required, current_user
 from datetime import datetime, date, timedelta
 from decimal import Decimal
 from .models import (
-    AppealStatus, Candidate, DisciplinaryAction, DisciplinaryActionStatus, DisciplinaryActionType, DisciplinaryAppeal, DisciplinaryCase, DisciplinaryCaseStatus, DisciplinaryCaseType, DisciplinaryDocument, DisciplinaryHearing, DisciplinaryInvestigation, DisciplinaryPolicy, DisciplinaryReport, DisciplinarySeverity, HearingParticipant, HearingStatus, Interview, InterviewPanel, InterviewPanelMember, InterviewScore, InvestigationEvidence, InvestigationStatus, JobCategory, JobPosting, PaymentMethod, PayrollPeriod, Payroll, Payslip, EarningType, DeductionType,
+    AppealStatus, Candidate, DisciplinaryAction, DisciplinaryActionStatus, DisciplinaryActionType, DisciplinaryAppeal, DisciplinaryCase, DisciplinaryCaseStatus, DisciplinaryCaseType, DisciplinaryDocument, DisciplinaryHearing, DisciplinaryInvestigation, DisciplinaryPolicy, DisciplinaryReport, DisciplinarySeverity, EmployeeDeductionAssignment, HearingParticipant, HearingStatus, Interview, InterviewPanel, InterviewPanelMember, InterviewScore, InvestigationEvidence, InvestigationStatus, JobCategory, JobPosting, OfferLetter, PaymentMethod, PayrollPeriod, Payroll, Payslip, EarningType, DeductionType,
     PayslipEarning, PayslipDeduction, PAYEBand, NHIFRate, NSSFRate,
-    EmployeePayrollInfo, PayrollAdjustment, PayrollLoan, LoanRepayment,
+    EmployeePayrollInfo, PayrollAdjustment, PayrollLoan, LoanRepayment, panel_job_postings,
     PayrollReport, DutyShift, DutyRota, DutyAssignment, AttendanceRecord, LeaveRequest, LeaveType, PolicyCategory, SHARate
 )
 from sqlalchemy.exc import SQLAlchemyError
@@ -107,7 +109,39 @@ def staff_directory():
         role_values=role_values
     )
 
-
+@hr_web_bp.route('/staff/<int:user_id>/toggle_payroll_active', methods=['POST'])
+@login_required
+def toggle_payroll_active(user_id):
+    """Toggle employee payroll active status (only in EmployeePayrollInfo)"""
+    employee = User.query.get_or_404(user_id)
+    
+    try:
+        # Get the payroll info for this employee
+        payroll_info = EmployeePayrollInfo.query.filter_by(employee_id=user_id).first()
+        
+        if not payroll_info:
+            flash(f'No payroll information found for {employee.full_name}.', 'danger')
+            return redirect(request.referrer or url_for('hr_web.staff_list'))
+        
+        # Get current status before toggling
+        was_active = payroll_info.is_active
+        
+        # Toggle the status in EmployeePayrollInfo only
+        payroll_info.is_active = not payroll_info.is_active
+        db.session.commit()
+        
+        # Prepare flash message
+        if was_active:
+            flash(f'Payroll for {employee.full_name} has been deactivated successfully.', 'warning')
+        else:
+            flash(f'Payroll for {employee.full_name} has been activated successfully.', 'success')
+            
+        return redirect(request.referrer or url_for('hr_web.staff_list'))
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error toggling payroll status: {str(e)}', 'danger')
+        return redirect(request.referrer or url_for('hr_web.staff_list'))
 
 # Add this route after the staff_add route
 @hr_web_bp.route('/staff/edit/<int:user_id>', methods=['GET', 'POST'])
@@ -581,25 +615,77 @@ def manage_payroll_period(id):
     if request.method == 'PUT':
         try:
             data = request.get_json()
+            
+            # Check for required fields
+            required_fields = ['start_date', 'end_date', 'pay_date', 'frequency']
+            for field in required_fields:
+                if field not in data:
+                    return jsonify({
+                        'success': False, 
+                        'message': f'Missing required field: {field}'
+                    }), 400
+            
+            # Check for duplicate period (monthly validation)
+            if data.get('frequency') == 'Monthly':
+                start_date = datetime.strptime(data['start_date'], '%Y-%m-%d').date()
+                year = start_date.year
+                month = start_date.month
+                
+                # Check for duplicate (excluding current period)
+                duplicate = PayrollPeriod.query.filter(
+                    db.extract('year', PayrollPeriod.start_date) == year,
+                    db.extract('month', PayrollPeriod.start_date) == month,
+                    PayrollPeriod.frequency == 'Monthly',
+                    PayrollPeriod.id != id
+                ).first()
+                
+                if duplicate:
+                    return jsonify({
+                        'success': False, 
+                        'message': f'A monthly payroll period already exists for {start_date.strftime("%B %Y")}'
+                    }), 400
+            
+            # Update period
             period.start_date = datetime.strptime(data['start_date'], '%Y-%m-%d').date()
             period.end_date = datetime.strptime(data['end_date'], '%Y-%m-%d').date()
             period.pay_date = datetime.strptime(data['pay_date'], '%Y-%m-%d').date()
             period.frequency = data['frequency']
-            period.is_closed = data['is_closed']
+            period.is_closed = data.get('is_closed', False)
+            
             db.session.commit()
-            return jsonify({'success': True, 'message': 'Period updated'})
+            return jsonify({
+                'success': True, 
+                'message': 'Payroll period updated successfully',
+                'id': period.id
+            })
+            
+        except ValueError as e:
+            db.session.rollback()
+            return jsonify({
+                'success': False, 
+                'message': 'Invalid date format. Use YYYY-MM-DD'
+            }), 400
         except Exception as e:
             db.session.rollback()
-            return jsonify({'success': False, 'message': str(e)}), 400
+            return jsonify({
+                'success': False, 
+                'message': f'Error updating period: {str(e)}'
+            }), 400
 
     elif request.method == 'DELETE':
         try:
             db.session.delete(period)
             db.session.commit()
-            return jsonify({'success': True, 'message': 'Period deleted'})
+            return jsonify({
+                'success': True, 
+                'message': 'Payroll period deleted successfully'
+            })
         except Exception as e:
             db.session.rollback()
-            return jsonify({'success': False, 'message': str(e)}), 400
+            return jsonify({
+                'success': False, 
+                'message': f'Error deleting period: {str(e)}'
+            }), 400
 
 
 # ========================
@@ -627,16 +713,31 @@ def employee_payroll():
     payroll_for_period = Payroll.query.filter_by(period_id=period_id).first() if selected_period else None
     create_payroll_button = not bool(payroll_for_period)  # show button if payroll does NOT exist
 
-    # Fetch all active employees with payroll info and department
+    # MODIFIED: Fetch only employees with active payroll info and department
     employees = User.query.options(
         db.joinedload(User.payroll_info),
         db.joinedload(User.department)
-    ).filter_by(is_active=True).all()
+    ).join(EmployeePayrollInfo, User.id == EmployeePayrollInfo.employee_id)\
+     .filter(
+        User.is_active == True,
+        EmployeePayrollInfo.is_active == True  # Only include employees with active payroll info
+    ).all()
+    
+    # ALTERNATIVE: If you want to include all employees but filter in Python
+    # employees = User.query.options(
+    #     db.joinedload(User.payroll_info),
+    #     db.joinedload(User.department)
+    # ).filter_by(is_active=True).all()
     
     payroll_data = []
 
     for emp in employees:
         info = emp.payroll_info
+        
+        # Skip if no payroll info (shouldn't happen with the join above, but good for safety)
+        if not info:
+            continue
+            
         payslip = None
 
         if payroll_for_period:
@@ -1865,28 +1966,20 @@ def salary_processing():
         .order_by(Payroll.processed_at.desc())\
         .limit(5)\
         .all()
-        # Prepare period data for frontend with payment status
+    draft_periods = PayrollPeriod.query.outerjoin(
+        Payroll, Payroll.period_id == PayrollPeriod.id
+    ).filter(
+        or_(
+            Payroll.id == None,               # no payroll at all
+            Payroll.status == 'Draft'          # payroll exists but not yet processed
+        )
+    ).order_by(PayrollPeriod.start_date.desc()).all()
+
+    # Build period data for the frontend (including payroll status)
     period_data = []
-    for period in unpaid_periods:
-        # Check period status
-        period_payrolls = Payroll.query.filter_by(period_id=period.id).all()
-        status = 'Ready for Processing'
-        
-        if period_payrolls:
-            # Get the most recent payroll for this period
-            latest_payroll = max(period_payrolls, key=lambda x: x.processed_at if x.processed_at else datetime.min)
-            status = latest_payroll.status
-            if latest_payroll.status == 'Processed':
-                status = 'Processed (Not Approved)'
-            elif latest_payroll.status == 'Approved':
-                status = 'Approved (Not Paid)'
-        else:
-            # Check if period is closed
-            if period.is_closed:
-                status = 'Closed (No Payroll)'
-            else:
-                status = 'Ready for Processing'
-        
+    for period in draft_periods:
+        payroll = Payroll.query.filter_by(period_id=period.id).first()
+        status = 'Draft' if payroll else 'Ready for Processing'
         period_data.append({
             'id': period.id,
             'start_date': period.start_date.strftime('%d %b %Y'),
@@ -1894,12 +1987,22 @@ def salary_processing():
             'pay_date': period.pay_date.strftime('%d %b %Y'),
             'frequency': period.frequency.value,
             'status': status,
-            'has_payroll': len(period_payrolls) > 0
+            'has_payroll': payroll is not None,
+            'payroll_id': payroll.id if payroll else None
         })
-    
+
+    # Get active employee count
+    active_employees = User.query.filter_by(is_active=True).count()
+
+    # Get recent payrolls (all, for history display)
+    recent_payrolls = Payroll.query.options(db.joinedload(Payroll.period))\
+        .order_by(Payroll.processed_at.desc())\
+        .limit(5)\
+        .all()
+
     return render_template(
         'process_payroll.html',
-        periods=unpaid_periods,  # Changed from open_periods to unpaid_periods
+        periods=draft_periods,
         period_data=json.dumps(period_data),
         active_employees=active_employees,
         recent_payrolls=recent_payrolls,
@@ -1958,7 +2061,7 @@ from weasyprint import HTML
 @hr_web_bp.route('/payroll/<int:payroll_id>/mark-paid', methods=['POST'])
 @login_required
 def mark_payroll_batch_paid(payroll_id):
-    """Mark approved payroll as paid and send payslip emails in background"""
+    """Mark approved payroll as paid and record loan repayments"""
     try:
         payroll = Payroll.query.get_or_404(payroll_id)
         
@@ -1968,55 +2071,123 @@ def mark_payroll_batch_paid(payroll_id):
                 'message': f'Payroll must be Approved before marking as Paid. Current status: {payroll.status}'
             }), 400
         
+        # Get loan deduction type
+        loan_deduction_type = DeductionType.query.filter_by(code='LOAN_REPAYMENT').first()
+        
         # Update payroll status
         payroll.status = 'Paid'
         payroll.paid_at = datetime.utcnow()
         payroll.paid_by = current_user.id
         
-        # Update all payslips status and payment date
+        # Track total loan repayments
+        total_loan_repayments = Decimal('0')
+        loan_repayments_count = 0
+        
+        # Process each payslip
         for payslip in payroll.payslips:
-            payslip.status = 'Paid'
+            # Update payslip status
             payslip.paid_at = datetime.utcnow()
             payslip.is_paid = True
             
             # Generate payment reference
             payslip.payment_reference = f"PAY-{payroll.id}-{payslip.id}-{datetime.utcnow().strftime('%Y%m%d%H%M')}"
+            
+            # Find and process loan deductions for this payslip
+            if loan_deduction_type:
+                loan_deductions = PayslipDeduction.query.filter_by(
+                    payslip_id=payslip.id,
+                    deduction_type_id=loan_deduction_type.id
+                ).all()
+                
+                for loan_deduction in loan_deductions:
+                    # Get active loans for this employee
+                    active_loans = PayrollLoan.query.filter(
+                        PayrollLoan.employee_id == payslip.employee_id,
+                        PayrollLoan.is_active == True,
+                        PayrollLoan.balance > 0
+                    ).order_by(PayrollLoan.created_at.asc()).all()
+                    
+                    if not active_loans:
+                        continue
+                    
+                    # Distribute loan deduction among active loans (oldest first)
+                    remaining_deduction = loan_deduction.amount
+                    
+                    for loan in active_loans:
+                        if remaining_deduction <= 0:
+                            break
+                        
+                        # Calculate how much to deduct from this loan
+                        deduction_amount = min(remaining_deduction, loan.balance)
+                        
+                        if deduction_amount > 0:
+                            # Create loan repayment record
+                            repayment = LoanRepayment(
+                                loan_id=loan.id,
+                                amount=deduction_amount,
+                                payment_date=datetime.utcnow().date(),
+                                payslip_id=payslip.id,
+                                description=f"Loan repayment via payroll #{payroll.id}",
+                                created_by=current_user.id
+                            )
+                            db.session.add(repayment)
+                            
+                            # Update loan balance
+                            loan.balance -= deduction_amount
+                            
+                            # Update EmployeeDeductionAssignment balance
+                            assignment = EmployeeDeductionAssignment.query.filter_by(
+                                employee_id=payslip.employee_id,
+                                deduction_type_id=loan_deduction_type.id,
+                                is_active=True
+                            ).first()
+                            
+                            if assignment:
+                                assignment.balance = loan.balance
+                            
+                            # Check if loan is fully paid
+                            if loan.balance <= 0:
+                                loan.is_active = False
+                                loan.end_date = datetime.utcnow().date()
+                                
+                                # Also deactivate the deduction assignment
+                                if assignment:
+                                    assignment.is_active = False
+                                    assignment.end_date = datetime.utcnow().date()
+                            
+                            # Update tracking
+                            remaining_deduction -= deduction_amount
+                            total_loan_repayments += deduction_amount
+                            loan_repayments_count += 1
         
         db.session.commit()
-        
-        # Start background email sending
-        email_thread = threading.Thread(
-            target=send_payslip_emails_background,
-            args=(current_app._get_current_object(), payroll_id, current_user.id)
-        )
-        email_thread.daemon = True  # Allows thread to exit when main program exits
-        email_thread.start()
         
         # Log the payment
         current_app.logger.info(
             f"Payroll marked as paid: ID #{payroll.id} by User {current_user.id}. "
-            f"Email sending started in background."
+            f"Processed {loan_repayments_count} loan repayments totaling KES {total_loan_repayments}."
         )
         
         return jsonify({
             'success': True,
-            'message': 'Payroll marked as paid successfully. Payslip emails are being sent in the background.',
+            'message': f'Payroll marked as paid successfully. Processed {loan_repayments_count} loan repayments.',
             'payroll': {
                 'id': payroll.id,
                 'status': payroll.status,
                 'paid_at': payroll.paid_at.strftime('%Y-%m-%d %H:%M:%S'),
-                'payslips_count': len(payroll.payslips)
-            },
-            'email_status': 'started'
+                'payslips_count': len(payroll.payslips),
+                'loan_repayments': loan_repayments_count,
+                'total_loan_repayments': str(total_loan_repayments)
+            }
         })
         
     except Exception as e:
+        db.session.rollback()
         current_app.logger.error(f"Error marking payroll as paid: {str(e)}")
         return jsonify({
             'success': False,
             'message': f'Failed to mark payroll as paid: {str(e)}'
         }), 500
-
 
 def send_payslip_emails_background(app, payroll_id, user_id):
     """Background function to send payslip emails with PDF attachments"""
@@ -3949,6 +4120,13 @@ def view_payslip_details(payslip_id):
                     description=description or 'Additional earning'
                 )
                 db.session.add(earning)
+                # Flush to get the earning into the session identity map
+                db.session.flush()
+                
+                # Refresh the payslip to include the new earning
+                db.session.refresh(payslip, attribute_names=['earnings', 'deductions'])
+                
+                # Now calculate totals
                 payslip.calculate_totals()
                 db.session.commit()
                 flash('Earning added successfully', 'success')
@@ -3968,6 +4146,13 @@ def view_payslip_details(payslip_id):
                     description=description or 'Additional deduction'
                 )
                 db.session.add(deduction)
+                # Flush to get the deduction into the session identity map
+                db.session.flush()
+                
+                # Refresh the payslip to include the new deduction
+                db.session.refresh(payslip, attribute_names=['earnings', 'deductions'])
+                
+                # Now calculate totals
                 payslip.calculate_totals()
                 db.session.commit()
                 flash('Deduction added successfully', 'success')
@@ -3980,6 +4165,12 @@ def view_payslip_details(payslip_id):
                 earning = PayslipEarning.query.get_or_404(earning_id)
                 if earning.payslip_id == payslip.id:
                     db.session.delete(earning)
+                    # Flush to remove the earning from the session
+                    db.session.flush()
+                    
+                    # Refresh the payslip to reflect the deletion
+                    db.session.refresh(payslip, attribute_names=['earnings', 'deductions'])
+                    
                     payslip.calculate_totals()
                     db.session.commit()
                     flash('Earning removed successfully', 'success')
@@ -3990,6 +4181,12 @@ def view_payslip_details(payslip_id):
                 deduction = PayslipDeduction.query.get_or_404(deduction_id)
                 if deduction.payslip_id == payslip.id:
                     db.session.delete(deduction)
+                    # Flush to remove the deduction from the session
+                    db.session.flush()
+                    
+                    # Refresh the payslip to reflect the deletion
+                    db.session.refresh(payslip, attribute_names=['earnings', 'deductions'])
+                    
                     payslip.calculate_totals()
                     db.session.commit()
                     flash('Deduction removed successfully', 'success')
@@ -4207,23 +4404,33 @@ def payroll_loans():
     if request.method == 'POST':
         try:
             data = request.get_json()
+            employee_id = data['employee_id']
+            loan_amount = Decimal(data['loan_amount'])
+            monthly_deduction = Decimal(data['monthly_deduction'])
+            start_date = datetime.strptime(data['start_date'], '%Y-%m-%d').date()
+            end_date = datetime.strptime(data['end_date'], '%Y-%m-%d').date()
+            
+            # Create the loan
             loan = PayrollLoan(
-                employee_id=data['employee_id'],
-                loan_amount=Decimal(data['loan_amount']),
-                balance=Decimal(data['loan_amount']),
-                monthly_deduction=Decimal(data['monthly_deduction']),
-                start_date=datetime.strptime(data['start_date'], '%Y-%m-%d').date(),
-                end_date=datetime.strptime(data['end_date'], '%Y-%m-%d').date(),
+                employee_id=employee_id,
+                loan_amount=loan_amount,
+                balance=loan_amount,
+                monthly_deduction=monthly_deduction,
+                start_date=start_date,
+                end_date=end_date,
                 is_active=True
             )
             db.session.add(loan)
             db.session.commit()
+            
             return jsonify({'success': True, 'message': 'Loan created'}), 201
         except Exception as e:
             db.session.rollback()
             return jsonify({'success': False, 'message': str(e)}), 400
 
     # GET: List loans with filters
+    from sqlalchemy.orm import joinedload
+    
     employee_id = request.args.get('employee_id')
     status = request.args.get('status', 'active')  # active/closed
     
@@ -4236,7 +4443,31 @@ def payroll_loans():
     elif status == 'closed':
         query = query.filter_by(is_active=False)
     
-    loans = query.order_by(PayrollLoan.start_date.desc()).all()
+    # FIXED: Properly load relationships
+    loans = query.options(
+        joinedload(PayrollLoan.employee).joinedload(User.payroll_info),
+        joinedload(PayrollLoan.repayments)
+    ).order_by(PayrollLoan.created_at.desc()).all()
+    
+    # Get recent repayments for display
+    recent_repayments = []
+    for loan in loans:
+        if loan.repayments:  # This should now be properly loaded
+            for repayment in loan.repayments:
+                recent_repayments.append({
+                    'loan_id': loan.id,
+                    'loan': loan,  # Pass the loan object
+                    'repayment': repayment,  # Pass the repayment object
+                    'payment_date': repayment.payment_date,
+                    'amount': repayment.amount,
+                    'payslip_id': repayment.payslip_id,
+                    'employee_name': loan.employee.full_name if loan.employee else 'Unknown',
+                    'staff_no': loan.employee.payroll_info.staff_no if loan.employee and loan.employee.payroll_info else 'N/A'
+                })
+    
+    # Sort by payment date (newest first) and take only 5
+    recent_repayments.sort(key=lambda x: x['payment_date'], reverse=True)
+    recent_repayments = recent_repayments[:5]
     
     # Get active employees with payroll info for the dropdown
     employees = User.query.filter_by(is_active=True)\
@@ -4258,10 +4489,199 @@ def payroll_loans():
             'staff_no': employee.staff_no or f"EMP{employee.id:04d}"
         })
     
-    return render_template('payroll_loans.html', loans=loans, employees=employees_list)
+    return render_template('payroll_loans.html', 
+                         loans=loans, 
+                         employees=employees_list,
+                         recent_repayments=recent_repayments)  # Pass the prepared data
 
-from dateutil.relativedelta import relativedelta
 
+@hr_web_bp.route('/payroll/loan/<int:loan_id>')
+@login_required
+def view_loan(loan_id):
+    """View detailed information about a specific loan"""
+    from sqlalchemy.orm import joinedload
+    
+    # Get loan with all related data
+    loan = PayrollLoan.query.options(
+        joinedload(PayrollLoan.employee).joinedload(User.payroll_info),
+        joinedload(PayrollLoan.repayments)  # Remove the nested joinedload for payslip
+    ).get_or_404(loan_id)
+    
+    # Get repayment statistics
+    total_paid = db.session.query(db.func.sum(LoanRepayment.amount)).filter(
+        LoanRepayment.loan_id == loan_id
+    ).scalar() or Decimal('0')
+    
+    remaining_balance = loan.balance
+    percentage_paid = (total_paid / loan.loan_amount * 100) if loan.loan_amount > 0 else 0
+    
+    # Get recent repayments with payslip info if needed
+    recent_repayments = LoanRepayment.query.filter_by(loan_id=loan_id)\
+        .order_by(LoanRepayment.payment_date.desc())\
+        .limit(10).all()
+    
+    # If you need payslip info for each repayment, you can fetch it separately
+    # Or use a different approach with joinedload
+    
+    # Get payroll periods for context
+    payroll_periods = PayrollPeriod.query.order_by(PayrollPeriod.start_date.desc()).limit(6).all()
+    
+    return render_template('view_loan.html',
+                         loan=loan,
+                         total_paid=total_paid,
+                         remaining_balance=remaining_balance,
+                         percentage_paid=percentage_paid,
+                         recent_repayments=recent_repayments,
+                         date=datetime.now().date(),
+                         payroll_periods=payroll_periods,)
+
+@hr_web_bp.route('/payroll/loan/<int:loan_id>/record-payment', methods=['GET', 'POST'])
+@login_required
+def record_loan_payment(loan_id):
+    """Record a manual loan payment (outside payroll)"""
+    loan = PayrollLoan.query.get_or_404(loan_id)
+    
+    if request.method == 'GET':
+        return render_template('record_loan_payment.html', loan=loan)
+    
+    elif request.method == 'POST':
+        try:
+            data = request.get_json() if request.is_json else request.form
+            amount = Decimal(data['amount'])
+            payment_date = datetime.strptime(data['payment_date'], '%Y-%m-%d').date()
+            payment_method = data.get('payment_method', 'Manual Payment')
+            reference = data.get('reference_number', '')
+            description = data.get('description', '')
+            
+            if amount <= 0:
+                return jsonify({'success': False, 'message': 'Amount must be positive'}), 400
+            
+            if amount > loan.balance:
+                return jsonify({'success': False, 'message': 'Payment amount exceeds loan balance'}), 400
+            
+            # Create repayment record
+            repayment = LoanRepayment(
+                loan_id=loan.id,
+                amount=amount,
+                payment_date=payment_date,
+                payment_method=payment_method,
+                reference_number=reference,
+                description=description or 'Manual loan payment',
+                created_by=current_user.id
+            )
+            db.session.add(repayment)
+            
+            # Update loan balance
+            loan.balance -= amount
+            
+            # Mark as inactive if fully paid
+            if loan.balance <= 0:
+                loan.is_active = False
+                loan.balance = Decimal('0')
+            
+            db.session.commit()
+            
+            return jsonify({
+                'success': True,
+                'message': f'Loan payment of KES {amount} recorded successfully',
+                'loan': {
+                    'id': loan.id,
+                    'balance': str(loan.balance),
+                    'is_active': loan.is_active
+                }
+            })
+            
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'success': False, 'message': str(e)}), 400
+
+
+@hr_web_bp.route('/payroll/loan/<int:loan_id>/close', methods=['POST'])
+@login_required
+def close_loan(loan_id):
+    """Close a loan (mark as inactive)"""
+    loan = PayrollLoan.query.get_or_404(loan_id)
+    
+    try:
+        loan.is_active = False
+        loan.balance = Decimal('0')  # Write off any remaining balance
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Loan closed successfully'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 400
+
+
+@hr_web_bp.route('/payroll/loan/<int:loan_id>/reopen', methods=['POST'])
+@login_required
+def reopen_loan(loan_id):
+    """Reopen a closed loan"""
+    loan = PayrollLoan.query.get_or_404(loan_id)
+    
+    try:
+        loan.is_active = True
+        # You might want to adjust the balance based on your business logic
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Loan reopened successfully'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 400
+
+def update_existing_payslips_with_loan(employee_id, loan_id, monthly_deduction, deduction_type_id):
+    """Update existing payslips with loan deduction and recalculate totals"""
+    
+    # Get current and future payroll periods
+    today = date.today()
+    future_periods = PayrollPeriod.query.filter(
+        PayrollPeriod.end_date >= today
+    ).all()
+    
+    for period in future_periods:
+        # Check if payroll exists for this period
+        payroll = Payroll.query.filter_by(period_id=period.id).first()
+        if payroll:
+            # Get employee's payslip for this period
+            payslip = Payslip.query.filter_by(
+                payroll_id=payroll.id,
+                employee_id=employee_id
+            ).first()
+            
+            if payslip:
+                # Check if loan deduction already exists
+                existing_loan_deduction = PayslipDeduction.query.filter_by(
+                    payslip_id=payslip.id,
+                    deduction_type_id=deduction_type_id
+                ).first()
+                
+                if not existing_loan_deduction:
+                    # Add loan deduction to payslip
+                    loan_deduction = PayslipDeduction(
+                        payslip_id=payslip.id,
+                        deduction_type_id=deduction_type_id,
+                        amount=monthly_deduction,
+                        description=f"Loan #{loan_id} repayment"
+                    )
+                    db.session.add(loan_deduction)
+                    
+                    # Recalculate totals
+                    payslip.calculate_totals()
+                    
+                    # Update payroll totals
+                    payroll.total_deductions = db.session.query(
+                        db.func.sum(Payslip.total_deductions)
+                    ).filter(Payslip.payroll_id == payroll.id).scalar() or 0
+                    
+                    payroll.total_net = db.session.query(
+                        db.func.sum(Payslip.net_pay)
+                    ).filter(Payslip.payroll_id == payroll.id).scalar() or 0
 
 @hr_web_bp.route('/payroll/loan-repayments', methods=['GET'])
 @login_required
@@ -6769,10 +7189,30 @@ def new_job_posting():
 def view_job_posting(job_id):
     """View job posting details"""
     from datetime import date
+    from sqlalchemy.orm import joinedload, selectinload
     
-    job = JobPosting.query.get_or_404(job_id)
+    # OPTION 1: Use selectinload instead of joinedload for many-to-many
+    job = JobPosting.query.options(
+        joinedload(JobPosting.department),
+        joinedload(JobPosting.category),
+        selectinload(JobPosting.interview_panels).selectinload(InterviewPanel.panel_members).joinedload(InterviewPanelMember.user)
+    ).get_or_404(job_id)
+    
+    # OPTION 2: Load panels separately (simpler)
+    job = JobPosting.query.options(
+        joinedload(JobPosting.department),
+        joinedload(JobPosting.category)
+    ).get_or_404(job_id)
+    
+    # Get panels for this job
+    panels = InterviewPanel.query.join(panel_job_postings).filter(
+        panel_job_postings.c.job_posting_id == job_id
+    ).options(
+        joinedload(InterviewPanel.panel_members).joinedload(InterviewPanelMember.user)
+    ).all()
+    
+    # Get candidates for this job
     candidates = Candidate.query.filter_by(job_posting_id=job_id).order_by(Candidate.created_at.desc()).all()
-    panels = InterviewPanel.query.filter_by(job_posting_id=job_id).all()
     
     # Update view count
     job.views_count = (job.views_count or 0) + 1
@@ -6791,7 +7231,7 @@ def view_job_posting(job_id):
         'recruitment/job_view.html',
         job=job,
         candidates=candidates,
-        panels=panels,
+        panels=panels,  # Pass separately loaded panels
         candidate_stats=candidate_stats,
         today=date.today()
     )
@@ -6977,12 +7417,184 @@ def view_candidate(candidate_id):
 @login_required
 def job_panels(job_id):
     """View interview panels for a job"""
-    job = JobPosting.query.get_or_404(job_id)
-    panels = InterviewPanel.query.filter_by(job_posting_id=job_id).all()
+    from sqlalchemy.orm import joinedload
     
-    return render_template('recruitment/panels.html', job=job, panels=panels)
+    # Get the job
+    job = JobPosting.query.get_or_404(job_id)
+    
+    # Get panels through the relationship (simpler)
+    panels = InterviewPanel.query.join(
+        panel_job_postings,
+        InterviewPanel.id == panel_job_postings.c.panel_id
+    ).filter(
+        panel_job_postings.c.job_posting_id == job_id
+    ).options(
+        joinedload(InterviewPanel.panel_members).joinedload(InterviewPanelMember.user)
+    ).all()
+    
+    # Get primary panel
+    primary_panel = None
+    for panel in panels:
+        assignment = db.session.execute(
+            db.select(panel_job_postings.c.is_primary).where(
+                db.and_(
+                    panel_job_postings.c.panel_id == panel.id,
+                    panel_job_postings.c.job_posting_id == job_id
+                )
+            )
+        ).fetchone()
+        
+        if assignment and assignment[0]:  # Check if is_primary is True (access first element of tuple)
+            primary_panel = panel
+            break
+    
+    return render_template(
+        'recruitment/panels.html', 
+        job=job, 
+        panels=panels,
+        primary_panel=primary_panel
+    )
 
 
+
+@hr_web_bp.route('/recruitment/jobs/<int:job_id>/panels/assign', methods=['GET', 'POST'])
+@login_required
+def assign_panels_page(job_id):
+    """Page to assign panels to a job"""
+    from sqlalchemy.orm import joinedload
+    
+    # Get the job
+    job = JobPosting.query.get_or_404(job_id)
+    
+    if request.method == 'POST':
+        # Debug: Print form data
+        print("Form data received:")
+        print(f"panel_ids: {request.form.getlist('panel_ids[]')}")
+        print(f"primary_panel_id: {request.form.get('primary_panel_id')}")
+        
+        panel_ids = request.form.getlist('panel_ids[]')
+        primary_panel_id = request.form.get('primary_panel_id')
+        
+        # Handle empty panel_ids - checkboxes might be passed differently
+        if not panel_ids or panel_ids == ['']:
+            # Try alternative way to get checkboxes
+            panel_ids = []
+            for key in request.form:
+                if key.startswith('panel_ids['):
+                    panel_ids.append(request.form[key])
+            
+            if not panel_ids:
+                flash('Please select at least one panel to assign', 'error')
+                return redirect(url_for('hr_web.assign_panels_page', job_id=job_id))
+        
+        try:
+            assigned_count = 0
+            # Assign selected panels
+            for panel_id in panel_ids:
+                # Convert to integer
+                try:
+                    panel_id_int = int(panel_id)
+                except ValueError:
+                    continue
+                
+                # Check if already assigned
+                existing = db.session.execute(
+                    db.select(panel_job_postings).where(
+                        db.and_(
+                            panel_job_postings.c.panel_id == panel_id_int,
+                            panel_job_postings.c.job_posting_id == job_id
+                        )
+                    )
+                ).fetchone()
+                
+                if not existing:
+                    # Determine if this panel should be primary
+                    is_primary = False
+                    if primary_panel_id:
+                        try:
+                            primary_id_int = int(primary_panel_id)
+                            is_primary = (panel_id_int == primary_id_int)
+                        except ValueError:
+                            pass
+                    
+                    # If setting as primary, remove primary status from other panels
+                    if is_primary:
+                        db.session.execute(
+                            db.update(panel_job_postings).where(
+                                db.and_(
+                                    panel_job_postings.c.job_posting_id == job_id,
+                                    panel_job_postings.c.is_primary == True
+                                )
+                            ).values(is_primary=False)
+                        )
+                    
+                    # Insert the assignment
+                    stmt = db.insert(panel_job_postings).values(
+                        panel_id=panel_id_int,
+                        job_posting_id=job_id,
+                        assigned_by=current_user.id,
+                        is_primary=is_primary,
+                        notes=f"Assigned by {current_user.full_name} on {datetime.utcnow().strftime('%Y-%m-%d %H:%M')}"
+                    )
+                    db.session.execute(stmt)
+                    assigned_count += 1
+            
+            db.session.commit()
+            
+            if assigned_count == 0:
+                flash('No new panels were assigned (they may already be assigned)', 'info')
+            elif assigned_count == 1:
+                flash(f'1 panel has been successfully assigned to this job', 'success')
+            else:
+                flash(f'{assigned_count} panels have been successfully assigned to this job', 'success')
+            
+            return redirect(url_for('hr_web.job_panels', job_id=job_id))
+            
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error assigning panels: {str(e)}")
+            flash(f'Error assigning panels: {str(e)}', 'error')
+            return redirect(url_for('hr_web.assign_panels_page', job_id=job_id))
+    
+    # GET request - show the form
+    # Get all panels that are NOT already assigned to this job
+    # First, get assigned panel IDs
+    assigned_results = db.session.execute(
+        db.select(panel_job_postings.c.panel_id).where(
+            panel_job_postings.c.job_posting_id == job_id
+        )
+    ).all()
+    
+    assigned_panel_ids = [pid[0] for pid in assigned_results] if assigned_results else []
+    
+    # Get available panels (not already assigned)
+    query = InterviewPanel.query.options(
+        joinedload(InterviewPanel.panel_members).joinedload(InterviewPanelMember.user)
+    )
+    
+    if assigned_panel_ids:
+        query = query.filter(InterviewPanel.id.notin_(assigned_panel_ids))
+    
+    available_panels = query.all()
+    
+    # Get current primary panel ID
+    primary_result = db.session.execute(
+        db.select(panel_job_postings.c.panel_id).where(
+            db.and_(
+                panel_job_postings.c.job_posting_id == job_id,
+                panel_job_postings.c.is_primary == True
+            )
+        )
+    ).fetchone()
+    
+    primary_panel_id = primary_result[0] if primary_result else None
+    
+    return render_template(
+        'recruitment/assign_panels.html',
+        job=job,
+        available_panels=available_panels,
+        primary_panel_id=primary_panel_id
+    )
 @hr_web_bp.route('/recruitment/panels')
 @login_required
 def manage_panels():
@@ -6999,32 +7611,112 @@ def create_panel():
     """Create a new interview panel"""
     form = InterviewPanelForm()
     
-    # Populate job dropdown (optional - can be None)
-    form.job_posting_id.choices = [(0, 'No specific job')] + [(j.id, f"{j.reference_no} - {j.title}") for j in JobPosting.query.filter_by(status='Published').all()]
+    # Get job context if provided
+    job_id = request.args.get('job_id')
+    job = None
+    if job_id:
+        job = JobPosting.query.get(job_id)
     
     if form.validate_on_submit():
         panel = InterviewPanel(
             name=form.name.data,
             description=form.description.data,
             panel_type=form.panel_type.data,
-            job_posting_id=form.job_posting_id.data if form.job_posting_id.data != 0 else None,
-            is_active=form.is_active.data
+            created_by=current_user.id,
+            is_active=form.is_active.data if hasattr(form, 'is_active') else True
         )
         
         db.session.add(panel)
         db.session.commit()
         
+        # If job_id was provided in URL, assign this panel to that job
+        if job_id:
+            job = JobPosting.query.get(job_id)
+            if job:
+                panel.assign_to_job(
+                    job_posting_id=job.id,
+                    assigned_by=current_user.id,
+                    is_primary=True  # Make it the primary panel for this job
+                )
+                db.session.commit()
+                flash(f'Interview panel "{panel.name}" created and assigned to {job.title} successfully!', 'success')
+                return redirect(url_for('hr_web.view_panel', panel_id=panel.id, job_id=job.id))
+        
         flash(f'Interview panel "{panel.name}" created successfully!', 'success')
         return redirect(url_for('hr_web.manage_panels'))
     
-    return render_template('recruitment/panel_form.html', form=form, title='Create Interview Panel')
-
+    return render_template('recruitment/panel_form.html', 
+                         form=form, 
+                         panel=None,
+                         job=job,
+                         title='Create Interview Panel')
 @hr_web_bp.route('/recruitment/panels/<int:panel_id>')
 @login_required
 def view_panel(panel_id):
     """View panel details"""
-    panel = InterviewPanel.query.get_or_404(panel_id)
-    return render_template('recruitment/panel_view.html', panel=panel)
+    from sqlalchemy.orm import joinedload
+    from sqlalchemy import select
+    
+    panel = InterviewPanel.query.options(
+        joinedload(InterviewPanel.panel_members).joinedload(InterviewPanelMember.user),
+        joinedload(InterviewPanel.interviews).joinedload(Interview.candidate)
+    ).get_or_404(panel_id)
+    
+    # Get all members
+    panel_members = panel.panel_members
+    
+    # Get all interviews for this panel
+    interviews = panel.interviews
+    
+    # Get assigned jobs for this panel
+    assigned_jobs = panel.assigned_job_postings
+    
+    # Get primary job posting
+    primary_job = None
+    if assigned_jobs:
+        # Query to get primary job posting
+        from app.hr.models import panel_job_postings
+        stmt = select(panel_job_postings.c.job_posting_id).where(
+            db.and_(
+                panel_job_postings.c.panel_id == panel_id,
+                panel_job_postings.c.is_primary == True
+            )
+        )
+        result = db.session.execute(stmt).scalar()
+        if result:
+            primary_job = next((job for job in assigned_jobs if job.id == result), None)
+    
+    # Get job context if available (from query parameter)
+    job_id = request.args.get('job_id')
+    job = None
+    if job_id:
+        job = JobPosting.query.get(job_id)
+    
+    # Get all available users (for adding members)
+    # Filter out users already in the panel
+    current_user_ids = [member.user_id for member in panel_members]
+    available_users = User.query.filter(
+        User.is_active == True,
+        User.id.notin_(current_user_ids) if current_user_ids else True
+    ).all()
+    
+    # Helper function for template
+    def is_primary_job(job_id):
+        """Check if a job is primary for this panel"""
+        if not primary_job:
+            return False
+        return primary_job.id == job_id
+    
+    return render_template('recruitment/panel_view.html', 
+                          panel=panel,
+                          panel_members=panel_members,
+                          interviews=interviews,
+                          assigned_jobs=assigned_jobs,
+                          primary_job=primary_job,
+                          job=job,
+                          available_users=available_users,
+                          is_primary_job=is_primary_job,
+                          get_primary_job=lambda: primary_job)
 
 @hr_web_bp.route('/recruitment/panels/<int:panel_id>/edit', methods=['GET', 'POST'])
 @login_required
@@ -7033,21 +7725,31 @@ def edit_panel(panel_id):
     panel = InterviewPanel.query.get_or_404(panel_id)
     form = InterviewPanelForm(obj=panel)
     
-    form.job_posting_id.choices = [(0, 'No specific job')] + [(j.id, f"{j.reference_no} - {j.title}") for j in JobPosting.query.filter_by(status='Published').all()]
+    # Get job context if provided
+    job_id = request.args.get('job_id')
+    job = None
+    if job_id:
+        job = JobPosting.query.get(job_id)
     
     if form.validate_on_submit():
         panel.name = form.name.data
         panel.description = form.description.data
         panel.panel_type = form.panel_type.data
-        panel.job_posting_id = form.job_posting_id.data if form.job_posting_id.data != 0 else None
-        panel.is_active = form.is_active.data
+        panel.is_active = form.is_active.data if hasattr(form, 'is_active') else True
         
         db.session.commit()
         flash(f'Interview panel "{panel.name}" updated successfully!', 'success')
+        
+        # Redirect back to appropriate page
+        if job:
+            return redirect(url_for('hr_web.view_panel', panel_id=panel_id, job_id=job.id))
         return redirect(url_for('hr_web.view_panel', panel_id=panel_id))
     
-    return render_template('recruitment/panel_form.html', form=form, panel=panel, title=f'Edit {panel.name}')
-
+    return render_template('recruitment/panel_form.html', 
+                         form=form, 
+                         panel=panel,
+                         job=job,
+                         title=f'Edit {panel.name}')
 @hr_web_bp.route('/recruitment/jobs/<int:job_id>/create-panel', methods=['GET', 'POST'])
 @login_required
 def create_interview_panel(job_id):
@@ -7057,7 +7759,6 @@ def create_interview_panel(job_id):
     
     if form.validate_on_submit():
         panel = InterviewPanel(
-            job_posting_id=job_id,
             name=form.name.data,
             description=form.description.data,
             panel_type=form.panel_type.data
@@ -7594,7 +8295,7 @@ def recruitment_interviews():
     from datetime import datetime, date, timedelta
     
     # Get filter parameters
-    status = request.args.get('status', 'upcoming')  # upcoming, today, past, all
+    status = request.args.get('status', 'upcoming')  # upcoming, today, in_progress, past, completed, cancelled, all
     job_id = request.args.get('job_id', type=int)
     candidate_id = request.args.get('candidate_id', type=int)
     panel_id = request.args.get('panel_id', type=int)
@@ -7619,15 +8320,29 @@ def recruitment_interviews():
         query = query.filter(
             Interview.scheduled_date >= start_of_day,
             Interview.scheduled_date <= end_of_day,
-            Interview.status.in_(['Scheduled', 'Confirmed'])
+            Interview.status.in_(['Scheduled', 'Confirmed', 'In Progress'])
+        )
+    elif status == 'in_progress':
+        # Show interviews that are currently in progress
+        query = query.filter(
+            Interview.status == 'In Progress'
         )
     elif status == 'past':
-        query = query.filter(Interview.scheduled_date < now)
+        # Show past interviews (scheduled time has passed) but not completed
+        query = query.filter(
+            Interview.scheduled_date < now,
+            ~Interview.status.in_(['Completed', 'Cancelled'])
+        )
     elif status == 'completed':
         query = query.filter_by(status='Completed')
     elif status == 'cancelled':
         query = query.filter_by(status='Cancelled')
+    elif status == 'no_show':
+        query = query.filter_by(status='No Show')
+    elif status == 'rescheduled':
+        query = query.filter_by(status='Rescheduled')
     elif status:
+        # If any other status is passed directly
         query = query.filter_by(status=status)
     
     # Apply other filters
@@ -7651,10 +8366,22 @@ def recruitment_interviews():
         except ValueError:
             pass
     
-    # Order by scheduled date (ascending for upcoming, descending for past)
+    # Order by appropriate field
     if status in ['upcoming', 'today']:
         query = query.order_by(Interview.scheduled_date.asc())
+    elif status == 'in_progress':
+        # For in-progress interviews, order by actual start time (most recent first)
+        # MySQL handles NULL values differently - we need to handle NULL actual_start_time
+        # Option 1: Order by actual_start_time if not NULL, else scheduled_date
+        query = query.order_by(
+            db.case(
+                (Interview.actual_start_time.isnot(None), Interview.actual_start_time),
+                else_=Interview.scheduled_date
+            ).desc(),
+            Interview.scheduled_date.asc()
+        )
     else:
+        # For past, completed, etc., order by scheduled date (most recent first)
         query = query.order_by(Interview.scheduled_date.desc())
     
     # Pagination
@@ -7663,17 +8390,22 @@ def recruitment_interviews():
     interviews_pagination = query.paginate(page=page, per_page=per_page, error_out=False)
     interviews = interviews_pagination.items
     
-    # Get statistics
+    # Get statistics for each status
     total_interviews = Interview.query.count()
+    
     upcoming_interviews = Interview.query.filter(
         Interview.scheduled_date >= now,
         Interview.status.in_(['Scheduled', 'Confirmed'])
     ).count()
+    
     interviews_today = Interview.query.filter(
         db.func.date(Interview.scheduled_date) == today,
-        Interview.status.in_(['Scheduled', 'Confirmed'])
+        Interview.status.in_(['Scheduled', 'Confirmed', 'In Progress'])
     ).count()
+    
+    in_progress_interviews = Interview.query.filter_by(status='In Progress').count()
     completed_interviews = Interview.query.filter_by(status='Completed').count()
+    cancelled_interviews = Interview.query.filter_by(status='Cancelled').count()
     
     # Get filter options
     jobs = JobPosting.query.filter_by(status='Published').order_by(JobPosting.title).all()
@@ -7688,7 +8420,9 @@ def recruitment_interviews():
                          total_interviews=total_interviews,
                          upcoming_interviews=upcoming_interviews,
                          interviews_today=interviews_today,
+                         in_progress_interviews=in_progress_interviews,
                          completed_interviews=completed_interviews,
+                         cancelled_interviews=cancelled_interviews,
                          jobs=jobs,
                          panels=panels,
                          candidates=candidates,
@@ -7701,7 +8435,8 @@ def recruitment_interviews():
                          current_date=date.today(),
                          timedelta=timedelta,
                          now=now)
-
+    
+    
 @hr_web_bp.route('/recruitment/interviews/<int:interview_id>')
 @login_required
 def view_interview(interview_id):
@@ -7836,6 +8571,14 @@ def complete_interview(interview_id):
     """Mark interview as completed"""
     interview = Interview.query.get_or_404(interview_id)
     
+    # Check if user has permission (HR, Admin, or panel member)
+    panel_member = InterviewPanelMember.query.filter_by(
+        panel_id=interview.panel_id,
+        user_id=current_user.id
+    ).first()
+    
+
+    
     if interview.status in ['Scheduled', 'Confirmed', 'In Progress']:
         interview.status = 'Completed'
         interview.actual_end_time = datetime.utcnow()
@@ -7846,9 +8589,11 @@ def complete_interview(interview_id):
         
         db.session.commit()
         
-        return jsonify({'success': True, 'message': 'Interview marked as completed!'})
+        flash('Interview marked as completed successfully!', 'success')
+        return redirect(url_for('hr_web.view_interview', interview_id=interview_id))
     
-    return jsonify({'success': False, 'message': 'Cannot complete this interview'})
+    flash('Cannot complete this interview. Invalid status.', 'error')
+    return redirect(url_for('hr_web.view_interview', interview_id=interview_id))
 
 @hr_web_bp.route('/recruitment/interviews/<int:interview_id>/score', methods=['GET', 'POST'])
 @login_required
@@ -7904,12 +8649,27 @@ def score_interview(interview_id):
             score.calculate_score()
             db.session.add(score)
         
+        # Check if this is the first score being submitted
+        if not existing_score:
+            # This is the first score submission for this interview
+            # Check if interview hasn't started yet
+            if interview.status in ['Scheduled', 'Confirmed']:
+                # Change status to "In Progress"
+                interview.status = 'In Progress'
+                # Set actual start time if not already set
+                if not interview.actual_start_time:
+                    interview.actual_start_time = datetime.utcnow()
+                flash('Interview started and score submitted successfully!', 'success')
+            else:
+                flash('Interview score submitted successfully!', 'success')
+        else:
+            flash('Interview score updated successfully!', 'success')
+        
         db.session.commit()
         
         # Update interview overall feedback if all panel members have submitted
         update_interview_overall_feedback(interview)
         
-        flash('Interview score submitted successfully!', 'success')
         return redirect(url_for('hr_web.view_interview', interview_id=interview_id))
     
     # For GET request
@@ -7972,3 +8732,788 @@ def update_interview_overall_feedback(interview):
         candidate.calculate_overall_score()
     
     db.session.commit()
+    
+    
+    
+    
+@hr_web_bp.route('/recruitment/interviews/<int:interview_id>/select-winner', methods=['GET', 'POST'])
+@login_required
+def select_interview_winner(interview_id):
+    """Select winner from interview panel and make offer"""
+    interview = Interview.query.get_or_404(interview_id)
+    
+    # Check if interview is completed
+    if interview.status != 'Completed':
+        flash('Winner can only be selected from completed interviews.', 'error')
+        return redirect(url_for('hr_web.view_interview', interview_id=interview_id))
+    
+   
+    # Check if candidate already has an offer
+    # FIX: Use filter() instead of filter_by() for __in operator
+    existing_offer = OfferLetter.query.filter(
+        OfferLetter.candidate_id == interview.candidate_id,
+        OfferLetter.status.in_(['Draft', 'Sent', 'Accepted'])
+    ).first()
+    
+    if existing_offer:
+        flash(f'Candidate already has an offer ({existing_offer.status}).', 'warning')
+        return redirect(url_for('hr_web.view_offer', offer_id=existing_offer.id))
+    
+    if request.method == 'POST':
+        # Create offer letter
+        offer = OfferLetter(
+            candidate_id=interview.candidate_id,
+            offer_title=request.form.get('position', interview.candidate.job_posting.title),
+            department_id=interview.candidate.job_posting.department_id,
+            position=request.form.get('position', interview.candidate.job_posting.title),
+            employment_type=request.form.get('employment_type', 'Full-Time'),
+            base_salary=request.form.get('base_salary', type=float),
+            currency=request.form.get('currency', 'KES'),
+            bonus=request.form.get('bonus', type=float) or 0,
+            allowances=request.form.get('allowances', type=float) or 0,
+            benefits=request.form.get('benefits', ''),
+            start_date=datetime.strptime(request.form.get('start_date'), '%Y-%m-%d').date(),
+            probation_period_months=request.form.get('probation_period_months', type=int) or 3,
+            reporting_to=request.form.get('reporting_to', ''),
+            work_location=request.form.get('work_location', interview.candidate.job_posting.location or 'Main Office'),
+            status='Draft'
+        )
+        
+        db.session.add(offer)
+        
+        # Update candidate status
+        interview.candidate.status = 'Offer Extended'
+        
+        # Update interview recommendation
+        interview.recommendation = 'Strong Hire'
+        
+        db.session.commit()
+        
+        flash('Offer created successfully! Candidate marked as winner.', 'success')
+        return redirect(url_for('hr_web.view_offer', offer_id=offer.id))
+    
+    # Get job posting details for pre-filling
+    job = interview.candidate.job_posting
+    
+    return render_template('recruitment/select_winner.html',
+                         interview=interview,
+                         job=job,
+                         timedelta=timedelta,
+                         candidate=interview.candidate,
+                         title=f'Select Winner - {interview.candidate.full_name}')
+    
+    
+    
+    
+@hr_web_bp.route('/recruitment/selection')
+@login_required
+def recruitment_selection():
+    """Main selection page - shows jobs with completed interviews and job offers"""
+    # Get jobs that have interviews completed
+    jobs = JobPosting.query.join(
+        Candidate, Candidate.job_posting_id == JobPosting.id
+    ).join(
+        Interview, Interview.candidate_id == Candidate.id
+    ).filter(
+        Interview.status == 'Completed',
+        JobPosting.status.in_(['Published', 'Closed']),
+        Candidate.status == 'Interviewed'
+    ).distinct().order_by(JobPosting.application_deadline.desc()).all()
+    
+    # For each job, get candidates who have completed interviews
+    jobs_with_candidates = []
+    for job in jobs:
+        candidates = Candidate.query.filter_by(
+            job_posting_id=job.id,
+            status='Interviewed'
+        ).all()
+        
+        # Calculate scores for each candidate
+        candidates_with_scores = []
+        for candidate in candidates:
+            # Get the latest completed interview for this candidate
+            interview = Interview.query.filter_by(
+                candidate_id=candidate.id,
+                status='Completed'
+            ).order_by(Interview.actual_end_time.desc()).first()
+            
+            if interview:
+                # Calculate average score from all panel members
+                scores = InterviewScore.query.filter_by(
+                    interview_id=interview.id
+                ).all()
+                
+                avg_score = 0
+                if scores:
+                    total_score = sum([s.score or 0 for s in scores])
+                    avg_score = total_score / len(scores)
+                
+                candidates_with_scores.append({
+                    'candidate': candidate,
+                    'interview': interview,
+                    'avg_score': round(avg_score, 2)
+                })
+        
+        if candidates_with_scores:
+            jobs_with_candidates.append({
+                'job': job,
+                'candidates': sorted(candidates_with_scores, 
+                                   key=lambda x: x['avg_score'], 
+                                   reverse=True)
+            })
+    
+    # Get all job offers with their relationships
+    job_offers = OfferLetter.query.join(
+        Candidate, Candidate.id == OfferLetter.candidate_id
+    ).join(
+        Department, Department.id == OfferLetter.department_id
+    ).options(
+        db.joinedload(OfferLetter.candidate),
+        db.joinedload(OfferLetter.department)
+    ).order_by(OfferLetter.created_at.desc()).all()
+    
+    return render_template('recruitment/selection.html',
+                         jobs_with_candidates=jobs_with_candidates,
+                         job_offers=job_offers,
+                         datetime=datetime)
+    
+    
+
+
+@hr_web_bp.route('/recruitment/selection/<int:job_id>/candidate/<int:candidate_id>/details')
+@login_required
+def selection_candidate_details(job_id, candidate_id):
+    """View detailed interview scores for a candidate"""
+    job = JobPosting.query.get_or_404(job_id)
+    candidate = Candidate.query.get_or_404(candidate_id)
+    
+    # Verify candidate belongs to this job
+    if candidate.job_posting_id != job.id:
+        flash('Candidate does not belong to this job!', 'error')
+        return redirect(url_for('hr_web.recruitment_selection'))
+    
+    # Get the completed interview for this candidate
+    interview = Interview.query.filter_by(
+        candidate_id=candidate.id,
+        status='Completed'
+    ).order_by(Interview.actual_end_time.desc()).first()
+    
+    if not interview:
+        flash('No completed interview found for this candidate!', 'error')
+        return redirect(url_for('hr_web.recruitment_selection'))
+    
+    # Get all scores for this interview
+    scores = InterviewScore.query.filter_by(
+        interview_id=interview.id
+    ).all()
+    
+    # Calculate averages
+    categories = ['technical_competence', 'communication_skills', 
+                 'problem_solving', 'cultural_fit', 'leadership_potential']
+    category_averages = {}
+    
+    for category in categories:
+        valid_scores = [getattr(score, category) for score in scores 
+                       if getattr(score, category) is not None]
+        if valid_scores:
+            category_averages[category] = sum(valid_scores) / len(valid_scores)
+    
+    return render_template('recruitment/selection_candidate_details.html',
+                         job=job,
+                         candidate=candidate,
+                         interview=interview,
+                         scores=scores,
+                         category_averages=category_averages)    
+    
+    
+    
+    
+@hr_web_bp.route('/recruitment/selection/<int:job_id>/select-winner/<int:candidate_id>', methods=['GET', 'POST'])
+@login_required
+def create_job_offer(job_id, candidate_id):
+    """Create a job offer for the selected candidate"""
+    job = JobPosting.query.get_or_404(job_id)
+    candidate = Candidate.query.get_or_404(candidate_id)
+    
+    # Verify candidate belongs to this job
+    if candidate.job_posting_id != job.id:
+        flash('Candidate does not belong to this job!', 'error')
+        return redirect(url_for('hr_web.recruitment_selection'))
+    
+    # Check if candidate already has an offer
+    existing_offer = OfferLetter.query.filter(
+        OfferLetter.candidate_id == candidate.id,
+        OfferLetter.status.in_(['Draft', 'Sent', 'Accepted'])
+    ).first()
+    
+    if existing_offer:
+        flash(f'Candidate already has an offer ({existing_offer.status}).', 'warning')
+        return redirect(url_for('hr_web.view_job_offer', offer_id=existing_offer.id))
+    
+    if request.method == 'POST':
+        # Validate required fields
+        start_date_str = request.form.get('start_date')
+        if not start_date_str:
+            flash('Start date is required!', 'error')
+            return redirect(url_for('hr_web.create_job_offer', job_id=job_id, candidate_id=candidate_id))
+        
+        try:
+            # Parse start date
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            
+            # Parse expiry date if provided
+            expiry_date = None
+            expiry_date_str = request.form.get('expiry_date')
+            if expiry_date_str:
+                expiry_date = datetime.strptime(expiry_date_str, '%Y-%m-%d').date()
+            
+            # Parse salary fields with default values
+            base_salary = float(request.form.get('base_salary', 0))
+            bonus = float(request.form.get('bonus', 0))
+            allowances = float(request.form.get('allowances', 0))
+            
+            # Create offer letter
+            offer = OfferLetter(
+                candidate_id=candidate.id,
+                offer_title=request.form.get('offer_title', f"Offer for {job.title}"),
+                department_id=request.form.get('department_id', job.department_id),
+                position=request.form.get('position', job.title),
+                employment_type=request.form.get('employment_type', job.employment_type or 'Full-Time'),
+                base_salary=base_salary,
+                currency=request.form.get('currency', job.salary_currency or 'KES'),
+                bonus=bonus,
+                allowances=allowances,
+                benefits=request.form.get('benefits', job.benefits or ''),
+                start_date=start_date,
+                probation_period_months=int(request.form.get('probation_period_months', 3)),
+                reporting_to=request.form.get('reporting_to', ''),
+                work_location=request.form.get('work_location', job.location or 'Head Office'),
+                expiry_date=expiry_date,
+                status='Draft',
+                created_at=datetime.utcnow()
+            )
+            
+            db.session.add(offer)
+            
+            # Update candidate status
+            candidate.status = 'Offer Extended'
+            candidate.updated_at = datetime.utcnow()
+            
+            # Get the completed interview for this candidate
+            interview = Interview.query.filter_by(
+                candidate_id=candidate.id,
+                status='Completed'
+            ).order_by(Interview.actual_end_time.desc()).first()
+            
+            if interview:
+                interview.recommendation = 'Strong Hire'
+            
+            # Reject other interviewed candidates for this job (optional)
+            if request.form.get('reject_others') == 'yes':
+                other_candidates = Candidate.query.filter(
+                    Candidate.job_posting_id == job.id,
+                    Candidate.status == 'Interviewed',
+                    Candidate.id != candidate.id
+                ).all()
+                
+                for other_candidate in other_candidates:
+                    other_candidate.status = 'Rejected'
+                    other_candidate.updated_at = datetime.utcnow()
+            
+            # Update job status if all positions are filled
+            if job.positions_available <= 1:
+                job.status = 'Closed'
+            
+            db.session.commit()
+            
+            flash(f'Job offer created for {candidate.full_name}!', 'success')
+            return redirect(url_for('hr_web.preview_job_offer', offer_id=offer.id))
+            
+        except ValueError as e:
+            flash(f'Error parsing date or number: {str(e)}', 'error')
+            return redirect(url_for('hr_web.create_job_offer', job_id=job_id, candidate_id=candidate_id))
+    
+    # Default start date (30 days from now)
+    default_start_date = datetime.utcnow() + timedelta(days=30)
+    # Default expiry date (7 days from now)
+    default_expiry_date = datetime.utcnow() + timedelta(days=7)
+    
+
+    
+    return render_template('recruitment/create_job_offer.html',
+                         job=job,
+                         candidate=candidate,
+                         default_start_date=default_start_date.date(),
+                         default_expiry_date=default_expiry_date.date())
+    
+    
+    
+    
+@hr_web_bp.route('/recruitment/offers/<int:offer_id>/preview')
+@login_required
+def preview_job_offer(offer_id):
+    """Preview job offer with email template"""
+    offer = OfferLetter.query.get_or_404(offer_id)
+    
+    # Get company information (you might want to store this in a config or database)
+    company_info = {
+        'name': 'AstroCare Hospital',
+        'address': '123 Medical Street, Health City',
+        'city': 'Nairobi',
+        'country': 'Kenya',
+        'phone': '+254 700 123 456',
+        'email': 'hr@astrocare.com',
+        'website': 'www.astrocare.com',
+        'logo_url': '/static/img/logo.png'
+    }
+    
+    return render_template('recruitment/job_offer_preview.html',
+                         offer=offer,
+                         company=company_info)
+
+import hashlib
+import hmac
+from itsdangerous import URLSafeTimedSerializer
+from flask import current_app
+
+def generate_offer_token(offer):
+    """Generate a secure token for offer acceptance"""
+    serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+    
+    # Create token data
+    token_data = {
+        'offer_id': offer.id,
+        'candidate_id': offer.candidate.id,
+        'email': offer.candidate.email
+    }
+    
+    # Generate token
+    token = serializer.dumps(token_data)
+    return token
+
+def verify_offer_token(token, max_age=604800):  # 7 days expiry
+    """Verify and decode offer token"""
+    serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+    try:
+        data = serializer.loads(token, max_age=max_age)
+        return data
+    except:
+        return None
+
+
+@hr_web_bp.route('/recruitment/offers/<int:offer_id>/send', methods=['POST', 'GET'])
+@login_required
+def send_job_offer(offer_id):
+    """Send job offer via email"""
+    offer = OfferLetter.query.get_or_404(offer_id)
+    
+    if offer.status != 'Draft':
+        flash('Only draft offers can be sent.', 'error')
+        return redirect(url_for('hr_web.view_job_offer', offer_id=offer_id))
+    
+    try:
+        # Prepare email content
+        subject = f"Job Offer: {offer.offer_title} - AstroCare"
+        
+        # Get offer acceptance URL
+        offer_acceptance_url = url_for('hr_web.accept_offer', offer_id=offer.id, token=generate_offer_token(offer), _external=True)
+        
+        # Prepare plain text email
+        plain_body = f"""
+Dear {offer.candidate.full_name},
+
+Congratulations! We are pleased to offer you the position of {offer.position} at AstroCare.
+
+Position: {offer.position}
+Department: {offer.department.name if offer.department else 'To be assigned'}
+Start Date: {offer.start_date.strftime('%B %d, %Y')}
+Employment Type: {offer.employment_type}
+Reporting To: {offer.reporting_to or 'To be assigned'}
+
+COMPENSATION DETAILS:
+- Base Salary: {offer.currency} {offer.base_salary:,.2f} per month
+- Performance Bonus: {offer.currency} {offer.bonus:,.2f} per year (if applicable)
+- Allowances: {offer.currency} {offer.allowances:,.2f} per month
+- Total Monthly Compensation: {offer.currency} {offer.total_compensation:,.2f}
+
+CONTRACT DETAILS:
+- Probation Period: {offer.probation_period_months} months
+- Work Location: {offer.work_location or 'As assigned'}
+- Benefits: {offer.benefits if offer.benefits else 'Standard company benefits'}
+
+Please review the offer details and accept or decline through our portal. The offer will expire on {offer.expiry_date.strftime('%B %d, %Y') if offer.expiry_date else '7 days from receipt'}.
+
+To view your offer details and respond, please visit:
+{offer_acceptance_url}
+
+If you have any questions, please don't hesitate to contact our HR department.
+
+Best regards,
+AstroCare HR Team
+        """
+        
+        # Prepare HTML email
+        html_body = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+        .header {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; color: white; }}
+        .content {{ padding: 30px; background: #f9f9f9; }}
+        .details {{ background: white; border-radius: 8px; padding: 25px; margin: 20px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }}
+        .button {{ display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; }}
+        .footer {{ text-align: center; padding: 20px; color: #666; font-size: 12px; }}
+        .section-title {{ color: #667eea; border-bottom: 2px solid #667eea; padding-bottom: 10px; margin-top: 30px; }}
+        table {{ width: 100%; border-collapse: collapse; margin: 15px 0; }}
+        th, td {{ padding: 12px 15px; text-align: left; border-bottom: 1px solid #ddd; }}
+        th {{ background-color: #f8f9fa; color: #667eea; }}
+        .highlight {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; border-radius: 5px; text-align: center; margin: 20px 0; }}
+        .deadline {{ background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Congratulations!</h1>
+            <p>Job Offer from AstroCare</p>
+        </div>
+        
+        <div class="content">
+            <p>Dear <strong>{offer.candidate.full_name}</strong>,</p>
+            
+            <p>We are delighted to extend an offer for the position of:</p>
+            
+            <div class="highlight">
+                <h2>{offer.position}</h2>
+                <p>{offer.offer_title}</p>
+            </div>
+            
+            <div class="details">
+                <h3 class="section-title">Offer Summary</h3>
+                <table>
+                    <tr>
+                        <th>Position</th>
+                        <td>{offer.position}</td>
+                    </tr>
+                    <tr>
+                        <th>Department</th>
+                        <td>{offer.department.name if offer.department else 'To be assigned'}</td>
+                    </tr>
+                    <tr>
+                        <th>Employment Type</th>
+                        <td>{offer.employment_type}</td>
+                    </tr>
+                    <tr>
+                        <th>Start Date</th>
+                        <td>{offer.start_date.strftime('%B %d, %Y')}</td>
+                    </tr>
+                    <tr>
+                        <th>Reporting To</th>
+                        <td>{offer.reporting_to or 'To be assigned'}</td>
+                    </tr>
+                </table>
+                
+                <h3 class="section-title">Compensation Package</h3>
+                <table>
+                    <tr>
+                        <th>Base Salary (Monthly)</th>
+                        <td>{offer.currency} {offer.base_salary:,.2f}</td>
+                    </tr>
+                    <tr>
+                        <th>Performance Bonus (Annual)</th>
+                        <td>{offer.currency} {offer.bonus:,.2f}</td>
+                    </tr>
+                    <tr>
+                        <th>Allowances (Monthly)</th>
+                        <td>{offer.currency} {offer.allowances:,.2f}</td>
+                    </tr>
+                    <tr style="background-color: #f8f9fa;">
+                        <th><strong>Total Monthly Compensation</strong></th>
+                        <td><strong>{offer.currency} {offer.total_compensation:,.2f}</strong></td>
+                    </tr>
+                </table>
+                
+                <h3 class="section-title">Additional Details</h3>
+                <table>
+                    <tr>
+                        <th>Probation Period</th>
+                        <td>{offer.probation_period_months} months</td>
+                    </tr>
+                    <tr>
+                        <th>Work Location</th>
+                        <td>{offer.work_location or 'As assigned'}</td>
+                    </tr>
+                </table>
+                
+                {f'<p><strong>Benefits:</strong><br>{offer.benefits}</p>' if offer.benefits else ''}
+            </div>
+            
+            <div class="deadline">
+                <h4>⏰ Important Deadline</h4>
+                <p>This offer expires on: <strong>{offer.expiry_date.strftime('%B %d, %Y %I:%M %p') if offer.expiry_date else '7 days from receipt'}</strong></p>
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{offer_acceptance_url}" class="button">VIEW FULL OFFER & RESPOND</a>
+            </div>
+            
+            <p>You can also respond by:</p>
+            <ul>
+                <li>Clicking the button above</li>
+                <li>Replying to this email</li>
+                <li>Contacting our HR department directly</li>
+            </ul>
+            
+            <p>If you have any questions about the offer or need clarification on any terms, please don't hesitate to contact us.</p>
+            
+            <p>We look forward to welcoming you to the AstroCare team!</p>
+            
+            <p>Best regards,<br>
+            <strong>AstroCare HR Team</strong><br>
+            Email: hr@astrocare.com<br>
+            Phone: +254 700 000 000</p>
+        </div>
+        
+        <div class="footer">
+            <p>This is a confidential communication. If you are not the intended recipient, please delete this email.</p>
+            <p>Offer ID: #{offer.id} | Generated on: {datetime.utcnow().strftime('%B %d, %Y')}</p>
+        </div>
+    </div>
+</body>
+</html>
+        """
+        
+        # Send email using notification manager
+        email_sent = notification_manager.send_email(
+            subject=subject,
+            recipients=[offer.candidate.email],
+            body=plain_body,
+            html_body=html_body,
+            sender="AstroCare HR <hr@astrocare.com>"
+        )
+        
+        if email_sent:
+            # Update offer status
+            offer.status = 'Sent'
+            offer.sent_date = datetime.utcnow()
+            
+            # Set expiry date if not already set (default: 7 days)
+            if not offer.expiry_date:
+                offer.expiry_date = datetime.utcnow() + timedelta(days=7)
+            
+            # Update candidate status
+            offer.candidate.status = 'Offer Extended'
+            
+            # Optional: Send SMS notification if phone is available
+            if offer.candidate.phone:
+                sms_message = f"Hi {offer.candidate.first_name}, AstroCare has sent you a job offer for {offer.position}. Check your email for details. Offer expires: {offer.expiry_date.strftime('%d/%m') if offer.expiry_date else '7 days'}. Reply to accept."
+                notification_manager.send_sms(
+                    message=sms_message,
+                    recipients=[offer.candidate.phone]
+                )
+            
+            db.session.commit()
+            
+            flash(f'Job offer successfully sent to {offer.candidate.full_name}! Email and SMS notifications have been dispatched.', 'success')
+            
+            # Log the action
+            
+        else:
+            flash('Failed to send email notification. Please check your email configuration and try again.', 'error')
+            logger.error(f"Failed to send job offer #{offer.id} to {offer.candidate.email}")
+            
+    except Exception as e:
+        flash(f'Error sending job offer: {str(e)}', 'error')
+        logger.error(f"Error sending job offer #{offer.id}: {str(e)}")
+    
+    return redirect(url_for('hr_web.view_job_offer', offer_id=offer_id))
+
+@hr_web_bp.route('/recruitment/offers/<int:offer_id>/accept', methods=['GET', 'POST'])
+def accept_offer(offer_id):
+    """Candidate offer acceptance page"""
+    token = request.args.get('token')
+    
+    if not token:
+        flash('Invalid or missing offer link.', 'error')
+        return redirect(url_for('main.index'))
+    
+    # Verify token
+    token_data = verify_offer_token(token)
+    if not token_data or token_data.get('offer_id') != offer_id:
+        flash('Invalid or expired offer link.', 'error')
+        return redirect(url_for('main.index'))
+    
+    offer = OfferLetter.query.get_or_404(offer_id)
+    
+    # Verify candidate matches token
+    if offer.candidate.email != token_data.get('email'):
+        flash('Unauthorized access to offer.', 'error')
+        return redirect(url_for('main.index'))
+    
+    # Check if offer is still valid
+    if offer.status != 'Sent':
+        flash(f'This offer has already been {offer.status.lower()}.', 'warning')
+        return render_template('recruitment/offer_response.html', offer=offer, status=offer.status)
+    
+    # Check if expired
+    if offer.expiry_date and datetime.utcnow() > offer.expiry_date:
+        offer.status = 'Expired'
+        db.session.commit()
+        flash('This offer has expired.', 'error')
+        return render_template('recruitment/offer_response.html', offer=offer, status='Expired')
+    
+    if request.method == 'POST':
+        action = request.form.get('action')
+        
+        if action == 'accept':
+            # Candidate accepts the offer
+            offer.status = 'Accepted'
+            offer.response_date = datetime.utcnow()
+            offer.candidate.status = 'Offer Accepted'
+            
+            # Send acceptance confirmation email
+            send_offer_response_notification(offer, 'accepted')
+            
+            flash('Congratulations! You have accepted the job offer. We will contact you with further instructions.', 'success')
+            
+        elif action == 'reject':
+            # Candidate rejects the offer
+            offer.status = 'Rejected'
+            offer.response_date = datetime.utcnow()
+            offer.candidate.status = 'Offer Rejected'
+            
+            # Send rejection confirmation email
+            send_offer_response_notification(offer, 'rejected')
+            
+            flash('You have declined the job offer. Thank you for your time.', 'info')
+        
+        db.session.commit()
+        return render_template('recruitment/offer_response.html', offer=offer, status=offer.status)
+    
+    # Calculate days remaining
+    days_remaining = None
+    if offer.expiry_date:
+        days_remaining = (offer.expiry_date.date() - datetime.utcnow().date()).days
+    
+    return render_template('recruitment/accept_offer.html', 
+                         offer=offer, 
+                         days_remaining=days_remaining,
+                         token=token)
+
+def send_offer_response_notification(offer, response_type):
+    """Send notification when candidate responds to offer"""
+    try:
+        if response_type == 'accepted':
+            subject = f"Offer Accepted: {offer.candidate.full_name} - {offer.position}"
+            body = f"""
+            Great news! {offer.candidate.full_name} has accepted the job offer for {offer.position}.
+            
+            Candidate: {offer.candidate.full_name}
+            Email: {offer.candidate.email}
+            Phone: {offer.candidate.phone or 'Not provided'}
+            Position: {offer.position}
+            Start Date: {offer.start_date.strftime('%B %d, %Y')}
+            Salary: {offer.currency} {offer.total_compensation:,.2f} per month
+            
+            Please proceed with onboarding.
+            """
+            
+            # Send to HR team
+            hr_email = current_app.config.get('HR_EMAIL', 'coinvillage.ke@gmail.com')
+            notification_manager.send_email(
+                subject=subject,
+                recipients=[hr_email],
+                body=body
+            )
+            
+            # Send welcome email to candidate
+            welcome_subject = f"Welcome to AstroCare!"
+            welcome_body = f"""
+            Dear {offer.candidate.full_name},
+            
+            We're thrilled to confirm your acceptance of the {offer.position} position!
+            
+            Next Steps:
+            1. Our HR team will contact you within 48 hours
+            2. You'll receive onboarding documents to complete
+            3. Your start date is {offer.start_date.strftime('%B %d, %Y')}
+            
+            Welcome to the AstroCare family!
+            
+            Best regards,
+            AstroCare HR Team
+            """
+            
+            notification_manager.send_email(
+                subject=welcome_subject,
+                recipients=[offer.candidate.email],
+                body=welcome_body
+            )
+            
+        else:  # rejected
+            subject = f"Offer Declined: {offer.candidate.full_name} - {offer.position}"
+            body = f"""
+            {offer.candidate.full_name} has declined the job offer for {offer.position}.
+            
+            Candidate: {offer.candidate.full_name}
+            Email: {offer.candidate.email}
+            Position: {offer.position}
+            Reason: {request.form.get('reason', 'Not provided')}
+            
+            Please update the recruitment pipeline.
+            """
+            
+            hr_email = current_app.config.get('HR_EMAIL', 'hr@astrocare.com')
+            notification_manager.send_email(
+                subject=subject,
+                recipients=[hr_email],
+                body=body
+            )
+            
+    except Exception as e:
+        logger.error(f"Error sending offer response notification: {str(e)}")
+
+@hr_web_bp.route('/recruitment/offers/<int:offer_id>')
+@login_required
+def view_job_offer(offer_id):
+    """View job offer details"""
+    offer = OfferLetter.query.get_or_404(offer_id)
+    
+    # Calculate days remaining
+    days_remaining = None
+    if offer.expiry_date:
+        days_remaining = (offer.expiry_date.date() - datetime.utcnow().date()).days
+    
+    return render_template('recruitment/view_job_offer.html',
+                         offer=offer,
+                         days_remaining=days_remaining)
+
+@hr_web_bp.route('/recruitment/offers/<int:offer_id>/update-status', methods=['POST'])
+@login_required
+def update_offer_status(offer_id):
+    """Update job offer status"""
+    offer = OfferLetter.query.get_or_404(offer_id)
+    new_status = request.form.get('status')
+    
+    valid_statuses = ['Draft', 'Sent', 'Accepted', 'Rejected', 'Withdrawn']
+    
+    if new_status not in valid_statuses:
+        flash('Invalid status.', 'error')
+        return redirect(url_for('hr_web.view_job_offer', offer_id=offer_id))
+    
+    offer.status = new_status
+    offer.response_date = datetime.utcnow() if new_status in ['Accepted', 'Rejected'] else None
+    
+    # Update candidate status based on offer status
+    if new_status == 'Accepted':
+        offer.candidate.status = 'Offer Accepted'
+        offer.candidate.hired_at = datetime.utcnow()
+    elif new_status == 'Rejected':
+        offer.candidate.status = 'Offer Rejected'
+    
+    db.session.commit()
+    
+    flash(f'Offer status updated to {new_status}.', 'success')
+    return redirect(url_for('hr_web.view_job_offer', offer_id=offer_id))    

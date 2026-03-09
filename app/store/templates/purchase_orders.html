@@ -101,8 +101,36 @@
                         <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-200 dark:divide-gray-700" id="ordersTableBody">
-                    {% for order in purchase_orders %}
+<tbody class="divide-y divide-gray-200 dark:divide-gray-700" id="ordersTableBody">
+    {% set ns = namespace(last_group=None) %}
+    {% for order in purchase_orders %}
+        {% set current_group = order.lpo_number %}
+        {% if current_group != ns.last_group %}
+            <!-- Group Header Row -->
+            <tr class="bg-gray-100 dark:bg-gray-700 group-header">
+                <td colspan="6" class="px-6 py-3">
+                    <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-file-invoice text-gray-500 dark:text-gray-400"></i>
+                            <span class="font-medium text-gray-700 dark:text-gray-300">
+                                LPO: {{ order.lpo_number if order.lpo_number else 'No LPO Number' }}
+                            </span>
+                            <span class="text-sm text-gray-500 dark:text-gray-400">•</span>
+                            <span class="font-medium text-gray-700 dark:text-gray-300">
+                                Supplier: {{ order.supplier.name if order.supplier else 'Unknown' }}
+                            </span>
+                        </div>
+                        {% if order.lpo_number %}
+                        <span class="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded-full">
+                            {{ order.lpo_number }}
+                        </span>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% set ns.last_group = current_group %}
+        {% endif %}
+
                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors order-row" 
                         data-item-name="{{ order.item_name|lower }}"
                         data-supplier-name="{{ order.supplier.name|lower }}"
@@ -295,22 +323,26 @@
                                     </form>
                                     {% endif %} 
                                     
-                                    <!-- Record Delivery Options -->
-                                    {% if order.status != 'canceled' and not order.is_fully_delivered %}
-                                        {% if not stock_exists.get(order.id, False) %}
-                                        <a href="{{ url_for('store_web_bp.record_delivery') }}?lpo_number={{ order.lpo_number }}" class="text-xs px-2 py-1 bg-green-100 dark:bg-green-900 hover:bg-green-200 dark:hover:bg-green-800 text-green-800 dark:text-green-200 rounded transition-colors" data-tooltip="Record Delivery Details">
-                                            {% if order.status == 'ordered' %}
-                                            Record Delivery
-                                            {% else %}
-                                            Continue Delivery
-                                            {% endif %}
-                                        </a>
-                                        {% else %}
-                                        <a href="{{ url_for('store_web_bp.record_delivery') }}?lpo_number={{ order.lpo_number }}" class="text-xs px-2 py-1 bg-yellow-100 dark:bg-yellow-900 hover:bg-yellow-200 dark:hover:bg-yellow-800 text-yellow-800 dark:text-yellow-200 rounded transition-colors" data-tooltip="Record Additional Delivery">
-                                            Add Delivery
-                                        </a>
-                                        {% endif %}
-                                    {% endif %}
+<!-- Record Delivery Options -->
+{% if order.status != 'canceled' and not order.is_fully_delivered %}
+    {% if not stock_exists.get(order.id, False) %}
+    <a href="{{ url_for('store_web_bp.record_delivery') }}?order_id={{ order.id }}"
+       class="text-xs px-2 py-1 bg-green-100 dark:bg-green-900 hover:bg-green-200 dark:hover:bg-green-800 text-green-800 dark:text-green-200 rounded transition-colors"
+       data-tooltip="Record Delivery Details">
+        {% if order.status == 'ordered' %}
+            Record Delivery
+        {% else %}
+            Continue Delivery
+        {% endif %}
+    </a>
+    {% else %}
+    <a href="{{ url_for('store_web_bp.record_delivery') }}?lpo_number={{ order.lpo_number }}&order_id={{ order.id }}"
+       class="text-xs px-2 py-1 bg-yellow-100 dark:bg-yellow-900 hover:bg-yellow-200 dark:hover:bg-yellow-800 text-yellow-800 dark:text-yellow-200 rounded transition-colors"
+       data-tooltip="Record Additional Delivery">
+        Add Delivery
+    </a>
+    {% endif %}
+{% endif %}
                                     
                                     <!-- Status Badges -->
                                     {% if order.status == 'delivered' and order.is_fully_delivered %}

@@ -1,0 +1,331 @@
+{% extends "base.html" %}
+
+{% block title %}Financial Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Header with gradient -->
+    <div class="bg-gradient-primary text-white p-4 rounded-4 mb-4 shadow-sm">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="display-6 fw-bold">Financial Dashboard</h1>
+                <p class="text-white-80 mb-0">Overview of revenue, expenses, and key metrics</p>
+            </div>
+            <div>
+                <span class="badge bg-light text-dark fs-6 p-3">{{ currency }} {{ "{:,.2f}".format(revenue_current_year) }} YTD</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-4 mb-5">
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-primary mb-1">Revenue (MTD)</p>
+                            <h3 class="mb-0 fw-bold">{{ currency }} {{ "{:,.2f}".format(revenue_current_month) }}</h3>
+                            <small class="text-muted">vs last month: 
+                                <span class="{% if revenue_current_month >= revenue_prev_month %}text-success{% else %}text-danger{% endif %}">
+                                    {{ ((revenue_current_month - revenue_prev_month) / revenue_prev_month * 100) | round(1) if revenue_prev_month else 0 }}%
+                                </span>
+                            </small>
+                        </div>
+                        <div class="icon-circle bg-primary bg-opacity-10">
+                            <i class="fas fa-chart-line text-primary fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-success mb-1">Expenses (MTD)</p>
+                            <h3 class="mb-0 fw-bold">{{ currency }} {{ "{:,.2f}".format(expenses_current_month) }}</h3>
+                            <small class="text-muted">vs last month: 
+                                <span class="{% if expenses_current_month <= expenses_prev_month %}text-success{% else %}text-danger{% endif %}">
+                                    {{ ((expenses_current_month - expenses_prev_month) / expenses_prev_month * 100) | round(1) if expenses_prev_month else 0 }}%
+                                </span>
+                            </small>
+                        </div>
+                        <div class="icon-circle bg-success bg-opacity-10">
+                            <i class="fas fa-shopping-cart text-success fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-warning mb-1">Net Profit (MTD)</p>
+                            <h3 class="mb-0 fw-bold {% if profit_current_month >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                {{ currency }} {{ "{:,.2f}".format(profit_current_month) }}
+                            </h3>
+                            <small class="text-muted">vs last month: 
+                                <span class="{% if profit_current_month >= profit_prev_month %}text-success{% else %}text-danger{% endif %}">
+                                    {{ ((profit_current_month - profit_prev_month) / profit_prev_month * 100) | round(1) if profit_prev_month else 0 }}%
+                                </span>
+                            </small>
+                        </div>
+                        <div class="icon-circle bg-warning bg-opacity-10">
+                            <i class="fas fa-coins text-warning fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-info mb-1">Cash & Bank</p>
+                            <h3 class="mb-0 fw-bold">{{ currency }} {{ "{:,.2f}".format(cash_balance + bank_balance) }}</h3>
+                            <small class="text-muted">Cash: {{ currency }} {{ "{:,.2f}".format(cash_balance) }} | Bank: {{ currency }} {{ "{:,.2f}".format(bank_balance) }}</small>
+                        </div>
+                        <div class="icon-circle bg-info bg-opacity-10">
+                            <i class="fas fa-wallet text-info fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row g-4 mb-5">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h6 class="text-uppercase fw-bold text-primary"><i class="fas fa-chart-line me-2"></i>Revenue vs Expenses (Last 6 Months)</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="trendChart" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h6 class="text-uppercase fw-bold text-success"><i class="fas fa-chart-pie me-2"></i>Expense Breakdown</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="categoryChart" height="150"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pending & Quick Actions -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="fw-bold text-warning">Pending Approvals</h6>
+                            <p class="h3 mb-0">{{ pending_expenses + pending_payrolls }}</p>
+                            <small class="text-muted">Expenses: {{ pending_expenses }} | Payrolls: {{ pending_payrolls }}</small>
+                        </div>
+                        <div class="icon-circle bg-warning bg-opacity-10">
+                            <i class="fas fa-clock text-warning fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body p-4 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="fw-bold text-primary">Quick Actions</h6>
+                        <div class="mt-2 d-flex gap-2">
+                            <a href="{{ url_for('finance_web_bp.new_expense') }}" class="btn btn-sm btn-outline-primary">New Expense</a>
+                            <a href="{{ url_for('finance_web_bp.expenses') }}" class="btn btn-sm btn-outline-success">Expenses List</a>
+                            <a href="{{ url_for('finance_web_bp.sales_reports') }}" class="btn btn-sm btn-outline-info">Sales Reports</a>
+                            <a href="{{ url_for('finance_web_bp.payroll_payment') }}" class="btn btn-sm btn-outline-warning">Payroll Payment</a>
+                        </div>
+                    </div>
+                    <i class="fas fa-rocket fa-3x text-muted"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity Tables -->
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h6 class="text-uppercase fw-bold text-info"><i class="fas fa-receipt me-2"></i>Recent Sales</h6>
+                </div>
+                <div class="card-body p-4">
+                    {% if recent_sales %}
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Patient</th>
+                                    <th>Amount</th>
+                                    <th>Method</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for sale in recent_sales %}
+                                <tr>
+                                    <td>{{ sale.sale_date.strftime('%d %b') }}</td>
+                                    <td>{{ sale.patient_name }}</td>
+                                    <td class="text-end fw-bold">{{ currency }} {{ "{:,.2f}".format(sale.total_amount) }}</td>
+                                    <td>{{ sale.payment_method }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center py-3">No recent sales</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h6 class="text-uppercase fw-bold text-danger"><i class="fas fa-money-bill-wave me-2"></i>Recent Expenses</h6>
+                </div>
+                <div class="card-body p-4">
+                    {% if recent_expenses %}
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Description</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for exp in recent_expenses %}
+                                <tr>
+                                    <td>{{ exp.expense_date.strftime('%d %b') }}</td>
+                                    <td>{{ exp.description[:30] }}...</td>
+                                    <td class="text-end fw-bold">{{ currency }} {{ "{:,.2f}".format(exp.amount + exp.tax_amount) }}</td>
+                                    <td><span class="badge bg-{{ 'success' if exp.status=='paid' else 'warning' if exp.status=='submitted' else 'secondary' }}">{{ exp.status }}</span></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center py-3">No recent expenses</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts JS -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Trend Chart
+    const months = {{ months_data | map(attribute='month') | list | tojson }};
+    const revenueData = {{ months_data | map(attribute='revenue') | list | tojson }};
+    const expenseData = {{ months_data | map(attribute='expenses') | list | tojson }};
+
+    new Chart(document.getElementById('trendChart'), {
+        type: 'line',
+        data: {
+            labels: months,
+            datasets: [{
+                label: 'Revenue',
+                data: revenueData,
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59,130,246,0.1)',
+                tension: 0.3,
+                fill: true
+            }, {
+                label: 'Expenses',
+                data: expenseData,
+                borderColor: '#ef4444',
+                backgroundColor: 'rgba(239,68,68,0.1)',
+                tension: 0.3,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { callback: (v) => 'KES ' + v.toLocaleString() }
+                }
+            }
+        }
+    });
+
+    // Category Pie Chart
+    const categories = {{ expense_categories | map(attribute='name') | list | tojson }};
+    const totals = {{ expense_categories | map(attribute='total') | list | tojson }};
+    new Chart(document.getElementById('categoryChart'), {
+        type: 'doughnut',
+        data: {
+            labels: categories,
+            datasets: [{
+                data: totals,
+                backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#6b7280']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+});
+</script>
+
+<style>
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .text-white-80 {
+        color: rgba(255,255,255,0.8);
+    }
+    .icon-circle {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .hover-lift {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hover-lift:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.75rem 1.5rem rgba(0,0,0,0.1) !important;
+    }
+    .badge {
+        font-weight: 500;
+        padding: 0.5em 0.8em;
+    }
+    .table-hover tbody tr:hover {
+        background-color: rgba(59,130,246,0.05);
+    }
+</style>
+{% endblock %}

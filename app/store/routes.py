@@ -49,10 +49,11 @@ def suppliers():
 
 @store_web_bp.route('/purchase-orders')
 def purchase_orders():
-    # Eager load supplier data with each order
     orders = PurchaseOrder.query.options(db.joinedload(PurchaseOrder.supplier)) \
-                         .order_by(PurchaseOrder.order_date.desc()) \
+                         .order_by(PurchaseOrder.lpo_id.desc(),
+                                   PurchaseOrder.order_date.desc()) \
                          .all()
+
     
     # Get stock information for each purchase order
     order_ids = [order.id for order in orders]
@@ -498,8 +499,7 @@ def handle_stock_request_action(request_id):
             # NO stock deduction here
             # NO inventory updates here
             # NO stock flow records here
-
-        # ✅ Collect request (UPDATE stock and create stock flow)
+        # ✅ Collect request (UPDATE stock, create stock flow, update department inventory)
         elif action == 'collect':
             if req.status != 'approved':
                 raise ValueError("Only approved requests can be collected")
@@ -519,33 +519,24 @@ def handle_stock_request_action(request_id):
                 module='stock_request'
             )
 
-            # Verify stock is still available
-            if req.stock.current_stock < req.quantity_approved:
+            # Verify stock availability
+            stock = req.stock
+            if stock.current_stock < req.quantity_approved:
                 log_inventory_action(
                     action='collection_failed',
                     resource_type='stock_request',
                     resource_id=req.id,
-                    description=f"Insufficient stock for collection. Available: {req.stock.current_stock}, Requested: {req.quantity_approved}",
+                    description=f"Insufficient stock. Available: {stock.current_stock}, Requested: {req.quantity_approved}",
                     module='stock_request'
                 )
-                raise ValueError(f"Insufficient stock. Available: {req.stock.current_stock}")
+                raise ValueError(f"Insufficient stock. Available: {stock.current_stock}")
 
-            # Deduct from main stock safely
-            stock = req.stock
+            # Deduct from main stock
             old_stock_quantity = stock.current_stock
             stock.current_stock -= req.quantity_approved
-            
             if stock.current_stock < 0:
-                log_inventory_action(
-                    action='collection_failed',
-                    resource_type='stock_request',
-                    resource_id=req.id,
-                    description=f"Stock deduction would result in negative quantity: {stock.current_stock}",
-                    module='stock_request'
-                )
                 raise ValueError("Stock deduction went negative, aborting")
 
-            # Log stock deduction
             log_inventory_action(
                 action='stock_deducted',
                 resource_type='stock',
@@ -560,93 +551,178 @@ def handle_stock_request_action(request_id):
             # Route into department-specific inventory
             dept = req.department.lower()
             approved_qty = req.quantity_approved
-            service = Service.query.filter_by(name=stock.name, category='Pharmacy').first()
 
-            # Helper function for inventory updates with logging
-            def update_inventory(model_cls, has_expiry=True):
-                inv = model_cls.query.filter_by(item_name=stock.name).first()
-                if not inv:
-                    # Log new department inventory creation
-                    inv = model_cls(
-                        item_name=stock.name,
-                        category=stock.category,
-                        quantity=approved_qty,
-                        expiry_date=stock.expiration_date if has_expiry else None,
-                        supplier=stock.supplier.name if stock.supplier else None
-                    )
-                    db.session.add(inv)
-                    db.session.flush()  # Get ID for logging
-                    
-                    log_inventory_action(
-                        action='department_inventory_created',
-                        resource_type=model_cls.__name__.lower(),
-                        resource_id=inv.id,
-                        description=f"Created new {dept} inventory for {stock.name}",
-                        new_values={
-                            'item_name': stock.name,
-                            'quantity': approved_qty,
-                            'category': stock.category,
-                            'expiry_date': stock.expiration_date.isoformat() if has_expiry and stock.expiration_date else None
-                        },
-                        module=dept
-                    )
-                else:
-                    old_dept_quantity = inv.quantity
-                    inv.quantity += approved_qty
-                    
-                    log_inventory_action(
-                        action='department_inventory_updated',
-                        resource_type=model_cls.__name__.lower(),
-                        resource_id=inv.id,
-                        description=f"Updated {dept} inventory for {stock.name}",
-                        old_values={'quantity': old_dept_quantity},
-                        new_values={'quantity': inv.quantity},
-                        changed_fields=['quantity'],
-                        module=dept
-                    )
-                return inv
-
-            dept_inventory = None
+            # Determine target inventory model
             if dept == "lab":
-                dept_inventory = update_inventory(LabInventory)
+                inv_model = LabInventory
             elif dept == "pharmacy":
-                dept_inventory = update_inventory(PharmacyInventory)
+                inv_model = PharmacyInventory
             elif dept == "radiology":
-                dept_inventory = update_inventory(RadiologyInventory)
+                inv_model = RadiologyInventory
             elif dept == "hr":
-                dept_inventory = update_inventory(HRInventory, has_expiry=False)
+                inv_model = HRInventory   # if exists
             else:
-                log_inventory_action(
-                    action='collection_failed',
-                    resource_type='stock_request',
-                    resource_id=req.id,
-                    description=f"Unknown department: {req.department}",
-                    module='stock_request'
-                )
                 raise ValueError(f"Unknown department: {req.department}")
 
-            # ✅ Stock flow records for collection
+            # Common data from stock
+            batch_number = stock.batch_number
+            expiry_date = stock.expiration_date
+            buying_price = stock.unit_price          # cost price
+            selling_price = stock.selling_price      # set by finance (may be None)
+            location = stock.location
+            supplier_name = stock.supplier.name if stock.supplier else None
+            unit = stock.unit if hasattr(stock, 'unit') and stock.unit else 'piece'   # Use stock's unit if available
+
+            # Default locations per department (used if stock.location is not provided)
+            default_locations = {
+                'pharmacy': 'Pharmacy Store',
+                'lab': 'Laboratory Store',
+                'radiology': 'Radiology Store',
+                'hr': 'HR Store'
+            }
+            final_location = location if location else default_locations.get(dept, 'General Store')
+
+            # For pharmacy, also handle Service
+            # For pharmacy, also handle Service
+            if dept == "pharmacy":
+                # Find or create Service for billing
+                service = Service.query.filter_by(name=stock.name, category='Pharmacy').first()
+                if not service:
+                    service = Service(
+                        name=stock.name,
+                        category='Pharmacy',
+                        price=selling_price or 0.0,
+                        walkin_price=selling_price or 0.0,
+                        special_clinic_price=selling_price or 0.0,
+                        item_category=stock.category,
+                        supplier_id=stock.supplier_id,
+                        expiration_date=expiry_date,
+                        quantity_in_stock=0,
+                        requires_prescription=True,
+                    )
+                    db.session.add(service)
+                    db.session.flush()
+                    log_inventory_action(
+                        action='service_created',
+                        resource_type='service',
+                        resource_id=service.id,
+                        description=f"Created service for pharmacy item {stock.name}",
+                        new_values={'name': stock.name, 'price': selling_price},
+                        module='finance'
+                    )
+                else:
+                    # Update service price if changed (optional)
+                    if service.price != selling_price:
+                        old_price = service.price
+                        service.price = selling_price or 0.0
+                        log_inventory_action(
+                            action='service_updated',
+                            resource_type='service',
+                            resource_id=service.id,
+                            description=f"Updated service price for {stock.name}",
+                            old_values={'price': old_price},
+                            new_values={'price': service.price},
+                            module='finance'
+                        )
+
+                # ✅ Update Service quantity_in_stock to match added inventory
+                old_qty = service.quantity_in_stock
+                service.quantity_in_stock += approved_qty
+                service.last_restocked = datetime.utcnow()
+                log_inventory_action(
+                    action='service_stock_updated',
+                    resource_type='service',
+                    resource_id=service.id,
+                    description=f"Increased service stock by {approved_qty}",
+                    old_values={'quantity_in_stock': old_qty},
+                    new_values={'quantity_in_stock': service.quantity_in_stock},
+                    changed_fields=['quantity_in_stock', 'last_restocked'],
+                    module='finance'
+                )
+
+                service_id = service.id
+            else:
+                service_id = None
+
+            # Update department inventory (batch‑sensitive)
+            inv = inv_model.query.filter_by(
+                item_name=stock.name,
+                batch_number=batch_number
+            ).first()
+
+            if not inv:
+                inv = inv_model(
+                    item_name=stock.name,
+                    category=stock.category,
+                    quantity=approved_qty,
+                    unit=unit,
+                    buying_price=buying_price,
+                    selling_price=selling_price,
+                    batch_number=batch_number,
+                    expiry_date=expiry_date,
+                    supplier=supplier_name,
+                    location=final_location,          # Use default if no stock.location
+                    service_id=service_id if dept == "pharmacy" else None,
+                )
+                db.session.add(inv)
+                db.session.flush()
+                log_inventory_action(
+                    action='department_inventory_created',
+                    resource_type=inv_model.__name__.lower(),
+                    resource_id=inv.id,
+                    description=f"Created new {dept} inventory for batch {batch_number} of {stock.name}",
+                    new_values={
+                        'item_name': stock.name,
+                        'batch': batch_number,
+                        'quantity': approved_qty,
+                        'buying_price': buying_price,
+                        'selling_price': selling_price,
+                        'expiry_date': expiry_date.isoformat() if expiry_date else None,
+                        'location': final_location
+                    },
+                    module=dept
+                )
+            else:
+                old_qty = inv.quantity
+                inv.quantity += approved_qty
+                # If location not set, use default; otherwise keep existing
+                if not inv.location:
+                    inv.location = final_location
+                if inv.buying_price != buying_price:
+                    current_app.logger.warning(f"Buying price mismatch for batch {batch_number}: {inv.buying_price} vs {buying_price}")
+                if inv.selling_price != selling_price and selling_price is not None:
+                    inv.selling_price = selling_price
+
+                log_inventory_action(
+                    action='department_inventory_updated',
+                    resource_type=inv_model.__name__.lower(),
+                    resource_id=inv.id,
+                    description=f"Updated {dept} inventory for batch {batch_number} of {stock.name}",
+                    old_values={'quantity': old_qty},
+                    new_values={'quantity': inv.quantity},
+                    module=dept
+                )
+
+            # Create stock flow records
             stock_flow_out = StockFlow(
                 stock_id=stock.id,
-                service_id=service.id if service else None,
+                service_id=service_id,
                 quantity_change=-req.quantity_approved,
                 flow_type='collection',
                 reference_id=req.id,
                 notes=f'Stock collection for {req.quantity_approved} units by {collected_by}'
             )
-            
             stock_flow_in = StockFlow(
-                service_id=service.id if service else None,
+                service_id=service_id,
                 quantity_change=req.quantity_approved,
                 flow_type='collection',
                 reference_id=req.id,
                 notes=f'Stock received from collection {req.id} for department {dept}'
             )
-            
             db.session.add_all([stock_flow_out, stock_flow_in])
-            db.session.flush()  # Get IDs for logging
+            db.session.flush()
 
-            # Log stock flow creation
+            # Log stock flows
             log_inventory_action(
                 action='stock_flow_created',
                 resource_type='stock_flow',
@@ -660,14 +736,13 @@ def handle_stock_request_action(request_id):
                 },
                 module='inventory'
             )
-            
             log_inventory_action(
                 action='stock_flow_created',
                 resource_type='stock_flow',
                 resource_id=stock_flow_in.id,
                 description=f"Created incoming stock flow for department {dept}",
                 new_values={
-                    'service_id': service.id if service else None,
+                    'service_id': service_id,
                     'quantity_change': req.quantity_approved,
                     'flow_type': 'collection',
                     'reference_id': req.id
@@ -675,18 +750,18 @@ def handle_stock_request_action(request_id):
                 module=dept
             )
 
-            # Update collection and issuance details
+            # Update request status
             old_status = req.status
             req.status = 'fulfilled'
             req.collected_by = collected_by
             req.collection_notes = collection_notes
             req.collected_at = datetime.utcnow()
             req.quantity_issued = req.quantity_approved
-            
-            # ✅ Set issued_by (current user) and issue_date (current time)
             req.issued_by = current_user.id
             req.issue_date = datetime.utcnow()
             req.issue_reference = req.generate_issue_reference()
+
+            db.session.commit()
 
             # Log successful collection
             log_inventory_action(
@@ -1330,6 +1405,8 @@ def delete_external_order(order_id):
 
 @store_web_bp.route('/record-delivery', methods=['GET', 'POST'])
 def record_delivery():
+    # Check for order_id in query string (for GET) or form (for POST)
+    order_id = request.args.get('order_id') or request.form.get('order_id')
     
     if request.method == "POST":
         step = request.form.get('step')
@@ -1413,10 +1490,19 @@ def record_delivery():
         
         # Step 2: Confirm comparison
         elif step == 'confirm_comparison':
+            order_id = request.form.get('order_id')
             lpo_number = request.form.get('lpo_number')
             quantity_received = int(request.form.get('quantity_received'))
             preliminary_condition = request.form.get('preliminary_condition')
             comparison_notes = request.form.get('comparison_notes')
+            
+            # Use order_id if provided, otherwise fallback to lpo_number
+            if order_id:
+                purchase_order = PurchaseOrder.query.get(order_id)
+                lpo = LPO.query.get(purchase_order.lpo_id) if purchase_order else None
+            else:
+                lpo = LPO.query.filter_by(lpo_number=lpo_number).first()
+                purchase_order = PurchaseOrder.query.filter_by(lpo_id=lpo.id).first() if lpo else None
             
             lpo = LPO.query.filter_by(lpo_number=lpo_number).first()
             purchase_order = PurchaseOrder.query.filter_by(lpo_id=lpo.id).first()
@@ -1481,7 +1567,16 @@ def record_delivery():
         elif step == 'final_submit':
             try:
                 # Get data from previous steps
+                order_id = request.form.get('order_id')
                 lpo_number = request.form.get('lpo_number')
+                # ... other fields ...
+                
+                if order_id:
+                    order = PurchaseOrder.query.get(order_id)
+                    lpo = LPO.query.get(order.lpo_id) if order else None
+                else:
+                    lpo = LPO.query.filter_by(lpo_number=lpo_number).first()
+                    order = PurchaseOrder.query.filter_by(lpo_id=lpo.id).first() if lpo else None
                 quantity_received = int(request.form.get('quantity_received'))
                 preliminary_condition = request.form.get('preliminary_condition')
                 comparison_notes = request.form.get('comparison_notes')
@@ -1994,17 +2089,34 @@ def record_delivery():
                 flash(f'Error recording delivery: {str(e)}', 'danger')
                 return redirect(url_for('store_web_bp.record_delivery'))
     
-    # Initial GET request - show LPO input form
-    # Log page access
-    log_inventory_action(
-        action='page_access',
-        resource_type='system',
-        resource_id=0,
-        description="Accessed record delivery page",
-        module='delivery'
-    )
-    
-    return render_template('record_delivery.html', lpo_verified=False)
+    else:
+        # GET request
+        if order_id:
+            # Load the specific purchase order
+            purchase_order = PurchaseOrder.query.get_or_404(order_id)
+            lpo = LPO.query.get(purchase_order.lpo_id) if purchase_order.lpo_id else None
+            
+            # Ensure quantity_delivered is set
+            if purchase_order.quantity_delivered is None:
+                purchase_order.quantity_delivered = 0
+            
+            # Log access
+            log_inventory_action(
+                action='direct_delivery_access',
+                resource_type='purchase_order',
+                resource_id=purchase_order.id,
+                description=f"Direct delivery access for order #{purchase_order.id}",
+                module='delivery'
+            )
+            
+            return render_template('record_delivery.html',
+                                 lpo_verified=True,
+                                 lpo=lpo,
+                                 purchase_order=purchase_order,
+                                 show_form=False)  # Show details, not input form
+        else:
+            # No order_id – show LPO input form
+            return render_template('record_delivery.html', lpo_verified=False)
 
 # Keep the old route for backward compatibility, but redirect to new flow
 @store_web_bp.route('/purchase-orders/<int:id>/record-delivery', methods=['GET'])
@@ -2346,3 +2458,6 @@ def supplier_spend():
         db.func.count(PurchaseOrder.id).label('order_count')
     ).join(PurchaseOrder).group_by(Supplier.id, Supplier.name).all()
     return render_template('reports/supplier_spend.html', data=spend_data)
+
+
+

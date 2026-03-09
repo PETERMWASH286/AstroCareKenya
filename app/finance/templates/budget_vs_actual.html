@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+
+{% block title %}Budget vs Actual{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Header with gradient -->
+    <div class="bg-gradient-primary text-white p-4 rounded-4 mb-4 shadow-sm">
+        <div class="d-flex flex-wrap justify-content-between align-items-center">
+            <div>
+                <h1 class="display-6 fw-bold">Budget vs Actual</h1>
+                <p class="text-white-80 mb-0">Compare planned budgets with actual expenses</p>
+            </div>
+            <div class="mt-3 mt-md-0">
+                <span class="badge bg-light text-dark fs-5 p-2">Year {{ year }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Year Filter -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body p-4">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Year</label>
+                    <select name="year" class="form-select">
+                        {% for y in range(year-5, year+2) %}
+                        <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-filter me-2"></i>Apply
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    {% set total_budget = report|sum(attribute='budget') %}
+    {% set total_actual = report|sum(attribute='actual') %}
+    {% set total_variance = total_budget - total_actual %}
+    {% set total_variance_percent = (total_variance / total_budget * 100) if total_budget else 0 %}
+    <div class="row g-4 mb-5">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <p class="text-uppercase small fw-bold text-primary mb-1">Total Budget</p>
+                    <h3 class="mb-0 fw-bold">KSh {{ "{:,.2f}".format(total_budget) }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <p class="text-uppercase small fw-bold text-warning mb-1">Total Actual</p>
+                    <h3 class="mb-0 fw-bold">KSh {{ "{:,.2f}".format(total_actual) }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <p class="text-uppercase small fw-bold text-success mb-1">Total Variance</p>
+                    <h3 class="mb-0 fw-bold {% if total_variance >= 0 %}text-success{% else %}text-danger{% endif %}">
+                        KSh {{ "{:,.2f}".format(total_variance) }}
+                    </h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <p class="text-uppercase small fw-bold text-info mb-1">Variance %</p>
+                    <h3 class="mb-0 fw-bold {% if total_variance_percent >= 0 %}text-success{% else %}text-danger{% endif %}">
+                        {{ "{:,.1f}".format(total_variance_percent) }}%
+                    </h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="card border-0 shadow-sm rounded-4 mb-5">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+            <h5 class="fw-bold text-primary"><i class="fas fa-table me-2"></i>Category Breakdown</h5>
+        </div>
+        <div class="card-body p-4">
+            {% if report %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle" id="budgetTable">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Category</th>
+                            <th class="text-end">Budget (KSh)</th>
+                            <th class="text-end">Actual (KSh)</th>
+                            <th class="text-end">Variance (KSh)</th>
+                            <th class="text-end">Variance %</th>
+                            <th>Progress</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in report %}
+                        {% set variance_percent = item.variance_percent %}
+                        <tr>
+                            <td class="fw-semibold">{{ item.category }}</td>
+                            <td class="text-end">{{ "{:,.2f}".format(item.budget) }}</td>
+                            <td class="text-end">{{ "{:,.2f}".format(item.actual) }}</td>
+                            <td class="text-end fw-bold {% if item.variance >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                {{ "{:,.2f}".format(item.variance) }}
+                            </td>
+                            <td class="text-end">
+                                <span class="badge {% if variance_percent >= 0 %}bg-success{% else %}bg-danger{% endif %}">
+                                    {{ "{:,.1f}".format(variance_percent) }}%
+                                </span>
+                            </td>
+                            <td style="min-width: 150px;">
+                                {% set percent_used = (item.actual / item.budget * 100) if item.budget else 0 %}
+                                <div class="progress" style="height: 8px;">
+                                    <div class="progress-bar {% if percent_used > 100 %}bg-danger{% elif percent_used > 90 %}bg-warning{% else %}bg-success{% endif %}" 
+                                         role="progressbar" 
+                                         style="width: {{ percent_used }}%;" 
+                                         aria-valuenow="{{ percent_used }}" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                    </div>
+                                </div>
+                                <small class="text-muted">{{ "{:,.1f}".format(percent_used) }}% used</small>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-center text-muted py-5">No budget categories found for {{ year }}.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Chart Section -->
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+            <h5 class="fw-bold text-info"><i class="fas fa-chart-pie me-2"></i>Budget vs Actual Comparison</h5>
+        </div>
+        <div class="card-body">
+            <canvas id="budgetChart" height="100"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Prepare data for chart (limit to top 8 categories for readability)
+    const items = {{ report|tojson }};
+    const categories = items.map(i => i.category).slice(0, 8);
+    const budgetData = items.map(i => i.budget).slice(0, 8);
+    const actualData = items.map(i => i.actual).slice(0, 8);
+
+    new Chart(document.getElementById('budgetChart'), {
+        type: 'bar',
+        data: {
+            labels: categories,
+            datasets: [
+                {
+                    label: 'Budget',
+                    data: budgetData,
+                    backgroundColor: '#3b82f6',
+                },
+                {
+                    label: 'Actual',
+                    data: actualData,
+                    backgroundColor: '#f59e0b',
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) { return 'KSh ' + value.toLocaleString(); }
+                    }
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(ctx) {
+                            return ctx.dataset.label + ': KSh ' + ctx.raw.toLocaleString();
+                        }
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+
+<style>
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .text-white-80 {
+        color: rgba(255,255,255,0.8);
+    }
+    .hover-lift {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hover-lift:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.75rem 1.5rem rgba(0,0,0,0.1) !important;
+    }
+    .progress {
+        background-color: #e9ecef;
+        border-radius: 0.5rem;
+    }
+    .progress-bar {
+        border-radius: 0.5rem;
+    }
+    .badge {
+        font-weight: 500;
+        padding: 0.5em 0.8em;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,655 @@
+{% extends "base.html" %}
+
+{% block title %}Job Offer - {{ offer.offer_title }} | AstroCare{% endblock %}
+
+{% block extra_css %}
+<style>
+    .gradient-bg {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .offer-status-badge {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .status-draft { background: #e5e7eb; color: #374151; }
+    .status-sent { background: #dbeafe; color: #1e40af; }
+    .status-accepted { background: #d1fae5; color: #065f46; }
+    .status-rejected { background: #fee2e2; color: #991b1b; }
+    .status-expired { background: #f3f4f6; color: #6b7280; }
+    .status-withdrawn { background: #f3f4f6; color: #6b7280; }
+    
+    .stat-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+    
+    .info-row {
+        border-bottom: 1px solid #e5e7eb;
+        padding: 16px 0;
+    }
+    
+    .info-row:last-child {
+        border-bottom: none;
+    }
+    
+    .timeline-line {
+        position: absolute;
+        left: 1rem;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background-color: #e5e7eb;
+    }
+    
+    .timeline-dot {
+        position: relative;
+        z-index: 10;
+    }
+    
+    .print-only {
+        display: none;
+    }
+    
+    @media print {
+        .no-print {
+            display: none !important;
+        }
+        .print-only {
+            display: block !important;
+        }
+        .print-content {
+            padding: 20px;
+            font-size: 12px;
+        }
+        @page {
+            margin: 0.5in;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('hr_web.recruitment_dashboard') }}">Recruitment</a></li>
+                    <li class="breadcrumb-item"><a href="">Job Offers</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">View Offer</li>
+                </ol>
+            </nav>
+            <h1 class="h3 mb-0 text-gray-800">Job Offer Details</h1>
+        </div>
+        <div class="d-flex gap-2">
+            <button onclick="window.print()" class="btn btn-outline-secondary no-print">
+                <i class="fas fa-print fa-sm"></i> Print
+            </button>
+            <a href="" class="btn btn-outline-primary no-print">
+                <i class="fas fa-arrow-left fa-sm"></i> Back to Offers
+            </a>
+        </div>
+    </div>
+
+    <!-- Status Alert -->
+    <div class="alert alert-{{ 'success' if offer.status == 'Accepted' else 'warning' if offer.status == 'Sent' else 'secondary' if offer.status == 'Draft' else 'danger' if offer.status == 'Rejected' else 'dark' }} d-flex align-items-center justify-content-between mb-4" role="alert">
+        <div class="d-flex align-items-center">
+            <i class="fas fa-{% if offer.status == 'Accepted' %}check-circle{% elif offer.status == 'Sent' %}paper-plane{% elif offer.status == 'Draft' %}edit{% elif offer.status == 'Rejected' %}times-circle{% else %}clock{% endif %} fa-lg me-3"></i>
+            <div>
+                <h4 class="alert-heading mb-1">Offer Status: {{ offer.status }}</h4>
+                <p class="mb-0">
+                    {% if days_remaining is not none %}
+                        {% if days_remaining <= 0 %}
+                            <i class="fas fa-exclamation-triangle me-1"></i> This offer expired {{ -days_remaining }} days ago
+                        {% else %}
+                            <i class="fas fa-clock me-1"></i> {{ days_remaining }} days remaining to accept
+                        {% endif %}
+                    {% else %}
+                        No expiry date set
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+        <span class="badge bg-{{ 'success' if offer.status == 'Accepted' else 'warning' if offer.status == 'Sent' else 'secondary' if offer.status == 'Draft' else 'danger' if offer.status == 'Rejected' else 'dark' }} px-3 py-2">
+            {{ offer.status }}
+        </span>
+    </div>
+
+    <!-- Main Content -->
+    <div class="row">
+        <!-- Left Column - Offer Details -->
+        <div class="col-lg-8">
+            <!-- Offer Information Card -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-file-contract me-2"></i>Offer Information
+                    </h6>
+                    <span class="badge bg-primary">ID: #{{ offer.id }}</span>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-8">
+                            <h3 class="h4 font-weight-bold text-gray-900 mb-2">{{ offer.offer_title }}</h3>
+                            <div class="d-flex flex-wrap gap-3 mb-3">
+                                <span class="text-gray-600">
+                                    <i class="fas fa-user-tie me-1"></i> {{ offer.position }}
+                                </span>
+                                <span class="text-gray-600">
+                                    <i class="fas fa-building me-1"></i> {{ offer.department.name if offer.department else 'Department not assigned' }}
+                                </span>
+                                <span class="text-gray-600">
+                                    <i class="fas fa-briefcase me-1"></i> {{ offer.employment_type }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-md-end">
+                            <div class="text-gray-500 mb-1">Start Date</div>
+                            <div class="h5 font-weight-bold text-success">
+                                {{ offer.start_date.strftime('%d %b %Y') }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Candidate Information -->
+                    <div class="card border-left-info mb-4">
+                        <div class="card-body py-3">
+                            <h6 class="font-weight-bold text-info mb-3">
+                                <i class="fas fa-user me-2"></i>Candidate Information
+                            </h6>
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <div class="text-sm text-gray-500">Full Name</div>
+                                    <div class="font-weight-bold">{{ offer.candidate.full_name }}</div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="text-sm text-gray-500">Email</div>
+                                    <div class="font-weight-bold">{{ offer.candidate.email }}</div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="text-sm text-gray-500">Phone</div>
+                                    <div class="font-weight-bold">{{ offer.candidate.phone or 'Not provided' }}</div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="text-sm text-gray-500">Application Status</div>
+                                    <div>
+                                        <span class="badge bg-{{ 'success' if offer.candidate.status == 'Offer Accepted' else 'danger' if offer.candidate.status == 'Offer Rejected' else 'warning' }}">
+                                            {{ offer.candidate.status }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="text-sm text-gray-500">Expected Salary</div>
+                                    <div class="font-weight-bold">
+                                        {% if offer.candidate.expected_salary %}
+                                            {{ offer.currency }} {{ "{:,.2f}".format(offer.candidate.expected_salary) }}
+                                        {% else %}
+                                            Not specified
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="text-sm text-gray-500">Notice Period</div>
+                                    <div class="font-weight-bold">
+                                        {% if offer.candidate.notice_period %}
+                                            {{ offer.candidate.notice_period }} days
+                                        {% else %}
+                                            Immediate
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Compensation Details -->
+                    <div class="mb-5">
+                        <h5 class="font-weight-bold text-gray-800 mb-4">
+                            <i class="fas fa-money-bill-wave text-success me-2"></i>Compensation Details
+                        </h5>
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th>Component</th>
+                                        <th class="text-end">Monthly</th>
+                                        <th class="text-end">Annual</th>
+                                        <th class="text-end">Percentage</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="font-weight-bold">Base Salary</td>
+                                        <td class="text-end font-weight-bold">{{ offer.currency }} {{ "{:,.2f}".format(offer.base_salary) }}</td>
+                                        <td class="text-end">{{ offer.currency }} {{ "{:,.2f}".format(offer.base_salary * 12) }}</td>
+                                        <td class="text-end">100%</td>
+                                    </tr>
+                                    {% if offer.bonus > 0 %}
+                                    <tr>
+                                        <td>Performance Bonus</td>
+                                        <td class="text-end">{{ offer.currency }} {{ "{:,.2f}".format(offer.bonus / 12) }}</td>
+                                        <td class="text-end">{{ offer.currency }} {{ "{:,.2f}".format(offer.bonus) }}</td>
+                                        <td class="text-end">{{ "{:.1%}".format(offer.bonus/(offer.base_salary * 12)) if offer.base_salary else 'N/A' }}</td>
+                                    </tr>
+                                    {% endif %}
+                                    {% if offer.allowances > 0 %}
+                                    <tr>
+                                        <td>Allowances</td>
+                                        <td class="text-end">{{ offer.currency }} {{ "{:,.2f}".format(offer.allowances) }}</td>
+                                        <td class="text-end">{{ offer.currency }} {{ "{:,.2f}".format(offer.allowances * 12) }}</td>
+                                        <td class="text-end">{{ "{:.1%}".format(offer.allowances/offer.base_salary) if offer.base_salary else 'N/A' }}</td>
+                                    </tr>
+                                    {% endif %}
+                                    <tr class="table-success">
+                                        <td class="font-weight-bold">Total Compensation</td>
+                                        <td class="text-end font-weight-bold">{{ offer.currency }} {{ "{:,.2f}".format(offer.total_compensation) }}</td>
+                                        <td class="text-end font-weight-bold">{{ offer.currency }} {{ "{:,.2f}".format(offer.total_compensation * 12) }}</td>
+                                        <td class="text-end font-weight-bold">{{ "{:.1%}".format((offer.total_compensation - offer.base_salary)/offer.base_salary) if offer.base_salary else 'N/A' }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Contract Details -->
+                    <div class="mb-5">
+                        <h5 class="font-weight-bold text-gray-800 mb-4">
+                            <i class="fas fa-file-signature text-primary me-2"></i>Contract Details
+                        </h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="list-group list-group-flush">
+                                    <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                        <span class="text-gray-600">Employment Type</span>
+                                        <span class="font-weight-bold">{{ offer.employment_type }}</span>
+                                    </div>
+                                    <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                        <span class="text-gray-600">Start Date</span>
+                                        <span class="font-weight-bold">{{ offer.start_date.strftime('%d %B %Y') }}</span>
+                                    </div>
+                                    <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                        <span class="text-gray-600">Probation Period</span>
+                                        <span class="font-weight-bold">{{ offer.probation_period_months }} months</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="list-group list-group-flush">
+                                    <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                        <span class="text-gray-600">Department</span>
+                                        <span class="font-weight-bold">{{ offer.department.name if offer.department else 'Not assigned' }}</span>
+                                    </div>
+                                    <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                        <span class="text-gray-600">Reporting To</span>
+                                        <span class="font-weight-bold">{{ offer.reporting_to or 'To be assigned' }}</span>
+                                    </div>
+                                    <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                        <span class="text-gray-600">Work Location</span>
+                                        <span class="font-weight-bold">{{ offer.work_location or 'Not specified' }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Benefits Section -->
+                    {% if offer.benefits %}
+                    <div>
+                        <h5 class="font-weight-bold text-gray-800 mb-4">
+                            <i class="fas fa-gift text-warning me-2"></i>Benefits & Perks
+                        </h5>
+                        <div class="bg-light p-4 rounded">
+                            {{ offer.benefits|safe|replace('\n', '<br>') }}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column - Timeline & Actions -->
+        <div class="col-lg-4">
+            <!-- Timeline Card -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-history me-2"></i>Offer Timeline
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="position-relative">
+                        <div class="timeline-line"></div>
+                        
+                        <!-- Created -->
+                        <div class="d-flex mb-4">
+                            <div class="timeline-dot bg-success rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                <i class="fas fa-plus text-white fa-xs"></i>
+                            </div>
+                            <div class="ms-3">
+                                <h6 class="font-weight-bold mb-1">Offer Created</h6>
+                                <p class="text-sm text-gray-600 mb-0">{{ offer.created_at.strftime('%d %b %Y, %I:%M %p') }}</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Sent -->
+                        {% if offer.sent_date %}
+                        <div class="d-flex mb-4">
+                            <div class="timeline-dot bg-info rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                <i class="fas fa-paper-plane text-white fa-xs"></i>
+                            </div>
+                            <div class="ms-3">
+                                <h6 class="font-weight-bold mb-1">Offer Sent</h6>
+                                <p class="text-sm text-gray-600 mb-0">{{ offer.sent_date.strftime('%d %b %Y, %I:%M %p') }}</p>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Expiry -->
+                        {% if offer.expiry_date %}
+                        <div class="d-flex mb-4">
+                            <div class="timeline-dot bg-{{ 'danger' if days_remaining <= 0 else 'warning' }} rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                <i class="fas fa-clock text-white fa-xs"></i>
+                            </div>
+                            <div class="ms-3">
+                                <h6 class="font-weight-bold mb-1">Offer Expiry</h6>
+                                <p class="text-sm text-gray-600 mb-0">{{ offer.expiry_date.strftime('%d %b %Y, %I:%M %p') }}</p>
+                                <span class="badge bg-{{ 'danger' if days_remaining <= 0 else 'warning' }} mt-1">
+                                    {% if days_remaining <= 0 %}
+                                        Expired {{ -days_remaining }} days ago
+                                    {% else %}
+                                        {{ days_remaining }} days remaining
+                                    {% endif %}
+                                </span>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Response -->
+                        {% if offer.response_date %}
+                        <div class="d-flex">
+                            <div class="timeline-dot bg-{{ 'success' if offer.status == 'Accepted' else 'danger' }} rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                <i class="fas fa-{{ 'check' if offer.status == 'Accepted' else 'times' }} text-white fa-xs"></i>
+                            </div>
+                            <div class="ms-3">
+                                <h6 class="font-weight-bold mb-1">Offer {{ offer.status }}</h6>
+                                <p class="text-sm text-gray-600 mb-0">{{ offer.response_date.strftime('%d %b %Y, %I:%M %p') }}</p>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions Card -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-cogs me-2"></i>Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        {% if offer.offer_document_path %}
+                        <a href="{{ url_for('static', filename=offer.offer_document_path) }}" target="_blank" 
+                           class="btn btn-outline-primary btn-block">
+                            <i class="fas fa-file-pdf me-2"></i>View Offer Document
+                        </a>
+                        {% endif %}
+                        
+                        <button onclick="window.print()" class="btn btn-outline-secondary btn-block">
+                            <i class="fas fa-print me-2"></i>Print Offer Letter
+                        </button>
+                        
+                        {% if offer.status == 'Draft' %}
+                        <a href="" class="btn btn-warning btn-block">
+                            <i class="fas fa-edit me-2"></i>Edit Offer
+                        </a>
+                        {% endif %}
+                        
+                        {% if offer.status == 'Sent' %}
+                        <button onclick="sendReminder({{ offer.id }})" class="btn btn-info btn-block">
+                            <i class="fas fa-bell me-2"></i>Send Reminder
+                        </button>
+                        {% endif %}
+                        
+                        {% if offer.status in ['Sent', 'Draft'] %}
+                        <button onclick="copyOfferLink({{ offer.id }})" class="btn btn-outline-success btn-block">
+                            <i class="fas fa-link me-2"></i>Copy Offer Link
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Stats Card -->
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-chart-bar me-2"></i>Quick Stats
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <div class="text-xs text-gray-500">Offer Value</div>
+                            <div class="h5 font-weight-bold text-success">
+                                {{ offer.currency }} {{ "{:,.0f}".format(offer.total_compensation * 12) }}
+                            </div>
+                            <small class="text-gray-600">Annual</small>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="text-xs text-gray-500">Monthly Salary</div>
+                            <div class="h5 font-weight-bold text-primary">
+                                {{ offer.currency }} {{ "{:,.0f}".format(offer.total_compensation) }}
+                            </div>
+                            <small class="text-gray-600">Total per month</small>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="text-xs text-gray-500">Probation</div>
+                            <div class="h5 font-weight-bold text-warning">
+                                {{ offer.probation_period_months }} months
+                            </div>
+                            <small class="text-gray-600">Duration</small>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="text-xs text-gray-500">Days Left</div>
+                            <div class="h5 font-weight-bold {{ 'text-danger' if days_remaining <= 0 else 'text-warning' if days_remaining <= 3 else 'text-success' }}">
+                                {{ days_remaining if days_remaining is not none else '∞' }}
+                            </div>
+                            <small class="text-gray-600">To accept</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Print Version (Hidden) -->
+<div class="print-only print-content hidden">
+    <div class="text-center mb-5">
+        <h1 class="h2 font-weight-bold">ASTROCARE</h1>
+        <h2 class="h4 text-gray-600 mb-4">OFFER OF EMPLOYMENT</h2>
+        <div class="border-top pt-3">
+            <div class="d-flex justify-content-between">
+                <div class="text-start">
+                    <div><strong>Offer ID:</strong> #{{ offer.id }}</div>
+                    <div><strong>Date:</strong> {{ offer.created_at.strftime('%d %B %Y') }}</div>
+                </div>
+                <div class="text-end">
+                    <div><strong>Confidential</strong></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="mb-4">
+        <p><strong>To:</strong> {{ offer.candidate.full_name }}</p>
+        <p>{{ offer.candidate.email }}</p>
+        {% if offer.candidate.phone %}<p>{{ offer.candidate.phone }}</p>{% endif %}
+    </div>
+    
+    <div class="mb-5">
+        <p>We are pleased to offer you the position of <strong>{{ offer.position }}</strong> at AstroCare, 
+           commencing on <strong>{{ offer.start_date.strftime('%d %B %Y') }}</strong>.</p>
+    </div>
+    
+    <h4 class="h5 font-weight-bold mb-3">1. COMPENSATION PACKAGE</h4>
+    <table class="table table-bordered">
+        <tr>
+            <td width="60%">Base Salary (per month)</td>
+            <td class="text-end">{{ offer.currency }} {{ "{:,.2f}".format(offer.base_salary) }}</td>
+        </tr>
+        {% if offer.bonus > 0 %}
+        <tr>
+            <td>Performance Bonus (annual)</td>
+            <td class="text-end">{{ offer.currency }} {{ "{:,.2f}".format(offer.bonus) }}</td>
+        </tr>
+        {% endif %}
+        {% if offer.allowances > 0 %}
+        <tr>
+            <td>Monthly Allowances</td>
+            <td class="text-end">{{ offer.currency }} {{ "{:,.2f}".format(offer.allowances) }}</td>
+        </tr>
+        {% endif %}
+        <tr class="table-active">
+            <td><strong>Total Monthly Compensation</strong></td>
+            <td class="text-end"><strong>{{ offer.currency }} {{ "{:,.2f}".format(offer.total_compensation) }}</strong></td>
+        </tr>
+        <tr class="table-active">
+            <td><strong>Total Annual Compensation</strong></td>
+            <td class="text-end"><strong>{{ offer.currency }} {{ "{:,.2f}".format(offer.total_compensation * 12) }}</strong></td>
+        </tr>
+    </table>
+    
+    <h4 class="h5 font-weight-bold mb-3">2. TERMS OF EMPLOYMENT</h4>
+    <ul class="list-unstyled">
+        <li><strong>Employment Type:</strong> {{ offer.employment_type }}</li>
+        <li><strong>Department:</strong> {{ offer.department.name if offer.department else 'To be assigned' }}</li>
+        <li><strong>Reporting To:</strong> {{ offer.reporting_to or 'To be assigned' }}</li>
+        <li><strong>Work Location:</strong> {{ offer.work_location or 'As assigned' }}</li>
+        <li><strong>Probation Period:</strong> {{ offer.probation_period_months }} months</li>
+    </ul>
+    
+    {% if offer.benefits %}
+    <h4 class="h5 font-weight-bold mb-3">3. BENEFITS</h4>
+    <div class="pl-3">
+        {{ offer.benefits|safe|replace('\n', '<br>') }}
+    </div>
+    {% endif %}
+    
+    <div class="mt-5 pt-5">
+        <div class="row">
+            <div class="col-6">
+                <div class="border-top pt-3">
+                    <p class="mb-1"><strong>For AstroCare:</strong></p>
+                    <p>_________________________</p>
+                    <p>Authorized Signatory</p>
+                    <p>Date: ___________________</p>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="border-top pt-3">
+                    <p class="mb-1"><strong>Accepted By:</strong></p>
+                    <p>_________________________</p>
+                    <p>{{ offer.candidate.full_name }}</p>
+                    <p>Date: ___________________</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="mt-4 pt-3 border-top text-center text-sm text-gray-600">
+        <p>This is a computer-generated document. No physical signature is required.</p>
+        <p>Offer ID: #{{ offer.id }} | Generated on: {{ datetime.utcnow().strftime('%d %B %Y %I:%M %p') }}</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function sendReminder(offerId) {
+        if (confirm('Send reminder email to candidate?')) {
+            fetch(`/hr/recruitment/offers/${offerId}/reminder`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': '{{ csrf_token() if csrf_token else "" }}'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('success', 'Reminder sent successfully!');
+                } else {
+                    showToast('error', 'Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                showToast('error', 'Error sending reminder');
+                console.error('Error:', error);
+            });
+        }
+    }
+    
+    function copyOfferLink(offerId) {
+        const link = `${window.location.origin}/hr/recruitment/offers/${offerId}/accept`;
+        navigator.clipboard.writeText(link).then(() => {
+            showToast('success', 'Offer link copied to clipboard!');
+        }).catch(err => {
+            showToast('error', 'Failed to copy link');
+            console.error('Failed to copy: ', err);
+        });
+    }
+    
+    function showToast(type, message) {
+        // Create toast element
+        const toast = document.createElement('div');
+        toast.className = `toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0 position-fixed bottom-0 end-0 m-3`;
+        toast.style.zIndex = '1060';
+        toast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'} me-2"></i>
+                    ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        // Initialize and show toast
+        const bsToast = new bootstrap.Toast(toast);
+        bsToast.show();
+        
+        // Remove toast after it's hidden
+        toast.addEventListener('hidden.bs.toast', () => {
+            document.body.removeChild(toast);
+        });
+    }
+    
+    // Format numbers with commas
+    document.querySelectorAll('[data-format-number]').forEach(el => {
+        const num = parseFloat(el.textContent);
+        if (!isNaN(num)) {
+            el.textContent = num.toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+    });
+</script>
+{% endblock %}

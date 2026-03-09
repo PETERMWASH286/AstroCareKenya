@@ -1,9 +1,18 @@
-{% extends 'base.html' %} {% block title %}Create New Expense - HSM{% endblock %} {% block content %}
+{% extends 'base.html' %}
+
+{% block title %}Create New Expense - HSM{% endblock %}
+
+{% block content %}
 <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <!-- Header -->
-    <div class="mb-8">
-        <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Create New Expense</h1>
-        <p class="mt-2 text-gray-600 dark:text-gray-400">Record a new expense for hospital operations</p>
+    <!-- Header with Manage Categories button -->
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-800 dark:text-white">Create New Expense</h1>
+            <p class="mt-2 text-gray-600 dark:text-gray-400">Record a new expense for hospital operations</p>
+        </div>
+        <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#categoryModal">
+            <i class="fas fa-cog me-2"></i>Manage Categories
+        </button>
     </div>
 
     <!-- Form -->
@@ -29,10 +38,10 @@
                     <input type="number" name="amount" step="0.01" min="0" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter amount" required>
                 </div>
 
-                <!-- Category -->
+                <!-- Category with refresh -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Category</label>
-                    <select name="category_id" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    <select name="category_id" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required id="categorySelect">
                         <option value="">Select Category</option>
                         {% for cat in categories %}
                         <option value="{{ cat.id }}">{{ cat.name }}</option>
@@ -68,12 +77,28 @@
                 <!-- Payment Method -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Payment Method</label>
-                    <select name="payment_method" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    <select name="payment_method" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required id="paymentMethod">
                         <option value="">Select Payment Method</option>
                         {% for method in payment_methods %}
                         <option value="{{ method }}">{{ method }}</option>
                         {% endfor %}
                     </select>
+                </div>
+
+                <!-- Account Selection (dynamic) -->
+                <div id="accountSection" style="display: none;">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Account</label>
+                    <select name="account_id" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" id="accountSelect">
+                        <option value="">Select account</option>
+                    </select>
+                    <input type="hidden" name="account_type" id="accountType">
+                    <div id="balanceWarning" class="mt-2 text-sm text-danger" style="display: none;">Insufficient balance</div>
+                </div>
+
+                <!-- Receipt Number -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Receipt Number</label>
+                    <input type="text" name="receipt_number" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g., receipt ref">
                 </div>
 
                 <!-- Expense Type -->
@@ -120,4 +145,177 @@
         </div>
     </form>
 </div>
+
+<!-- Manage Categories Modal -->
+<div class="modal fade" id="categoryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Manage Expense Categories</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <h6>Add New Category</h6>
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <input type="text" id="newCatName" class="form-control" placeholder="Category name">
+                        </div>
+                        <div class="col-md-4">
+                            <input type="text" id="newCatDept" class="form-control" placeholder="Department">
+                        </div>
+                        <div class="col-md-2">
+                            <input type="number" id="newCatBudget" class="form-control" placeholder="Budget">
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-primary" onclick="addCategory()">Add</button>
+                        </div>
+                    </div>
+                    <textarea id="newCatDesc" class="form-control mt-2" placeholder="Description"></textarea>
+                </div>
+                <hr>
+                <h6>Existing Categories</h6>
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Department</th>
+                            <th>Budget</th>
+                            <th>Active</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="categoryTableBody">
+                        {% for cat in categories %}
+                        <tr id="cat-{{ cat.id }}">
+                            <td>{{ cat.name }}</td>
+                            <td>{{ cat.department }}</td>
+                            <td>{{ "{:,.2f}".format(cat.budget_allocation) }}</td>
+                            <td>{% if cat.is_active %}Yes{% else %}No{% endif %}</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteCategory({{ cat.id }})">Delete</button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Account data from server
+const bankAccounts = [
+    {% for ba in bank_accounts %}
+    { id: {{ ba.id }}, name: "{{ ba.bank_name }} - {{ ba.account_number }}", balance: {{ ba.current_balance }} },
+    {% endfor %}
+];
+const cashAccounts = [
+    {% for ca in cash_accounts %}
+    { id: {{ ca.id }}, name: "{{ ca.name }} ({{ ca.account_type }})", balance: {{ ca.current_balance }} },
+    {% endfor %}
+];
+
+// Payment method change handler
+document.getElementById('paymentMethod').addEventListener('change', function() {
+    const method = this.value;
+    const accountSection = document.getElementById('accountSection');
+    const accountSelect = document.getElementById('accountSelect');
+    const accountType = document.getElementById('accountType');
+    let options = '<option value="">Select account</option>';
+
+    if (method === 'Bank Transfer' || method === 'Cheque') {
+        accountType.value = 'bank';
+        bankAccounts.forEach(acc => {
+            options += `<option value="${acc.id}" data-balance="${acc.balance}">${acc.name} (Bal: KSh ${acc.balance.toFixed(2)})</option>`;
+        });
+        accountSelect.innerHTML = options;
+        accountSection.style.display = 'block';
+    } else if (method === 'Cash' || method === 'Mobile Money') {
+        accountType.value = 'cash';
+        cashAccounts.forEach(acc => {
+            options += `<option value="${acc.id}" data-balance="${acc.balance}">${acc.name} (Bal: KSh ${acc.balance.toFixed(2)})</option>`;
+        });
+        accountSelect.innerHTML = options;
+        accountSection.style.display = 'block';
+    } else {
+        accountSection.style.display = 'none';
+    }
+});
+
+// Balance check on amount change or account selection
+function checkBalance() {
+    const amount = parseFloat(document.querySelector('input[name="amount"]').value) || 0;
+    const accountSelect = document.getElementById('accountSelect');
+    const selected = accountSelect.options[accountSelect.selectedIndex];
+    const warning = document.getElementById('balanceWarning');
+    if (selected && selected.value) {
+        const balance = parseFloat(selected.dataset.balance) || 0;
+        if (amount > balance) {
+            warning.style.display = 'block';
+        } else {
+            warning.style.display = 'none';
+        }
+    } else {
+        warning.style.display = 'none';
+    }
+}
+
+document.querySelector('input[name="amount"]').addEventListener('input', checkBalance);
+document.getElementById('accountSelect').addEventListener('change', checkBalance);
+
+// Category management AJAX
+function addCategory() {
+    const name = document.getElementById('newCatName').value;
+    const dept = document.getElementById('newCatDept').value;
+    const budget = document.getElementById('newCatBudget').value;
+    const desc = document.getElementById('newCatDesc').value;
+    if (!name) return alert('Category name required');
+    fetch('{{ url_for("finance_web_bp.new_expense") }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'add_category', name, description: desc, department: dept, budget })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            // Add to dropdown and table
+            const select = document.getElementById('categorySelect');
+            select.innerHTML += `<option value="${data.id}">${data.name}</option>`;
+            const tbody = document.getElementById('categoryTableBody');
+            tbody.innerHTML += `<tr id="cat-${data.id}"><td>${data.name}</td><td>${dept}</td><td>${parseFloat(budget).toFixed(2)}</td><td>Yes</td><td><button class="btn btn-sm btn-outline-danger" onclick="deleteCategory(${data.id})">Delete</button></td></tr>`;
+            // Clear form
+            document.getElementById('newCatName').value = '';
+            document.getElementById('newCatDept').value = '';
+            document.getElementById('newCatBudget').value = '';
+            document.getElementById('newCatDesc').value = '';
+        } else {
+            alert('Error: ' + data.error);
+        }
+    });
+}
+
+function deleteCategory(id) {
+    if (!confirm('Deactivate this category?')) return;
+    fetch('{{ url_for("finance_web_bp.new_expense") }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete_category', id })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            const row = document.getElementById(`cat-${id}`);
+            if (row) row.remove();
+            // Also remove from dropdown? We'll keep but you can disable visually.
+        } else {
+            alert('Error: ' + data.error);
+        }
+    });
+}
+</script>
 {% endblock %}

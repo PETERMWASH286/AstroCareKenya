@@ -7,6 +7,7 @@ from sqlalchemy import case
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import joinedload
 
+from app.hr.models import Payroll
 from app.store.models import LPO, ExternalOrder, PaymentRequest, Requisition, SupplierTransaction
 from app import db
 
@@ -606,3 +607,36 @@ def get_approval_rates(since_date):
     """Get approval/rejection rates"""
     # Implementation for approval rates
     pass
+
+
+
+@admin_web.route('/approve-payrolls')
+@login_required
+def approve_payrolls():
+    """Show processed payrolls for approval."""
+    processed_payrolls = Payroll.query.filter_by(status='Processed')\
+        .order_by(Payroll.processed_at.desc()).all()
+    return render_template('admin/approve_payrolls.html', payrolls=processed_payrolls)
+
+@admin_web.route('/approve-payroll/<int:payroll_id>', methods=['POST'])
+@login_required
+def approve_payroll(payroll_id):
+    payroll = Payroll.query.get_or_404(payroll_id)
+    if payroll.status != 'Processed':
+        flash('Only processed payrolls can be approved.', 'danger')
+        return redirect(url_for('admin_web_bp.approve_payrolls'))
+
+    # Update payroll status and approver info
+    payroll.status = 'Approved'
+    payroll.approved_by = current_user.id
+    payroll.approved_at = datetime.utcnow()
+
+    # Update all associated payslips to 'Approved'
+    for payslip in payroll.payslips:
+        payslip.status = 'Approved'
+
+    db.session.commit()
+
+    flash(f'Payroll #{payroll.id} approved successfully.', 'success')
+    return redirect(url_for('admin_web_bp.approve_payrolls'))
+

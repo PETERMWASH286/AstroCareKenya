@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}Doctor Ledger - {{ doctor.full_name or doctor.username }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header with gradient -->
+    <div class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-6 rounded-2xl mb-8 shadow-lg">
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold">Doctor Ledger</h1>
+                <p class="text-blue-100 mt-1">Complete financial history for Dr. {{ doctor.full_name or doctor.username }}</p>
+            </div>
+            <a href="{{ url_for('finance_web_bp.doctor_accounts') }}" 
+               class="inline-flex items-center px-4 py-2 bg-white/20 hover:bg-white/30 rounded-xl text-white transition backdrop-blur-sm">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+                Back to Doctor Accounts
+            </a>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <p class="text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Earnings</p>
+            <p class="text-2xl font-bold text-green-600 dark:text-green-400 mt-2">KSh {{ "{:,.2f}".format(total_earnings) }}</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <p class="text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Payments</p>
+            <p class="text-2xl font-bold text-red-600 dark:text-red-400 mt-2">KSh {{ "{:,.2f}".format(total_payments) }}</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <p class="text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wide">Net Balance</p>
+            <p class="text-2xl font-bold {% if net_balance >= 0 %}text-blue-600 dark:text-blue-400{% else %}text-orange-600 dark:text-orange-400{% endif %} mt-2">
+                KSh {{ "{:,.2f}".format(net_balance) }}
+            </p>
+        </div>
+    </div>
+
+    <!-- Ledger Table -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div class="px-6 py-4 bg-gray-50 dark:bg-gray-750 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Transaction Ledger</h2>
+            <div class="text-sm text-gray-500">Running balance in <span class="font-mono">KSh</span></div>
+        </div>
+        <div class="p-6">
+            {% if entries %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gray-50 dark:bg-gray-750">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Description</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Credit (KSh)</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Debit (KSh)</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Balance (KSh)</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Reference</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        {% for entry in entries %}
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                {{ entry.date.strftime('%Y-%m-%d') if entry.date else '' }}
+                                <br><span class="text-xs">{{ entry.date.strftime('%H:%M') if entry.date else '' }}</span>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                                {{ entry.description }}
+                                {% if entry.type == 'payment' %}
+                                <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                    {{ entry.method|replace('_', ' ')|title }}
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-green-600 dark:text-green-400">
+                                {{ "{:,.2f}".format(entry.credit) if entry.credit > 0 else '' }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-red-600 dark:text-red-400">
+                                {{ "{:,.2f}".format(entry.debit) if entry.debit > 0 else '' }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-mono font-medium {% if entry.balance >= 0 %}text-gray-900 dark:text-white{% else %}text-orange-600{% endif %}">
+                                {{ "{:,.2f}".format(entry.balance) }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                {{ entry.ref }}
+                                {% if entry.type == 'payment' %}
+                                <br><span class="text-xs text-gray-400">Account: {{ entry.account_name }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot class="bg-gray-50 dark:bg-gray-750">
+                        <tr>
+                            <td colspan="2" class="px-6 py-4 text-right font-bold text-gray-900 dark:text-white">Totals</td>
+                            <td class="px-6 py-4 text-right font-bold text-green-600 dark:text-green-400">{{ "{:,.2f}".format(total_earnings) }}</td>
+                            <td class="px-6 py-4 text-right font-bold text-red-600 dark:text-red-400">{{ "{:,.2f}".format(total_payments) }}</td>
+                            <td class="px-6 py-4 text-right font-bold text-gray-900 dark:text-white">{{ "{:,.2f}".format(net_balance) }}</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-center py-8 text-gray-500 dark:text-gray-400">No transactions found for this doctor.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

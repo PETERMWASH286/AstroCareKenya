@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}Supplier Ledger - {{ account.supplier.name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header with back button -->
+    <div class="mb-6 flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Supplier Account Ledger</h1>
+            <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                {{ account.supplier.name }} • {{ account.account_number }}
+            </p>
+        </div>
+        <a href="{{ url_for('finance_web_bp.supplier_accounts') }}" 
+           class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+            Back to Accounts
+        </a>
+    </div>
+
+    <!-- Account Summary Card -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden mb-8">
+        <div class="px-6 py-4 bg-gray-50 dark:bg-gray-750 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Account Summary</h2>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Supplier</p>
+                    <p class="mt-1 text-lg font-medium text-gray-900 dark:text-white">{{ account.supplier.name }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Account Number</p>
+                    <p class="mt-1 text-lg font-mono font-medium text-gray-900 dark:text-white">{{ account.account_number }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Current Balance</p>
+                    <p class="mt-1 text-lg font-medium {% if account.current_balance > 0 %}text-orange-600 dark:text-orange-400{% else %}text-green-600 dark:text-green-400{% endif %}">
+                        KSh {{ "{:,.2f}".format(account.current_balance) }}
+                    </p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Credit Limit</p>
+                    <p class="mt-1 text-lg font-medium text-gray-900 dark:text-white">KSh {{ "{:,.2f}".format(account.credit_limit) }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ledger Table -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div class="px-6 py-4 bg-gray-50 dark:bg-gray-750 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Transaction History</h2>
+        </div>
+        <div class="p-6">
+            {% if entries %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gray-50 dark:bg-gray-750">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Description</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Invoice/Reference</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Debit (KSh)</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Credit (KSh)</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Balance (KSh)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        {% for entry in entries %}
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-750">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                {{ entry.date.strftime('%Y-%m-%d') }}
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                                {{ entry.description }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                {% if entry.invoice_number %}
+                                <a href="{{ url_for('finance_web_bp.supplier_invoices', account_id=account.id) }}?invoice={{ entry.invoice_number }}" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
+                                    {{ entry.invoice_number }}
+                                </a>
+                                {% else %}
+                                {{ entry.reference or '—' }}
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-white">
+                                {% if entry.debit > 0 %}
+                                KSh {{ "{:,.2f}".format(entry.debit) }}
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-white">
+                                {% if entry.credit > 0 %}
+                                KSh {{ "{:,.2f}".format(entry.credit) }}
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-medium {% if entry.balance > 0 %}text-orange-600 dark:text-orange-400{% else %}text-green-600 dark:text-green-400{% endif %}">
+                                KSh {{ "{:,.2f}".format(entry.balance) }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot class="bg-gray-50 dark:bg-gray-750">
+                        <tr>
+                            <td colspan="5" class="px-6 py-4 text-right font-bold text-gray-900 dark:text-white">Current Balance</td>
+                            <td class="px-6 py-4 text-right font-bold {% if account.current_balance > 0 %}text-orange-600 dark:text-orange-400{% else %}text-green-600 dark:text-green-400{% endif %}">
+                                KSh {{ "{:,.2f}".format(account.current_balance) }}
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-center py-8 text-gray-500 dark:text-gray-400">No transactions found for this supplier.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

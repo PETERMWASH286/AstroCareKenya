@@ -1,0 +1,483 @@
+{% extends "base.html" %}
+
+{% block title %}LPO {{ lpo.lpo_number }} - View Details{% endblock %}
+
+{% block content %}
+
+<div class="max-w-4xl mx-auto bg-white dark:bg-gray-900 shadow-lg rounded-xl overflow-hidden mt-6 print:shadow-none">
+
+<!-- Hospital Header with integrated Back button -->
+<div class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-6 print:bg-gray-800">
+    <div class="flex items-center justify-between">
+        <div class="flex items-center gap-4">
+            <!-- Modern Back Button -->
+            <button onclick="window.history.back()" 
+                    class="flex items-center justify-center w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm transition-all duration-200 group"
+                    aria-label="Go back">
+                <i class="fas fa-arrow-left text-white text-sm group-hover:-translate-x-0.5 transition-transform"></i>
+            </button>
+            
+            <div class="flex items-center gap-3">
+                <div class="bg-white/20 p-2 rounded-xl">
+                    <i class="fas fa-hospital text-xl text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold">MEDICAL CENTER HOSPITAL</h1>
+                    <p class="text-blue-100 text-sm">Excellence in Healthcare Delivery</p>
+                </div>
+            </div>
+        </div>
+        <div class="text-right text-xs text-blue-100">
+            <p>P.O. Box 12345, Nairobi</p>
+            <p>Tel: +254 700 123 456</p>
+        </div>
+    </div>
+</div>
+
+    <!-- Compact LPO Header -->
+    <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white">LOCAL PURCHASE ORDER</h2>
+                <div class="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    <span class="flex items-center gap-1">
+                        <i class="fas fa-calendar text-blue-500 text-xs"></i>
+                        {{ lpo.created_at.strftime('%Y-%m-%d') if lpo.created_at else 'N/A' }}
+                    </span>
+                    <span class="flex items-center gap-1">
+                        <i class="fas fa-hashtag text-green-500 text-xs"></i>
+                        {{ lpo.lpo_number or "LPO-" ~ lpo.id }}
+                    </span>
+                </div>
+            </div>
+            <div class="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2 rounded-lg text-center">
+                <p class="text-xs font-medium">STATUS</p>
+                <p class="text-sm font-bold">{{ lpo.status|replace('_',' ')|title }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Compact Supplier & Order Info -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-6">
+        <!-- Supplier Info -->
+        <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center gap-2 mb-3">
+                <div class="p-1.5 bg-blue-100 dark:bg-blue-900 rounded">
+                    <i class="fas fa-truck text-blue-600 dark:text-blue-400 text-sm"></i>
+                </div>
+                <h3 class="font-semibold text-gray-900 dark:text-white text-sm">SUPPLIER</h3>
+            </div>
+            
+            <div class="space-y-2 text-sm">
+                <div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Supplier Name</p>
+                    <p class="font-semibold text-gray-900 dark:text-white">
+                        {{ lpo.supplier.name if lpo.supplier else (lpo.contact_person or 'Unknown Supplier') }}
+                    </p>
+                </div>
+                
+                {% if lpo.supplier %}
+                    {% if lpo.supplier.email %}
+                    <div class="flex items-center gap-1">
+                        <i class="fas fa-envelope text-gray-400 text-xs"></i>
+                        <span class="text-gray-700 dark:text-gray-300 text-xs">{{ lpo.supplier.email }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    {% if lpo.supplier.phone %}
+                    <div class="flex items-center gap-1">
+                        <i class="fas fa-phone text-gray-400 text-xs"></i>
+                        <span class="text-gray-700 dark:text-gray-300 text-xs">{{ lpo.supplier.phone }}</span>
+                    </div>
+                    {% endif %}
+                {% else %}
+                    {% if lpo.contact_info %}
+                    <div class="flex items-center gap-1">
+                        <i class="fas fa-id-card text-gray-400 text-xs"></i>
+                        <span class="text-gray-700 dark:text-gray-300 text-xs">{{ lpo.contact_info }}</span>
+                    </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Order & Delivery Info -->
+        <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center gap-2 mb-3">
+                <div class="p-1.5 bg-green-100 dark:bg-green-900 rounded">
+                    <i class="fas fa-shipping-fast text-green-600 dark:text-green-400 text-sm"></i>
+                </div>
+                <h3 class="font-semibold text-gray-900 dark:text-white text-sm">ORDER & DELIVERY</h3>
+            </div>
+            
+            <div class="space-y-3 text-sm">
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Order Date</p>
+                        <p class="font-semibold text-gray-900 dark:text-white">
+                            {{ lpo.created_at.strftime('%Y-%m-%d') if lpo.created_at else 'N/A' }}
+                        </p>
+                    </div>
+                    
+                    <div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Requested By</p>
+                        <p class="font-semibold text-gray-900 dark:text-white">
+                            {{ lpo.user.full_name if lpo.user and lpo.user.full_name else (lpo.user.username if lpo.user else 'N/A') }}
+                        </p>
+                    </div>
+                </div>
+                
+                <div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Delivery Date</p>
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-calendar-check text-blue-500 text-sm"></i>
+                        <span class="text-gray-900 dark:text-white text-sm font-semibold">
+                            {% if lpo.delivery_date %}
+                                {{ lpo.delivery_date.strftime('%Y-%m-%d') }}
+                            {% else %}
+                                Not set
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Compact Order Items -->
+    <div class="p-6">
+        <div class="flex items-center gap-2 mb-4">
+            <div class="p-1.5 bg-purple-100 dark:bg-purple-900 rounded">
+                <i class="fas fa-boxes text-purple-600 dark:text-purple-400 text-sm"></i>
+            </div>
+            <h3 class="font-semibold text-gray-900 dark:text-white">ORDER ITEMS</h3>
+        </div>
+
+<div class="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
+    <table class="w-full text-sm">
+        <thead class="bg-gray-50 dark:bg-gray-800">
+            <tr>
+                <th class="px-4 py-2 text-left font-medium text-gray-700 dark:text-gray-300">#</th>
+                <th class="px-4 py-2 text-left font-medium text-gray-700 dark:text-gray-300">Item Description</th>
+                <th class="px-4 py-2 text-center font-medium text-gray-700 dark:text-gray-300">Qty</th>
+                <th class="px-4 py-2 text-right font-medium text-gray-700 dark:text-gray-300">Unit Price</th>
+                <th class="px-4 py-2 text-right font-medium text-gray-700 dark:text-gray-300">Total</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+            {% for item in items %}
+            <tr>
+                <td class="px-4 py-3">
+                    <div class="w-6 h-6 bg-blue-100 dark:bg-blue-900 rounded flex items-center justify-center">
+                        <span class="text-blue-600 dark:text-blue-400 font-semibold text-xs">{{ loop.index }}</span>
+                    </div>
+                </td>
+                <td class="px-4 py-3">
+                    <div>
+                        <p class="font-semibold text-gray-900 dark:text-white">{{ item.item_name }}</p>
+                        <p class="text-gray-600 dark:text-gray-400 text-xs mt-0.5">Category: {{ item.category|replace('_', ' ')|title if item.category else 'General' }}</p>
+                        {% if item.reason %}
+                        <p class="text-gray-600 dark:text-gray-400 text-xs mt-1">
+                            <span class="font-medium">Reason:</span> {{ item.reason }}
+                        </p>
+                        {% endif %}
+                    </div>
+                </td>
+                <td class="px-4 py-3 text-center">
+                    <div class="inline-flex items-center gap-1 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">
+                        <span class="font-bold text-gray-900 dark:text-white">{{ item.quantity or 0 }}</span>
+                        <span class="text-gray-600 dark:text-gray-400 text-xs">{{ item.unit }}</span>
+                    </div>
+                </td>
+                <td class="px-4 py-3 text-right">
+                    <p class="font-semibold text-gray-900 dark:text-white">KSh {{ "{:,.2f}".format(item.unit_price or 0) }}</p>
+                </td>
+                <td class="px-4 py-3 text-right">
+                    <p class="font-bold text-green-600 dark:text-green-400">KSh {{ "{:,.2f}".format(item.total_price or 0) }}</p>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                    No items found for this LPO.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+    </div>
+
+    <!-- Compact Financial Summary -->
+<div class="px-6 pb-6">
+    <div class="max-w-xs ml-auto">
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+            <h4 class="font-semibold text-gray-900 dark:text-white mb-3 text-center text-sm">FINANCIAL SUMMARY</h4>
+            
+            <div class="space-y-2 text-sm">
+                <div class="flex justify-between items-center py-1 border-b border-gray-100 dark:border-gray-700">
+                    <span class="text-gray-600 dark:text-gray-400">Subtotal:</span>
+                    <span class="font-semibold text-gray-900 dark:text-white">KSh {{ "{:,.2f}".format(subtotal) }}</span>
+                </div>
+                
+                <div class="flex justify-between items-center py-1 border-b border-gray-100 dark:border-gray-700">
+                    <span class="text-gray-600 dark:text-gray-400">Tax ({{ tax_rate }}%):</span>
+                    <span class="font-semibold text-gray-900 dark:text-white">KSh {{ "{:,.2f}".format(tax_amount) }}</span>
+                </div>
+                
+                <div class="flex justify-between items-center py-2 bg-blue-50 dark:bg-blue-900/20 rounded px-3 -mx-1">
+                    <span class="font-bold text-gray-900 dark:text-white">Total:</span>
+                    <span class="font-bold text-blue-600 dark:text-blue-400">KSh {{ "{:,.2f}".format(total) }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <!-- Compact Approvals -->
+    <div class="p-6 border-t border-gray-200 dark:border-gray-700">
+        <h3 class="font-semibold text-gray-900 dark:text-white mb-4 text-center text-sm">AUTHORIZATIONS</h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<!-- Prepared By (Creator) -->
+<div class="text-center">
+    <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-200 dark:border-blue-800 relative">
+        <!-- Prepared Badge -->
+        <div class="absolute -top-3 left-1/2 transform -translate-x-1/2">
+            <div class="bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg flex items-center gap-1">
+                <i class="fas fa-user-edit text-xs"></i>
+                PREPARED
+            </div>
+        </div>
+        
+        <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center mx-auto mb-2">
+            <i class="fas fa-user-edit text-white text-xs"></i>
+        </div>
+        <p class="font-medium text-gray-900 dark:text-white text-xs mb-2">Prepared By</p>
+        
+        <!-- Signature Line with Approved Text -->
+        <div class="relative mt-4 mb-6">
+            <div class="border-b border-gray-300 dark:border-gray-600 h-8 mx-auto w-32"></div>
+            <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-white dark:bg-gray-800 px-2 text-xs text-gray-500 dark:text-gray-400">
+                {% if lpo.user and lpo.created_at %}
+                <span class="text-blue-600 dark:text-blue-400 font-bold">✓ PREPARED</span>
+                {% else %}
+                Signature
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="mt-2">
+            <p class="text-blue-600 dark:text-blue-400 text-xs font-medium">
+                {{ lpo.user.full_name if lpo.user and lpo.user.full_name else (lpo.user.username if lpo.user else 'Store Officer') }}
+            </p>
+            <p class="text-gray-500 dark:text-gray-400 text-xs mt-0.5">
+                {{ lpo.created_at.strftime('%Y-%m-%d') if lpo.created_at else '' }}
+            </p>
+        </div>
+    </div>
+</div>
+<!-- Finance Manager Approval -->
+<div class="text-center">
+    <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 border {% if lpo.finance_approved %}border-green-500 dark:border-green-600{% else %}border-dashed border-green-200 dark:border-green-800{% endif %} relative">
+        {% if lpo.finance_approved %}
+        <!-- Unique Approved Stamp -->
+        <div class="absolute -top-4 left-1/2 transform -translate-x-1/2">
+            <div class="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg border-2 border-white dark:border-gray-800 rotate-[-3deg] animate-pulse">
+                <div class="flex items-center gap-1">
+                    <i class="fas fa-stamp text-xs"></i>
+                    SYSTEM APPROVED
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="w-8 h-8 {% if lpo.finance_approved %}bg-green-500{% else %}bg-gray-400{% endif %} rounded-lg flex items-center justify-center mx-auto mb-2">
+            <i class="fas fa-file-invoice-dollar text-white text-xs"></i>
+        </div>
+        <p class="font-medium text-gray-900 dark:text-white text-xs mb-2">Finance Manager</p>
+        
+        <!-- Signature Line with Approved Text -->
+        <div class="relative mt-4 mb-6">
+            <div class="border-b border-gray-300 dark:border-gray-600 h-8 mx-auto w-32"></div>
+            <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-white dark:bg-gray-800 px-2 text-xs text-gray-500 dark:text-gray-400">
+                {% if lpo.finance_approved %}
+                <span class="text-green-600 dark:text-green-400 font-bold">✓ APPROVED</span>
+                {% else %}
+                Signature
+                {% endif %}
+            </div>
+        </div>
+        
+        {% if lpo.finance_approved %}
+            <div class="mt-2">
+                <p class="text-green-600 dark:text-green-400 text-xs font-medium">
+                    {{ lpo.finance_user.full_name if lpo.finance_user and lpo.finance_user.full_name else (lpo.finance_user.username if lpo.finance_user else 'Finance Manager') }}
+                </p>
+                <p class="text-gray-500 dark:text-gray-400 text-xs mt-0.5">
+                    {{ lpo.finance_approved_at.strftime('%Y-%m-%d %H:%M') if lpo.finance_approved_at else '' }}
+                </p>
+            </div>
+        {% else %}
+            <p class="text-gray-500 italic text-xs mt-2">Pending approval</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Director Approval -->
+<div class="text-center">
+    <div class="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3 border {% if lpo.director_approved %}border-purple-500 dark:border-purple-600{% else %}border-dashed border-purple-200 dark:border-purple-800{% endif %} relative">
+        {% if lpo.director_approved %}
+        <!-- Unique Director Approved Stamp -->
+        <div class="absolute -top-4 left-1/2 transform -translate-x-1/2">
+            <div class="bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg border-2 border-white dark:border-gray-800 rotate-[2deg] animate-pulse">
+                <div class="flex items-center gap-1">
+                    <i class="fas fa-crown text-xs"></i>
+                    DIRECTOR APPROVED
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="w-8 h-8 {% if lpo.director_approved %}bg-purple-500{% else %}bg-gray-400{% endif %} rounded-lg flex items-center justify-center mx-auto mb-2">
+            <i class="fas fa-user-tie text-white text-xs"></i>
+        </div>
+        <p class="font-medium text-gray-900 dark:text-white text-xs mb-2">Director</p>
+        
+        <!-- Signature Line with Approved Text -->
+        <div class="relative mt-4 mb-6">
+            <div class="border-b border-gray-300 dark:border-gray-600 h-8 mx-auto w-32"></div>
+            <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-white dark:bg-gray-800 px-2 text-xs text-gray-500 dark:text-gray-400">
+                {% if lpo.director_approved %}
+                <span class="text-purple-600 dark:text-purple-400 font-bold">✓ FINAL APPROVAL</span>
+                {% else %}
+                Signature
+                {% endif %}
+            </div>
+        </div>
+        
+        {% if lpo.director_approved %}
+            <div class="mt-2">
+                <p class="text-purple-600 dark:text-purple-400 text-xs font-medium">
+                    {{ lpo.director_user.full_name if lpo.director_user and lpo.director_user.full_name else (lpo.director_user.username if lpo.director_user else 'Director') }}
+                </p>
+                <p class="text-gray-500 dark:text-gray-400 text-xs mt-0.5">
+                    {{ lpo.director_approved_at.strftime('%Y-%m-%d %H:%M') if lpo.director_approved_at else '' }}
+                </p>
+            </div>
+        {% else %}
+            <p class="text-gray-500 italic text-xs mt-2">Pending approval</p>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+@keyframes gentle-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.9; }
+}
+.animate-pulse {
+    animation: gentle-pulse 2s ease-in-out infinite;
+}
+
+/* Unique stamp effect */
+.rotate-[-3deg] {
+    transform: rotate(-3deg);
+}
+.rotate-[2deg] {
+    transform: rotate(2deg);
+}
+</style>
+        </div>
+    </div>
+
+    <!-- Compact Footer -->
+    <div class="bg-gray-800 text-white p-4 print:bg-gray-900">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between text-center md:text-left">
+            <div class="mb-2 md:mb-0">
+                <p class="font-semibold text-sm">MEDICAL CENTER HOSPITAL</p>
+                <p class="text-gray-300 text-xs">Quality Healthcare Services</p>
+            </div>
+            <div class="text-gray-300 text-xs">
+                <p>procurement@medicalcenter.co.ke | +254 700 123 457</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="p-6 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 print:hidden">
+<div class="flex flex-col sm:flex-row gap-3 justify-center">
+    <button onclick="window.print()" 
+            class="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm transition-colors">
+        <i class="fas fa-print"></i>
+        Print LPO
+    </button>
+    <button class="inline-flex items-center gap-2 px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium text-sm transition-colors">
+        <i class="fas fa-download"></i>
+        Download PDF
+    </button>
+    
+    <!-- Send LPO to Supplier & Place Order Button -->
+    {% if lpo.status == 'approved' and lpo.finance_approved and lpo.director_approved %}
+    <a href="{{ url_for('finance_web_bp.place_order', lpo_id=lpo.id) }}" 
+            class="inline-flex items-center gap-2 px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-medium text-sm transition-colors">
+        <i class="fas fa-paper-plane"></i>
+        Send LPO to Supplier & Place Order
+    </a>
+    {% endif %}
+    
+    {% if not lpo.finance_approved %}
+    <a href="{{ url_for('finance_web_bp.approve_lpo_action', lpo_id=lpo.id, action='approve') }}" 
+       class="inline-flex items-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium text-sm transition-colors text-center justify-center">
+        <i class="fas fa-check-circle"></i>
+        Approve LPO
+    </a>
+    <a href="{{ url_for('finance_web_bp.approve_lpo_action', lpo_id=lpo.id, action='reject') }}" 
+       class="inline-flex items-center gap-2 px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium text-sm transition-colors text-center justify-center">
+        <i class="fas fa-times-circle"></i>
+        Reject LPO
+    </a>
+    {% endif %}
+</div>
+
+
+        
+        <div class="mt-4 text-center">
+            <p class="text-xs text-gray-500 dark:text-gray-400">
+                <i class="fas fa-info-circle mr-1"></i>
+                {% if lpo.external_order and lpo.external_order.delivery_date %}
+                    Delivery scheduled for {{ lpo.external_order.delivery_date.strftime('%B %d, %Y') }}
+                {% else %}
+                    Confirm delivery terms with supplier once LPO is issued.
+                {% endif %}
+            </p>
+        </div>
+    </div>
+</div>
+
+<style>
+@media print {
+    .print\:bg-gray-800 {
+        background-color: #1f2937 !important;
+        -webkit-print-color-adjust: exact;
+    }
+    .print\:bg-gray-900 {
+        background-color: #111827 !important;
+        -webkit-print-color-adjust: exact;
+    }
+}
+
+/* Approval badge styling */
+.approval-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+</style>
+
+{% endblock %}

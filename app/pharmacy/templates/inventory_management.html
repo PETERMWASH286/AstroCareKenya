@@ -96,115 +96,154 @@
     </div>
 
     <!-- Inventory Table -->
-    <div class="card shadow mb-4">
-        <div class="card-header py-3 d-flex justify-content-between align-items-center">
-            <h6 class="m-0 font-weight-bold text-primary">Pharmacy Inventory Items</h6>
-            <div class="btn-group" role="group">
-                <a href="" class="btn btn-sm btn-outline-primary">
-                    <i class="fas fa-file-export mr-1"></i>Export
-                </a>
-                <a href="" class="btn btn-sm btn-outline-info">
-                    <i class="fas fa-chart-bar mr-1"></i>Reports
-                </a>
-            </div>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-bordered" id="inventoryTable" width="100%" cellspacing="0">
-                    <thead class="bg-light">
-                        <tr>
-                            <th>Item Name</th>
-                            <th>Category</th>
-                            <th>Strength/Form</th>
-                            <th>Quantity</th>
-                            <th>Batch No.</th>
-                            <th>Expiry Date</th>
-                            <th>Supplier</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for item in inventory %}
-                        <tr class="{% if item.is_expired %}table-danger{% elif item.is_expiring_soon %}table-warning{% elif item.is_low_stock %}table-warning{% endif %}">
-                            <td>
-                                <div class="font-weight-bold text-gray-800">{{ item.item_name }}</div>
-                                {% if item.generic_name %}
-                                <small class="text-muted">{{ item.generic_name }}</small>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <span class="font-weight-bold text-gray-800">{{ item.category }}</span>
-                            </td>
-                            <td>
-                                <div>{{ item.strength }}</div>
-                                <small class="text-muted">{{ item.dosage_form }}</small>
-                            </td>
-                            <td>
-                                <div class="font-weight-bold">{{ item.quantity }} {{ item.unit_of_measure or 'units' }}</div>
-                                {% if item.reorder_level %}
-                                <div class="progress" style="height: 5px;">
-                                    <div class="progress-bar bg-{{ 'danger' if item.is_low_stock else 'success' }}" 
-                                         role="progressbar" 
-                                         style="width: {{ (item.quantity / (item.reorder_level * 3) * 100) if item.reorder_level > 0 else 100 }}%;"></div>
-                                </div>
-                                {% endif %}
-                            </td>
-                            <td>{{ item.batch_number or 'N/A' }}</td>
-                            <td>
-                                {% if item.expiry_date %}
-                                <div class="{% if item.is_expired %}text-danger{% elif item.is_expiring_soon %}text-warning{% else %}text-success{% endif %}">
-                                    {{ item.expiry_date.strftime('%d/%m/%Y') }}
-                                </div>
-                                {% if item.days_to_expiry is not none %}
-                                <small class="text-muted">{{ item.days_to_expiry }} days</small>
-                                {% endif %}
-                                {% else %}
-                                <span class="text-muted">No expiry</span>
-                                {% endif %}
-                            </td>
-                            <td>{{ item.supplier or 'N/A' }}</td>
-                            <td>
-                                <span class="badge badge-{{ badge_color }}">{{ badge_text }}</span>
-                            </td>
-                            <td>
-                                <div class="btn-group btn-group-sm" role="group">
-                                    <button type="button" class="btn btn-info" data-toggle="modal" 
-                                            data-target="#viewItemModal{{ item.id }}" title="View Details">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                    <a href="" 
-                                       class="btn btn-warning" title="Edit">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    <button type="button" class="btn btn-success" data-toggle="modal" 
-                                            data-target="#restockModal{{ item.id }}" title="Restock">
-                                        <i class="fas fa-plus-circle"></i>
-                                    </button>
-                                    <button type="button" class="btn btn-primary" data-toggle="modal" 
-                                            data-target="#adjustModal{{ item.id }}" title="Adjust Stock">
-                                        <i class="fas fa-exchange-alt"></i>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            
-            {% if not inventory %}
-            <div class="text-center py-5">
-                <i class="fas fa-pills fa-3x text-gray-300 mb-3"></i>
-                <h5 class="text-gray-500">No inventory items found</h5>
-                <p class="text-gray-400">Add your first pharmacy inventory item to get started.</p>
-                <a href="" class="btn btn-primary">
-                    <i class="fas fa-plus mr-2"></i>Add Inventory Item
-                </a>
-            </div>
-            {% endif %}
+<!-- Inventory Table -->
+<div class="card shadow mb-4">
+    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+        <h6 class="m-0 font-weight-bold text-primary">Pharmacy Inventory Items</h6>
+        <div class="btn-group" role="group">
+            <a href="" class="btn btn-sm btn-outline-primary">
+                <i class="fas fa-file-export mr-1"></i>Export
+            </a>
+            <a href="" class="btn btn-sm btn-outline-info">
+                <i class="fas fa-chart-bar mr-1"></i>Reports
+            </a>
         </div>
     </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered" id="inventoryTable" width="100%" cellspacing="0">
+                <thead class="bg-light">
+                    <tr>
+                        <th>Item Name</th>
+                        <th>Category</th>
+                        <th>Strength/Form</th>
+                        <th>Quantity</th>
+                        <th>Selling Price</th>
+                        <th>Total Value</th>
+                        <th>Batch No.</th>
+                        <th>Expiry (Days)</th>
+                        <th>Location</th>
+                        <th>Reorder Level</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in inventory %}
+                    {% set days = item.days_to_expiry %}
+                    {% set is_expired = days is not none and days < 0 %}
+                    {% set is_expiring_soon = days is not none and 0 <= days <= 30 %}
+                    {% set is_low_stock = item.is_low_stock %}
+                    <tr class="{% if is_expired %}table-danger{% elif is_expiring_soon %}table-warning{% elif is_low_stock %}table-warning{% endif %}">
+                        <td>
+                            <div class="font-weight-bold">{{ item.item_name }}</div>
+                            {% if item.generic_name %}
+                            <small class="text-muted">{{ item.generic_name }}</small>
+                            {% endif %}
+                        </td>
+                        <td>{{ item.category }}</td>
+                        <td>
+                            <div>{{ item.strength or '' }}</div>
+                            <small class="text-muted">{{ item.dosage_form or '' }}</small>
+                        </td>
+                        <td>
+                            <div class="font-weight-bold">{{ item.quantity }} {{ item.unit or 'units' }}</div>
+                            {% if item.reorder_level %}
+                            <div class="progress" style="height: 5px;">
+                                <div class="progress-bar bg-{{ 'danger' if is_low_stock else 'success' }}" 
+                                     role="progressbar" 
+                                     style="width: {{ (item.quantity / (item.reorder_level * 3) * 100) if item.reorder_level > 0 else 100 }}%;"></div>
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if item.selling_price %}
+                            KSh {{ "{:,.2f}".format(item.selling_price) }}
+                            {% else %}
+                            <span class="text-muted">Not set</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="font-weight-bold text-primary">
+                                KSh {{ "{:,.2f}".format(item.total_value) }}
+                            </span>
+                        </td>
+                        <td>{{ item.batch_number or 'N/A' }}</td>
+                        <td>
+                            {% if item.expiry_date %}
+                                {% if is_expired %}
+                                    <span class="text-danger font-weight-bold" title="Expired {{ days }} days ago">
+                                        {{ days }} days ago
+                                    </span>
+                                {% elif is_expiring_soon %}
+                                    <span class="text-warning font-weight-bold" title="Expires in {{ days }} days">
+                                        {{ days }} days
+                                    </span>
+                                {% else %}
+                                    <span class="text-success">{{ days }} days</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted">No expiry</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ item.location or 'N/A' }}</td>
+                        <td>{{ item.reorder_level or 'N/A' }}</td>
+<td class="text-center">
+    {% if is_expired %}
+        <span class="badge badge-pill bg-danger text-white px-3 py-2">
+            <i class="fas fa-exclamation-circle mr-1"></i> Expired
+        </span>
+    {% elif is_expiring_soon %}
+        <span class="badge badge-pill bg-warning text-dark px-3 py-2">
+            <i class="fas fa-clock mr-1"></i> Expiring Soon
+        </span>
+    {% elif is_low_stock %}
+        <span class="badge badge-pill bg-warning text-dark px-3 py-2">
+            <i class="fas fa-exclamation-triangle mr-1"></i> Low Stock
+        </span>
+    {% else %}
+        <span class="badge badge-pill bg-success text-white px-3 py-2">
+            <i class="fas fa-check-circle mr-1"></i> In Stock
+        </span>
+    {% endif %}
+</td>
+                        <td>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button type="button" class="btn btn-info" data-toggle="modal" 
+                                        data-target="#viewItemModal{{ item.id }}" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <a href="" class="btn btn-warning" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <button type="button" class="btn btn-success" data-toggle="modal" 
+                                        data-target="#restockModal{{ item.id }}" title="Restock">
+                                    <i class="fas fa-plus-circle"></i>
+                                </button>
+                                <button type="button" class="btn btn-primary" data-toggle="modal" 
+                                        data-target="#adjustModal{{ item.id }}" title="Adjust Stock">
+                                    <i class="fas fa-exchange-alt"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if not inventory %}
+        <div class="text-center py-5">
+            <i class="fas fa-pills fa-3x text-gray-300 mb-3"></i>
+            <h5 class="text-gray-500">No inventory items found</h5>
+            <p class="text-gray-400">Add your first pharmacy inventory item to get started.</p>
+            <a href="" class="btn btn-primary">
+                <i class="fas fa-plus mr-2"></i>Add Inventory Item
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
 </div>
 
 <!-- Filter Modal -->

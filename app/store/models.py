@@ -177,7 +177,7 @@ class Supplier(db.Model):
 # Stock Model
 class Stock(db.Model):
     __tablename__ = 'stock'
-    __audit_trail__ = True  # Enable auditing
+    __audit_trail__ = True
 
     id = db.Column(db.Integer, primary_key=True)
     sku = db.Column(db.String(50), unique=True, nullable=False)
@@ -185,10 +185,10 @@ class Stock(db.Model):
     category = db.Column(db.String(50), nullable=False)
     description = db.Column(db.Text)
     quantity = db.Column(db.Integer, nullable=False)
-    unit_price = db.Column(db.Float, nullable=False)
+    unit_price = db.Column(db.Float, nullable=False)          # Buying price (cost)
     batch_number = db.Column(db.String(50), nullable=False)
     expiration_date = db.Column(db.DateTime)
-    reorder_level = db.Column(db.Integer, default=50)
+    reorder_level = db.Column(db.Integer, default=50)         # Minimum stock before reorder
     current_stock = db.Column(db.Integer)
     location = db.Column(db.String(100))
     supplier_id = db.Column(db.Integer, db.ForeignKey('suppliers.id'), nullable=False)
@@ -196,13 +196,37 @@ class Stock(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_restocked = db.Column(db.DateTime, default=datetime.utcnow)
     is_active = db.Column(db.Boolean, default=True)
-    
+
+    # ----- NEW COLUMNS FOR PRICING & MANAGEMENT -----
+    selling_price = db.Column(db.Float, nullable=True)        # Retail price per unit
+    markup_percentage = db.Column(db.Float, default=0.0)      # Markup over buying price
+    tax_rate = db.Column(db.Float, default=0.0)               # e.g., 16% VAT
+    is_taxable = db.Column(db.Boolean, default=True)          # Whether tax applies
+    max_stock_level = db.Column(db.Integer, nullable=True)    # Maximum desired stock (optional)
+    storage_condition = db.Column(db.String(100), nullable=True)  # e.g., "refrigerated"
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)  # Track changes
+    # -------------------------------------------------
+
+    # Relationships
     supplier = db.relationship('Supplier', backref='stock_items')
     purchase_order = db.relationship('PurchaseOrder', backref='stock_entries')
-    # One-to-one relationship with StockDetail
     detail = db.relationship('StockDetail', back_populates='stock', uselist=False)
+
     def __repr__(self):
         return f'<Stock {self.sku} - {self.name}>'
+
+    @property
+    def effective_selling_price(self):
+        """Returns the actual selling price:
+           - If selling_price is set, use it.
+           - Otherwise calculate from markup_percentage.
+        """
+        if self.selling_price is not None:
+            return self.selling_price
+        if self.markup_percentage:
+            return self.unit_price * (1 + self.markup_percentage / 100)
+        return self.unit_price   # fallback (no markup, no override)
+
     
     def generate_sku(self):
         """Generate unique SKU with null safety"""
@@ -245,6 +269,15 @@ class Stock(db.Model):
             current_app.logger.error(f"Expiration Calculation Error: {str(e)}")
             return datetime.utcnow() + timedelta(days=1825)
 
+    @property
+    def valuation_at_cost(self):
+        """Total cost value (buying price × quantity)"""
+        return (self.quantity or 0) * (self.unit_price or 0)
+
+    @property
+    def valuation_at_selling_price(self):
+        """Total potential revenue (selling price × quantity)"""
+        return (self.quantity or 0) * (self.selling_price or 0)
 
 
 class StockRequest(db.Model):
@@ -1260,7 +1293,8 @@ class PaymentRequest(db.Model):
     
     # Timestamps
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
+    account_type = db.Column(db.String(20), nullable=True)  # 'bank' or 'cash'
+    account_id = db.Column(db.Integer, nullable=True)        # ID of BankAccount or CashAccount
     # Relationships
     invoice = db.relationship('SupplierInvoice', backref='payment_requests')
     requester = db.relationship('User', foreign_keys=[requested_by], backref='requested_payments')
@@ -1340,42 +1374,78 @@ class PaymentRequest(db.Model):
         return False, "Payment request is not in director approval status"
 
     def execute_payment(self, user_id, proof_path=None):
-        """Execute the payment and update invoice with enhanced status tracking"""
-        if self.status == 'approved':
-            try:
-                # Get the invoice and current payment status
-                invoice = self.invoice
-                previous_amount_paid = invoice.amount_paid
-                previous_balance = invoice.balance_due
-                previous_status = invoice.status
-                
-                # Apply payment to invoice
-                self.invoice.add_payment(self.amount, self.payment_method, self.reference)
-                
-                # Update payment request status
-                self.status = 'paid'
-                self.paid_by = user_id
-                self.paid_at = datetime.utcnow()
-                self.payment_proof_path = proof_path
-                self.updated_at = datetime.utcnow()
-                
-                # Log the payment execution
-                current_app.logger.info(
-                    f"Payment executed: Request {self.id}, "
-                    f"Invoice {invoice.invoice_number}, "
-                    f"Amount: {self.amount}, "
-                    f"Previous Status: {previous_status}, "
-                    f"New Status: {invoice.status}, "
-                    f"Previous Balance: {previous_balance}, "
-                    f"New Balance: {invoice.balance_due}"
+        """Execute the payment, update invoice, supplier account, and hospital cash/bank accounts."""
+        if self.status != 'approved':
+            return False, "Payment request is not approved"
+
+        from app.finance.models import BankAccount, CashAccount, BankTransaction, CashTransaction
+
+        try:
+            # 1. Get the account to debit
+            account = None
+            if self.account_type == 'bank':
+                account = BankAccount.query.get(self.account_id)
+                if not account or not account.is_active:
+                    raise ValueError("Selected bank account not found or inactive.")
+            elif self.account_type == 'cash':
+                account = CashAccount.query.get(self.account_id)
+                if not account or not account.is_active:
+                    raise ValueError("Selected cash account not found or inactive.")
+            else:
+                raise ValueError("Invalid account type for payment.")
+
+            # 2. Re‑check sufficient balance (may have changed since request)
+            if account.current_balance < self.amount:
+                raise ValueError(
+                    f"Insufficient balance in selected account. "
+                    f"Available: {account.current_balance:.2f}, Required: {self.amount:.2f}"
                 )
-                
-                return True, "Payment executed successfully"
-                
-            except Exception as e:
-                return False, f"Error executing payment: {str(e)}"
-        
-        return False, "Payment request is not approved"
+
+            # 3. Apply payment to invoice (updates supplier account, creates SupplierTransaction)
+            invoice = self.invoice
+            invoice.add_payment(self.amount, self.payment_method, self.reference)
+
+            # 4. Create hospital account transaction
+            if self.account_type == 'bank':
+                bank_tx = BankTransaction(
+                    bank_account_id=account.id,
+                    transaction_type='withdrawal',
+                    amount=self.amount,
+                    description=f"Payment for invoice {invoice.invoice_number}",
+                    reference=self.reference,
+                    created_by=user_id
+                )
+                db.session.add(bank_tx)
+            else:  # cash
+                cash_tx = CashTransaction(
+                    transaction_type='withdrawal',
+                    amount=self.amount,
+                    description=f"Payment for invoice {invoice.invoice_number}",
+                    source_cash_account_id=account.id,
+                    status='completed',
+                    completed_at=datetime.utcnow(),
+                    external_reference=self.reference,
+                    initiated_by=user_id
+                )
+                cash_tx.transaction_ref = cash_tx.generate_ref()
+                db.session.add(cash_tx)
+
+            # 5. Decrease the account balance
+            account.current_balance -= self.amount
+
+            # 6. Update payment request status
+            self.status = 'paid'
+            self.paid_by = user_id
+            self.paid_at = datetime.utcnow()
+            self.payment_proof_path = proof_path
+            self.updated_at = datetime.utcnow()
+
+            return True, "Payment executed successfully"
+
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Payment execution failed: {str(e)}")
+            return False, str(e)
     def to_dict(self):
         """Convert to dictionary for API responses"""
         return {

@@ -1,0 +1,347 @@
+{% extends "base.html" %}
+
+{% block title %}Expense Reports{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Header -->
+    <div class="bg-gradient-danger text-white p-4 rounded-4 mb-4 shadow-sm">
+        <h1 class="display-6 fw-bold">Expense Reports</h1>
+        <p class="text-white-80 mb-0">Analyze hospital expenditures across categories, departments, and time</p>
+    </div>
+
+    <!-- Filters -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body p-4">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">Period</label>
+                    <select name="period" class="form-select" id="periodSelect">
+                        <option value="month" {% if period == 'month' %}selected{% endif %}>Monthly</option>
+                        <option value="year" {% if period == 'year' %}selected{% endif %}>Yearly</option>
+                        <option value="custom" {% if period == 'custom' %}selected{% endif %}>Custom</option>
+                    </select>
+                </div>
+                <div class="col-md-2" id="monthPicker">
+                    <label class="form-label fw-semibold">Month</label>
+                    <input type="month" name="month" class="form-control" value="{{ selected_month }}">
+                </div>
+                <div class="col-md-2" id="yearPicker" style="display:none;">
+                    <label class="form-label fw-semibold">Year</label>
+                    <input type="number" name="year" class="form-control" value="{{ selected_year }}" min="2020" max="2030">
+                </div>
+                <div class="col-md-2" id="startDatePicker" style="display:none;">
+                    <label class="form-label fw-semibold">From</label>
+                    <input type="date" name="start_date" class="form-control" value="{{ start_date.strftime('%Y-%m-%d') }}">
+                </div>
+                <div class="col-md-2" id="endDatePicker" style="display:none;">
+                    <label class="form-label fw-semibold">To</label>
+                    <input type="date" name="end_date" class="form-control" value="{{ end_date.strftime('%Y-%m-%d') }}">
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-filter me-2"></i>Apply
+                    </button>
+                </div>
+            </form>
+
+            <!-- Additional filters (category, department, status) -->
+            <div class="row mt-3 g-3">
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Category</label>
+                    <select name="category_id" form="filterForm" class="form-select">
+                        <option value="">All Categories</option>
+                        {% for cat in categories %}
+                        <option value="{{ cat.id }}" {% if selected_category == cat.id %}selected{% endif %}>{{ cat.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Department</label>
+                    <select name="department_id" form="filterForm" class="form-select">
+                        <option value="">All Departments</option>
+                        {% for dept in departments %}
+                        <option value="{{ dept.id }}" {% if selected_department == dept.id %}selected{% endif %}>{{ dept.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Status</label>
+                    <select name="status" form="filterForm" class="form-select">
+                        <option value="">All Statuses</option>
+                        {% for st in status_options %}
+                        <option value="{{ st }}" {% if selected_status == st %}selected{% endif %}>{{ st|capitalize }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="button" class="btn btn-outline-secondary" onclick="window.location.href='{{ url_for('finance_web_bp.expense_reports') }}'">Reset</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <p class="text-uppercase small text-muted mb-1">Total Expenses</p>
+                    <h3 class="mb-0 fw-bold">KSh {{ "{:,.2f}".format(total_with_tax) }}</h3>
+                    <small class="text-muted">(excl. tax: KSh {{ "{:,.2f}".format(total_amount) }})</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <p class="text-uppercase small text-muted mb-1">Paid</p>
+                    <h3 class="mb-0 fw-bold text-success">KSh {{ "{:,.2f}".format(status_totals.get('paid', 0)) }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <p class="text-uppercase small text-muted mb-1">Pending</p>
+                    <h3 class="mb-0 fw-bold text-warning">KSh {{ "{:,.2f}".format(status_totals.get('submitted', 0) + status_totals.get('approved', 0)) }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <p class="text-uppercase small text-muted mb-1">Number of Expenses</p>
+                    <h3 class="mb-0 fw-bold">{{ expenses|length }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row g-4 mb-5">
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h5 class="fw-bold text-danger"><i class="fas fa-chart-pie me-2"></i>Expenses by Category</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="categoryChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h5 class="fw-bold text-primary"><i class="fas fa-chart-line me-2"></i>Monthly Trend</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="trendChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Breakdown Tables -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h5 class="fw-bold text-success">By Category</h5>
+                </div>
+                <div class="card-body p-4">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th class="text-end">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cat, total in cat_totals.items() %}
+                            <tr>
+                                <td>{{ cat }}</td>
+                                <td class="text-end">KSh {{ "{:,.2f}".format(total) }}</td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="2" class="text-center text-muted">No data</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h5 class="fw-bold text-info">By Department</h5>
+                </div>
+                <div class="card-body p-4">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Department</th>
+                                <th class="text-end">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for dept, total in dept_totals.items() %}
+                            <tr>
+                                <td>{{ dept }}</td>
+                                <td class="text-end">KSh {{ "{:,.2f}".format(total) }}</td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="2" class="text-center text-muted">No data</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Expenses Table -->
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+            <h5 class="fw-bold text-secondary"><i class="fas fa-list me-2"></i>Expense Details</h5>
+        </div>
+        <div class="card-body p-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle" id="expensesTable">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>Description</th>
+                            <th>Category</th>
+                            <th>Department</th>
+                            <th>Amount</th>
+                            <th>Tax</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for e in expenses %}
+                        <tr>
+                            <td>{{ e.expense_date.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ e.description[:50] }}...</td>
+                            <td>{{ e.category.name }}</td>
+                            <td>{{ e.department.name }}</td>
+                            <td class="text-end">KSh {{ "{:,.2f}".format(e.amount) }}</td>
+                            <td class="text-end">KSh {{ "{:,.2f}".format(e.tax_amount) }}</td>
+                            <td class="text-end fw-bold">KSh {{ "{:,.2f}".format(e.amount + e.tax_amount) }}</td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if e.status=='paid' else 'warning' if e.status in ['submitted','approved'] else 'secondary' }}">
+                                    {{ e.status|capitalize }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="8" class="text-center text-muted">No expenses found.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Category Chart
+    const catLabels = {{ cat_totals.keys()|list|safe }};
+    const catData = {{ cat_totals.values()|list|safe }};
+    new Chart(document.getElementById('categoryChart'), {
+        type: 'doughnut',
+        data: {
+            labels: catLabels,
+            datasets: [{
+                data: catData,
+                backgroundColor: ['#f56954', '#00a65a', '#f39c12', '#00c0ef', '#3c8dbc', '#d2d6de']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+
+    // Trend Chart
+    new Chart(document.getElementById('trendChart'), {
+        type: 'line',
+        data: {
+            labels: {{ months|safe }},
+            datasets: [{
+                label: 'Expenses',
+                data: {{ monthly_data|safe }},
+                borderColor: '#dc3545',
+                backgroundColor: 'rgba(220,53,69,0.1)',
+                tension: 0.3,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) { return 'KSh ' + value.toLocaleString(); }
+                    }
+                }
+            }
+        }
+    });
+
+    // Date picker toggling
+    const periodSelect = document.getElementById('periodSelect');
+    const monthPicker = document.getElementById('monthPicker');
+    const yearPicker = document.getElementById('yearPicker');
+    const startPicker = document.getElementById('startDatePicker');
+    const endPicker = document.getElementById('endDatePicker');
+
+    function togglePickers() {
+        const val = periodSelect.value;
+        monthPicker.style.display = val === 'month' ? 'block' : 'none';
+        yearPicker.style.display = val === 'year' ? 'block' : 'none';
+        startPicker.style.display = val === 'custom' ? 'block' : 'none';
+        endPicker.style.display = val === 'custom' ? 'block' : 'none';
+    }
+    periodSelect.addEventListener('change', togglePickers);
+    togglePickers();
+
+    // DataTable for better table interaction
+    $('#expensesTable').DataTable({
+        order: [[0, 'desc']],
+        pageLength: 25,
+        lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "All"]]
+    });
+});
+</script>
+
+<style>
+    .bg-gradient-danger {
+        background: linear-gradient(135deg, #dc3545 0%, #b02a37 100%);
+    }
+    .text-white-80 {
+        color: rgba(255,255,255,0.8);
+    }
+    .hover-lift {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hover-lift:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.75rem 1.5rem rgba(0,0,0,0.1) !important;
+    }
+    .badge {
+        font-weight: 500;
+        padding: 0.5em 0.8em;
+    }
+</style>
+{% endblock %}

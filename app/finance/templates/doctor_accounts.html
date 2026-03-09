@@ -212,20 +212,29 @@
                                 </span>
                             </td>
                             <td class="px-4 py-4 whitespace-nowrap text-center">
-                                <div class="flex items-center justify-center space-x-2">
-                                    <button onclick="viewDoctorDetails({{ doctor_account.doctor.id }})" class="inline-flex items-center p-1.5 text-blue-600 hover:text-blue-800 transition-colors duration-150" title="Analytics">
-                                        <i class="fas fa-chart-line text-sm"></i>
-                                    </button>
-                                    <button onclick="processPayment({{ doctor_account.doctor.id }})" class="inline-flex items-center p-1.5 {% if doctor_account.balance_due > 0 %}text-green-600 hover:text-green-800{% else %}text-gray-400 cursor-not-allowed{% endif %} transition-colors duration-150" {% if doctor_account.balance_due <= 0 %}disabled{% endif %} title="Process Payment">
-                                        <i class="fas fa-money-bill-wave text-sm"></i>
-                                    </button>
-                                    <button onclick="manageCommissions({{ doctor_account.doctor.id }})" class="inline-flex items-center p-1.5 text-gray-600 hover:text-gray-800 transition-colors duration-150" title="Manage Commissions">
-                                        <i class="fas fa-cog text-sm"></i>
-                                    </button>
-                                    <button onclick="toggleServices({{ doctor_account.doctor.id }})" class="inline-flex items-center p-1.5 text-gray-600 hover:text-gray-800 transition-colors duration-150 services-toggle" title="View Services">
-                                        <i class="fas fa-chevron-down text-sm transition-transform duration-200"></i>
-                                    </button>
-                                </div>
+<div class="flex items-center justify-center space-x-2">
+    <a href="{{ url_for('finance_web_bp.doctor_ledger', doctor_id=doctor_account.doctor.id) }}" 
+       class="inline-flex items-center p-1.5 text-blue-600 hover:text-blue-800 transition-colors duration-150" 
+       title="View Payment Ledger">
+        <i class="fas fa-book text-sm"></i>
+    </a>
+    <button onclick="processPayment({{ doctor_account.doctor.id }})" 
+            class="inline-flex items-center p-1.5 {% if doctor_account.balance_due > 0 %}text-green-600 hover:text-green-800{% else %}text-gray-400 cursor-not-allowed{% endif %} transition-colors duration-150" 
+            {% if doctor_account.balance_due <= 0 %}disabled{% endif %} 
+            title="Process Payment">
+        <i class="fas fa-money-bill-wave text-sm"></i>
+    </button>
+    <button onclick="manageCommissions({{ doctor_account.doctor.id }})" 
+            class="inline-flex items-center p-1.5 text-gray-600 hover:text-gray-800 transition-colors duration-150" 
+            title="Manage Commissions">
+        <i class="fas fa-cog text-sm"></i>
+    </button>
+    <button onclick="toggleServices({{ doctor_account.doctor.id }})" 
+            class="inline-flex items-center p-1.5 text-gray-600 hover:text-gray-800 transition-colors duration-150 services-toggle" 
+            title="View Services">
+        <i class="fas fa-chevron-down text-sm transition-transform duration-200"></i>
+    </button>
+</div>
                             </td>
                         </tr>
 
@@ -969,7 +978,7 @@ function renderPaymentModal(paymentData, assignmentsData, doctorId) {
                         min="0" 
                         max="${balance_due}"
                         step="1"
-                        onchange="validatePaymentAmount(${balance_due})"
+                        oninput="validatePaymentAmount(${balance_due})"
                         class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         placeholder="Enter amount"
                     >
@@ -978,12 +987,22 @@ function renderPaymentModal(paymentData, assignmentsData, doctorId) {
                 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
-                    <select id="paymentMethod" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <select id="paymentMethod" onchange="handlePaymentMethodChange()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         <option value="mpesa">MPesa</option>
                         <option value="bank_transfer">Bank Transfer</option>
                         <option value="cash">Cash</option>
                         <option value="cheque">Cheque</option>
                     </select>
+                </div>
+
+                <!-- Account Selection Section (initially hidden) -->
+                <div id="accountSection" class="space-y-2 hidden">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Select Account</label>
+                    <select id="accountSelect" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Loading accounts...</option>
+                    </select>
+                    <p id="accountBalance" class="text-xs text-gray-500">Balance: KSH <span>0.00</span></p>
+                    <p id="balanceWarning" class="text-xs text-red-600 hidden">Insufficient balance in selected account</p>
                 </div>
                 
                 <div>
@@ -1032,6 +1051,75 @@ function renderPaymentModal(paymentData, assignmentsData, doctorId) {
     };
 }
 
+function handlePaymentMethodChange() {
+    const method = document.getElementById('paymentMethod').value;
+    const accountDiv = document.getElementById('accountSection');
+    const accountSelect = document.getElementById('accountSelect');
+    const balanceSpan = document.getElementById('accountBalance').querySelector('span');
+    const warning = document.getElementById('balanceWarning');
+
+    if (!method) {
+        accountDiv.classList.add('hidden');
+        return;
+    }
+
+    accountSelect.innerHTML = '<option value="">Loading accounts...</option>';
+    accountDiv.classList.remove('hidden');
+    balanceSpan.textContent = '0.00';
+    warning.classList.add('hidden');
+
+    fetch(`/finance/accounts-by-method?method=${method}`)
+        .then(res => res.json())
+        .then(accounts => {
+            accountSelect.innerHTML = '<option value="">Choose an account</option>';
+            accounts.forEach(acc => {
+                accountSelect.innerHTML += `<option value="${acc.id}" data-balance="${acc.balance}" data-type="${acc.type}">${acc.name} (Bal: KSH ${acc.balance.toFixed(2)})</option>`;
+            });
+        })
+        .catch(err => {
+            accountSelect.innerHTML = '<option value="">Error loading accounts</option>';
+        });
+}
+
+// When account selected, update balance and validate
+document.addEventListener('change', function(e) {
+    if (e.target && e.target.id === 'accountSelect') {
+        const selected = e.target.options[e.target.selectedIndex];
+        const balanceSpan = document.getElementById('accountBalance').querySelector('span');
+        const warning = document.getElementById('balanceWarning');
+        if (selected && selected.value) {
+            const balance = parseFloat(selected.dataset.balance) || 0;
+            balanceSpan.textContent = balance.toFixed(2);
+            const paymentAmount = parseFloat(document.getElementById('paymentAmount').value) || 0;
+            if (paymentAmount > balance) {
+                warning.classList.remove('hidden');
+            } else {
+                warning.classList.add('hidden');
+            }
+        } else {
+            balanceSpan.textContent = '0.00';
+            warning.classList.add('hidden');
+        }
+    }
+});
+
+// Also validate on amount change
+document.addEventListener('input', function(e) {
+    if (e.target && e.target.id === 'paymentAmount') {
+        const paymentAmount = parseFloat(e.target.value) || 0;
+        const selected = document.getElementById('accountSelect').selectedOptions[0];
+        if (selected && selected.value) {
+            const balance = parseFloat(selected.dataset.balance) || 0;
+            const warning = document.getElementById('balanceWarning');
+            if (paymentAmount > balance) {
+                warning.classList.remove('hidden');
+            } else {
+                warning.classList.add('hidden');
+            }
+        }
+    }
+});
+
 function toggleAssignmentSelection(assignmentId, isSelected) {
     if (isSelected) {
         if (!window.currentPaymentData.selectedAssignments.includes(assignmentId)) {
@@ -1072,7 +1160,21 @@ function submitPayment(doctorId) {
     const paymentMethod = document.getElementById('paymentMethod').value;
     const referenceNumber = document.getElementById('referenceNumber').value;
     const notes = document.getElementById('paymentNotes').value;
-    
+    const accountSelect = document.getElementById('accountSelect');
+    const accountId = accountSelect.value;
+    const accountType = accountSelect.selectedOptions[0]?.dataset.type;
+
+    if (!accountId) {
+        showToast('Please select an account', 'error');
+        return;
+    }
+
+    const selectedBalance = parseFloat(accountSelect.selectedOptions[0]?.dataset.balance) || 0;
+    if (amount > selectedBalance) {
+        showToast('Insufficient balance in selected account', 'error');
+        return;
+    }
+
     if (!window.currentPaymentData) {
         showToast('Error: Payment data not loaded properly', 'error');
         return;
@@ -1093,7 +1195,9 @@ function submitPayment(doctorId) {
         payment_method: paymentMethod,
         assignment_ids: window.currentPaymentData.selectedAssignments,
         reference_number: referenceNumber,
-        notes: notes
+        notes: notes,
+        account_type: accountType,
+        account_id: accountId
     };
     
     // Show loading state
@@ -1115,7 +1219,6 @@ function submitPayment(doctorId) {
         if (data.success) {
             showToast(data.message || 'Payment processed successfully!');
             closePaymentModal();
-            // Refresh the page to show updated balances
             setTimeout(() => location.reload(), 1500);
         } else {
             throw new Error(data.error || 'Failed to process payment');
@@ -1123,7 +1226,6 @@ function submitPayment(doctorId) {
     })
     .catch(error => {
         showToast('Error processing payment: ' + error.message, 'error');
-        // Restore button
         submitBtn.innerHTML = originalText;
         submitBtn.disabled = false;
     });

@@ -1,4 +1,6 @@
-from datetime import datetime, timedelta
+import csv
+from datetime import date, datetime, timedelta
+from decimal import Decimal
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -6,13 +8,18 @@ import smtplib
 import tempfile
 from flask import Blueprint, abort, flash, jsonify, redirect, render_template, request, session, url_for
 from flask_login import current_user, login_required
-from sqlalchemy import and_, func
+from sqlalchemy import and_, extract, func
 
+from app.asset_management.models import Asset
 from app.auth.models import Role, User
-from app.finance.models import Expense, ExpenseCategory, Insurance, InsuranceClaim, InsuranceService, Invoice, InvoiceItem, Payment
+from app.finance.models import BankAccount, BankStatement, BankStatementLine, BankTransaction, CashAccount, CashTransaction, Expense, ExpenseCategory, Insurance, InsuranceClaim, InsuranceService, Invoice, InvoiceItem, Payment, PayrollPayment, SalesReport, SalesReportItem
 from sqlalchemy.exc import IntegrityError
 
-from app.store.models import LPO, ExternalOrder, PaymentRequest, PurchaseOrder, Requisition, Supplier, SupplierAccount, SupplierInvoice
+from app.hr.models import DeductionType, EmployeeDeductionAssignment, LoanRepayment, PaymentMethod, Payroll, PayrollLoan, Payslip, PayslipDeduction, PayslipEarning, StatutoryLiability
+from app.lab.models import LabInventory
+from app.pharmacy.models import PharmacyInventory
+from app.radiology.models import RadiologyInventory
+from app.store.models import LPO, ExternalOrder, PaymentRequest, PurchaseOrder, Requisition, Stock, Supplier, SupplierAccount, SupplierInvoice, SupplierTransaction
 from app.user_management.models import Department
 
 from . import finance_web_bp
@@ -25,8 +32,115 @@ from app.utils.notifications import notification_manager
 
 # Financial Dashboard
 @finance_web_bp.route('/dashboard')
+@login_required
 def financial_dashboard():
-    return render_template('dashboard.html')
+    today = datetime.today()
+    current_year = today.year
+    current_month = today.month
+    first_day_of_month = datetime(current_year, current_month, 1)
+    first_day_of_prev_month = (first_day_of_month - timedelta(days=1)).replace(day=1)
+
+    # ----- Revenue (from SalesReport) -----
+    revenue_current_month = db.session.query(func.sum(SalesReport.total_amount)).filter(
+        SalesReport.sale_date >= first_day_of_month
+    ).scalar() or 0.0
+
+    revenue_prev_month = db.session.query(func.sum(SalesReport.total_amount)).filter(
+        SalesReport.sale_date >= first_day_of_prev_month,
+        SalesReport.sale_date < first_day_of_month
+    ).scalar() or 0.0
+
+    revenue_current_year = db.session.query(func.sum(SalesReport.total_amount)).filter(
+        extract('year', SalesReport.sale_date) == current_year
+    ).scalar() or 0.0
+
+    # ----- Expenses -----
+    expenses_current_month = db.session.query(func.sum(Expense.amount + Expense.tax_amount)).filter(
+        Expense.expense_date >= first_day_of_month
+    ).scalar() or 0.0
+
+    expenses_prev_month = db.session.query(func.sum(Expense.amount + Expense.tax_amount)).filter(
+        Expense.expense_date >= first_day_of_prev_month,
+        Expense.expense_date < first_day_of_month
+    ).scalar() or 0.0
+
+    expenses_current_year = db.session.query(func.sum(Expense.amount + Expense.tax_amount)).filter(
+        extract('year', Expense.expense_date) == current_year
+    ).scalar() or 0.0
+
+    # ----- Profit -----
+    profit_current_month = revenue_current_month - expenses_current_month
+    profit_prev_month = revenue_prev_month - expenses_prev_month
+    profit_change = profit_current_month - profit_prev_month
+
+    # ----- Cash & Bank Balances -----
+    cash_balance = db.session.query(func.sum(CashAccount.current_balance)).filter(
+        CashAccount.is_active == True
+    ).scalar() or 0.0
+
+    bank_balance = db.session.query(func.sum(BankAccount.current_balance)).filter(
+        BankAccount.is_active == True
+    ).scalar() or 0.0
+
+    # ----- Pending Approvals -----
+    pending_expenses = Expense.query.filter_by(status='submitted').count()
+    pending_payrolls = Payroll.query.filter_by(status='Approved').count()  # finance needs to pay these
+
+    # ----- Recent Sales (last 5) -----
+    recent_sales = SalesReport.query.order_by(SalesReport.sale_date.desc()).limit(5).all()
+
+    # ----- Recent Expenses (last 5) -----
+    recent_expenses = Expense.query.order_by(Expense.expense_date.desc()).limit(5).all()
+
+    # ----- Expense Breakdown by Category (for current month) -----
+    category_expenses = db.session.query(
+        ExpenseCategory.name,
+        func.sum(Expense.amount + Expense.tax_amount).label('total')
+    ).join(Expense, Expense.category_id == ExpenseCategory.id).filter(
+        Expense.expense_date >= first_day_of_month
+    ).group_by(ExpenseCategory.name).all()
+    expense_categories = [{'name': c, 'total': t} for c, t in category_expenses]
+
+    # ----- Monthly Revenue vs Expense Trend (last 6 months) -----
+    months_data = []
+    for i in range(5, -1, -1):
+        month_start = (first_day_of_month - timedelta(days=30*i)).replace(day=1)
+        month_end = (month_start + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+        rev = db.session.query(func.sum(SalesReport.total_amount)).filter(
+            SalesReport.sale_date >= month_start,
+            SalesReport.sale_date <= month_end
+        ).scalar() or 0.0
+        exp = db.session.query(func.sum(Expense.amount + Expense.tax_amount)).filter(
+            Expense.expense_date >= month_start,
+            Expense.expense_date <= month_end
+        ).scalar() or 0.0
+        months_data.append({
+            'month': month_start.strftime('%b'),
+            'revenue': rev,
+            'expenses': exp
+        })
+
+    return render_template(
+        'finance_dashboard.html',
+        revenue_current_month=revenue_current_month,
+        revenue_prev_month=revenue_prev_month,
+        revenue_current_year=revenue_current_year,
+        expenses_current_month=expenses_current_month,
+        expenses_prev_month=expenses_prev_month,
+        expenses_current_year=expenses_current_year,
+        profit_current_month=profit_current_month,
+        profit_prev_month=profit_prev_month,
+        profit_change=profit_change,
+        cash_balance=cash_balance,
+        bank_balance=bank_balance,
+        pending_expenses=pending_expenses,
+        pending_payrolls=pending_payrolls,
+        recent_sales=recent_sales,
+        recent_expenses=recent_expenses,
+        expense_categories=expense_categories,
+        months_data=months_data,
+        currency='KES'
+    )
 
 @finance_web_bp.route('/invoices')
 def invoices():
@@ -611,6 +725,162 @@ def expenses():
         current_month_expenses=current_month_expenses,
         current_month_name=datetime.utcnow().strftime('%B'),
         currency='KES'  # Or get from config
+    )
+
+
+@finance_web_bp.route('/expense/<int:expense_id>/pay', methods=['GET', 'POST'])
+@login_required
+def pay_expense(expense_id):
+    from app.finance.models import BankAccount, CashAccount, BankTransaction, CashTransaction
+    expense = Expense.query.get_or_404(expense_id)
+
+    if expense.status != 'submitted':
+        flash('Only approved expenses can be paid.', 'danger')
+        return redirect(url_for('finance_web_bp.expenses'))
+
+    if request.method == 'POST':
+        supplier_receipt = request.form.get('supplier_receipt', '').strip()
+        payment_ref = request.form.get('payment_ref', '').strip()
+        notes = request.form.get('notes', '').strip()
+
+        account_id = expense.account_id
+        account_type = expense.account_type
+
+        if not account_id or not account_type:
+            flash('No account linked to this expense. Please edit expense and select an account.', 'danger')
+            return redirect(url_for('finance_web_bp.expenses'))
+
+        try:
+            if account_type == 'bank':
+                bank = BankAccount.query.get(account_id)
+                if not bank or not bank.is_active:
+                    raise ValueError("Bank account not found or inactive.")
+                if bank.current_balance < expense.amount:
+                    raise ValueError("Insufficient balance in selected bank account.")
+
+                tx = BankTransaction(
+                    bank_account_id=bank.id,
+                    transaction_type='withdrawal',
+                    amount=expense.amount,
+                    description=f"Payment for expense #{expense.id}: {expense.description}",
+                    reference=payment_ref or expense.reference_number,
+                    created_by=current_user.id
+                )
+                db.session.add(tx)
+                bank.current_balance -= expense.amount
+
+            elif account_type == 'cash':
+                cash = CashAccount.query.get(account_id)
+                if not cash or not cash.is_active:
+                    raise ValueError("Cash account not found or inactive.")
+                if cash.current_balance < expense.amount:
+                    raise ValueError("Insufficient balance in selected cash account.")
+
+                tx = CashTransaction(
+                    transaction_type='withdrawal',
+                    amount=expense.amount,
+                    description=f"Payment for expense #{expense.id}: {expense.description}",
+                    source_cash_account_id=cash.id,
+                    status='completed',
+                    completed_at=datetime.utcnow(),
+                    external_reference=payment_ref or expense.receipt_number,
+                    initiated_by=current_user.id
+                )
+                tx.transaction_ref = tx.generate_ref()
+                db.session.add(tx)
+                cash.current_balance -= expense.amount
+
+            else:
+                flash('Invalid account type.', 'danger')
+                return redirect(url_for('finance_web_bp.expenses'))
+
+            # Update expense
+            expense.status = 'paid'
+            expense.payment_date = datetime.utcnow()
+            if supplier_receipt:
+                expense.receipt_number = supplier_receipt
+            # Optionally store payment reference in notes or a new field (if you add one)
+            expense.notes = (expense.notes or '') + f"\nPayment processed by {current_user.full_name} on {datetime.utcnow().strftime('%Y-%m-%d %H:%M')}. Payment ref: {payment_ref or 'N/A'}"
+            db.session.commit()
+
+            flash(f'Expense #{expense.id} paid successfully.', 'success')
+            return redirect(url_for('finance_web_bp.expenses'))
+
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error processing payment: {str(e)}', 'danger')
+            return redirect(url_for('finance_web_bp.pay_expense', expense_id=expense.id))
+
+    # GET request – show form
+    account = None
+    if expense.account_type == 'bank':
+        account = BankAccount.query.get(expense.account_id)
+    elif expense.account_type == 'cash':
+        account = CashAccount.query.get(expense.account_id)
+
+    return render_template(
+        'pay_expense.html',
+        expense=expense,
+        account=account
+    )
+
+
+@finance_web_bp.route('/expense/<int:expense_id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_expense(expense_id):
+    expense = Expense.query.get_or_404(expense_id)
+    # Optional: restrict editing to certain statuses
+    if expense.status not in ['draft', 'submitted']:
+        flash('Expenses that are approved or paid cannot be edited.', 'danger')
+        return redirect(url_for('finance_web_bp.expenses'))
+
+    # Get same form data as new_expense
+    categories = ExpenseCategory.query.order_by(ExpenseCategory.name).all()
+    departments = Department.query.order_by(Department.name).all()
+    suppliers = Supplier.query.filter_by(is_active=True).order_by(Supplier.name).all()
+    bank_accounts = BankAccount.query.filter_by(is_active=True).all()
+    cash_accounts = CashAccount.query.filter_by(is_active=True).all()
+    payment_methods = ['Bank Transfer', 'Cheque', 'Cash', 'Mobile Money', 'Credit Card']
+    expense_types = ['operational', 'capital', 'emergency']
+    priority_levels = ['low', 'medium', 'high', 'critical']
+
+    if request.method == 'POST':
+        # Update expense with form data (similar to new)
+        try:
+            expense.expense_date = datetime.strptime(request.form.get('expense_date'), '%Y-%m-%d')
+            expense.description = request.form.get('description')
+            expense.amount = float(request.form.get('amount'))
+            expense.category_id = int(request.form.get('category_id'))
+            expense.department_id = int(request.form.get('department_id'))
+            expense.supplier_id = int(request.form.get('supplier_id')) if request.form.get('supplier_id') else None
+            expense.payment_method = request.form.get('payment_method')
+            expense.expense_type = request.form.get('expense_type')
+            expense.priority = request.form.get('priority')
+            expense.notes = request.form.get('notes')
+            expense.account_type = request.form.get('account_type')
+            expense.account_id = int(request.form.get('account_id')) if request.form.get('account_id') else None
+            expense.receipt_number = request.form.get('receipt_number')
+            expense.calculate_tax()
+
+            db.session.commit()
+            flash('Expense updated successfully.', 'success')
+            return redirect(url_for('finance_web_bp.expenses'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error updating expense: {str(e)}', 'danger')
+
+    return render_template(
+        'edit_expense.html',
+        expense=expense,
+        categories=categories,
+        departments=departments,
+        suppliers=suppliers,
+        bank_accounts=bank_accounts,
+        cash_accounts=cash_accounts,
+        payment_methods=payment_methods,
+        expense_types=expense_types,
+        priority_levels=priority_levels,
+        current_date=expense.expense_date.strftime('%Y-%m-%d')
     )
 
 @finance_web_bp.route('/cash/reports')
@@ -1984,20 +2254,35 @@ def place_order(lpo_id):
         
         # Check if LPO is approved
         if not (lpo.finance_approved and lpo.director_approved and lpo.status == 'approved'):
-            return jsonify({
-                "success": False,
-                "message": "LPO must be fully approved before sending to supplier"
-            }), 400
+            flash('LPO must be fully approved before sending to supplier', 'error')
+            return redirect(url_for('finance_web_bp.view_lpo', lpo_id=lpo.id))
 
-        # Get the external order
-        external_order = lpo.external_order
-        if not external_order:
-            return jsonify({
-                "success": False,
-                "message": "External order not found for this LPO"
-            }), 400
+        # Get all external orders linked to this LPO
+        external_orders = []
+        if hasattr(lpo, 'external_orders') and lpo.external_orders:
+            # Using direct relationship (recommended)
+            external_orders = lpo.external_orders
+        elif lpo.is_bulk_order and lpo.requisition_id and lpo.supplier_id:
+            # Fallback: query by requisition and supplier
+            external_orders = ExternalOrder.query.filter_by(
+                requisition_id=lpo.requisition_id,
+                supplier_id=lpo.supplier_id
+            ).filter(
+                ExternalOrder.status.in_(['lpo_generated', 'director_approved'])
+            ).all()
+        elif lpo.external_order:
+            # Single item LPO
+            external_orders = [lpo.external_order]
+        else:
+            flash('No external orders found for this LPO', 'error')
+            return redirect(url_for('finance_web_bp.view_lpo', lpo_id=lpo.id))
 
-        # Create professional text-based LPO file
+        if not external_orders:
+            flash('No external orders found for this LPO', 'error')
+            return redirect(url_for('finance_web_bp.view_lpo', lpo_id=lpo.id))
+
+        # --- Generate professional text-based LPO file (combined) ---
+        # Header
         lpo_content = f"""
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                         MEDICAL CENTER HOSPITAL                             ║
@@ -2016,15 +2301,36 @@ def place_order(lpo_id):
 ╠══════════════════════════════════════════════════════════════════════════════╣
 ║                            ORDER DETAILS                                    ║
 ╠══════════════════════════════════════════════════════════════════════════════╣
-║ Item: {external_order.item_name:<66} ║
-║ Category: {external_order.category:<63} ║
-║ Quantity: {str(external_order.quantity) + ' ' + external_order.unit:<62} ║
-║ Unit Price: KSh {external_order.unit_price:,.2f}{' ' * (51 - len(f"{external_order.unit_price:,.2f}"))} ║
-║ Tax Rate: {str(external_order.tax_rate) + '%':<63} ║
-║ Delivery: {(external_order.delivery_date.strftime('%Y-%m-%d') if external_order.delivery_date else 'TBC'):<62} ║
+"""
+        # List each item
+        total_amount = 0
+        for idx, order in enumerate(external_orders, 1):
+            line_total = order.total_price or (order.quantity * order.unit_price * (1 + (order.tax_rate or 0)/100))
+            total_amount += line_total
+            lpo_content += f"""║ Item #{idx}: {order.item_name:<67} ║
+║   └ Category: {order.category or 'General':<60} ║
+║   └ Quantity: {order.quantity} {order.unit}{' ' * (54 - len(str(order.quantity) + ' ' + order.unit))} ║
+║   └ Unit Price: KSh {order.unit_price:>12,.2f}{' ' * (47 - len(f"{order.unit_price:,.2f}"))} ║
+║   └ Tax Rate: {order.tax_rate or 0}%{' ' * (62 - len(str(order.tax_rate or 0)))} ║
+║   └ Line Total: KSh {line_total:>10,.2f}{' ' * (46 - len(f"{line_total:,.2f}"))} ║
+"""
+            if idx != len(external_orders):
+                lpo_content += "║" + " " * 78 + "║\n"
+
+        lpo_content += f"""╠══════════════════════════════════════════════════════════════════════════════╣
+║ Total Amount (incl. tax): KSh {total_amount:>10,.2f}{' ' * (43 - len(f"{total_amount:,.2f}"))} ║
 ╠══════════════════════════════════════════════════════════════════════════════╣
-║ Total Amount: KSh {external_order.total_price:,.2f}{' ' * (48 - len(f"{external_order.total_price:,.2f}"))} ║
-╠══════════════════════════════════════════════════════════════════════════════╣
+║ Delivery Date(s):                                                            ║
+"""
+        # Add delivery dates if they differ
+        delivery_dates = set(o.delivery_date.strftime('%Y-%m-%d') for o in external_orders if o.delivery_date)
+        if delivery_dates:
+            for d in delivery_dates:
+                lpo_content += f"║   • {d:<74} ║\n"
+        else:
+            lpo_content += "║   • To be confirmed                                                      ║\n"
+
+        lpo_content += f"""╠══════════════════════════════════════════════════════════════════════════════╣
 ║                          TERMS & CONDITIONS                                 ║
 ╠══════════════════════════════════════════════════════════════════════════════╣
 ║ 1. Acknowledge receipt within 24 hours                                     ║
@@ -2055,7 +2361,12 @@ def place_order(lpo_id):
         email_sent = False
         if lpo.supplier and lpo.supplier.email:
             subject = f"{lpo.lpo_number} - Medical Center Hospital"
-            
+
+            # Build items list for email body
+            items_list = ""
+            for order in external_orders:
+                items_list += f"• {order.item_name}: {order.quantity} {order.unit} @ KSh {order.unit_price:,.2f} = KSh {order.total_price:,.2f}\n"
+
             # Plain text email content
             plain_text_body = f"""
 Dear {lpo.supplier.name},
@@ -2063,10 +2374,10 @@ Dear {lpo.supplier.name},
 Please find attached Local Purchase Order {lpo.lpo_number} from Medical Center Hospital.
 
 ORDER SUMMARY:
-• Item: {external_order.item_name}
-• Quantity: {external_order.quantity} {external_order.unit}
-• Total: KSh {external_order.total_price:,.2f}
-• Delivery: {external_order.delivery_date.strftime('%Y-%m-%d') if external_order.delivery_date else 'TBC'}
+{items_list}
+Total Amount: KSh {total_amount:,.2f}
+
+Delivery Dates: {', '.join(delivery_dates) if delivery_dates else 'To be confirmed'}
 
 Please acknowledge receipt and confirm delivery timeline. Reference this LPO number on your invoice.
 
@@ -2076,6 +2387,17 @@ Medical Center Hospital
 """
             
             # HTML email content
+            items_html = ""
+            for order in external_orders:
+                items_html += f"""
+                <tr>
+                    <td style="padding: 8px; border-bottom: 1px solid #e2e8f0;">{order.item_name}</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: center;">{order.quantity} {order.unit}</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: right;">KSh {order.unit_price:,.2f}</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: right;">KSh {order.total_price:,.2f}</td>
+                </tr>
+                """
+
             html_email_body = f"""
 <!DOCTYPE html>
 <html>
@@ -2093,25 +2415,28 @@ Medical Center Hospital
         
         <div style="background: #f8fafc; padding: 15px; border-radius: 5px; margin: 15px 0;">
             <h4 style="margin: 0 0 10px 0; color: #1e293b;">Order Summary:</h4>
-            <table style="width: 100%;">
-                <tr>
-                    <td style="padding: 2px 0;"><strong>Item:</strong></td>
-                    <td style="padding: 2px 0;">{external_order.item_name}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 2px 0;"><strong>Quantity:</strong></td>
-                    <td style="padding: 2px 0;">{external_order.quantity} {external_order.unit}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 2px 0;"><strong>Total Amount:</strong></td>
-                    <td style="padding: 2px 0;">KSh {external_order.total_price:,.2f}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 2px 0;"><strong>Delivery:</strong></td>
-                    <td style="padding: 2px 0;">{external_order.delivery_date.strftime('%Y-%m-%d') if external_order.delivery_date else 'To be confirmed'}</td>
-                </tr>
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: #e2e8f0;">
+                        <th style="padding: 8px; text-align: left;">Item</th>
+                        <th style="padding: 8px; text-align: center;">Qty</th>
+                        <th style="padding: 8px; text-align: right;">Unit Price</th>
+                        <th style="padding: 8px; text-align: right;">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {items_html}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="3" style="padding: 8px; text-align: right; font-weight: bold;">Grand Total:</td>
+                        <td style="padding: 8px; text-align: right; font-weight: bold; color: #2563eb;">KSh {total_amount:,.2f}</td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
+        
+        <p><strong>Delivery Dates:</strong> {', '.join(delivery_dates) if delivery_dates else 'To be confirmed'}</p>
         
         <p>Please acknowledge receipt and confirm delivery timeline. Reference this LPO number on your invoice.</p>
         
@@ -2135,31 +2460,35 @@ Medical Center Hospital
                 attachments=[attachment_path]
             )
 
-        # Create PurchaseOrder record (if you have this model)
+        # Create PurchaseOrder records for each item (if model exists)
+        purchase_orders_created = 0
         try:
-            purchase_order = PurchaseOrder(
-                requisition_id=external_order.id,
-                supplier_id=external_order.supplier_id,
-                lpo_id=lpo.id,
-                lpo_number=lpo.lpo_number,
-                item_name=external_order.item_name,
-                quantity=external_order.quantity,
-                unit=external_order.unit,
-                unit_price=external_order.unit_price,
-                total_price=external_order.total_price,
-                currency=current_app.config.get('CURRENCY', 'Ksh'),
-                delivery_date=external_order.delivery_date,
-                status='ordered',
-                created_by=current_user.id
-            )
-            db.session.add(purchase_order)
+            for order in external_orders:
+                purchase_order = PurchaseOrder(
+                    requisition_id=order.id,           # or link to requisition if appropriate
+                    supplier_id=order.supplier_id,
+                    lpo_id=lpo.id,
+                    lpo_number=lpo.lpo_number,
+                    item_name=order.item_name,
+                    quantity=order.quantity,
+                    unit=order.unit,
+                    unit_price=order.unit_price,
+                    total_price=order.total_price,
+                    currency=current_app.config.get('CURRENCY', 'Ksh'),
+                    delivery_date=order.delivery_date,
+                    status='ordered',
+                    created_by=current_user.id
+                )
+                db.session.add(purchase_order)
+                purchase_orders_created += 1
         except NameError:
-            # PurchaseOrder model might not exist, so skip this part
+            # PurchaseOrder model might not exist, skip
             pass
 
-        # Update external order and LPO status
-        external_order.status = 'order_placed'
-        external_order.updated_at = datetime.utcnow()
+        # Update external orders and LPO status
+        for order in external_orders:
+            order.status = 'order_placed'
+            order.updated_at = datetime.utcnow()
         
         lpo.status = 'sent_to_supplier'
         lpo.updated_at = datetime.utcnow()
@@ -2175,11 +2504,11 @@ Medical Center Hospital
 
         # Show appropriate success message
         if email_sent:
-            flash(f'Purchase order created and LPO sent to {lpo.supplier.name}!', 'success')
+            flash(f'Purchase order(s) created and LPO sent to {lpo.supplier.name}!', 'success')
         else:
-            flash(f'Purchase order created but email failed to send to supplier.', 'warning')
+            flash(f'Purchase order(s) created but email failed to send to supplier.', 'warning')
 
-        return redirect(url_for('finance_web_bp.view_lpo', lpo_id=lpo.id))
+        return redirect(url_for('finance_web_bp.view_order_lpo', lpo_id=lpo.id))
 
     except Exception as e:
         db.session.rollback()
@@ -2203,9 +2532,88 @@ def view_lpo_for_order(order_id):
 
 @finance_web_bp.route("/lpos/<int:lpo_id>")
 def view_order_lpo(lpo_id):
-    """View LPO details"""
+    """View LPO details – handles both single and bulk LPOs"""
     lpo = LPO.query.get_or_404(lpo_id)
-    return render_template("view_supplier_lpo.html", lpo=lpo)
+    items = []
+    subtotal = 0
+    tax_amount = 0
+    tax_rate_display = 0  # for display purposes only
+
+    if lpo.is_bulk_order and lpo.requisition_id and lpo.supplier_id:
+        # Bulk LPO: fetch all external orders from same requisition & supplier
+        orders = ExternalOrder.query.filter_by(
+            requisition_id=lpo.requisition_id,
+            supplier_id=lpo.supplier_id
+        ).filter(
+            ExternalOrder.status.in_(['director_approved', 'lpo_generated'])
+        ).all()
+
+        for order in orders:
+            # Calculate tax breakdown if needed
+            order_tax_rate = order.tax_rate or 0
+            order_total = order.total_price or 0
+            order_subtotal = order_total / (1 + order_tax_rate/100) if order_tax_rate else order_total
+            order_tax = order_total - order_subtotal
+
+            items.append({
+                'item_name': order.item_name,
+                'quantity': order.quantity,
+                'unit': order.unit,
+                'unit_price': order.unit_price,
+                'total_price': order_total,
+                'tax_rate': order_tax_rate,
+                'subtotal': order_subtotal,
+                'tax_amount': order_tax,
+                'category': order.category,
+                'reason': order.reason
+            })
+
+            subtotal += order_subtotal
+            tax_amount += order_tax
+
+    else:
+        # Single item LPO
+        if lpo.external_order:
+            order = lpo.external_order
+            order_tax_rate = order.tax_rate or 0
+            order_total = order.total_price or 0
+            order_subtotal = order_total / (1 + order_tax_rate/100) if order_tax_rate else order_total
+            order_tax = order_total - order_subtotal
+        else:
+            # Fallback to LPO fields
+            order_tax_rate = lpo.tax_rate or 0
+            order_total = lpo.total_price or 0
+            order_subtotal = order_total / (1 + order_tax_rate/100) if order_tax_rate else order_total
+            order_tax = order_total - order_subtotal
+
+        items.append({
+            'item_name': lpo.item_name,
+            'quantity': lpo.quantity,
+            'unit': lpo.unit,
+            'unit_price': lpo.unit_price,
+            'total_price': order_total,
+            'tax_rate': order_tax_rate,
+            'subtotal': order_subtotal,
+            'tax_amount': order_tax,
+            'category': lpo.category,
+            'reason': lpo.external_order.reason if lpo.external_order else None
+        })
+
+        subtotal = order_subtotal
+        tax_amount = order_tax
+        tax_rate_display = order_tax_rate
+
+    total = subtotal + tax_amount
+
+    return render_template(
+        "view_supplier_lpo.html",
+        lpo=lpo,
+        items=items,
+        subtotal=subtotal,
+        tax_amount=tax_amount,
+        tax_rate=tax_rate_display,
+        total=total
+    )
 
 @finance_web_bp.route("/approve-lpo")
 
@@ -2232,13 +2640,91 @@ def approve_lpo():
 
 
 @finance_web_bp.route("/view-lpo/<int:lpo_id>")
-
 def view_lpo(lpo_id):
     """
-    View detailed info about a single LPO
+    View detailed LPO information – supports both single and bulk orders.
     """
     lpo = LPO.query.get_or_404(lpo_id)
-    return render_template("view_lpo.html", lpo=lpo)
+    items = []
+    subtotal = 0
+    tax_amount = 0
+    tax_rate_display = 0
+
+    # Try to get all external orders linked to this LPO
+    external_orders = []
+    if hasattr(lpo, 'external_orders') and lpo.external_orders:
+        # Direct relationship (if you added lpo_id to ExternalOrder)
+        external_orders = lpo.external_orders
+    elif lpo.is_bulk_order and lpo.requisition_id and lpo.supplier_id:
+        # Include all statuses that indicate the order is linked to this LPO
+        external_orders = ExternalOrder.query.filter_by(
+            requisition_id=lpo.requisition_id,
+            supplier_id=lpo.supplier_id
+        ).filter(
+            ExternalOrder.status.in_(['director_approved', 'lpo_generated', 'order_placed'])
+        ).all()
+    elif lpo.external_order:
+        # Single item LPO
+        external_orders = [lpo.external_order]
+
+    if external_orders:
+        for order in external_orders:
+            # Tax breakdown
+            order_tax_rate = order.tax_rate or 0
+            order_total = order.total_price or 0
+            order_subtotal = order_total / (1 + order_tax_rate/100) if order_tax_rate else order_total
+            order_tax = order_total - order_subtotal
+
+            items.append({
+                'item_name': order.item_name,
+                'quantity': order.quantity,
+                'unit': order.unit,
+                'unit_price': order.unit_price,
+                'total_price': order_total,
+                'tax_rate': order_tax_rate,
+                'subtotal': order_subtotal,
+                'tax_amount': order_tax,
+                'category': order.category,
+                'reason': order.reason
+            })
+
+            subtotal += order_subtotal
+            tax_amount += order_tax
+    else:
+        # Fallback to LPO fields (shouldn't happen, but safe)
+        order_tax_rate = lpo.tax_rate or 0
+        order_total = lpo.total_price or 0
+        order_subtotal = order_total / (1 + order_tax_rate/100) if order_tax_rate else order_total
+        order_tax = order_total - order_subtotal
+
+        items.append({
+            'item_name': lpo.item_name,
+            'quantity': lpo.quantity,
+            'unit': lpo.unit,
+            'unit_price': lpo.unit_price,
+            'total_price': order_total,
+            'tax_rate': order_tax_rate,
+            'subtotal': order_subtotal,
+            'tax_amount': order_tax,
+            'category': lpo.category,
+            'reason': lpo.external_order.reason if lpo.external_order else None
+        })
+
+        subtotal = order_subtotal
+        tax_amount = order_tax
+        tax_rate_display = order_tax_rate
+
+    total = subtotal + tax_amount
+
+    return render_template(
+        "lpo_detail.html",                # 👈 new template name
+        lpo=lpo,
+        items=items,
+        subtotal=subtotal,
+        tax_amount=tax_amount,
+        tax_rate=tax_rate_display,
+        total=total
+    )
 
 
 @finance_web_bp.route("/approve-lpo-action/<int:lpo_id>/<string:action>")
@@ -2272,61 +2758,101 @@ def approve_lpo_action(lpo_id, action):
     return redirect(url_for("finance_web_bp.approve_lpo"))
 
 @finance_web_bp.route('/expenses/new', methods=['GET', 'POST'])
+@login_required
 def new_expense():
-    # Get current user ID
-    user_id = current_user.id
-    
-    # Get form data
-    form_data = {
-        'categories': ExpenseCategory.query.order_by(ExpenseCategory.name).all(),
-        'departments': Department.query.order_by(Department.name).all(),
-        'suppliers': Supplier.query.filter_by(is_active=True).order_by(Supplier.name).all(),
-        'payment_methods': ['Bank Transfer', 'Cheque', 'Cash', 'Mobile Money', 'Credit Card'],
-        'expense_types': ['operational', 'capital', 'emergency'],
-        'priority_levels': ['low', 'medium', 'high', 'critical'],
-        'current_date': datetime.utcnow().strftime('%Y-%m-%d')
-    }
-    
-    if request.method == 'POST':
+    from app.finance.models import BankAccount, CashAccount
+    from flask import jsonify
+
+    # GET – fetch all needed data
+    categories = ExpenseCategory.query.order_by(ExpenseCategory.name).all()
+    departments = Department.query.order_by(Department.name).all()
+    suppliers = Supplier.query.filter_by(is_active=True).order_by(Supplier.name).all()
+    bank_accounts = BankAccount.query.filter_by(is_active=True).all()
+    cash_accounts = CashAccount.query.filter_by(is_active=True).all()
+    payment_methods = ['Bank Transfer', 'Cheque', 'Cash', 'Mobile Money', 'Credit Card']
+    expense_types = ['operational', 'capital', 'emergency']
+    priority_levels = ['low', 'medium', 'high', 'critical']
+    current_date = datetime.utcnow().strftime('%Y-%m-%d')
+
+    # AJAX: Add new category
+    if request.method == 'POST' and request.is_json:
+        data = request.get_json()
+        if data.get('action') == 'add_category':
+            name = data.get('name')
+            description = data.get('description')
+            department = data.get('department', 'General')
+            budget_str = data.get('budget', '0')
+            # Convert to float, default to 0 if empty or invalid
+            try:
+                budget = float(budget_str) if budget_str else 0.0
+            except ValueError:
+                budget = 0.0
+
+            if not name:
+                return jsonify({'success': False, 'error': 'Category name is required'}), 400
+
+            cat = ExpenseCategory(
+                name=name,
+                description=description,
+                department=department,
+                budget_allocation=budget
+            )
+            db.session.add(cat)
+            db.session.commit()
+            return jsonify({'success': True, 'id': cat.id, 'name': cat.name})
+        elif data.get('action') == 'delete_category':
+            cat_id = data.get('id')
+            cat = ExpenseCategory.query.get(cat_id)
+            if cat:
+                cat.is_active = False
+                db.session.commit()
+                return jsonify({'success': True})
+            return jsonify({'success': False, 'error': 'Category not found'}), 404
+
+    # POST – create expense
+    if request.method == 'POST' and not request.is_json:
         try:
-            # Extract form data
-            expense_data = {
-                'expense_date': datetime.strptime(request.form.get('expense_date'), '%Y-%m-%d'),
-                'description': request.form.get('description'),
-                'amount': float(request.form.get('amount')),
-                'category_id': int(request.form.get('category_id')),
-                'department_id': int(request.form.get('department_id')),
-                'supplier_id': int(request.form.get('supplier_id')) if request.form.get('supplier_id') else None,
-                'payment_method': request.form.get('payment_method'),
-                'expense_type': request.form.get('expense_type'),
-                'priority': request.form.get('priority'),
-                'notes': request.form.get('notes'),
-                'initiated_by': user_id,
-                'status': 'draft' if request.form.get('save_draft') else 'submitted'
-            }
-            
-            # Create new expense
-            new_expense = Expense(**expense_data)
-            new_expense.currency = 'KES'  # Set default currency
-            new_expense.calculate_tax()  # Calculate tax
-            
-            # Save to database
-            db.session.add(new_expense)
+            expense = Expense(
+                expense_date=datetime.strptime(request.form.get('expense_date'), '%Y-%m-%d'),
+                description=request.form.get('description'),
+                amount=float(request.form.get('amount')),
+                category_id=int(request.form.get('category_id')),
+                department_id=int(request.form.get('department_id')),
+                supplier_id=int(request.form.get('supplier_id')) if request.form.get('supplier_id') else None,
+                payment_method=request.form.get('payment_method'),
+                expense_type=request.form.get('expense_type'),
+                priority=request.form.get('priority'),
+                notes=request.form.get('notes'),
+                initiated_by=current_user.id,
+                status='draft' if request.form.get('save_draft') else 'submitted',
+                account_type=request.form.get('account_type'),
+                account_id=int(request.form.get('account_id')) if request.form.get('account_id') else None,
+                receipt_number=request.form.get('receipt_number')
+            )
+            expense.currency = 'KES'
+            expense.calculate_tax()
+            db.session.add(expense)
             db.session.commit()
-            
-            # Generate reference number after commit (when ID is available)
-            new_expense.reference_number = new_expense.generate_reference()
+            expense.reference_number = expense.generate_reference()
             db.session.commit()
-            
             flash('Expense created successfully!', 'success')
             return redirect(url_for('finance_web_bp.expenses'))
-            
         except Exception as e:
             db.session.rollback()
             flash(f'Error creating expense: {str(e)}', 'danger')
-    
-    return render_template('new_expense.html', **form_data)
 
+    return render_template(
+        'new_expense.html',
+        categories=categories,
+        departments=departments,
+        suppliers=suppliers,
+        bank_accounts=bank_accounts,
+        cash_accounts=cash_accounts,
+        payment_methods=payment_methods,
+        expense_types=expense_types,
+        priority_levels=priority_levels,
+        current_date=current_date
+    )
 
 
 @finance_web_bp.route('/cash-payments')
@@ -3120,34 +3646,26 @@ def get_doctor_payment_info(doctor_id):
 @finance_web_bp.route('/api/process-payment/<int:doctor_id>', methods=['POST'])
 @login_required
 def process_payment(doctor_id):
-    """
-    API endpoint to process a payment for a doctor
-    """
     try:
         data = request.get_json()
         
         # Validate required fields
-        required_fields = ['amount', 'payment_method', 'assignment_ids']
+        required_fields = ['amount', 'payment_method', 'assignment_ids', 'account_type', 'account_id']
         for field in required_fields:
             if field not in data:
-                return jsonify({
-                    'success': False,
-                    'error': f'Missing required field: {field}'
-                }), 400
+                return jsonify({'success': False, 'error': f'Missing required field: {field}'}), 400
         
         amount = float(data['amount'])
         payment_method = data['payment_method']
         assignment_ids = data['assignment_ids']
         reference_number = data.get('reference_number', '')
         notes = data.get('notes', '')
+        account_type = data['account_type']
+        account_id = data['account_id']
         
         if amount <= 0:
-            return jsonify({
-                'success': False,
-                'error': 'Payment amount must be greater than 0'
-            }), 400
+            return jsonify({'success': False, 'error': 'Payment amount must be greater than 0'}), 400
         
-        # Get doctor and verify assignments belong to this doctor
         doctor = User.query.get_or_404(doctor_id)
         assignments = ServiceDoctorAssignment.query.filter(
             ServiceDoctorAssignment.id.in_(assignment_ids),
@@ -3155,21 +3673,59 @@ def process_payment(doctor_id):
         ).all()
         
         if len(assignments) != len(assignment_ids):
-            return jsonify({
-                'success': False,
-                'error': 'Invalid assignment IDs or assignments do not belong to this doctor'
-            }), 400
+            return jsonify({'success': False, 'error': 'Invalid assignment IDs or assignments do not belong to this doctor'}), 400
         
-        # Create payment records
+        # Validate account and balance
+        if account_type == 'bank':
+            account = BankAccount.query.get(account_id)
+        elif account_type == 'cash':
+            account = CashAccount.query.get(account_id)
+        else:
+            return jsonify({'success': False, 'error': 'Invalid account type'}), 400
+        
+        if not account or not account.is_active:
+            return jsonify({'success': False, 'error': 'Selected account not found or inactive'}), 400
+        
+        if account.current_balance < amount:
+            return jsonify({'success': False, 'error': f'Insufficient balance in selected account. Available: {account.current_balance:.2f}'}), 400
+        
+        # Create hospital account transaction (bank or cash)
+        bank_tx = None
+        cash_tx = None
+        if account_type == 'bank':
+            bank_tx = BankTransaction(
+                bank_account_id=account.id,
+                transaction_type='withdrawal',
+                amount=amount,
+                description=f"Payment to Dr. {doctor.full_name or doctor.username}",
+                reference=reference_number,
+                created_by=current_user.id
+            )
+            db.session.add(bank_tx)
+            db.session.flush()  # get bank_tx.id
+        else:  # cash
+            cash_tx = CashTransaction(
+                transaction_type='withdrawal',
+                amount=amount,
+                description=f"Payment to Dr. {doctor.full_name or doctor.username}",
+                source_cash_account_id=account.id,
+                status='completed',
+                completed_at=datetime.utcnow(),
+                external_reference=reference_number,
+                initiated_by=current_user.id
+            )
+            cash_tx.transaction_ref = cash_tx.generate_ref()
+            db.session.add(cash_tx)
+            db.session.flush()  # get cash_tx.id
+        
+        # Decrease account balance
+        account.current_balance -= amount
+        
+        # Create payment records for each assignment, linking to the transaction
         payments = []
         total_amount = 0
-        
-        # Distribute payment across assignments (proportional to their balance)
         for assignment in assignments:
-            # Calculate assignment's share of the payment
-            # For now, we'll distribute evenly, but you can implement more complex logic
             assignment_share = amount / len(assignments)
-            
             payment = DoctorPayment(
                 assignment_id=assignment.id,
                 amount=assignment_share,
@@ -3178,24 +3734,17 @@ def process_payment(doctor_id):
                 notes=notes,
                 paid_by=current_user.id,
                 status='completed',
-                payment_date=datetime.utcnow()
+                payment_date=datetime.utcnow(),
+                account_type=account_type,
+                account_id=account.id,
+                bank_transaction_id=bank_tx.id if bank_tx else None,
+                cash_transaction_id=cash_tx.id if cash_tx else None
             )
-            
             db.session.add(payment)
             payments.append(payment)
             total_amount += assignment_share
         
         db.session.commit()
-        
-        # Log the activity (if log_activity method exists)
-        if hasattr(current_user, 'log_activity'):
-            current_user.log_activity(
-                f"Processed payment of KSH {amount:,.2f} to Dr. {doctor.full_name or doctor.username}",
-                'payment_processed'
-            )
-        else:
-            # Simple console log as fallback
-            print(f"Payment processed: User {current_user.id} paid KSH {amount:,.2f} to Dr. {doctor.full_name or doctor.username}")
         
         return jsonify({
             'success': True,
@@ -3210,13 +3759,124 @@ def process_payment(doctor_id):
         
     except Exception as e:
         db.session.rollback()
-        import traceback
-        print(f"Error in process_payment: {str(e)}")
-        print(traceback.format_exc())
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        # log error
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@finance_web_bp.route('/doctor-ledger/<int:doctor_id>')
+@login_required
+def doctor_ledger(doctor_id):
+
+
+    doctor = User.query.get_or_404(doctor_id)
+
+    # Get all active assignments for this doctor
+    assignments = ServiceDoctorAssignment.query.filter_by(
+        doctor_id=doctor_id, is_active=True
+    ).options(
+        db.joinedload(ServiceDoctorAssignment.service)
+    ).all()
+    assignment_ids = [a.id for a in assignments]
+
+    # ---------------------------
+    # 1. Earnings (credits) from paid visits
+    # ---------------------------
+    earnings = []
+    for assignment in assignments:
+        service = assignment.service
+        # Find all paid visits where this service was provided
+        # Using the many-to-many relationship: Visit.services
+        visits = Visit.query.filter(
+            Visit.services.any(id=service.id),
+            Visit.payment_status == 'paid'
+        ).options(
+            db.joinedload(Visit.patient)
+        ).all()
+
+        for visit in visits:
+            # Determine the price used for this service based on patient category
+            patient_category = visit.patient_category if hasattr(visit, 'patient_category') else 'general'
+            if patient_category == 'walkin':
+                price = service.walkin_price or service.price
+            elif patient_category == 'special_clinic':
+                price = service.special_clinic_price or service.price
+            else:
+                price = service.price
+
+            # Calculate doctor's earning
+            if assignment.payment_type == 'percentage':
+                earning_amount = price * (assignment.commission_rate / 100)
+            else:
+                earning_amount = assignment.fixed_amount or 0
+
+            earnings.append({
+                'date': visit.visit_date,
+                'description': f"Service: {service.name} for {visit.patient.full_name}",
+                'credit': earning_amount,
+                'debit': 0,
+                'type': 'earning',
+                'ref': visit.visit_number if hasattr(visit, 'visit_number') else f"Visit #{visit.id}"
+            })
+
+    # ---------------------------
+    # 2. Payments (debits)
+    # ---------------------------
+    payments = DoctorPayment.query.filter(
+        DoctorPayment.assignment_id.in_(assignment_ids)
+    ).order_by(DoctorPayment.payment_date).all()
+
+    payment_entries = []
+    for p in payments:
+        assignment = next((a for a in assignments if a.id == p.assignment_id), None)
+        service_name = assignment.service.name if assignment else 'N/A'
+
+        # Get account name (where money came from)
+        account_name = 'N/A'
+        if p.account_type == 'bank' and p.bank_transaction_id:
+            bank_tx = BankTransaction.query.get(p.bank_transaction_id)
+            if bank_tx and bank_tx.bank_account:
+                account_name = f"{bank_tx.bank_account.bank_name} ({bank_tx.bank_account.account_number})"
+        elif p.account_type == 'cash' and p.cash_transaction_id:
+            cash_tx = CashTransaction.query.get(p.cash_transaction_id)
+            if cash_tx and cash_tx.source_account:
+                account_name = f"{cash_tx.source_account.name} ({cash_tx.source_account.account_type})"
+
+        payment_entries.append({
+            'date': p.payment_date,
+            'description': f"Payment for {service_name}" + (f" - {p.notes}" if p.notes else ""),
+            'credit': 0,
+            'debit': p.amount,
+            'type': 'payment',
+            'ref': p.reference_number or '—',
+            'method': p.payment_method,
+            'account_name': account_name,
+            'paid_by': p.paid_by_user.username if p.paid_by_user else 'System'
+        })
+
+    # ---------------------------
+    # 3. Combine and sort by date
+    # ---------------------------
+    all_entries = earnings + payment_entries
+    all_entries.sort(key=lambda x: x['date'])
+
+    # Compute running balance
+    balance = 0
+    for entry in all_entries:
+        balance += entry['credit'] - entry['debit']
+        entry['balance'] = balance
+
+    # Calculate summary totals
+    total_earnings = sum(e['credit'] for e in all_entries)
+    total_payments = sum(e['debit'] for e in all_entries)
+    net_balance = total_earnings - total_payments
+
+    return render_template(
+        'doctor_ledger.html',
+        doctor=doctor,
+        entries=all_entries,
+        total_earnings=total_earnings,
+        total_payments=total_payments,
+        net_balance=net_balance
+    )
 
 @finance_web_bp.route('/api/doctor-assignments/<int:doctor_id>')
 @login_required
@@ -3407,86 +4067,178 @@ def supplier_invoices(account_id):
         upcoming_balance=upcoming_balance,
         overdue_61_plus=overdue_61_plus
     )
+    
+    
+@finance_web_bp.route('/supplier-accounts/<int:account_id>/ledger')
+def supplier_account_ledger(account_id):
+    account = SupplierAccount.query.get_or_404(account_id)
+    transactions = SupplierTransaction.query.filter_by(supplier_account_id=account_id)\
+        .order_by(SupplierTransaction.transaction_date.asc()).all()
+    
+    # Build ledger entries with running balance
+    entries = []
+    balance = 0
+    for tx in transactions:
+        if tx.transaction_type == 'invoice':
+            debit = tx.amount
+            credit = 0
+        elif tx.transaction_type == 'payment':
+            debit = 0
+            credit = tx.amount
+        elif tx.transaction_type == 'credit_note':
+            debit = 0
+            credit = tx.amount
+        elif tx.transaction_type == 'debit_note':
+            debit = tx.amount
+            credit = 0
+        else:  # adjustment – treat as debit (you can customize)
+            debit = tx.amount if tx.amount > 0 else 0
+            credit = -tx.amount if tx.amount < 0 else 0
 
+        balance += debit - credit
+        entries.append({
+            'date': tx.transaction_date,
+            'description': tx.description,
+            'reference': tx.reference,
+            'invoice_number': tx.invoice.invoice_number if tx.invoice else None,
+            'debit': debit,
+            'credit': credit,
+            'balance': balance
+        })
+    
+    return render_template(
+        'supplier_account_ledger.html',
+        account=account,
+        entries=entries
+    )
+
+@finance_web_bp.route('/supplier-invoice/<int:invoice_id>/json')
+def get_supplier_invoice(invoice_id):
+    invoice = SupplierInvoice.query.get_or_404(invoice_id)
+    # Ensure to_dict() includes all fields you want to display
+    data = invoice.to_dict()
+    return jsonify(data)
+
+
+
+@finance_web_bp.route('/supplier-invoice/<int:invoice_id>/payments')
+def invoice_payment_history(invoice_id):
+    invoice = SupplierInvoice.query.get_or_404(invoice_id)
+    # Fetch related payment requests and transactions
+    payment_requests = PaymentRequest.query.filter_by(invoice_id=invoice_id).order_by(PaymentRequest.requested_at.desc()).all()
+    transactions = SupplierTransaction.query.filter_by(invoice_id=invoice_id).order_by(SupplierTransaction.transaction_date.desc()).all()
+    return render_template('invoice_payment_history.html', invoice=invoice, payment_requests=payment_requests, transactions=transactions)
+    
+@finance_web_bp.route('/supplier-invoice/<int:invoice_id>/void', methods=['POST'])
+def void_invoice(invoice_id):
+    invoice = SupplierInvoice.query.get_or_404(invoice_id)
+    # Only allow voiding if status is not paid or already cancelled
+    if invoice.status in ['paid', 'cancelled']:
+        return jsonify({'success': False, 'message': 'Invoice cannot be voided in its current state.'}), 400
+
+    invoice.status = 'cancelled'
+    # Optionally add a note or audit trail
+    db.session.commit()
+    return jsonify({'success': True, 'message': 'Invoice voided successfully.'})
     
     
+@finance_web_bp.route('/accounts-by-method', methods=['GET'])
+def accounts_by_method():
+    """Return active accounts for a given payment method."""
+    method = request.args.get('method')
+    if method in ['bank_transfer', 'cheque']:
+        accounts = BankAccount.query.filter_by(is_active=True).all()
+        return jsonify([{
+            'id': a.id,
+            'name': f"{a.bank_name} - {a.account_number}",
+            'balance': a.current_balance,
+            'type': 'bank'
+        } for a in accounts])
+    elif method in ['mobile_money', 'cash']:
+        accounts = CashAccount.query.filter_by(is_active=True).all()
+        return jsonify([{
+            'id': a.id,
+            'name': f"{a.name} ({a.account_type})",
+            'balance': a.current_balance,
+            'type': 'cash'
+        } for a in accounts])
+    else:
+        return jsonify([])    
+
 @finance_web_bp.route('/supplier-invoices/<int:invoice_id>/request-payment', methods=['POST'])
 def request_invoice_payment(invoice_id):
-    """Create a payment request for approval (instead of direct payment)"""
     try:
         invoice = SupplierInvoice.query.get_or_404(invoice_id)
-        
-        # Get payment data from request
         payment_data = request.get_json()
         amount = float(payment_data.get('amount'))
         payment_method = payment_data.get('payment_method')
         reference = payment_data.get('reference')
         notes = payment_data.get('notes', '')
-        
-        # Validate payment data
+        account_type = payment_data.get('account_type')
+        account_id = payment_data.get('account_id')
+
+        # Validate basic fields
         if not amount or amount <= 0:
-            return jsonify({
-                'success': False,
-                'message': 'Please enter a valid payment amount'
-            }), 400
-        
+            return jsonify({'success': False, 'message': 'Please enter a valid payment amount'}), 400
         if amount > invoice.balance_due:
-            return jsonify({
-                'success': False,
-                'message': f'Payment amount cannot exceed the balance due of KSh {invoice.balance_due:.2f}'
-            }), 400
-        
+            return jsonify({'success': False, 'message': f'Payment amount cannot exceed the balance due of KSh {invoice.balance_due:.2f}'}), 400
         if not reference:
-            return jsonify({
-                'success': False,
-                'message': 'Please enter a payment reference number'
-            }), 400
-        
+            return jsonify({'success': False, 'message': 'Please enter a payment reference number'}), 400
+        if not account_type or not account_id:
+            return jsonify({'success': False, 'message': 'Account selection is required'}), 400
+
+        # Validate account and balance
+        if account_type == 'bank':
+            account = BankAccount.query.get(account_id)
+        elif account_type == 'cash':
+            account = CashAccount.query.get(account_id)
+        else:
+            return jsonify({'success': False, 'message': 'Invalid account type'}), 400
+
+        if not account or not account.is_active:
+            return jsonify({'success': False, 'message': 'Selected account not found or inactive'}), 400
+        if account.current_balance < amount:
+            return jsonify({'success': False, 'message': f'Insufficient balance in selected account. Available: {account.current_balance:.2f}'}), 400
+
         # Check for existing pending payment requests
         existing_request = PaymentRequest.query.filter(
             PaymentRequest.invoice_id == invoice_id,
             PaymentRequest.status.in_(['draft', 'submitted', 'finance_review', 'director_approval'])
         ).first()
-        
         if existing_request:
-            return jsonify({
-                'success': False,
-                'message': f'There is already a pending payment request (ID: {existing_request.id}) for this invoice'
-            }), 400
-        
-        # ✅ NEW: Update invoice status to 'pending'
+            return jsonify({'success': False, 'message': f'There is already a pending payment request (ID: {existing_request.id}) for this invoice'}), 400
+
+        # Update invoice status to 'pending'
         invoice.status = 'pending'
-        
+
         # Create payment request
         payment_request = PaymentRequest(
             invoice_id=invoice_id,
-            requested_by=current_user.id,  # Assuming you have current_user from Flask-Login
+            requested_by=current_user.id,
             amount=amount,
             payment_method=payment_method,
             reference=reference,
             notes=notes,
-            status='submitted'  # Automatically submit for approval
+            status='submitted',
+            account_type=account_type,
+            account_id=account_id
         )
-        
+
         db.session.add(payment_request)
         db.session.commit()
-        
-        # Return success response
+
         return jsonify({
             'success': True,
             'message': f'Payment request for KSh {amount:.2f} submitted for approval',
             'payment_request_id': payment_request.id,
             'next_approval_step': 'Finance Department Review',
-            'invoice_status': invoice.status  # Return updated status
+            'invoice_status': invoice.status
         }), 200
-        
+
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Error creating payment request: {str(e)}")
-        return jsonify({
-            'success': False,
-            'message': f'Error creating payment request: {str(e)}'
-        }), 500
+        return jsonify({'success': False, 'message': f'Error creating payment request: {str(e)}'}), 500
         
         
         
@@ -3636,3 +4388,3862 @@ def export_finance_payment_requests():
     # Implementation for exporting to Excel/PDF
     # This would generate and return a file download
     pass
+
+
+
+
+
+from collections import defaultdict
+
+@finance_web_bp.route('/payroll/payment')
+@login_required
+def payroll_payment():
+    from app.hr.models import Payroll, Payslip
+    from app.finance.models import PayrollPayment, BankAccount
+    from collections import defaultdict
+
+    approved_payrolls = Payroll.query.filter_by(status='Approved')\
+        .order_by(Payroll.approved_at.desc()).all()
+    processed_payrolls = Payroll.query.filter_by(status='Processed')\
+        .order_by(Payroll.processed_at.desc()).all()
+    paid_payrolls = Payroll.query.filter_by(status='Paid')\
+        .order_by(Payroll.paid_at.desc()).all()
+
+    for p in paid_payrolls:
+        # Fetch payments for this payroll
+        p.payments_list = PayrollPayment.query.filter_by(payroll_id=p.id)\
+            .order_by(PayrollPayment.transaction_date).all()
+
+        # Group payslips by payment method
+        method_groups = defaultdict(list)
+        for slip in p.payslips:
+            method_name = slip.payment_method.name  # e.g., 'BANK_TRANSFER'
+            method_groups[method_name].append({
+                'name': slip.employee.full_name,
+                'staff_no': slip.employee.payroll_info.staff_no if slip.employee.payroll_info else None,
+                'net': slip.net_pay,
+                'payment_reference': slip.payment_reference,
+                'bank': slip.employee.payroll_info.bank_name if slip.employee.payroll_info else None,
+                'account': slip.employee.payroll_info.bank_account if slip.employee.payroll_info else None,
+            })
+        p.method_employees = dict(method_groups)
+
+    total_approved_net = sum(p.total_net or 0 for p in approved_payrolls)
+    total_approved_employees = sum(p.employee_count or len(p.payslips) for p in approved_payrolls)
+    total_paid_net = sum(p.total_net or 0 for p in paid_payrolls)
+    total_paid_count = len(paid_payrolls)
+
+    return render_template(
+        'payroll_payment.html',
+        approved_payrolls=approved_payrolls,
+        processed_payrolls=processed_payrolls,
+        paid_payrolls=paid_payrolls,
+        total_approved_net=total_approved_net,
+        total_approved_employees=total_approved_employees,
+        approved_count=len(approved_payrolls),
+        total_paid_net=total_paid_net,
+        total_paid_count=total_paid_count
+    )
+
+
+
+@finance_web_bp.route('/payroll/<int:payroll_id>/process-payment', methods=['GET', 'POST'])
+@login_required
+def payroll_process_payment(payroll_id):
+    from app.hr.models import Payroll, PaymentMethod, DeductionType, PayrollLoan, LoanRepayment, PayslipDeduction, EmployeeDeductionAssignment
+    from app.finance.models import BankAccount, CashAccount, BankTransaction, CashTransaction, PayrollPayment
+    from decimal import Decimal
+    import re
+
+    payroll = Payroll.query.get_or_404(payroll_id)
+    if payroll.status != 'Approved':
+        flash('Only approved payrolls can be processed.', 'danger')
+        return redirect(url_for('finance_web_bp.payroll_payment'))
+
+    if request.method == 'POST':
+        # --- Collect payment data from form ---
+        payment_records = []
+        total_recorded = Decimal('0')
+        group_keys = set()
+
+        # Identify all group keys from amount_* fields
+        for key in request.form:
+            if key.startswith('amount_'):
+                group_key = key.replace('amount_', '')
+                group_keys.add(group_key)
+
+        for group_key in group_keys:
+            amount = Decimal(request.form.get(f'amount_{group_key}', '0') or '0')
+            if amount <= 0:
+                flash(f"Amount for group must be positive.", 'danger')
+                return redirect(url_for('finance_web_bp.payroll_process_payment', payroll_id=payroll.id))
+
+            method_name = request.form.get(f'method_{group_key}')
+            if not method_name or method_name not in [m.name for m in PaymentMethod]:
+                flash(f"Invalid payment method for group.", 'danger')
+                return redirect(...)
+            method = PaymentMethod[method_name]
+
+            ref = request.form.get(f'ref_{group_key}', '').strip()
+            notes = request.form.get(f'notes_{group_key}', '').strip()
+            bank_account_id = request.form.get(f'bank_account_{group_key}')
+
+            # For bank transfers and cheques, a bank account is required
+            if method in (PaymentMethod.BANK_TRANSFER, PaymentMethod.CHEQUE) and not bank_account_id:
+                flash(f"Bank account is required for {method.value}.", 'danger')
+                return redirect(...)
+
+            # Create payment record (not yet committed)
+            payment = PayrollPayment(
+                payroll_id=payroll.id,
+                payment_method=method,
+                amount=amount,
+                reference=ref,
+                bank_account_id=bank_account_id if bank_account_id else None,
+                notes=notes,
+                created_by=current_user.id
+            )
+            payment_records.append(payment)
+            total_recorded += amount
+
+        # Verify total matches payroll net
+        if abs(total_recorded - payroll.total_net) > Decimal('0.01'):
+            flash(f"Total recorded amount ({total_recorded:.2f}) does not match payroll net ({payroll.total_net:.2f}).", 'danger')
+            return redirect(url_for('finance_web_bp.payroll_process_payment', payroll_id=payroll.id))
+
+        # --- Process each payment and create financial transactions ---
+        try:
+            for payment in payment_records:
+                # Bank Transfer / Cheque
+                if payment.payment_method in (PaymentMethod.BANK_TRANSFER, PaymentMethod.CHEQUE):
+                    bank = BankAccount.query.get(payment.bank_account_id)
+                    if not bank:
+                        raise ValueError("Selected bank account not found.")
+                    if bank.current_balance < float(payment.amount):
+                        raise ValueError(f"Insufficient balance in {bank.bank_name}.")
+                    # Create bank transaction
+                    bank_tx = BankTransaction(
+                        bank_account_id=bank.id,
+                        transaction_type='withdrawal',
+                        amount=float(payment.amount),
+                        description=f"Payroll #{payroll.id} payment",
+                        reference=payment.reference,
+                        created_by=current_user.id
+                    )
+                    db.session.add(bank_tx)
+                    bank.current_balance -= float(payment.amount)
+
+                # M‑PESA (paybill cash account)
+                elif payment.payment_method == PaymentMethod.M_PESA:
+                    cash = CashAccount.query.filter_by(account_type='paybill', is_active=True).first()
+                    if not cash:
+                        raise ValueError("No active paybill cash account configured.")
+                    if cash.current_balance < float(payment.amount):
+                        raise ValueError(f"Insufficient balance in paybill account.")
+                    cash_tx = CashTransaction(
+                        transaction_type='withdrawal',
+                        amount=float(payment.amount),
+                        description=f"Payroll #{payroll.id} via M‑PESA",
+                        source_cash_account_id=cash.id,
+                        status='completed',
+                        completed_at=datetime.utcnow(),
+                        external_reference=payment.reference,
+                        initiated_by=current_user.id
+                    )
+                    cash_tx.transaction_ref = cash_tx.generate_ref()
+                    db.session.add(cash_tx)
+                    cash.current_balance -= float(payment.amount)
+
+                # Cash (cash drawer)
+                elif payment.payment_method == PaymentMethod.CASH:
+                    cash = CashAccount.query.filter_by(account_type='cash_drawer', is_active=True).first()
+                    if not cash:
+                        raise ValueError("No active cash drawer account configured.")
+                    if cash.current_balance < float(payment.amount):
+                        raise ValueError(f"Insufficient balance in cash drawer.")
+                    cash_tx = CashTransaction(
+                        transaction_type='withdrawal',
+                        amount=float(payment.amount),
+                        description=f"Payroll #{payroll.id} cash payment",
+                        source_cash_account_id=cash.id,
+                        status='completed',
+                        completed_at=datetime.utcnow(),
+                        external_reference=payment.reference,
+                        initiated_by=current_user.id
+                    )
+                    cash_tx.transaction_ref = cash_tx.generate_ref()
+                    db.session.add(cash_tx)
+                    cash.current_balance -= float(payment.amount)
+
+                # Save payment record
+                db.session.add(payment)
+
+            # --- Mark payroll as paid and process loan repayments ---
+            payroll.status = 'Paid'
+            payroll.paid_at = datetime.utcnow()
+            payroll.paid_by = current_user.id
+            payroll.paid_at = datetime.utcnow()
+            loan_deduction_type = DeductionType.query.filter_by(code='LOAN_REPAYMENT').first()
+            total_loan_repayments = Decimal('0')
+            loan_repayments_count = 0
+
+            for payslip in payroll.payslips:
+                payslip.paid_at = datetime.utcnow()
+                payslip.is_paid = True
+                payslip.payment_reference = f"PAY-{payroll.id}-{payslip.id}-{datetime.utcnow().strftime('%Y%m%d%H%M')}"
+
+                if loan_deduction_type:
+                    loan_deductions = PayslipDeduction.query.filter_by(
+                        payslip_id=payslip.id,
+                        deduction_type_id=loan_deduction_type.id
+                    ).all()
+
+                    for loan_deduction in loan_deductions:
+                        active_loans = PayrollLoan.query.filter(
+                            PayrollLoan.employee_id == payslip.employee_id,
+                            PayrollLoan.is_active == True,
+                            PayrollLoan.balance > 0
+                        ).order_by(PayrollLoan.created_at.asc()).all()
+
+                        remaining = loan_deduction.amount
+                        for loan in active_loans:
+                            if remaining <= 0:
+                                break
+                            deduction = min(remaining, loan.balance)
+                            if deduction > 0:
+                                repayment = LoanRepayment(
+                                    loan_id=loan.id,
+                                    amount=deduction,
+                                    payment_date=datetime.utcnow().date(),
+                                    payslip_id=payslip.id,
+                                    description=f"Loan repayment via payroll #{payroll.id}",
+                                    created_by=current_user.id
+                                )
+                                db.session.add(repayment)
+                                loan.balance -= deduction
+                                # Update assignment balance if exists
+                                assignment = EmployeeDeductionAssignment.query.filter_by(
+                                    employee_id=payslip.employee_id,
+                                    deduction_type_id=loan_deduction_type.id,
+                                    is_active=True
+                                ).first()
+                                if assignment:
+                                    assignment.balance = loan.balance
+                                if loan.balance <= 0:
+                                    loan.is_active = False
+                                    loan.end_date = datetime.utcnow().date()
+                                    if assignment:
+                                        assignment.is_active = False
+                                        assignment.end_date = datetime.utcnow().date()
+                                remaining -= deduction
+                                total_loan_repayments += deduction
+                                loan_repayments_count += 1
+            # --- Record expense for payroll (salaries) ---
+            from app.finance.models import Expense, ExpenseCategory
+
+            # Get or create salaries expense category
+            salaries_category = ExpenseCategory.query.filter_by(name='Salaries & Wages').first()
+            if not salaries_category:
+                salaries_category = ExpenseCategory(
+                    name='Salaries & Wages',
+                    description='Employee salaries and wages',
+                    department='HR',  # or use a default department
+                    is_active=True
+                )
+                db.session.add(salaries_category)
+                db.session.flush()  # get id
+
+            # Get HR department (or fallback to first department)
+            hr_dept = Department.query.filter_by(name='Human Resources').first()
+            if not hr_dept:
+                hr_dept = Department.query.first()
+                if not hr_dept:
+                    # Create a default department if none exists
+                    hr_dept = Department(name='General', code='GEN')
+                    db.session.add(hr_dept)
+                    db.session.flush()
+
+            # Create expense record
+            expense = Expense(
+                expense_date=datetime.utcnow(),
+                amount=float(payroll.total_net),  # net amount paid
+                description=f"Payroll #{payroll.id} – {payroll.period.start_date.strftime('%b %Y')}",
+                payment_method='Multiple',  # could be refined, but okay
+                    expense_type='operational',          # <-- ADD THIS LINE
+
+                category_id=salaries_category.id,
+                department_id=hr_dept.id,
+                initiated_by=current_user.id,
+                status='paid',
+                payment_date=datetime.utcnow(),
+                payroll_id=payroll.id,
+                notes=f"Paid via {len(payment_records)} method(s). References: {', '.join([p.reference or '-' for p in payment_records])}"
+            )
+            db.session.add(expense)
+
+
+            # Get all statutory deduction types
+            statutory_types = DeductionType.query.filter_by(is_statutory=True).all()
+            # Map deduction_type_id -> total amount for this payroll
+            stat_totals = {}
+            for payslip in payroll.payslips:
+                for ded in payslip.deductions:
+                    if ded.deduction_type.is_statutory:
+                        key = ded.deduction_type_id
+                        stat_totals[key] = stat_totals.get(key, 0) + ded.amount
+
+            # For each statutory type, create a liability record (due next month 9th)
+            due_date = date.today().replace(day=9) + timedelta(days=30)  # e.g., 9th next month
+            for ded_type_id, total_amount in stat_totals.items():
+                if total_amount > 0:
+                    liability = StatutoryLiability(
+                        payroll_id=payroll.id,
+                        deduction_type_id=ded_type_id,
+                        amount=total_amount,
+                        due_date=due_date,
+                        paid_at=None
+                    )
+                    db.session.add(liability)
+            # (Optional) also record statutory deductions as separate expenses/liabilities
+            # For advanced accounting, you'd split gross into salary expense and deduction liabilities.
+            # For now, we keep it simple.
+            db.session.commit()
+                        # Trigger background email sending for payslips
+            try:
+                import threading
+                thread = threading.Thread(
+                    target=send_payslip_emails_background,
+                    args=(current_app._get_current_object(), payroll.id, current_user.id)
+                )
+                thread.daemon = True
+                thread.start()
+                current_app.logger.info(f"Background email sending started for payroll #{payroll.id}")
+            except Exception as email_error:
+                current_app.logger.error(f"Failed to start background email sending: {str(email_error)}")
+                # Do not rollback; the main transaction succeeded.
+                
+            flash(f'Payroll #{payroll.id} paid successfully. Processed {loan_repayments_count} loan repayments.', 'success')
+            return redirect(url_for('finance_web_bp.payroll_payment'))
+
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Payroll payment error: {str(e)}")
+            flash(f'Error processing payment: {str(e)}', 'danger')
+            return redirect(url_for('finance_web_bp.payroll_process_payment', payroll_id=payroll.id))
+
+    # --- GET request – show form (existing code) ---
+    # ... (group payslips, fetch bank_accounts, render template) ...
+        # GET – show payment breakdown form
+    # Group payslips by payment method and within bank transfer, by bank name
+    groups = defaultdict(lambda: {'total': 0, 'count': 0, 'details': []})
+    for slip in payroll.payslips:
+        method = slip.payment_method
+        if method == PaymentMethod.BANK_TRANSFER:
+            # Try to get bank name from employee payroll info
+            bank_name = 'Unknown Bank'
+            if slip.employee.payroll_info and slip.employee.payroll_info.bank_name:
+                bank_name = slip.employee.payroll_info.bank_name
+            key = f'BANK_TRANSFER_{bank_name}'
+            groups[key]['bank_name'] = bank_name
+        else:
+            key = method.name
+        groups[key]['method'] = method
+        groups[key]['total'] += slip.net_pay
+        groups[key]['count'] += 1
+        groups[key]['details'].append(slip)
+
+    # For bank transfer groups, we'll allow selecting a hospital bank account
+    bank_accounts = BankAccount.query.filter_by(is_active=True).all()
+
+    return render_template(
+        'payroll_process_payment.html',
+        payroll=payroll,
+        groups=groups,
+        bank_accounts=bank_accounts
+    )
+
+
+import threading
+import tempfile
+import os
+from weasyprint import HTML
+
+@finance_web_bp.route('/payroll/<int:payroll_id>/mark-paid', methods=['POST'])
+@login_required
+def mark_payroll_batch_paid(payroll_id):
+    """Mark approved payroll as paid and record loan repayments"""
+    try:
+        payroll = Payroll.query.get_or_404(payroll_id)
+        
+        if payroll.status != 'Approved':
+            return jsonify({
+                'success': False,
+                'message': f'Payroll must be Approved before marking as Paid. Current status: {payroll.status}'
+            }), 400
+        
+        # Get loan deduction type
+        loan_deduction_type = DeductionType.query.filter_by(code='LOAN_REPAYMENT').first()
+        
+        # Update payroll status
+        payroll.status = 'Paid'
+        payroll.paid_at = datetime.utcnow()
+        payroll.paid_by = current_user.id
+        
+        # Track total loan repayments
+        total_loan_repayments = Decimal('0')
+        loan_repayments_count = 0
+        
+        # Process each payslip
+        for payslip in payroll.payslips:
+            # Update payslip status
+            payslip.paid_at = datetime.utcnow()
+            payslip.is_paid = True
+            
+            # Generate payment reference
+            payslip.payment_reference = f"PAY-{payroll.id}-{payslip.id}-{datetime.utcnow().strftime('%Y%m%d%H%M')}"
+            
+            # Find and process loan deductions for this payslip
+            if loan_deduction_type:
+                loan_deductions = PayslipDeduction.query.filter_by(
+                    payslip_id=payslip.id,
+                    deduction_type_id=loan_deduction_type.id
+                ).all()
+                
+                for loan_deduction in loan_deductions:
+                    # Get active loans for this employee
+                    active_loans = PayrollLoan.query.filter(
+                        PayrollLoan.employee_id == payslip.employee_id,
+                        PayrollLoan.is_active == True,
+                        PayrollLoan.balance > 0
+                    ).order_by(PayrollLoan.created_at.asc()).all()
+                    
+                    if not active_loans:
+                        continue
+                    
+                    # Distribute loan deduction among active loans (oldest first)
+                    remaining_deduction = loan_deduction.amount
+                    
+                    for loan in active_loans:
+                        if remaining_deduction <= 0:
+                            break
+                        
+                        # Calculate how much to deduct from this loan
+                        deduction_amount = min(remaining_deduction, loan.balance)
+                        
+                        if deduction_amount > 0:
+                            # Create loan repayment record
+                            repayment = LoanRepayment(
+                                loan_id=loan.id,
+                                amount=deduction_amount,
+                                payment_date=datetime.utcnow().date(),
+                                payslip_id=payslip.id,
+                                description=f"Loan repayment via payroll #{payroll.id}",
+                                created_by=current_user.id
+                            )
+                            db.session.add(repayment)
+                            
+                            # Update loan balance
+                            loan.balance -= deduction_amount
+                            
+                            # Update EmployeeDeductionAssignment balance
+                            assignment = EmployeeDeductionAssignment.query.filter_by(
+                                employee_id=payslip.employee_id,
+                                deduction_type_id=loan_deduction_type.id,
+                                is_active=True
+                            ).first()
+                            
+                            if assignment:
+                                assignment.balance = loan.balance
+                            
+                            # Check if loan is fully paid
+                            if loan.balance <= 0:
+                                loan.is_active = False
+                                loan.end_date = datetime.utcnow().date()
+                                
+                                # Also deactivate the deduction assignment
+                                if assignment:
+                                    assignment.is_active = False
+                                    assignment.end_date = datetime.utcnow().date()
+                            
+                            # Update tracking
+                            remaining_deduction -= deduction_amount
+                            total_loan_repayments += deduction_amount
+                            loan_repayments_count += 1
+        
+        db.session.commit()
+        
+        # Log the payment
+        current_app.logger.info(
+            f"Payroll marked as paid: ID #{payroll.id} by User {current_user.id}. "
+            f"Processed {loan_repayments_count} loan repayments totaling KES {total_loan_repayments}."
+        )
+        
+        return jsonify({
+            'success': True,
+            'message': f'Payroll marked as paid successfully. Processed {loan_repayments_count} loan repayments.',
+            'payroll': {
+                'id': payroll.id,
+                'status': payroll.status,
+                'paid_at': payroll.paid_at.strftime('%Y-%m-%d %H:%M:%S'),
+                'payslips_count': len(payroll.payslips),
+                'loan_repayments': loan_repayments_count,
+                'total_loan_repayments': str(total_loan_repayments)
+            }
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error marking payroll as paid: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': f'Failed to mark payroll as paid: {str(e)}'
+        }), 500
+
+def send_payslip_emails_background(app, payroll_id, user_id):
+    """Background function to send payslip emails with PDF attachments"""
+    with app.app_context():
+        try:
+            from app.utils.notifications import notification_manager
+            from sqlalchemy.orm import joinedload
+            
+            notification_manager.init_app(app)
+            
+            # Get payroll with all related data
+            payroll = Payroll.query.options(
+                joinedload(Payroll.period),
+                joinedload(Payroll.payslips).joinedload(Payslip.employee).joinedload(User.payroll_info)
+            ).get(payroll_id)
+            
+            if not payroll:
+                app.logger.error(f"Payroll {payroll_id} not found for email sending")
+                return
+            
+            emails_sent = 0
+            emails_failed = 0
+            
+            # Create temporary directory for PDFs
+            temp_dir = tempfile.mkdtemp(prefix='payslips_')
+            app.logger.info(f"Created temp directory: {temp_dir}")
+            
+            for payslip in payroll.payslips:
+                if payslip.employee and payslip.employee.email:
+                    try:
+                        # Generate PDF using simplified function without current_user
+                        pdf_path = generate_payslip_pdf_safe(payslip, temp_dir)
+                        
+                        if pdf_path and os.path.exists(pdf_path):
+                            # Send email with PDF attachment
+                            email_sent = send_payslip_email_with_pdf(
+                                notification_manager,
+                                payslip,
+                                payroll,
+                                pdf_path
+                            )
+                            
+                            if email_sent:
+                                emails_sent += 1
+                                app.logger.info(f"Payslip email with PDF sent to {payslip.employee.email}")
+                            else:
+                                emails_failed += 1
+                                app.logger.error(f"Failed to send email to {payslip.employee.email}")
+                            
+                            # Clean up PDF file after sending
+                            try:
+                                os.remove(pdf_path)
+                            except:
+                                pass
+                        else:
+                            emails_failed += 1
+                            app.logger.error(f"Failed to generate PDF for payslip #{payslip.id}")
+                            
+                    except Exception as e:
+                        emails_failed += 1
+                        app.logger.error(f"Error processing payslip #{payslip.id}: {str(e)}")
+                        import traceback
+                        app.logger.error(traceback.format_exc())
+            
+            # Clean up temp directory
+            try:
+                os.rmdir(temp_dir)
+            except:
+                pass
+            
+            # Log summary
+            app.logger.info(
+                f"Background email sending completed for payroll #{payroll_id}. "
+                f"Emails sent: {emails_sent}, Failed: {emails_failed}"
+            )
+            
+        except Exception as e:
+            app.logger.error(f"Error in background email sending: {str(e)}")
+            import traceback
+            app.logger.error(traceback.format_exc())
+
+
+def generate_payslip_pdf_safe(payslip, temp_dir):
+    """Generate PDF for a payslip without using Flask's template rendering"""
+    try:
+        # Load related data with all necessary joins
+        from sqlalchemy.orm import joinedload
+        
+        # Get payslip with all related data
+        payslip_with_data = Payslip.query.options(
+            joinedload(Payslip.employee).joinedload(User.payroll_info),
+            joinedload(Payslip.payroll).joinedload(Payroll.period),
+            joinedload(Payslip.earnings).joinedload(PayslipEarning.earning_type),
+            joinedload(Payslip.deductions).joinedload(PayslipDeduction.deduction_type)
+        ).filter(Payslip.id == payslip.id).first()
+        
+        if not payslip_with_data:
+            return None
+        
+        # Prepare data
+        employee = payslip_with_data.employee
+        employee_name = employee.full_name or f"{employee.first_name} {employee.last_name}"
+        payroll_info = employee.payroll_info
+        
+        # Get department if available
+        department = employee.department.name if employee.department else "Not Specified"
+        
+        # Prepare earnings data with category
+        earnings_list = []
+        statutory_earnings = []
+        other_earnings = []
+        
+        for earning in payslip_with_data.earnings:
+            earning_data = {
+                'name': earning.earning_type.name,
+                'amount': float(earning.amount) if earning.amount else 0,
+                'description': earning.description or earning.earning_type.description or '',
+                'is_statutory': earning.earning_type.is_statutory if hasattr(earning.earning_type, 'is_statutory') else False
+            }
+            earnings_list.append(earning_data)
+            if earning_data['is_statutory']:
+                statutory_earnings.append(earning_data)
+            else:
+                other_earnings.append(earning_data)
+        
+        # Prepare deductions data with category
+        deductions_list = []
+        statutory_deductions = []
+        voluntary_deductions = []
+        
+        for deduction in payslip_with_data.deductions:
+            deduction_data = {
+                'name': deduction.deduction_type.name,
+                'amount': float(deduction.amount) if deduction.amount else 0,
+                'description': deduction.description or deduction.deduction_type.description or '',
+                'is_statutory': deduction.deduction_type.is_statutory if hasattr(deduction.deduction_type, 'is_statutory') else False,
+                'is_voluntary': deduction.deduction_type.is_voluntary if hasattr(deduction.deduction_type, 'is_voluntary') else False
+            }
+            deductions_list.append(deduction_data)
+            if deduction_data['is_statutory']:
+                statutory_deductions.append(deduction_data)
+            else:
+                voluntary_deductions.append(deduction_data)
+        
+        # Get payroll period info
+        payroll_period = payslip_with_data.payroll.period
+        
+        # Create HTML content
+        html_content = create_payslip_html(
+            # Hospital/Company Info
+            hospital_name="AstroCare Medical Center",
+            hospital_address="123 Health Street, Medical Plaza, Nairobi",
+            hospital_phone="+254 700 123 456",
+            hospital_email="accounts@astrocare.co.ke",
+            hospital_logo_url="",  # Can add logo URL if available
+            
+            # Employee Info
+            employee_name=employee_name,
+            employee_id=employee.id,
+            department=department,
+            
+            # Payroll Info
+            payroll_info=payroll_info,
+            staff_no=payroll_info.staff_no if payroll_info and hasattr(payroll_info, 'staff_no') else f"EMP{employee.id:04d}",
+            
+            # Period Info
+            period_start=payroll_period.start_date.strftime('%d %b %Y'),
+            period_end=payroll_period.end_date.strftime('%d %b %Y'),
+            pay_date=payroll_period.pay_date.strftime('%d %b %Y'),
+            frequency=payroll_period.frequency.value if hasattr(payroll_period.frequency, 'value') else str(payroll_period.frequency),
+            
+            # Payment Info
+            payment_method=payroll_info.payment_method.value if payroll_info and payroll_info.payment_method else 'N/A',
+            payment_reference=payslip_with_data.payment_reference or f"PY{payslip_with_data.id:06d}",
+            
+            # Bank Details
+            bank_name=payroll_info.bank_name if payroll_info and payroll_info.bank_name else 'Not Provided',
+            bank_branch=payroll_info.bank_branch if payroll_info and payroll_info.bank_branch else '',
+            bank_account=payroll_info.bank_account if payroll_info and payroll_info.bank_account else '',
+            mpesa_number=payroll_info.mpesa_number if payroll_info and payroll_info.mpesa_number else '',
+            
+            # Statutory Numbers
+            kra_pin=payroll_info.kra_pin if payroll_info and payroll_info.kra_pin else '',
+            nhif_number=payroll_info.nhif_number if payroll_info and payroll_info.nhif_number else '',
+            nssf_number=payroll_info.nssf_number if payroll_info and payroll_info.nssf_number else '',
+            sha_number=payroll_info.sha_number if payroll_info and payroll_info.sha_number else '',
+            
+            # Salary Details
+            basic_salary=float(payslip_with_data.basic_salary) if payslip_with_data.basic_salary else 0,
+            gross_earnings=float(payslip_with_data.gross_earnings) if payslip_with_data.gross_earnings else 0,
+            total_deductions=float(payslip_with_data.total_deductions) if payslip_with_data.total_deductions else 0,
+            net_pay=float(payslip_with_data.net_pay) if payslip_with_data.net_pay else 0,
+            
+            # Earnings Breakdown
+            earnings=earnings_list,
+            statutory_earnings=statutory_earnings,
+            other_earnings=other_earnings,
+            
+            # Deductions Breakdown
+            deductions=deductions_list,
+            statutory_deductions=statutory_deductions,
+            voluntary_deductions=voluntary_deductions,
+            
+            # Allowances
+            housing_allowance=float(payroll_info.housing_allowance) if payroll_info and payroll_info.housing_allowance else 0,
+            transport_allowance=float(payroll_info.transport_allowance) if payroll_info and payroll_info.transport_allowance else 0,
+            other_allowance=float(payroll_info.other_allowance) if payroll_info and payroll_info.other_allowance else 0,
+            
+            # Additional Info
+            payroll_id=payslip_with_data.payroll.id,
+            payslip_id=payslip_with_data.id,
+            generated_date=datetime.utcnow().strftime('%d %b %Y %H:%M'),
+            is_paid=payslip_with_data.is_paid,
+            paid_at=payslip_with_data.paid_at.strftime('%d %b %Y %H:%M') if payslip_with_data.paid_at else ''
+        )
+        
+        # Generate PDF
+        pdf = HTML(string=html_content).write_pdf()
+        
+        # Save to temporary file
+        filename = f"payslip_{employee_name.replace(' ', '_')}_{payroll_period.start_date.strftime('%Y%m')}.pdf"
+        pdf_path = os.path.join(temp_dir, filename)
+        
+        with open(pdf_path, 'wb') as f:
+            f.write(pdf)
+        
+        return pdf_path
+        
+    except Exception as e:
+        current_app.logger.error(f"Error generating PDF for payslip #{payslip.id}: {str(e)}")
+        import traceback
+        current_app.logger.error(traceback.format_exc())
+        return None
+
+
+def create_payslip_html(**kwargs):
+    """Create HTML content for payslip without using template rendering"""
+    
+    # Extract all variables
+    # Hospital Info
+    hospital_name = kwargs.get('hospital_name', 'AstroCare Medical Center')
+    hospital_address = kwargs.get('hospital_address', '123 Health Street, Medical Plaza, Nairobi')
+    hospital_phone = kwargs.get('hospital_phone', '+254 700 123 456')
+    hospital_email = kwargs.get('hospital_email', 'accounts@astrocare.co.ke')
+    
+    # Employee Info
+    employee_name = kwargs.get('employee_name', '')
+    employee_id = kwargs.get('employee_id', '')
+    department = kwargs.get('department', 'Not Specified')
+    
+    # Payroll Info
+    staff_no = kwargs.get('staff_no', '')
+    payroll_info = kwargs.get('payroll_info', None)
+    
+    # Period Info
+    period_start = kwargs.get('period_start', '')
+    period_end = kwargs.get('period_end', '')
+    pay_date = kwargs.get('pay_date', '')
+    frequency = kwargs.get('frequency', 'Monthly')
+    
+    # Payment Info
+    payment_method = kwargs.get('payment_method', 'N/A')
+    payment_reference = kwargs.get('payment_reference', 'N/A')
+    
+    # Bank Details
+    bank_name = kwargs.get('bank_name', 'Not Provided')
+    bank_branch = kwargs.get('bank_branch', '')
+    bank_account = kwargs.get('bank_account', '')
+    mpesa_number = kwargs.get('mpesa_number', '')
+    
+    # Statutory Numbers
+    kra_pin = kwargs.get('kra_pin', '')
+    nhif_number = kwargs.get('nhif_number', '')
+    nssf_number = kwargs.get('nssf_number', '')
+    sha_number = kwargs.get('sha_number', '')
+    
+    # Salary Details
+    basic_salary = kwargs.get('basic_salary', 0)
+    gross_earnings = kwargs.get('gross_earnings', 0)
+    total_deductions = kwargs.get('total_deductions', 0)
+    net_pay = kwargs.get('net_pay', 0)
+    
+    # Earnings
+    earnings = kwargs.get('earnings', [])
+    statutory_earnings = kwargs.get('statutory_earnings', [])
+    other_earnings = kwargs.get('other_earnings', [])
+    
+    # Deductions
+    deductions = kwargs.get('deductions', [])
+    statutory_deductions = kwargs.get('statutory_deductions', [])
+    voluntary_deductions = kwargs.get('voluntary_deductions', [])
+    
+    # Allowances
+    housing_allowance = kwargs.get('housing_allowance', 0)
+    transport_allowance = kwargs.get('transport_allowance', 0)
+    other_allowance = kwargs.get('other_allowance', 0)
+    
+    # Additional Info
+    payroll_id = kwargs.get('payroll_id', '')
+    payslip_id = kwargs.get('payslip_id', '')
+    generated_date = kwargs.get('generated_date', '')
+    is_paid = kwargs.get('is_paid', False)
+    paid_at = kwargs.get('paid_at', '')
+    
+    # Calculate total allowances
+    total_allowances = housing_allowance + transport_allowance + other_allowance
+    
+    # Build earnings rows HTML
+    statutory_earnings_rows = ''
+    for earning in statutory_earnings:
+        statutory_earnings_rows += f'''
+        <tr>
+            <td>{earning['name']}</td>
+            <td class="text-right">{earning['amount']:,.2f}</td>
+        </tr>
+        '''
+    
+    other_earnings_rows = ''
+    for earning in other_earnings:
+        other_earnings_rows += f'''
+        <tr>
+            <td>{earning['name']}</td>
+            <td class="text-right">{earning['amount']:,.2f}</td>
+        </tr>
+        '''
+    
+    # Build deductions rows HTML
+    statutory_deductions_rows = ''
+    for deduction in statutory_deductions:
+        statutory_deductions_rows += f'''
+        <tr>
+            <td>{deduction['name']}</td>
+            <td class="text-right">{deduction['amount']:,.2f}</td>
+        </tr>
+        '''
+    
+    voluntary_deductions_rows = ''
+    for deduction in voluntary_deductions:
+        voluntary_deductions_rows += f'''
+        <tr>
+            <td>{deduction['name']}</td>
+            <td class="text-right">{deduction['amount']:,.2f}</td>
+        </tr>
+        '''
+    
+    # Complete HTML with modern design
+    html = f'''
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Payslip - {employee_name} - {period_start} to {period_end}</title>
+        <style>
+            @page {{
+                size: A4;
+                margin: 15mm;
+            }}
+            
+            body {{
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                line-height: 1.5;
+                color: #333;
+                margin: 0;
+                padding: 0;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                min-height: 100vh;
+            }}
+            
+            .payslip-container {{
+                max-width: 794px; /* A4 width in pixels */
+                margin: 20px auto;
+                background: white;
+                border-radius: 12px;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+                overflow: hidden;
+                position: relative;
+            }}
+            
+            /* Watermark */
+            .watermark {{
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%) rotate(-45deg);
+                font-size: 80px;
+                font-weight: bold;
+                color: rgba(79, 70, 229, 0.08);
+                pointer-events: none;
+                z-index: 1;
+            }}
+            
+            .content {{
+                position: relative;
+                z-index: 2;
+                padding: 30px;
+            }}
+            
+            /* Header Styles */
+            .header {{
+                background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
+                color: white;
+                padding: 25px 30px;
+                border-radius: 12px 12px 0 0;
+            }}
+            
+            .hospital-info h1 {{
+                font-size: 28px;
+                font-weight: 700;
+                margin: 0 0 5px 0;
+                color: white;
+            }}
+            
+            .hospital-info .tagline {{
+                font-size: 14px;
+                opacity: 0.9;
+                margin: 0 0 10px 0;
+            }}
+            
+            .contact-info {{
+                display: flex;
+                gap: 20px;
+                font-size: 13px;
+                margin-top: 10px;
+            }}
+            
+            .contact-item {{
+                display: flex;
+                align-items: center;
+                gap: 5px;
+            }}
+            
+            /* Document Title */
+            .document-title {{
+                text-align: center;
+                margin: 25px 0;
+                position: relative;
+            }}
+            
+            .document-title h2 {{
+                font-size: 32px;
+                font-weight: 700;
+                color: #1F2937;
+                margin: 0;
+                display: inline-block;
+                padding: 0 20px;
+                background: white;
+                position: relative;
+                z-index: 2;
+            }}
+            
+            .document-title::before {{
+                content: '';
+                position: absolute;
+                top: 50%;
+                left: 0;
+                right: 0;
+                height: 2px;
+                background: linear-gradient(90deg, transparent, #4F46E5, transparent);
+                z-index: 1;
+            }}
+            
+            /* Status Badge */
+            .status-badge {{
+                display: inline-block;
+                padding: 6px 16px;
+                border-radius: 20px;
+                font-size: 12px;
+                font-weight: 600;
+                margin-left: 15px;
+                vertical-align: middle;
+                background: {'#10B981' if is_paid else '#F59E0B'};
+                color: white;
+            }}
+            
+            /* Info Grid */
+            .info-grid {{
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 25px;
+                margin-bottom: 30px;
+            }}
+            
+            .info-card {{
+                background: #F9FAFB;
+                border: 1px solid #E5E7EB;
+                border-radius: 8px;
+                padding: 20px;
+            }}
+            
+            .info-card h3 {{
+                font-size: 14px;
+                font-weight: 600;
+                color: #6B7280;
+                margin: 0 0 15px 0;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }}
+            
+            .info-row {{
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: 10px;
+                padding-bottom: 10px;
+                border-bottom: 1px solid #F3F4F6;
+            }}
+            
+            .info-row:last-child {{
+                border-bottom: none;
+                margin-bottom: 0;
+                padding-bottom: 0;
+            }}
+            
+            .info-label {{
+                font-weight: 500;
+                color: #6B7280;
+                font-size: 13px;
+            }}
+            
+            .info-value {{
+                font-weight: 600;
+                color: #111827;
+                font-size: 13px;
+                text-align: right;
+            }}
+            
+            /* Summary Cards */
+            .summary-grid {{
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 20px;
+                margin: 30px 0;
+            }}
+            
+            .summary-card {{
+                background: white;
+                border-radius: 10px;
+                padding: 20px;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+                border: 2px solid;
+                position: relative;
+                overflow: hidden;
+            }}
+            
+            .summary-card::before {{
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 4px;
+            }}
+            
+            .gross-card {{ border-color: #10B981; }}
+            .gross-card::before {{ background: #10B981; }}
+            
+            .deductions-card {{ border-color: #EF4444; }}
+            .deductions-card::before {{ background: #EF4444; }}
+            
+            .net-card {{ border-color: #4F46E5; }}
+            .net-card::before {{ background: #4F46E5; }}
+            
+            .summary-label {{
+                font-size: 13px;
+                color: #6B7280;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                margin-bottom: 8px;
+            }}
+            
+            .summary-value {{
+                font-size: 24px;
+                font-weight: 700;
+                color: #111827;
+            }}
+            
+            /* Tables */
+            .table-container {{
+                margin: 30px 0;
+                border-radius: 8px;
+                overflow: hidden;
+                border: 1px solid #E5E7EB;
+            }}
+            
+            .table-header {{
+                background: #4F46E5;
+                color: white;
+                padding: 15px 20px;
+                font-weight: 600;
+                font-size: 15px;
+            }}
+            
+            .table-subheader {{
+                background: #F3F4F6;
+                padding: 10px 20px;
+                font-weight: 600;
+                color: #374151;
+                font-size: 13px;
+                border-top: 1px solid #E5E7EB;
+            }}
+            
+            table {{
+                width: 100%;
+                border-collapse: collapse;
+            }}
+            
+            th {{
+                background: #F9FAFB;
+                padding: 12px 20px;
+                text-align: left;
+                font-weight: 600;
+                color: #374151;
+                font-size: 13px;
+                border-bottom: 2px solid #E5E7EB;
+            }}
+            
+            td {{
+                padding: 12px 20px;
+                border-bottom: 1px solid #F3F4F6;
+                font-size: 13px;
+            }}
+            
+            .text-right {{
+                text-align: right;
+            }}
+            
+            .total-row {{
+                background: #F9FAFB;
+                font-weight: 700;
+                border-top: 2px solid #E5E7EB;
+            }}
+            
+            /* Footer */
+            .footer {{
+                margin-top: 40px;
+                padding-top: 20px;
+                border-top: 2px solid #E5E7EB;
+                text-align: center;
+                color: #6B7280;
+                font-size: 11px;
+                line-height: 1.6;
+            }}
+            
+            .footer-links {{
+                display: flex;
+                justify-content: center;
+                gap: 20px;
+                margin-top: 10px;
+            }}
+            
+            .footer-links a {{
+                color: #4F46E5;
+                text-decoration: none;
+                font-weight: 500;
+            }}
+            
+            /* QR Code Area */
+            .qr-area {{
+                margin-top: 30px;
+                text-align: center;
+                padding: 20px;
+                background: #F9FAFB;
+                border-radius: 8px;
+                border: 1px dashed #D1D5DB;
+            }}
+            
+            .qr-placeholder {{
+                width: 100px;
+                height: 100px;
+                background: #E5E7EB;
+                margin: 0 auto 10px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 4px;
+                color: #6B7280;
+                font-size: 10px;
+            }}
+            
+            /* Print styles */
+            @media print {{
+                body {{
+                    background: none;
+                    margin: 0;
+                    padding: 0;
+                }}
+                
+                .payslip-container {{
+                    box-shadow: none;
+                    margin: 0;
+                    border-radius: 0;
+                }}
+                
+                .watermark {{
+                    opacity: 0.3;
+                }}
+                
+                .no-print {{
+                    display: none;
+                }}
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="watermark">ASTROCARE PAYSLIP</div>
+        
+        <div class="payslip-container">
+            <div class="header">
+                <div class="hospital-info">
+                    <h1>{hospital_name}</h1>
+                    <p class="tagline">Excellence in Healthcare Services</p>
+                    <div class="contact-info">
+                        <div class="contact-item">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                            </svg>
+                            <span>{hospital_address}</span>
+                        </div>
+                        <div class="contact-item">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+                            </svg>
+                            <span>{hospital_email}</span>
+                        </div>
+                        <div class="contact-item">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M20 15.5c-1.25 0-2.45-.2-3.57-.57-.35-.11-.74-.03-1.02.24l-2.2 2.2c-2.83-1.44-5.15-3.75-6.59-6.59l2.2-2.21c.28-.26.36-.65.25-1C8.7 6.45 8.5 5.25 8.5 4c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1 0 9.39 7.61 17 17 17 .55 0 1-.45 1-1v-3.5c0-.55-.45-1-1-1z"/>
+                            </svg>
+                            <span>{hospital_phone}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="content">
+                <!-- Document Title -->
+                <div class="document-title">
+                    <h2>EMPLOYEE PAYSLIP
+                        <span class="status-badge">{'PAID' if is_paid else 'PROCESSED'}</span>
+                    </h2>
+                </div>
+                
+                <!-- Information Grid -->
+                <div class="info-grid">
+                    <!-- Employee Information -->
+                    <div class="info-card">
+                        <h3>Employee Information</h3>
+                        <div class="info-row">
+                            <span class="info-label">Full Name:</span>
+                            <span class="info-value">{employee_name}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Staff Number:</span>
+                            <span class="info-value">{staff_no}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Employee ID:</span>
+                            <span class="info-value">{employee_id}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Department:</span>
+                            <span class="info-value">{department}</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Payment Information -->
+                    <div class="info-card">
+                        <h3>Payment Information</h3>
+                        <div class="info-row">
+                            <span class="info-label">Pay Period:</span>
+                            <span class="info-value">{period_start} to {period_end}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Pay Date:</span>
+                            <span class="info-value">{pay_date}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Payment Method:</span>
+                            <span class="info-value">{payment_method}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Reference:</span>
+                            <span class="info-value">{payment_reference}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Bank & Statutory Information Grid -->
+                <div class="info-grid">
+                    <!-- Bank Details -->
+                    <div class="info-card">
+                        <h3>Bank Details</h3>
+                        <div class="info-row">
+                            <span class="info-label">Bank Name:</span>
+                            <span class="info-value">{bank_name}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Branch:</span>
+                            <span class="info-value">{bank_branch or 'N/A'}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Account Number:</span>
+                            <span class="info-value">{bank_account or 'N/A'}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">M-Pesa Number:</span>
+                            <span class="info-value">{mpesa_number or 'N/A'}</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Statutory Information -->
+                    <div class="info-card">
+                        <h3>Statutory Information</h3>
+                        <div class="info-row">
+                            <span class="info-label">KRA PIN:</span>
+                            <span class="info-value">{kra_pin or 'N/A'}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">NHIF Number:</span>
+                            <span class="info-value">{nhif_number or 'N/A'}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">NSSF Number:</span>
+                            <span class="info-value">{nssf_number or 'N/A'}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">SHA Number:</span>
+                            <span class="info-value">{sha_number or 'N/A'}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Summary Cards -->
+                <div class="summary-grid">
+                    <div class="summary-card gross-card">
+                        <div class="summary-label">Gross Earnings</div>
+                        <div class="summary-value">KES {gross_earnings:,.2f}</div>
+                    </div>
+                    
+                    <div class="summary-card deductions-card">
+                        <div class="summary-label">Total Deductions</div>
+                        <div class="summary-value">KES {total_deductions:,.2f}</div>
+                    </div>
+                    
+                    <div class="summary-card net-card">
+                        <div class="summary-label">Net Pay</div>
+                        <div class="summary-value">KES {net_pay:,.2f}</div>
+                    </div>
+                </div>
+                
+                <!-- Earnings Table -->
+                <div class="table-container">
+                    <div class="table-header">EARNINGS BREAKDOWN</div>
+                    
+                    <!-- Basic Salary -->
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Description</th>
+                                <th class="text-right">Amount (KES)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Basic Salary</strong></td>
+                                <td class="text-right"><strong>{basic_salary:,.2f}</strong></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <!-- Allowances -->
+                    {'<div class="table-subheader">ALLOWANCES</div>' if total_allowances > 0 else ''}
+                    {'<table>' if total_allowances > 0 else ''}
+                    {'<tbody>' if total_allowances > 0 else ''}
+                    {f'<tr><td>Housing Allowance</td><td class="text-right">{housing_allowance:,.2f}</td></tr>' if housing_allowance > 0 else ''}
+                    {f'<tr><td>Transport Allowance</td><td class="text-right">{transport_allowance:,.2f}</td></tr>' if transport_allowance > 0 else ''}
+                    {f'<tr><td>Other Allowance</td><td class="text-right">{other_allowance:,.2f}</td></tr>' if other_allowance > 0 else ''}
+                    {'</tbody>' if total_allowances > 0 else ''}
+                    {'</table>' if total_allowances > 0 else ''}
+                    
+                    <!-- Other Earnings -->
+                    {f'<div class="table-subheader">OTHER EARNINGS</div>' if other_earnings else ''}
+                    {f'<table>' if other_earnings else ''}
+                    {f'<tbody>{other_earnings_rows}</tbody>' if other_earnings else ''}
+                    {f'</table>' if other_earnings else ''}
+                    
+                    <!-- Statutory Earnings -->
+                    {f'<div class="table-subheader">STATUTORY EARNINGS</div>' if statutory_earnings else ''}
+                    {f'<table>' if statutory_earnings else ''}
+                    {f'<tbody>{statutory_earnings_rows}</tbody>' if statutory_earnings else ''}
+                    {f'</table>' if statutory_earnings else ''}
+                    
+                    <!-- Total Gross -->
+                    <table>
+                        <tbody>
+                            <tr class="total-row">
+                                <td><strong>TOTAL GROSS EARNINGS</strong></td>
+                                <td class="text-right"><strong>{gross_earnings:,.2f}</strong></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Deductions Table -->
+                <div class="table-container">
+                    <div class="table-header">DEDUCTIONS BREAKDOWN</div>
+                    
+                    <!-- Statutory Deductions -->
+                    {f'<div class="table-subheader">STATUTORY DEDUCTIONS</div>' if statutory_deductions else ''}
+                    {f'<table>' if statutory_deductions else ''}
+                    {f'<tbody>{statutory_deductions_rows}</tbody>' if statutory_deductions else ''}
+                    {f'</table>' if statutory_deductions else ''}
+                    
+                    <!-- Voluntary Deductions -->
+                    {f'<div class="table-subheader">VOLUNTARY DEDUCTIONS</div>' if voluntary_deductions else ''}
+                    {f'<table>' if voluntary_deductions else ''}
+                    {f'<tbody>{voluntary_deductions_rows}</tbody>' if voluntary_deductions else ''}
+                    {f'</table>' if voluntary_deductions else ''}
+                    
+                    <!-- Total Deductions -->
+                    <table>
+                        <tbody>
+                            <tr class="total-row">
+                                <td><strong>TOTAL DEDUCTIONS</strong></td>
+                                <td class="text-right"><strong>{total_deductions:,.2f}</strong></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Net Pay Section -->
+                <div class="table-container" style="background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%); color: white;">
+                    <div class="table-header" style="background: transparent; border-bottom: 1px solid rgba(255,255,255,0.2);">
+                        PAYMENT SUMMARY
+                    </div>
+                    <table>
+                        <tbody>
+                            <tr>
+                                <td style="color: white; font-size: 16px;"><strong>GROSS EARNINGS</strong></td>
+                                <td class="text-right" style="color: white; font-size: 16px;"><strong>{gross_earnings:,.2f}</strong></td>
+                            </tr>
+                            <tr>
+                                <td style="color: white; opacity: 0.9;">Less: Total Deductions</td>
+                                <td class="text-right" style="color: white; opacity: 0.9;">({total_deductions:,.2f})</td>
+                            </tr>
+                            <tr style="border-top: 2px solid rgba(255,255,255,0.3);">
+                                <td style="color: white; font-size: 20px; padding-top: 20px;"><strong>NET PAY</strong></td>
+                                <td class="text-right" style="color: white; font-size: 20px; padding-top: 20px;"><strong>KES {net_pay:,.2f}</strong></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Payment Status -->
+                {f'<div class="qr-area"><div class="qr-placeholder">PAYMENT CONFIRMED<br>{paid_at}</div><p style="font-size: 12px; color: #6B7280; margin: 0;">Payment confirmed and processed</p></div>' if is_paid else ''}
+                
+                <!-- Footer -->
+                <div class="footer">
+                    <p>
+                        This payslip was generated by <strong>AstroCare HR System</strong> on {generated_date}.<br>
+                        Payroll ID: #{payroll_id} | Payslip ID: #{payslip_id}<br>
+                        Frequency: {frequency} | Generated for: {employee_name}
+                    </p>
+                    <p style="font-size: 10px; margin-top: 15px; color: #9CA3AF;">
+                        <strong>Confidential Document:</strong> This payslip contains confidential information and is intended solely for the addressee.<br>
+                        Unauthorized disclosure, copying, distribution, or action based on the contents is strictly prohibited.<br>
+                        For any discrepancies, please contact the HR department within 7 days of receipt.
+                    </p>
+                    <div class="footer-links">
+                        <span>www.astrocare.co.ke</span>
+                        <span>hr@astrocare.co.ke</span>
+                        <span>+254 700 123 456</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+    </html>
+    '''
+    
+    return html
+
+
+def send_payslip_email_with_pdf(notification_manager, payslip, payroll, pdf_path):
+    """Send professional email with PDF attachment"""
+    try:
+        # Get employee details
+        employee = payslip.employee
+        employee_name = employee.full_name or f"{employee.first_name} {employee.last_name}"
+        
+        # Get payroll info for payment details
+        payroll_info = employee.payroll_info
+        payment_method = payslip.payment_method or (payroll_info.payment_method if payroll_info else None)
+        
+        # Get bank details
+        bank_name = payroll_info.bank_name if payroll_info and payroll_info.bank_name else "Not specified"
+        bank_branch = payroll_info.bank_branch if payroll_info and payroll_info.bank_branch else ""
+        bank_account = payroll_info.bank_account if payroll_info and payroll_info.bank_account else ""
+        mpesa_number = payroll_info.mpesa_number if payroll_info and payroll_info.mpesa_number else ""
+        
+        # Format payment details based on method
+        payment_details = ""
+        if payment_method:
+            if payment_method.value == "Bank Transfer":
+                if bank_account:
+                    payment_details = f"<strong>Bank:</strong> {bank_name}<br>"
+                    if bank_branch:
+                        payment_details += f"<strong>Branch:</strong> {bank_branch}<br>"
+                    payment_details += f"<strong>Account:</strong> {bank_account}"
+            elif payment_method.value == "M-Pesa":
+                if mpesa_number:
+                    payment_details = f"<strong>M-Pesa Number:</strong> {mpesa_number}"
+            else:
+                payment_details = f"<strong>Payment Method:</strong> {payment_method.value}"
+        
+        # Get period details
+        period_start = payroll.period.start_date.strftime('%d %b %Y')
+        period_end = payroll.period.end_date.strftime('%d %b %Y')
+        payment_date = datetime.utcnow().strftime('%d %b %Y')
+        
+        # Calculate YTD totals (if available)
+        ytd_gross = float(payslip.gross_earnings or 0)  # This would be cumulative in real system
+        ytd_deductions = float(payslip.total_deductions or 0)  # This would be cumulative
+        
+        # Prepare email content
+        subject = f"Salary Credited - KES {payslip.net_pay:,.2f} - {period_start} to {period_end}"
+        
+        # Professional HTML email template
+        html_body = f"""
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Salary Payment Notification</title>
+            <style>
+                @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+                
+                body {{
+                    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+                    line-height: 1.6;
+                    color: #374151;
+                    margin: 0;
+                    padding: 0;
+                    background-color: #f9fafb;
+                }}
+                
+                .email-container {{
+                    max-width: 600px;
+                    margin: 0 auto;
+                    background: #ffffff;
+                    border-radius: 16px;
+                    overflow: hidden;
+                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+                }}
+                
+                .email-header {{
+                    background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
+                    color: white;
+                    padding: 32px 40px;
+                    text-align: center;
+                }}
+                
+                .hospital-logo {{
+                    font-size: 24px;
+                    font-weight: 700;
+                    letter-spacing: -0.5px;
+                    margin: 0 0 8px 0;
+                }}
+                
+                .email-title {{
+                    font-size: 28px;
+                    font-weight: 700;
+                    margin: 0;
+                    letter-spacing: -0.5px;
+                }}
+                
+                .email-subtitle {{
+                    font-size: 16px;
+                    opacity: 0.9;
+                    margin: 8px 0 0 0;
+                    font-weight: 400;
+                }}
+                
+                .email-content {{
+                    padding: 40px;
+                }}
+                
+                .greeting {{
+                    font-size: 18px;
+                    color: #111827;
+                    margin-bottom: 24px;
+                }}
+                
+                .salary-amount {{
+                    text-align: center;
+                    margin: 32px 0;
+                    padding: 24px;
+                    background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+                    border-radius: 12px;
+                    color: white;
+                }}
+                
+                .salary-label {{
+                    font-size: 14px;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                    opacity: 0.9;
+                    margin-bottom: 8px;
+                }}
+                
+                .salary-value {{
+                    font-size: 40px;
+                    font-weight: 700;
+                    margin: 0;
+                }}
+                
+                .info-card {{
+                    background: #F9FAFB;
+                    border: 1px solid #E5E7EB;
+                    border-radius: 12px;
+                    padding: 24px;
+                    margin-bottom: 24px;
+                }}
+                
+                .info-card h3 {{
+                    color: #4F46E5;
+                    margin: 0 0 16px 0;
+                    font-size: 16px;
+                    font-weight: 600;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                }}
+                
+                .info-grid {{
+                    display: grid;
+                    grid-template-columns: repeat(2, 1fr);
+                    gap: 16px;
+                }}
+                
+                .info-item {{
+                    margin-bottom: 12px;
+                }}
+                
+                .info-label {{
+                    font-size: 13px;
+                    color: #6B7280;
+                    font-weight: 500;
+                    margin-bottom: 4px;
+                }}
+                
+                .info-value {{
+                    font-size: 15px;
+                    color: #111827;
+                    font-weight: 600;
+                }}
+                
+                .summary-grid {{
+                    display: grid;
+                    grid-template-columns: repeat(3, 1fr);
+                    gap: 16px;
+                    margin: 24px 0;
+                }}
+                
+                .summary-box {{
+                    background: white;
+                    border-radius: 8px;
+                    padding: 16px;
+                    text-align: center;
+                    border: 1px solid #E5E7EB;
+                }}
+                
+                .summary-box.gross {{
+                    border-top: 3px solid #10B981;
+                }}
+                
+                .summary-box.deductions {{
+                    border-top: 3px solid #EF4444;
+                }}
+                
+                .summary-box.net {{
+                    border-top: 3px solid #4F46E5;
+                }}
+                
+                .summary-label {{
+                    font-size: 12px;
+                    color: #6B7280;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                    margin-bottom: 8px;
+                }}
+                
+                .summary-value {{
+                    font-size: 18px;
+                    font-weight: 700;
+                    color: #111827;
+                }}
+                
+                .attachment-card {{
+                    background: #F0F9FF;
+                    border: 2px dashed #0EA5E9;
+                    border-radius: 12px;
+                    padding: 24px;
+                    text-align: center;
+                    margin: 32px 0;
+                }}
+                
+                .attachment-icon {{
+                    background: #0EA5E9;
+                    color: white;
+                    width: 48px;
+                    height: 48px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin: 0 auto 16px;
+                    font-size: 20px;
+                }}
+                
+                .attachment-text h4 {{
+                    color: #0369A1;
+                    margin: 0 0 8px 0;
+                    font-size: 16px;
+                }}
+                
+                .attachment-text p {{
+                    color: #0C4A6E;
+                    margin: 0;
+                    font-size: 14px;
+                }}
+                
+                .cta-button {{
+                    display: inline-block;
+                    background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
+                    color: white;
+                    text-decoration: none;
+                    padding: 14px 32px;
+                    border-radius: 8px;
+                    font-weight: 600;
+                    font-size: 15px;
+                    margin: 8px 0;
+                    text-align: center;
+                }}
+                
+                .footer {{
+                    margin-top: 40px;
+                    padding-top: 24px;
+                    border-top: 1px solid #E5E7EB;
+                    text-align: center;
+                    color: #6B7280;
+                    font-size: 13px;
+                }}
+                
+                .contact-info {{
+                    display: flex;
+                    justify-content: center;
+                    gap: 24px;
+                    margin-top: 16px;
+                }}
+                
+                .contact-item {{
+                    color: #4F46E5;
+                    text-decoration: none;
+                    font-size: 12px;
+                }}
+                
+                @media (max-width: 600px) {{
+                    .info-grid {{
+                        grid-template-columns: 1fr;
+                    }}
+                    
+                    .summary-grid {{
+                        grid-template-columns: 1fr;
+                    }}
+                    
+                    .email-header,
+                    .email-content {{
+                        padding: 24px;
+                    }}
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="email-container">
+                <!-- Header -->
+                <div class="email-header">
+                    <h1 class="hospital-logo">ASTROCARE MEDICAL CENTER</h1>
+                    <h2 class="email-title">Salary Payment Notification</h2>
+                    <p class="email-subtitle">Your salary for {period_start} - {period_end} has been processed</p>
+                </div>
+                
+                <!-- Content -->
+                <div class="email-content">
+                    <!-- Greeting -->
+                    <div class="greeting">
+                        <p>Dear <strong>{employee_name}</strong>,</p>
+                        <p>We are pleased to inform you that your salary for the period <strong>{period_start} to {period_end}</strong> has been successfully processed and credited to your account.</p>
+                    </div>
+                    
+                    <!-- Salary Amount -->
+                    <div class="salary-amount">
+                        <div class="salary-label">Amount Credited</div>
+                        <h2 class="salary-value">KES {payslip.net_pay:,.2f}</h2>
+                    </div>
+                    
+                    <!-- Payment Information -->
+                    <div class="info-card">
+                        <h3>Payment Information</h3>
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <div class="info-label">Payment Date</div>
+                                <div class="info-value">{payment_date}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">Payment Method</div>
+                                <div class="info-value">{payment_method.value if payment_method else 'N/A'}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">Payroll Reference</div>
+                                <div class="info-value">#{payroll.id}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">Transaction ID</div>
+                                <div class="info-value">{payslip.payment_reference}</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Bank Details -->
+                        {f'<div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #E5E7EB;"><div class="info-label" style="color: #4F46E5; margin-bottom: 8px;">CREDITED TO YOUR ACCOUNT</div><div style="font-size: 14px; color: #111827;">{payment_details}</div></div>' if payment_details else ''}
+                    </div>
+                    
+                    <!-- Salary Summary -->
+                    <div class="info-card">
+                        <h3>Salary Breakdown</h3>
+                        <div class="summary-grid">
+                            <div class="summary-box gross">
+                                <div class="summary-label">Gross Earnings</div>
+                                <div class="summary-value">KES {payslip.gross_earnings:,.2f}</div>
+                            </div>
+                            <div class="summary-box deductions">
+                                <div class="summary-label">Total Deductions</div>
+                                <div class="summary-value">KES {payslip.total_deductions:,.2f}</div>
+                            </div>
+                            <div class="summary-box net">
+                                <div class="summary-label">Net Amount</div>
+                                <div class="summary-value">KES {payslip.net_pay:,.2f}</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Detailed Breakdown -->
+                        <div style="margin-top: 24px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #E5E7EB;">
+                                <span style="color: #6B7280;">Basic Salary</span>
+                                <span style="font-weight: 600;">KES {payslip.basic_salary:,.2f}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #E5E7EB;">
+                                <span style="color: #6B7280;">Allowances & Bonuses</span>
+                                <span style="font-weight: 600;">KES {(payslip.gross_earnings - payslip.basic_salary):,.2f}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #E5E7EB;">
+                                <span style="color: #6B7280;">Statutory Deductions</span>
+                                <span style="font-weight: 600; color: #EF4444;">KES {payslip.total_deductions:,.2f}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-top: 16px; padding-top: 16px; border-top: 2px solid #4F46E5;">
+                                <span style="color: #4F46E5; font-weight: 700;">Net Salary</span>
+                                <span style="font-weight: 700; color: #10B981; font-size: 18px;">KES {payslip.net_pay:,.2f}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Payslip Attachment -->
+                    <div class="attachment-card">
+                        <div class="attachment-icon">
+                            📄
+                        </div>
+                        <div class="attachment-text">
+                            <h4>Detailed Payslip Attached</h4>
+                            <p>Your complete payslip with detailed breakdown is attached as a PDF document.</p>
+                        </div>
+                        <p style="font-size: 12px; color: #6B7280; margin-top: 12px;">
+                            File: payslip_{employee_name.replace(' ', '_')}_{period_start.replace(' ', '')}.pdf
+                        </p>
+                    </div>
+                    
+                    <!-- Important Notes -->
+                    <div style="background: #FEF3C7; border-left: 4px solid #F59E0B; padding: 16px; border-radius: 8px; margin: 24px 0;">
+                        <h4 style="color: #92400E; margin: 0 0 8px 0; font-size: 14px;">⚠️ Important Information</h4>
+                        <ul style="color: #92400E; margin: 0; padding-left: 20px; font-size: 13px;">
+                            <li>Please verify the credited amount with your bank statement</li>
+                            <li>Report any discrepancies to HR within 7 working days</li>
+                            <li>Your payslip is a confidential document - keep it secure</li>
+                            <li>This is an automated notification - please do not reply</li>
+                        </ul>
+                    </div>
+                    
+                    <!-- CTA Buttons -->
+                    <div style="text-align: center; margin: 32px 0;">
+                        <a href="#" class="cta-button">View in HR Portal</a>
+                        <p style="font-size: 12px; color: #6B7280; margin-top: 12px;">
+                            Login to the AstroCare HR System for detailed reports
+                        </p>
+                    </div>
+                    
+                    <!-- Footer -->
+                    <div class="footer">
+                        <p>
+                            <strong>AstroCare Medical Center - Human Resources Department</strong><br>
+                            This is an automated notification generated by the AstroCare HR System.
+                        </p>
+                        <div class="contact-info">
+                            <a href="mailto:hr@astrocare.co.ke" class="contact-item">✉️ hr@astrocare.co.ke</a>
+                            <a href="tel:+254700123456" class="contact-item">📞 +254 700 123 456</a>
+                            <span class="contact-item">🏥 www.astrocare.co.ke</span>
+                        </div>
+                        <p style="font-size: 11px; color: #9CA3AF; margin-top: 16px;">
+                            Confidentiality Notice: This email contains privileged and confidential information.<br>
+                            If you are not the intended recipient, please delete it immediately.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        # Professional plain text version
+        plain_text = f"""
+        SALARY PAYMENT NOTIFICATION
+        ============================
+
+        Dear {employee_name},
+
+        We are pleased to inform you that your salary for the period {period_start} to {period_end} 
+        has been successfully processed and credited to your account.
+
+        PAYMENT DETAILS
+        ---------------
+        Amount Credited: KES {payslip.net_pay:,.2f}
+        Payment Date: {payment_date}
+        Payment Method: {payment_method.value if payment_method else 'N/A'}
+        Payroll Reference: #{payroll.id}
+        Transaction ID: {payslip.payment_reference}
+
+        {f'CREDITED TO: {bank_name} - Account: {bank_account}' if bank_account else ''}
+        {f'MPESA NUMBER: {mpesa_number}' if mpesa_number else ''}
+
+        SALARY BREAKDOWN
+        ----------------
+        Basic Salary: KES {payslip.basic_salary:,.2f}
+        Gross Earnings: KES {payslip.gross_earnings:,.2f}
+        Total Deductions: KES {payslip.total_deductions:,.2f}
+        Net Salary: KES {payslip.net_pay:,.2f}
+
+        ATTACHMENT
+        ----------
+        Your detailed payslip is attached as a PDF file: 
+        payslip_{employee_name.replace(' ', '_')}_{period_start.replace(' ', '')}.pdf
+
+        IMPORTANT NOTES:
+        - Please verify the credited amount with your bank statement
+        - Report any discrepancies to HR within 7 working days
+        - Your payslip is a confidential document
+        - This is an automated notification
+
+        For any queries, please contact:
+        Human Resources Department
+        Email: hr@astrocare.co.ke
+        Phone: +254 700 123 456
+        Website: www.astrocare.co.ke
+
+        This email contains privileged and confidential information.
+        If you are not the intended recipient, please delete it immediately.
+
+        Best regards,
+        AstroCare HR System
+        """
+        
+        # Send email with PDF attachment
+        return notification_manager.send_email(
+            subject=subject,
+            recipients=[employee.email],
+            body=plain_text,
+            html_body=html_body,
+            attachments=[pdf_path],
+            sender="AstroCare HR System <noreply@astrocare.co.ke>"
+        )
+        
+    except Exception as e:
+        current_app.logger.error(f"Error sending email for payslip #{payslip.id}: {str(e)}")
+        import traceback
+        current_app.logger.error(traceback.format_exc())
+        return False
+
+# Add a route to check email sending status
+@finance_web_bp.route('/payroll/<int:payroll_id>/email-status', methods=['GET'])
+@login_required
+def get_payslip_email_status(payroll_id):
+    """Get status of email sending for a payroll"""
+    # This is a placeholder - in a real application, you'd track this in database
+    # For now, we just acknowledge that emails are being processed
+    
+    return jsonify({
+        'success': True,
+        'message': 'Email sending is in progress',
+        'status': 'processing'
+    })
+
+
+
+
+
+def generate_payslip_pdf_in_memory(payslip):
+    """Generate PDF in memory (without saving to file)"""
+    try:
+        from flask import render_template
+        
+        # Render HTML template
+        html = render_template(
+            'payslip_pdf_template.html',
+            payslip=payslip,
+            now=datetime.now()
+        )
+        
+        # Generate PDF
+        pdf = HTML(string=html).write_pdf()
+        return pdf
+        
+    except Exception as e:
+        current_app.logger.error(f"Error generating PDF in memory: {str(e)}")
+        return None
+
+
+# ----------------------------------------------------------------------
+# Treasury Management
+# ----------------------------------------------------------------------
+
+
+@finance_web_bp.route('/bank-reports')
+@login_required
+def bank_reports():
+    # TODO: generate bank summary reports (e.g., deposits, withdrawals, balances)
+    return render_template('finance/bank_reports.html')
+
+
+
+
+# ----------------------------------------------------------------------
+# Reports
+# ----------------------------------------------------------------------
+
+@finance_web_bp.route('/sales-reports')
+def sales_reports():
+    from datetime import datetime
+    from sqlalchemy import func, and_
+
+    # Get filter parameters (including new patient_category)
+    start_date_str = request.args.get('start_date')
+    end_date_str = request.args.get('end_date')
+    department_filter = request.args.get('department', '')
+    served_by_filter = request.args.get('served_by', '')
+    patient_category_filter = request.args.get('patient_category', '')
+
+    today = datetime.today().date()
+    try:
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date() if start_date_str else today.replace(day=1)
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date() if end_date_str else today
+    except ValueError:
+        flash('Invalid date format. Use YYYY-MM-DD.', 'danger')
+        start_date = today.replace(day=1)
+        end_date = today
+
+    # Base query for SalesReport
+    report_query = SalesReport.query.filter(
+        SalesReport.sale_date >= datetime.combine(start_date, datetime.min.time()),
+        SalesReport.sale_date <= datetime.combine(end_date, datetime.max.time())
+    )
+
+    if served_by_filter:
+        report_query = report_query.filter(SalesReport.served_by == served_by_filter)
+    if patient_category_filter:
+        report_query = report_query.filter(SalesReport.patient_category == patient_category_filter)
+
+    reports = report_query.order_by(SalesReport.sale_date.desc()).all()
+
+    # All departments for filter
+    all_departments = db.session.query(SalesReportItem.department).distinct().all()
+    all_departments = [d[0] for d in all_departments if d[0]]
+
+    # All cashiers for filter dropdown
+    distinct_cashiers = db.session.query(SalesReport.served_by).distinct().all()
+    distinct_cashiers = sorted([c[0] for c in distinct_cashiers if c[0]])
+
+    # All patient categories for filter
+    distinct_categories = db.session.query(SalesReport.patient_category).distinct().all()
+    distinct_categories = sorted([c[0] for c in distinct_categories if c[0]])
+
+    # Items query (with all filters)
+    items_query = SalesReportItem.query.join(SalesReport).filter(
+        SalesReport.sale_date >= datetime.combine(start_date, datetime.min.time()),
+        SalesReport.sale_date <= datetime.combine(end_date, datetime.max.time())
+    )
+    if served_by_filter:
+        items_query = items_query.filter(SalesReport.served_by == served_by_filter)
+    if department_filter:
+        items_query = items_query.filter(SalesReportItem.department == department_filter)
+    if patient_category_filter:
+        items_query = items_query.filter(SalesReport.patient_category == patient_category_filter)
+
+    items = items_query.all()
+
+    # --- TOTALS AND BREAKDOWNS ---
+    total_sales = 0.0
+    total_profit = 0.0
+    dept_totals = {}               # {department: {'total': x, 'count': y}}
+    category_totals = {}            # {category: {'total': x, 'count': y}}
+    dept_category_matrix = {}       # {department: {category: {'total': x, 'count': y}}}
+    profit_data = []
+
+    for item in items:
+        total_sales += item.total_price
+
+        dept = item.department
+        cat = item.report.patient_category
+
+        # Department totals
+        if dept not in dept_totals:
+            dept_totals[dept] = {'total': 0.0, 'count': 0}
+        dept_totals[dept]['total'] += item.total_price
+        dept_totals[dept]['count'] += item.quantity
+
+        # Category totals
+        if cat not in category_totals:
+            category_totals[cat] = {'total': 0.0, 'count': 0}
+        category_totals[cat]['total'] += item.total_price
+        category_totals[cat]['count'] += item.quantity
+
+        # Matrix: department × category
+        if dept not in dept_category_matrix:
+            dept_category_matrix[dept] = {}
+        if cat not in dept_category_matrix[dept]:
+            dept_category_matrix[dept][cat] = {'total': 0.0, 'count': 0}
+        dept_category_matrix[dept][cat]['total'] += item.total_price
+        dept_category_matrix[dept][cat]['count'] += item.quantity
+
+        # Pharmacy profit (existing logic)
+        if dept and dept.lower() == 'pharmacy':
+            service = Service.query.get(item.service_id)
+            buying_price = 0.0
+            if service and service.pharmacy_items:
+                buying_price = service.pharmacy_items[0].buying_price or 0.0
+            item_profit = (item.unit_price - buying_price) * item.quantity
+            total_profit += item_profit
+            profit_data.append({
+                'item_name': item.service_name,
+                'quantity': item.quantity,
+                'selling_price': item.unit_price,
+                'buying_price': buying_price,
+                'profit': item_profit,
+                'date': item.report.sale_date,
+                'served_by': item.report.served_by,
+                'patient_category': cat
+            })
+
+    grand_total = total_sales
+
+    return render_template(
+        'sales_reports.html',
+        reports=reports,
+        items=items,
+        dept_totals=dept_totals,
+        category_totals=category_totals,
+        dept_category_matrix=dept_category_matrix,
+        grand_total=grand_total,
+        total_profit=total_profit,
+        profit_data=profit_data,
+        start_date=start_date,
+        end_date=end_date,
+        all_departments=all_departments,
+        selected_department=department_filter,
+        served_by_filter=served_by_filter,
+        distinct_cashiers=distinct_cashiers,
+        distinct_categories=distinct_categories,
+        selected_patient_category=patient_category_filter
+    )
+    
+    
+@finance_web_bp.route('/stock-reports')
+@login_required
+def stock_reports():
+    from datetime import datetime, date
+
+    # Fetch all active items from each store
+    main_stock = Stock.query.filter_by(is_active=True).all()
+    pharmacy_stock = PharmacyInventory.query.all()
+    lab_stock = LabInventory.query.all()
+    radiology_stock = RadiologyInventory.query.all()
+
+    all_items = []
+
+    # --- Main Store ---
+    for item in main_stock:
+        all_items.append({
+            'id': item.id,
+            'name': item.name,
+            'category': item.category,
+            'quantity': item.quantity or 0,
+            'unit': 'units',  # adjust if Stock has a unit field
+            'buying_price': item.unit_price or 0.0,
+            'selling_price': item.selling_price or 0.0,
+            'valuation_cost': item.valuation_at_cost or 0.0,
+            'valuation_selling': item.valuation_at_selling_price or 0.0,
+            'store_type': 'Main Store',
+            'batch': item.batch_number,
+            'expiry': item.expiration_date.date() if item.expiration_date else None,
+            'location': item.location,
+            'reorder_level': item.reorder_level or 0   # added
+        })
+
+    # --- Pharmacy ---
+    for item in pharmacy_stock:
+        all_items.append({
+            'id': item.id,
+            'name': item.item_name,
+            'category': item.category,
+            'quantity': item.quantity or 0,
+            'unit': item.unit,
+            'buying_price': item.buying_price or 0.0,
+            'selling_price': item.selling_price or 0.0,
+            'valuation_cost': item.valuation_at_cost or 0.0,
+            'valuation_selling': item.valuation_at_selling_price or 0.0,
+            'store_type': 'Pharmacy',
+            'batch': item.batch_number,
+            'expiry': item.expiry_date,
+            'location': item.location,
+            'reorder_level': item.reorder_level or 0
+        })
+
+    # --- Laboratory ---
+    for item in lab_stock:
+        all_items.append({
+            'id': item.id,
+            'name': item.item_name,
+            'category': item.category,
+            'quantity': item.quantity or 0,
+            'unit': item.unit,
+            'buying_price': item.buying_price or 0.0,
+            'selling_price': item.selling_price or 0.0,
+            'valuation_cost': item.valuation_at_cost or 0.0,
+            'valuation_selling': item.valuation_at_selling_price or 0.0,
+            'store_type': 'Laboratory',
+            'batch': item.batch_number,
+            'expiry': item.expiry_date,
+            'location': item.location,
+            'reorder_level': item.reorder_level or 0
+        })
+
+    # --- Radiology ---
+    for item in radiology_stock:
+        all_items.append({
+            'id': item.id,
+            'name': item.item_name,
+            'category': item.category,
+            'quantity': item.quantity or 0,
+            'unit': item.unit,
+            'buying_price': item.buying_price or 0.0,
+            'selling_price': item.selling_price or 0.0,
+            'valuation_cost': item.valuation_at_cost or 0.0,
+            'valuation_selling': item.valuation_at_selling_price or 0.0,
+            'store_type': 'Radiology',
+            'batch': item.batch_number,
+            'expiry': item.expiry_date,
+            'location': item.location,
+            'reorder_level': item.reorder_level or 0
+        })
+
+    # Overall totals
+    total_items = len(all_items)
+    total_quantity = sum(item['quantity'] for item in all_items)
+    total_cost_value = sum(item['valuation_cost'] for item in all_items)
+    total_selling_value = sum(item['valuation_selling'] for item in all_items)
+
+    # Store‑wise summary
+    store_summary = {}
+    for item in all_items:
+        st = item['store_type']
+        if st not in store_summary:
+            store_summary[st] = {
+                'count': 0,
+                'quantity': 0,
+                'cost_value': 0,
+                'selling_value': 0
+            }
+        store_summary[st]['count'] += 1
+        store_summary[st]['quantity'] += item['quantity']
+        store_summary[st]['cost_value'] += item['valuation_cost']
+        store_summary[st]['selling_value'] += item['valuation_selling']
+
+    # --- Compute alert counts ---
+    today = date.today()
+    low_stock_count = 0
+    expiring_count = 0
+    for item in all_items:
+        # Low stock: quantity <= reorder_level
+        if item['quantity'] <= item['reorder_level']:
+            low_stock_count += 1
+        # Expiring soon: expiry within 30 days (and not already expired)
+        if item['expiry'] and (item['expiry'] - today).days <= 30:
+            expiring_count += 1
+
+    return render_template(
+        'stock_reports.html',
+        all_items=all_items,
+        store_summary=store_summary,
+        total_items=total_items,
+        total_quantity=total_quantity,
+        total_cost_value=total_cost_value,
+        total_selling_value=total_selling_value,
+        low_stock_count=low_stock_count,
+        expiring_count=expiring_count,
+        now=datetime.utcnow()   # <-- passes current datetime to template
+    )
+
+@finance_web_bp.route('/expense-reports')
+@login_required
+def expense_reports():
+    from sqlalchemy import extract, func
+    from datetime import datetime, timedelta
+
+    # Get filter parameters
+    period = request.args.get('period', 'month')
+    month = request.args.get('month', datetime.now().strftime('%Y-%m'))
+    year = request.args.get('year', datetime.now().strftime('%Y'))
+    start_date_str = request.args.get('start_date')
+    end_date_str = request.args.get('end_date')
+    category_id = request.args.get('category_id', type=int)
+    department_id = request.args.get('department_id', type=int)
+    status_filter = request.args.get('status')
+
+    # Determine date range
+    if period == 'custom' and start_date_str and end_date_str:
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
+    elif period == 'year':
+        start_date = datetime(int(year), 1, 1)
+        end_date = datetime(int(year), 12, 31, 23, 59, 59)
+    else:  # month default
+        year, month_num = map(int, month.split('-'))
+        start_date = datetime(year, month_num, 1)
+        if month_num == 12:
+            end_date = datetime(year+1, 1, 1) - timedelta(seconds=1)
+        else:
+            end_date = datetime(year, month_num+1, 1) - timedelta(seconds=1)
+
+    # Base query for paid expenses (or all, depending on need – we'll include status filter)
+    query = Expense.query.filter(
+        Expense.expense_date >= start_date,
+        Expense.expense_date <= end_date
+    )
+
+    if category_id:
+        query = query.filter(Expense.category_id == category_id)
+    if department_id:
+        query = query.filter(Expense.department_id == department_id)
+    if status_filter:
+        query = query.filter(Expense.status == status_filter)
+
+    expenses = query.order_by(Expense.expense_date.desc()).all()
+
+    # --- Summary calculations ---
+    total_amount = sum(e.amount for e in expenses)
+    total_tax = sum(e.tax_amount for e in expenses)
+    total_with_tax = total_amount + total_tax
+
+    # Status breakdown
+    status_counts = {}
+    status_totals = {}
+    for e in expenses:
+        status_counts[e.status] = status_counts.get(e.status, 0) + 1
+        status_totals[e.status] = status_totals.get(e.status, 0) + e.amount + e.tax_amount
+
+    # Category breakdown
+    cat_totals = {}
+    for e in expenses:
+        cat = e.category.name
+        cat_totals[cat] = cat_totals.get(cat, 0) + e.amount + e.tax_amount
+
+    # Department breakdown
+    dept_totals = {}
+    for e in expenses:
+        dept = e.department.name
+        dept_totals[dept] = dept_totals.get(dept, 0) + e.amount + e.tax_amount
+
+    # Monthly trend (last 12 months)
+    months = []
+    monthly_data = []
+    for i in range(11, -1, -1):
+        d = (start_date - timedelta(days=30*i)).replace(day=1)
+        month_start = d
+        if d.month == 12:
+            month_end = datetime(d.year+1, 1, 1) - timedelta(seconds=1)
+        else:
+            month_end = datetime(d.year, d.month+1, 1) - timedelta(seconds=1)
+        month_total = db.session.query(func.sum(Expense.amount + Expense.tax_amount)).filter(
+            Expense.expense_date >= month_start,
+            Expense.expense_date <= month_end
+        ).scalar() or 0.0
+        months.append(d.strftime('%b %Y'))
+        monthly_data.append(month_total)
+
+    # For filter dropdowns
+    categories = ExpenseCategory.query.all()
+    departments = Department.query.all()
+    status_options = ['draft', 'submitted', 'approved', 'rejected', 'paid', 'audited']
+
+    return render_template(
+        'expense_reports.html',
+        start_date=start_date,
+        end_date=end_date,
+        period=period,
+        selected_month=month,
+        selected_year=year,
+        selected_category=category_id,
+        selected_department=department_id,
+        selected_status=status_filter,
+        categories=categories,
+        departments=departments,
+        status_options=status_options,
+        total_amount=total_amount,
+        total_tax=total_tax,
+        total_with_tax=total_with_tax,
+        status_counts=status_counts,
+        status_totals=status_totals,
+        cat_totals=cat_totals,
+        dept_totals=dept_totals,
+        months=months,
+        monthly_data=monthly_data,
+        expenses=expenses
+    )
+
+# ----------------------------------------------------------------------
+# Accounting
+# ----------------------------------------------------------------------
+
+
+
+
+
+
+
+
+@finance_web_bp.route('/stock-pricing', methods=['GET', 'POST'])
+@login_required
+def stock_pricing():
+    """
+    View and update selling prices of stock items.
+    Items are split into two lists: those with selling price set and those without.
+    """
+    if request.method == 'POST':
+        # Update selling price for a single item
+        stock_id = request.form.get('stock_id')
+        new_price = request.form.get('selling_price')
+        
+        try:
+            stock = Stock.query.get_or_404(stock_id)
+            # Validate input
+            if new_price is not None and new_price.strip() != '':
+                stock.selling_price = float(new_price)
+            else:
+                stock.selling_price = None   # clear price
+            db.session.commit()
+            flash(f'Selling price for {stock.name} updated successfully.', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error updating price: {str(e)}', 'danger')
+        
+        return redirect(url_for('finance_web_bp.stock_pricing'))
+    
+    # Get all active stock items with joined supplier
+    all_stock = Stock.query.filter_by(is_active=True).options(db.joinedload(Stock.supplier)).all()
+
+    # Split categories for filter
+    categories = sorted(set(item.category for item in all_stock if item.category))
+    suppliers = sorted(set(item.supplier.name for item in all_stock if item.supplier), key=lambda x: x)
+
+    # Prepare data for template
+    stock_list = []
+    for s in all_stock:
+        stock_list.append({
+            'id': s.id,
+            'name': s.name,
+            'sku': s.sku,
+            'category': s.category,
+            'unit_price': s.unit_price,
+            'selling_price': s.selling_price,
+            'supplier': s.supplier.name if s.supplier else 'N/A',
+            'quantity': s.quantity,
+            'current_stock': s.current_stock,
+            'created_at': s.created_at,
+            'last_restocked': s.last_restocked,
+            'has_price': s.selling_price is not None
+        })
+
+    with_price = [s for s in stock_list if s['has_price']]
+    without_price = [s for s in stock_list if not s['has_price']]
+
+    return render_template('stock_pricing.html',
+                           with_price=with_price,
+                           without_price=without_price,
+                           categories=categories,
+                           suppliers=suppliers,
+                           total_items=len(stock_list),
+                           priced_count=len(with_price),
+                           unpriced_count=len(without_price))
+    
+    
+    
+
+@finance_web_bp.route('/cash-management', methods=['GET', 'POST'])
+@login_required
+def cash_management():
+    from datetime import datetime
+    from app.finance.models import CashAccount, BankAccount, CashTransaction
+
+    # Handle form submissions
+    if request.method == 'POST':
+        action = request.form.get('action')
+
+        # --- Add new cash account ---
+        if action == 'add_cash_account':
+            name = request.form.get('name')
+            account_type = request.form.get('account_type')
+            account_number = request.form.get('account_number')
+            description = request.form.get('description')
+            initial_balance = float(request.form.get('initial_balance', 0))
+
+            if not name or not account_type:
+                flash('Name and account type are required.', 'danger')
+                return redirect(url_for('finance_web_bp.cash_management'))
+
+            cash_account = CashAccount(
+                name=name,
+                account_type=account_type,
+                account_number=account_number,
+                current_balance=initial_balance,
+                description=description,
+                is_active=True
+            )
+            db.session.add(cash_account)
+            db.session.commit()
+            flash(f'Cash account "{name}" created successfully.', 'success')
+            return redirect(url_for('finance_web_bp.cash_management'))
+
+        # --- Transfer from cash account to bank ---
+        # --- Transfer from cash account to bank ---
+        elif action == 'transfer_to_bank':
+            cash_account_id = request.form.get('cash_account_id')
+            bank_account_id = request.form.get('bank_account_id')
+            amount = float(request.form.get('amount'))
+            description = request.form.get('description', '')
+            batch_ref = request.form.get('batch_ref')
+
+            cash_account = CashAccount.query.get(cash_account_id)
+            bank_account = BankAccount.query.get(bank_account_id)
+
+            if not cash_account or not bank_account:
+                flash('Invalid cash or bank account.', 'danger')
+                return redirect(url_for('finance_web_bp.cash_management'))
+
+            if cash_account.current_balance < amount:
+                flash('Insufficient balance in cash account.', 'danger')
+                return redirect(url_for('finance_web_bp.cash_management'))
+
+            # Create cash transaction instance without reference
+            cash_tx = CashTransaction(
+                transaction_type='bank_transfer',
+                amount=amount,
+                description=description,
+                source_cash_account_id=cash_account.id,
+                dest_bank_account_id=bank_account.id,
+                status='completed',
+                completed_at=datetime.utcnow(),
+                batch_number=batch_ref,
+                initiated_by=current_user.id
+            )
+            # Generate reference after type is set
+            cash_tx.transaction_ref = cash_tx.generate_ref()
+            db.session.add(cash_tx)
+
+            # Update cash account balance (decrease)
+            cash_account.current_balance -= amount
+            db.session.add(cash_account)
+
+            # Update bank account balance (increase)
+            bank_account.current_balance += amount
+            db.session.add(bank_account)
+
+            db.session.commit()
+            flash(f'Successfully transferred {amount} to {bank_account.bank_name}.', 'success')
+            return redirect(url_for('finance_web_bp.cash_management'))
+
+    # GET request – fetch data
+    cash_accounts = CashAccount.query.filter_by(is_active=True).all()
+    bank_accounts = BankAccount.query.filter_by(is_active=True).all()
+    # Get recent transactions (last 50)
+    recent_transactions = CashTransaction.query.order_by(CashTransaction.initiated_at.desc()).limit(50).all()
+
+    return render_template(
+        'cash_management.html',
+        cash_accounts=cash_accounts,
+        bank_accounts=bank_accounts,
+        recent_transactions=recent_transactions
+    )
+    
+    
+    
+@finance_web_bp.route('/bank-accounts', methods=['GET', 'POST'])
+@login_required
+def bank_accounts_management():
+    from app.finance.models import BankAccount, BankTransaction, CashTransaction
+    from datetime import datetime
+
+    if request.method == 'POST':
+        action = request.form.get('action')
+
+        # --- Add new bank account ---
+        if action == 'add':
+            bank_name = request.form.get('bank_name')
+            account_name = request.form.get('account_name')
+            account_number = request.form.get('account_number')
+            branch = request.form.get('branch')
+            swift_code = request.form.get('swift_code')
+            initial_balance = float(request.form.get('initial_balance', 0))
+
+            if not bank_name or not account_name or not account_number:
+                flash('Bank name, account name, and account number are required.', 'danger')
+                return redirect(url_for('finance_web_bp.bank_accounts_management'))
+
+            bank = BankAccount(
+                bank_name=bank_name,
+                account_name=account_name,
+                account_number=account_number,
+                branch=branch,
+                swift_code=swift_code,
+                initial_balance=initial_balance,
+                current_balance=initial_balance,
+                is_active=True
+            )
+            db.session.add(bank)
+            db.session.commit()
+            flash('Bank account added successfully.', 'success')
+            return redirect(url_for('finance_web_bp.bank_accounts_management'))
+
+        # --- Edit bank account ---
+        elif action == 'edit':
+            bank_id = request.form.get('bank_id')
+            bank = BankAccount.query.get_or_404(bank_id)
+            bank.bank_name = request.form.get('bank_name')
+            bank.account_name = request.form.get('account_name')
+            bank.account_number = request.form.get('account_number')
+            bank.branch = request.form.get('branch')
+            bank.swift_code = request.form.get('swift_code')
+            db.session.commit()
+            flash('Bank account updated successfully.', 'success')
+            return redirect(url_for('finance_web_bp.bank_accounts_management'))
+
+        # --- Soft delete bank account ---
+        elif action == 'delete':
+            bank_id = request.form.get('bank_id')
+            bank = BankAccount.query.get_or_404(bank_id)
+            bank.is_active = False
+            db.session.commit()
+            flash('Bank account deactivated.', 'success')
+            return redirect(url_for('finance_web_bp.bank_accounts_management'))
+
+        # --- Manual deposit ---
+        elif action == 'deposit':
+            bank_id = request.form.get('bank_id')
+            amount = float(request.form.get('amount'))
+            description = request.form.get('description')
+            reference = request.form.get('reference')
+
+            bank = BankAccount.query.get_or_404(bank_id)
+            tx = BankTransaction(
+                bank_account_id=bank.id,
+                transaction_type='deposit',
+                amount=amount,
+                description=description,
+                reference=reference,
+                created_by=current_user.id
+            )
+            bank.current_balance += amount
+            db.session.add(tx)
+            db.session.commit()
+            flash(f'Deposited {amount} to {bank.bank_name}.', 'success')
+            return redirect(url_for('finance_web_bp.bank_accounts_management'))
+
+        # --- Manual withdrawal ---
+        elif action == 'withdraw':
+            bank_id = request.form.get('bank_id')
+            amount = float(request.form.get('amount'))
+            description = request.form.get('description')
+            reference = request.form.get('reference')
+
+            bank = BankAccount.query.get_or_404(bank_id)
+            if bank.current_balance < amount:
+                flash('Insufficient balance.', 'danger')
+                return redirect(url_for('finance_web_bp.bank_accounts_management'))
+            tx = BankTransaction(
+                bank_account_id=bank.id,
+                transaction_type='withdrawal',
+                amount=amount,
+                description=description,
+                reference=reference,
+                created_by=current_user.id
+            )
+            bank.current_balance -= amount
+            db.session.add(tx)
+            db.session.commit()
+            flash(f'Withdrew {amount} from {bank.bank_name}.', 'success')
+            return redirect(url_for('finance_web_bp.bank_accounts_management'))
+
+    # GET request – show all active bank accounts
+    bank_accounts = BankAccount.query.filter_by(is_active=True).all()
+
+    # For each account, combine manual and cash transfer transactions for display
+    for bank in bank_accounts:
+        # Get cash transfers (from CashTransaction) that went to this bank
+        cash_transfers = CashTransaction.query.filter_by(
+            dest_bank_account_id=bank.id,
+            transaction_type='bank_transfer'
+        ).all()
+        # Get manual transactions
+        manual_txs = bank.manual_transactions.order_by(BankTransaction.transaction_date.desc()).all()
+        # Combine and sort by date
+        combined = []
+        for ct in cash_transfers:
+            combined.append({
+                'date': ct.completed_at or ct.initiated_at,
+                'type': 'cash_transfer',
+                'amount': ct.amount,
+                'description': ct.description,
+                'reference': ct.external_reference,
+                'source': ct.source_account.name if ct.source_account else 'Cash'
+            })
+        for mt in manual_txs:
+            combined.append({
+                'date': mt.transaction_date,
+                'type': mt.transaction_type,
+                'amount': mt.amount,
+                'description': mt.description,
+                'reference': mt.reference,
+                'source': 'Manual'
+            })
+        # Sort descending by date
+        combined.sort(key=lambda x: x['date'], reverse=True)
+        bank.combined_transactions = combined
+
+    # ✅ Compute total recent transactions across all banks
+    total_recent_transactions = sum(len(bank.combined_transactions) for bank in bank_accounts)
+
+    return render_template(
+        'bank_accounts_management.html',
+        bank_accounts=bank_accounts,
+        total_recent_transactions=total_recent_transactions
+    )
+
+
+@finance_web_bp.route('/general-ledger')
+@login_required
+def general_ledger():
+    """Show all cash and bank accounts with current balances."""
+    cash_accounts = CashAccount.query.filter_by(is_active=True).all()
+    bank_accounts = BankAccount.query.filter_by(is_active=True).all()
+
+    # Combine both types with a type indicator
+    accounts = []
+    for ca in cash_accounts:
+        accounts.append({
+            'id': ca.id,
+            'type': 'cash',
+            'name': ca.name,
+            'account_number': ca.account_number,
+            'balance': ca.current_balance,
+            'currency': ca.currency
+        })
+    for ba in bank_accounts:
+        accounts.append({
+            'id': ba.id,
+            'type': 'bank',
+            'name': f"{ba.bank_name} - {ba.account_name}",
+            'account_number': ba.account_number,
+            'balance': ba.current_balance,
+            'currency': 'KES'  # or ba.currency if added
+        })
+
+    # Optionally sort by name
+    accounts.sort(key=lambda x: x['name'])
+
+    return render_template('general_ledger.html', accounts=accounts)
+
+
+@finance_web_bp.route('/bank-account/<int:account_id>/ledger')
+@login_required
+def bank_account_ledger(account_id):
+    from datetime import datetime
+    account = BankAccount.query.get_or_404(account_id)
+    entries = account.get_ledger_entries()  # returns list of dicts with date, description, debit, credit, ref, etc.
+
+    # Date filtering from query parameters
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    if start_date:
+        start = datetime.strptime(start_date, '%Y-%m-%d')
+        entries = [e for e in entries if e['date'] and e['date'].date() >= start.date()]
+    if end_date:
+        end = datetime.strptime(end_date, '%Y-%m-%d')
+        entries = [e for e in entries if e['date'] and e['date'].date() <= end.date()]
+
+    # Calculate summary totals
+    total_debits = sum(e['debit'] for e in entries)
+    total_credits = sum(e['credit'] for e in entries)
+    # Opening balance = current balance - net change (debits - credits)
+    opening_balance = account.current_balance - (total_debits - total_credits)
+    closing_balance = account.current_balance
+
+    return render_template(
+        'account_ledger.html',
+        account=account,
+        entries=entries,
+        account_type='Bank',
+        total_debits=total_debits,
+        total_credits=total_credits,
+        opening_balance=opening_balance,
+        closing_balance=closing_balance,
+        start_date=start_date,
+        end_date=end_date
+    )
+
+@finance_web_bp.route('/cash-account/<int:account_id>/ledger')
+@login_required
+def cash_account_ledger(account_id):
+    from datetime import datetime
+    account = CashAccount.query.get_or_404(account_id)
+    entries = account.get_ledger_entries()  # already sorted
+
+    # Date filtering
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    if start_date:
+        start = datetime.strptime(start_date, '%Y-%m-%d')
+        entries = [e for e in entries if e['date'] and e['date'].date() >= start.date()]
+    if end_date:
+        end = datetime.strptime(end_date, '%Y-%m-%d')
+        entries = [e for e in entries if e['date'] and e['date'].date() <= end.date()]
+
+    # Calculate summary
+    total_debits = sum(e['debit'] for e in entries)
+    total_credits = sum(e['credit'] for e in entries)
+    opening_balance = account.current_balance - (total_debits - total_credits)
+    closing_balance = account.current_balance
+
+    return render_template(
+        'account_ledger.html',
+        account=account,
+        entries=entries,
+        account_type='Cash',
+        total_debits=total_debits,
+        total_credits=total_credits,
+        opening_balance=opening_balance,
+        closing_balance=closing_balance,
+        start_date=start_date,
+        end_date=end_date
+    )
+    
+    
+    
+# ----------------------------------------------------------------------
+# Financial Statements
+# ----------------------------------------------------------------------
+
+@finance_web_bp.route('/income-statement', methods=['GET', 'POST'])
+@login_required
+def income_statement():
+    from datetime import datetime, date
+    from sqlalchemy import func, extract
+    from app.finance.models import Expense, ExpenseCategory
+    from app.pharmacy.models import PharmacyInventory
+
+    # Handle date range from request
+    period_type = request.args.get('period', 'month')  # 'month', 'year', 'custom'
+    selected_month = request.args.get('month', datetime.today().strftime('%Y-%m'))
+    selected_year = request.args.get('year', datetime.today().strftime('%Y'))
+    start_date_str = request.args.get('start_date')
+    end_date_str = request.args.get('end_date')
+
+    today = date.today()
+
+    if period_type == 'custom' and start_date_str and end_date_str:
+        try:
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
+        except:
+            flash('Invalid date format. Use YYYY-MM-DD.', 'danger')
+            start_date = datetime(today.year, today.month, 1)
+            end_date = datetime.now()
+    elif period_type == 'year':
+        year = int(selected_year)
+        start_date = datetime(year, 1, 1)
+        end_date = datetime(year, 12, 31, 23, 59, 59)
+    else:  # default month
+        year, month = map(int, selected_month.split('-'))
+        start_date = datetime(year, month, 1)
+        if month == 12:
+            end_date = datetime(year+1, 1, 1) - timedelta(seconds=1)
+        else:
+            end_date = datetime(year, month+1, 1) - timedelta(seconds=1)
+
+    # --- Revenue ---
+    # Total revenue from SalesReport
+    revenue_total = db.session.query(func.sum(SalesReport.total_amount)).filter(
+        SalesReport.sale_date >= start_date,
+        SalesReport.sale_date <= end_date
+    ).scalar() or 0.0
+
+    # Revenue by department (from SalesReportItem)
+    dept_revenue = db.session.query(
+        SalesReportItem.department,
+        func.sum(SalesReportItem.total_price).label('total')
+    ).join(SalesReport).filter(
+        SalesReport.sale_date >= start_date,
+        SalesReport.sale_date <= end_date
+    ).group_by(SalesReportItem.department).all()
+
+    # --- COGS (Pharmacy) ---
+    cogs = db.session.query(
+        func.sum(PharmacyInventory.buying_price * Medication.quantity)
+    ).select_from(Medication).join(
+        Service, Medication.service_id == Service.id
+    ).join(
+        PharmacyInventory, PharmacyInventory.service_id == Service.id
+    ).filter(
+        Medication.is_paid == True,
+        Medication.created_at >= start_date,
+        Medication.created_at <= end_date
+    ).scalar() or 0.0
+
+    # --- Expenses ---
+    # --- Expenses (use expense_date and include tax) ---
+    expenses_total = db.session.query(func.sum(Expense.amount + Expense.tax_amount)).filter(
+        Expense.expense_date >= start_date,
+        Expense.expense_date <= end_date,
+        Expense.status == 'paid'  # optional: only paid expenses
+    ).scalar() or 0.0
+
+    # Expenses by category (same fix)
+    expenses_by_cat = db.session.query(
+        ExpenseCategory.name,
+        func.sum(Expense.amount + Expense.tax_amount).label('total')
+    ).join(Expense, Expense.category_id == ExpenseCategory.id).filter(
+        Expense.expense_date >= start_date,
+        Expense.expense_date <= end_date,
+        Expense.status == 'paid'
+    ).group_by(ExpenseCategory.name).all()
+
+    # --- Calculations ---
+    gross_profit = revenue_total - cogs
+    net_profit = gross_profit - expenses_total
+
+    return render_template(
+        'income_statement.html',
+        revenue_total=revenue_total,
+        dept_revenue=dept_revenue,
+        cogs=cogs,
+        expenses_total=expenses_total,
+        expenses_by_cat=expenses_by_cat,
+        gross_profit=gross_profit,
+        net_profit=net_profit,
+        start_date=start_date,
+        end_date=end_date,
+        period_type=period_type,
+        selected_month=selected_month,
+        selected_year=selected_year
+    )
+
+
+
+
+
+
+
+@finance_web_bp.route('/bank-reconciliation')
+@login_required
+def bank_reconciliation():
+    # Get all statements, most recent first
+    statements = BankStatement.query.order_by(BankStatement.statement_date.desc()).all()
+    # Get accounts for the upload button
+    accounts = BankAccount.query.filter_by(is_active=True).all()
+    # Statistics
+    total_statements = len(statements)
+    reconciled = sum(1 for s in statements if s.is_reconciled)
+    unreconciled = total_statements - reconciled
+
+    return render_template(
+        'bank_reconciliation.html',
+        statements=statements,
+        accounts=accounts,
+        total_statements=total_statements,
+        reconciled=reconciled,
+        unreconciled=unreconciled
+    )
+
+
+@finance_web_bp.route('/bank-reconciliation/<int:statement_id>')
+@login_required
+def reconcile_bank(statement_id):
+    statement = BankStatement.query.get_or_404(statement_id)
+    account = statement.account
+
+    # Get unmatched statement lines
+    unmatched_lines = statement.lines.filter_by(is_matched=False).all()
+
+    # Get unmatched bank transactions for this account (not yet matched to any statement line)
+    matched_tx_ids = db.session.query(BankStatementLine.matched_transaction_id).filter(
+        BankStatementLine.matched_transaction_id.isnot(None)
+    ).subquery()
+    unmatched_transactions = BankTransaction.query.filter(
+        BankTransaction.bank_account_id == account.id,
+        BankTransaction.id.notin_(matched_tx_ids)
+    ).order_by(BankTransaction.transaction_date).all()
+
+    return render_template(
+        'reconcile_bank.html',
+        statement=statement,
+        account=account,
+        unmatched_lines=unmatched_lines,
+        unmatched_transactions=unmatched_transactions
+    )
+
+
+ALLOWED_EXTENSIONS = {'csv'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@finance_web_bp.route('/bank-reconciliation/upload', methods=['GET', 'POST'])
+@login_required
+def upload_bank_statement():
+    if request.method == 'POST':
+        account_id = request.form.get('account_id')
+        statement_date = request.form.get('statement_date')
+        file = request.files.get('statement_file')
+
+        if not account_id or not statement_date or not file:
+            flash('All fields are required.', 'danger')
+            return redirect(request.url)
+
+        if not allowed_file(file.filename):
+            flash('Only CSV files are allowed.', 'danger')
+            return redirect(request.url)
+
+        # Save file
+        filename = secure_filename(file.filename)
+        upload_folder = current_app.config.get('UPLOAD_FOLDER', 'uploads')
+        file_path = os.path.join(upload_folder, filename)
+        file.save(file_path)
+
+        # Create statement record
+        statement = BankStatement(
+            account_id=account_id,
+            statement_date=datetime.strptime(statement_date, '%Y-%m-%d').date(),
+            file_path=file_path,
+            uploaded_by=current_user.id
+        )
+        db.session.add(statement)
+        db.session.flush()  # get id
+
+        # Parse CSV and create lines
+        with open(file_path, 'r') as f:
+            reader = csv.DictReader(f)
+            # Assume CSV has columns: date, description, reference, amount, balance
+            for row in reader:
+                line = BankStatementLine(
+                    statement_id=statement.id,
+                    transaction_date=datetime.strptime(row['date'], '%Y-%m-%d').date(),
+                    description=row['description'],
+                    reference=row.get('reference', ''),
+                    amount=float(row['amount']),
+                    balance=float(row.get('balance', 0))
+                )
+                db.session.add(line)
+
+        # Optionally compute opening/closing balance
+        lines = statement.lines.order_by(BankStatementLine.transaction_date).all()
+        if lines:
+            statement.opening_balance = lines[0].balance - lines[0].amount  # rough estimate
+            statement.closing_balance = lines[-1].balance
+
+        db.session.commit()
+        flash('Statement uploaded successfully.', 'success')
+        return redirect(url_for('finance_web_bp.reconcile_bank', statement_id=statement.id))
+
+    # GET – show upload form
+    accounts = BankAccount.query.filter_by(is_active=True).all()
+    return render_template('upload_statement.html', accounts=accounts)
+
+
+
+
+@finance_web_bp.route('/bank-reconciliation/match', methods=['POST'])
+@login_required
+def match_transaction():
+    data = request.get_json()
+    line_id = data.get('line_id')
+    tx_id = data.get('transaction_id')
+
+    line = BankStatementLine.query.get_or_404(line_id)
+    tx = BankTransaction.query.get_or_404(tx_id)
+
+    line.matched_transaction_id = tx.id
+    line.is_matched = True
+    db.session.commit()
+
+    return jsonify({'success': True})
+
+
+
+@finance_web_bp.route('/cashflow-analysis')
+@login_required
+def cashflow_analysis():
+    # Date range parameters
+    period = request.args.get('period', 'month')  # month, quarter, year, custom
+    month = request.args.get('month', datetime.now().strftime('%Y-%m'))
+    year = request.args.get('year', datetime.now().strftime('%Y'))
+    start_date_str = request.args.get('start_date')
+    end_date_str = request.args.get('end_date')
+
+    # Determine start and end dates
+    if period == 'custom' and start_date_str and end_date_str:
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
+    elif period == 'year':
+        start_date = datetime(int(year), 1, 1)
+        end_date = datetime(int(year), 12, 31, 23, 59, 59)
+    else:  # month default
+        year, month_num = map(int, month.split('-'))
+        start_date = datetime(year, month_num, 1)
+        if month_num == 12:
+            end_date = datetime(year+1, 1, 1) - timedelta(seconds=1)
+        else:
+            end_date = datetime(year, month_num+1, 1) - timedelta(seconds=1)
+
+    # ===== Operating Activities =====
+    # Inflows: Sales (patient payments)
+    operating_inflows = db.session.query(func.sum(SalesReport.total_amount)).filter(
+        SalesReport.sale_date >= start_date,
+        SalesReport.sale_date <= end_date
+    ).scalar() or 0.0
+
+    # Outflows: Operational expenses (non‑capital)
+    op_expenses = db.session.query(func.sum(Expense.amount + Expense.tax_amount)).filter(
+        Expense.expense_date >= start_date,
+        Expense.expense_date <= end_date,
+        Expense.expense_type == 'operational',
+        Expense.status == 'paid'
+    ).scalar() or 0.0
+
+    # Outflows: Payroll payments
+    payroll_payments = db.session.query(func.sum(PayrollPayment.amount)).filter(
+        PayrollPayment.transaction_date >= start_date,
+        PayrollPayment.transaction_date <= end_date
+    ).scalar() or 0.0
+
+    operating_outflows = op_expenses + float(payroll_payments)
+    operating_net = operating_inflows - operating_outflows
+
+    # ===== Investing Activities =====
+    # Outflows: Capital expenses (equipment, etc.)
+    investing_outflows = db.session.query(func.sum(Expense.amount + Expense.tax_amount)).filter(
+        Expense.expense_date >= start_date,
+        Expense.expense_date <= end_date,
+        Expense.expense_type == 'capital',
+        Expense.status == 'paid'
+    ).scalar() or 0.0
+
+    # Inflows from asset sales? (Not implemented yet – add later if needed)
+    investing_inflows = 0.0
+    investing_net = investing_inflows - investing_outflows
+
+    # ===== Financing Activities =====
+    # (Optional – you can add Loan model later)
+    financing_inflows = 0.0
+    financing_outflows = 0.0
+    financing_net = financing_inflows - financing_outflows
+
+    # Net cash flow
+    net_cash_flow = operating_net + investing_net + financing_net
+
+    # Ending cash balance (sum of all cash and bank accounts)
+    total_cash = db.session.query(func.sum(CashAccount.current_balance)).scalar() or 0.0
+    total_bank = db.session.query(func.sum(BankAccount.current_balance)).scalar() or 0.0
+    ending_balance = total_cash + total_bank
+
+    # ===== Monthly trend data (for chart) =====
+    # Get last 12 months of data
+    trend_start = end_date - timedelta(days=365)
+    months = []
+    op_in_trend = []
+    op_out_trend = []
+    net_trend = []
+
+    current = trend_start.replace(day=1)
+    while current <= end_date:
+        month_start = current
+        if current.month == 12:
+            month_end = datetime(current.year+1, 1, 1) - timedelta(seconds=1)
+        else:
+            month_end = datetime(current.year, current.month+1, 1) - timedelta(seconds=1)
+
+        # Calculate monthly operating net
+        month_in = db.session.query(func.sum(SalesReport.total_amount)).filter(
+            SalesReport.sale_date >= month_start,
+            SalesReport.sale_date <= month_end
+        ).scalar() or 0.0
+
+        month_op_out = db.session.query(func.sum(Expense.amount + Expense.tax_amount)).filter(
+            Expense.expense_date >= month_start,
+            Expense.expense_date <= month_end,
+            Expense.expense_type == 'operational',
+            Expense.status == 'paid'
+        ).scalar() or 0.0
+
+        month_payroll = db.session.query(func.sum(PayrollPayment.amount)).filter(
+            PayrollPayment.transaction_date >= month_start,
+            PayrollPayment.transaction_date <= month_end
+        ).scalar() or 0.0
+
+        month_out = month_op_out + float(month_payroll or 0)
+        month_net = month_in - month_out
+
+        months.append(month_start.strftime('%b %Y'))
+        op_in_trend.append(month_in)
+        op_out_trend.append(month_out)
+        net_trend.append(month_net)
+
+        # next month
+        if current.month == 12:
+            current = datetime(current.year+1, 1, 1)
+        else:
+            current = datetime(current.year, current.month+1, 1)
+
+    # ===== Detailed breakdown for display =====
+    # Operating details: list of expenses by category
+    op_expense_details = db.session.query(
+        ExpenseCategory.name,
+        func.sum(Expense.amount + Expense.tax_amount).label('total')
+    ).join(Expense, Expense.category_id == ExpenseCategory.id).filter(
+        Expense.expense_date >= start_date,
+        Expense.expense_date <= end_date,
+        Expense.expense_type == 'operational',
+        Expense.status == 'paid'
+    ).group_by(ExpenseCategory.name).all()
+
+    # Payroll details (by month, or just total)
+    # Investing details
+    investing_details = db.session.query(
+        ExpenseCategory.name,
+        func.sum(Expense.amount + Expense.tax_amount).label('total')
+    ).join(Expense, Expense.category_id == ExpenseCategory.id).filter(
+        Expense.expense_date >= start_date,
+        Expense.expense_date <= end_date,
+        Expense.expense_type == 'capital',
+        Expense.status == 'paid'
+    ).group_by(ExpenseCategory.name).all()
+
+    return render_template(
+        'cashflow_analysis.html',
+        start_date=start_date,
+        end_date=end_date,
+        period=period,
+        selected_month=month,
+        selected_year=year,
+        operating_inflows=operating_inflows,
+        operating_outflows=operating_outflows,
+        operating_net=operating_net,
+        investing_inflows=investing_inflows,
+        investing_outflows=investing_outflows,
+        investing_net=investing_net,
+        financing_inflows=financing_inflows,
+        financing_outflows=financing_outflows,
+        financing_net=financing_net,
+        net_cash_flow=net_cash_flow,
+        ending_balance=ending_balance,
+        months=months,
+        op_in_trend=op_in_trend,
+        op_out_trend=op_out_trend,
+        net_trend=net_trend,
+        op_expense_details=op_expense_details,
+        investing_details=investing_details,
+        payroll_total=float(payroll_payments)
+    )
+    
+    
+@finance_web_bp.route('/reports/ar-aging')
+@login_required
+def ar_aging():
+    from datetime import date, timedelta
+    today = date.today()
+
+    invoices = Invoice.query.filter(
+        Invoice.status.in_(['pending', 'overdue', 'partially_paid'])
+    ).all()
+
+    aging = {
+        'current': [],
+        '30_60': [],
+        '60_90': [],
+        '90_plus': []
+    }
+
+    for inv in invoices:
+        due = inv.due_date.date() if inv.due_date else inv.issue_date.date() + timedelta(days=30)
+        days_diff = (today - due).days
+        balance = inv.balance
+
+        entry = {
+            'invoice_number': inv.invoice_number if hasattr(inv, 'invoice_number') else f"INV-{inv.id}",
+            'patient_name': inv.patient.full_name,
+            'invoice_type': inv.invoice_type,
+            'insurance_name': inv.insurance.name if inv.insurance else None,
+            'total_amount': inv.total_amount,
+            'balance_due': balance,
+            'due_date': due.strftime('%Y-%m-%d'),
+            'days_overdue': max(0, days_diff)
+        }
+
+        if days_diff <= 30:
+            aging['current'].append(entry)
+        elif 31 <= days_diff <= 60:
+            aging['30_60'].append(entry)
+        elif 61 <= days_diff <= 90:
+            aging['60_90'].append(entry)
+        else:
+            aging['90_plus'].append(entry)
+
+    # Calculate totals for summary cards
+    bucket_totals = {
+        'current': sum(e['balance_due'] for e in aging['current']),
+        '30_60': sum(e['balance_due'] for e in aging['30_60']),
+        '60_90': sum(e['balance_due'] for e in aging['60_90']),
+        '90_plus': sum(e['balance_due'] for e in aging['90_plus']),
+    }
+    total_outstanding = sum(bucket_totals.values())
+
+    return render_template(
+        'ar_aging.html',
+        aging=aging,
+        bucket_totals=bucket_totals,
+        total_outstanding=total_outstanding
+    )
+    
+@finance_web_bp.route('/reports/ap-aging')
+@login_required
+def ap_aging():
+    from datetime import date, timedelta
+    today = date.today()
+
+    invoices = SupplierInvoice.query.filter(
+        SupplierInvoice.status.in_(['pending', 'overdue', 'partially_paid'])
+    ).all()
+
+    aging = {
+        'current': [],
+        '30_60': [],
+        '60_90': [],
+        '90_plus': []
+    }
+
+    for inv in invoices:
+        due = inv.due_date.date() if inv.due_date else inv.invoice_date.date() + timedelta(days=30)
+        days_diff = (today - due).days
+
+        entry = {
+            'invoice_number': inv.invoice_number,
+            'supplier_name': inv.supplier_account.supplier.name,
+            'total_amount': inv.total_amount,
+            'balance_due': inv.balance_due,
+            'due_date': due.strftime('%Y-%m-%d'),
+            'days_overdue': max(0, days_diff)
+        }
+
+        if days_diff <= 30:
+            aging['current'].append(entry)
+        elif 31 <= days_diff <= 60:
+            aging['30_60'].append(entry)
+        elif 61 <= days_diff <= 90:
+            aging['60_90'].append(entry)
+        else:
+            aging['90_plus'].append(entry)
+
+    # Calculate totals for summary cards
+    bucket_totals = {
+        'current': sum(inv['balance_due'] for inv in aging['current']),
+        '30_60': sum(inv['balance_due'] for inv in aging['30_60']),
+        '60_90': sum(inv['balance_due'] for inv in aging['60_90']),
+        '90_plus': sum(inv['balance_due'] for inv in aging['90_plus']),
+    }
+    total_outstanding = sum(bucket_totals.values())
+
+    return render_template(
+        'ap_aging.html',
+        aging=aging,
+        bucket_totals=bucket_totals,
+        total_outstanding=total_outstanding
+    )
+
+
+
+
+
+@finance_web_bp.route('/reports/insurance-claims')
+@login_required
+def insurance_claims_report():
+    from sqlalchemy import func
+
+    # Fetch claims with eager loading
+    claims = InsuranceClaim.query.options(
+        db.joinedload(InsuranceClaim.insurance),
+        db.joinedload(InsuranceClaim.claim_responses),
+        db.joinedload(InsuranceClaim.invoice).joinedload(Invoice.patient)
+    ).order_by(InsuranceClaim.claim_date.desc()).all()
+
+    # Calculate summary totals
+    total_claims = len(claims)
+    total_approved = sum(
+        resp.approved_amount for claim in claims for resp in claim.claim_responses if resp.approved_amount
+    ) if claims else 0
+    total_denied = sum(
+        resp.denied_amount for claim in claims for resp in claim.claim_responses if resp.denied_amount
+    ) if claims else 0
+    pending_claims = sum(1 for claim in claims if claim.status == 'submitted' and not claim.response_received)
+
+    # Get all insurances for filter dropdown
+    insurances = Insurance.query.all()
+
+    return render_template(
+        'insurance_claims.html',
+        claims=claims,
+        total_claims=total_claims,
+        total_approved=total_approved,
+        total_denied=total_denied,
+        pending_claims=pending_claims,
+        insurances=insurances
+    )
+
+
+
+
+@finance_web_bp.route('/reports/departmental-pnl')
+@login_required
+def departmental_pnl():
+    from sqlalchemy import func
+    from datetime import datetime
+
+    period = request.args.get('period', 'month')
+    year = int(request.args.get('year', datetime.now().year))
+    month = int(request.args.get('month', datetime.now().month))
+
+    # Define start and end dates
+    if period == 'month':
+        start_date = datetime(year, month, 1)
+        if month == 12:
+            end_date = datetime(year+1, 1, 1) - timedelta(seconds=1)
+        else:
+            end_date = datetime(year, month+1, 1) - timedelta(seconds=1)
+    else:  # year
+        start_date = datetime(year, 1, 1)
+        end_date = datetime(year, 12, 31, 23, 59, 59)
+
+    # Revenue by department (from SalesReportItem)
+    revenue_data = db.session.query(
+        SalesReportItem.department,
+        func.sum(SalesReportItem.total_price).label('total')
+    ).join(SalesReport).filter(
+        SalesReport.sale_date >= start_date,
+        SalesReport.sale_date <= end_date
+    ).group_by(SalesReportItem.department).all()
+
+    # Expenses by department (from Expense via Department)
+    expense_data = db.session.query(
+        Department.name,
+        func.sum(Expense.amount + Expense.tax_amount).label('total')
+    ).join(Expense, Expense.department_id == Department.id).filter(
+        Expense.expense_date >= start_date,
+        Expense.expense_date <= end_date,
+        Expense.status == 'paid'
+    ).group_by(Department.name).all()
+
+    # Merge into a dictionary keyed by department name
+    pnl = {}
+    for dept, rev in revenue_data:
+        pnl.setdefault(dept, {'revenue': 0, 'expenses': 0})
+        pnl[dept]['revenue'] = rev
+
+    for dept, exp in expense_data:
+        pnl.setdefault(dept, {'revenue': 0, 'expenses': 0})
+        pnl[dept]['expenses'] = exp
+
+    # Calculate net profit per department
+    for dept in pnl:
+        pnl[dept]['net'] = pnl[dept]['revenue'] - pnl[dept]['expenses']
+
+    return render_template(
+        'departmental_pnl.html',
+        pnl=pnl,
+        period=period,
+        year=year,
+        month=month
+    )
+    
+    
+    
+    
+@finance_web_bp.route('/reports/budget-vs-actual')
+@login_required
+def budget_vs_actual():
+    from sqlalchemy import func
+    from datetime import datetime
+
+    year = int(request.args.get('year', datetime.now().year))
+
+    # Get all expense categories with budgets
+    categories = ExpenseCategory.query.filter(
+        ExpenseCategory.is_active == True,
+        ExpenseCategory.budget_allocation > 0
+    ).all()
+
+    # Actual expenses for the year
+    actuals = db.session.query(
+        Expense.category_id,
+        func.sum(Expense.amount + Expense.tax_amount).label('total')
+    ).filter(
+        Expense.expense_date >= datetime(year, 1, 1),
+        Expense.expense_date <= datetime(year, 12, 31, 23, 59, 59),
+        Expense.status == 'paid'
+    ).group_by(Expense.category_id).all()
+
+    actual_dict = {cat_id: total for cat_id, total in actuals}
+
+    report = []
+    for cat in categories:
+        actual = actual_dict.get(cat.id, 0)
+        budget = cat.budget_allocation
+        variance = budget - actual
+        variance_percent = (variance / budget * 100) if budget else 0
+        report.append({
+            'category': cat.name,
+            'budget': budget,
+            'actual': actual,
+            'variance': variance,
+            'variance_percent': variance_percent
+        })
+
+    return render_template('budget_vs_actual.html', report=report, year=year)
+
+
+
+@finance_web_bp.route('/trial-balance')
+@login_required
+def trial_balance():
+    from datetime import datetime
+    from sqlalchemy import func
+    as_at_date = request.args.get('as_at_date')
+    if as_at_date:
+        as_at = datetime.strptime(as_at_date, '%Y-%m-%d')
+    else:
+        as_at = datetime.now()
+
+    # --- Debit balances (Assets, Expenses) ---
+    # Cash and bank accounts
+    cash_total = float(db.session.query(func.sum(CashAccount.current_balance)).scalar() or 0.0)
+    bank_total = float(db.session.query(func.sum(BankAccount.current_balance)).scalar() or 0.0)
+    cash_bank = cash_total + bank_total
+
+    # Accounts Receivable (unpaid patient invoices)
+    ar_total = float(db.session.query(func.sum(Invoice.balance)).filter(
+        Invoice.status.in_(['pending', 'overdue', 'partially_paid'])
+    ).scalar() or 0.0)
+
+    # Inventory valuation (cost) from sub‑stores
+    pharm_inv = float(db.session.query(func.sum(PharmacyInventory.buying_price * PharmacyInventory.quantity)).scalar() or 0.0)
+    lab_inv = float(db.session.query(func.sum(LabInventory.buying_price * LabInventory.quantity)).scalar() or 0.0)
+    rad_inv = float(db.session.query(func.sum(RadiologyInventory.buying_price * RadiologyInventory.quantity)).scalar() or 0.0)
+    inventory_total = pharm_inv + lab_inv + rad_inv
+
+    # Paid expenses up to as_at date
+    expense_total = float(db.session.query(func.sum(Expense.amount + Expense.tax_amount)).filter(
+        Expense.expense_date <= as_at,
+        Expense.status == 'paid'
+    ).scalar() or 0.0)
+
+    # --- Credit balances (Liabilities, Revenue, Equity) ---
+    # Accounts Payable (unpaid supplier invoices)
+    ap_total = float(db.session.query(func.sum(SupplierInvoice.balance_due)).filter(
+        SupplierInvoice.status.in_(['pending', 'overdue', 'partially_paid'])
+    ).scalar() or 0.0)
+
+    # Statutory liabilities (unpaid)
+    stat_liab = float(db.session.query(func.sum(StatutoryLiability.amount)).filter(
+        StatutoryLiability.paid_at.is_(None)
+    ).scalar() or 0.0)
+
+    # Revenue (paid sales up to as_at date)
+    revenue_total = float(db.session.query(func.sum(SalesReport.total_amount)).filter(
+        SalesReport.sale_date <= as_at
+    ).scalar() or 0.0)
+
+    # --- Build the accounts list ---
+    accounts = [
+        {'name': 'Cash & Bank', 'debit': cash_bank, 'credit': 0.0},
+        {'name': 'Accounts Receivable', 'debit': ar_total, 'credit': 0.0},
+        {'name': 'Inventory', 'debit': inventory_total, 'credit': 0.0},
+        {'name': 'Expenses', 'debit': expense_total, 'credit': 0.0},
+        {'name': 'Accounts Payable', 'debit': 0.0, 'credit': ap_total},
+        {'name': 'Statutory Liabilities', 'debit': 0.0, 'credit': stat_liab},
+        {'name': 'Revenue', 'debit': 0.0, 'credit': revenue_total},
+    ]
+
+    # Balancing figure (equity) – ensures debits = credits
+    total_debits = sum(a['debit'] for a in accounts)
+    total_credits = sum(a['credit'] for a in accounts)
+    equity_balancing = total_debits - total_credits
+
+    if abs(equity_balancing) > 0.01:
+        # Add as credit if positive, debit if negative
+        if equity_balancing > 0:
+            accounts.append({'name': 'Equity (Retained Earnings)', 'debit': 0.0, 'credit': equity_balancing})
+        else:
+            accounts.append({'name': 'Equity (Deficit)', 'debit': -equity_balancing, 'credit': 0.0})
+
+    # Recalculate totals
+    total_debits = sum(a['debit'] for a in accounts)
+    total_credits = sum(a['credit'] for a in accounts)
+    balanced = abs(total_debits - total_credits) < 0.01
+
+    return render_template(
+        'trial_balance.html',
+        accounts=accounts,
+        total_debits=total_debits,
+        total_credits=total_credits,
+        balanced=balanced,
+        as_at_date=as_at.strftime('%Y-%m-%d')
+    )
+    
+    
+    
+    
+from datetime import datetime, timedelta
+from sqlalchemy import func
+
+@finance_web_bp.route('/cashflow-statement')
+@login_required
+def cashflow_statement():
+    # Get filter parameters
+    period = request.args.get('period', 'month')
+    month = request.args.get('month', datetime.now().strftime('%Y-%m'))
+    year = request.args.get('year', datetime.now().strftime('%Y'))
+    start_date_str = request.args.get('start_date')
+    end_date_str = request.args.get('end_date')
+
+    # Determine date range
+    if period == 'custom' and start_date_str and end_date_str:
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
+    elif period == 'year':
+        start_date = datetime(int(year), 1, 1)
+        end_date = datetime(int(year), 12, 31, 23, 59, 59)
+    else:  # month
+        y, m = map(int, month.split('-'))
+        start_date = datetime(y, m, 1)
+        if m == 12:
+            end_date = datetime(y+1, 1, 1) - timedelta(seconds=1)
+        else:
+            end_date = datetime(y, m+1, 1) - timedelta(seconds=1)
+
+    # --- Opening cash balance (beginning of period) ---
+    opening_cash = db.session.query(
+        func.sum(CashAccount.current_balance) + func.sum(BankAccount.current_balance)
+    ).filter(
+        CashAccount.created_at < start_date,  # approximate; better to use a ledger
+        BankAccount.created_at < start_date
+    ).scalar() or 0.0
+    # Simplified: using current balances as at today. For accurate opening, you'd need historical balances.
+    # For demo, we'll compute as (cash at end - net flow). We'll adjust later.
+    # Instead, we can compute from transactions: sum of all deposits - withdrawals up to start_date.
+    # But that's complex. We'll approximate using current balances minus net flow in period.
+    # We'll handle this by computing net cash flow and then deriving opening as closing - net.
+
+    # --- OPERATING ACTIVITIES ---
+    # Inflows: cash received from patients
+    op_inflows = db.session.query(func.sum(SalesReport.total_amount)).filter(
+        SalesReport.sale_date >= start_date,
+        SalesReport.sale_date <= end_date
+    ).scalar() or 0.0
+
+    # Outflows: operational expenses (paid) + payroll payments
+    op_expenses = db.session.query(func.sum(Expense.amount + Expense.tax_amount)).filter(
+        Expense.expense_date >= start_date,
+        Expense.expense_date <= end_date,
+        Expense.expense_type == 'operational',
+        Expense.status == 'paid'
+    ).scalar() or 0.0
+
+    payroll_payments = db.session.query(func.sum(PayrollPayment.amount)).filter(
+        PayrollPayment.transaction_date >= start_date,
+        PayrollPayment.transaction_date <= end_date
+    ).scalar() or 0.0
+
+    op_outflows = op_expenses + float(payroll_payments)
+    op_net = op_inflows - op_outflows
+
+    # --- INVESTING ACTIVITIES ---
+    # Outflows: purchase of fixed assets (capital expenses)
+    inv_outflows = db.session.query(func.sum(Expense.amount + Expense.tax_amount)).filter(
+        Expense.expense_date >= start_date,
+        Expense.expense_date <= end_date,
+        Expense.expense_type == 'capital',
+        Expense.status == 'paid'
+    ).scalar() or 0.0
+
+    inv_inflows = 0.0  # no asset sales tracked yet
+    inv_net = inv_inflows - inv_outflows
+
+    # --- FINANCING ACTIVITIES ---
+    fin_inflows = 0.0
+    fin_outflows = 0.0
+    fin_net = 0.0
+
+    # Net cash flow for the period
+    net_cash_flow = op_net + inv_net + fin_net
+
+    # Closing cash balance (actual at end date) – using current balances as proxy
+    closing_cash = db.session.query(
+        func.sum(CashAccount.current_balance) + func.sum(BankAccount.current_balance)
+    ).scalar() or 0.0
+
+    # Derive opening balance from closing minus net flow (for consistency)
+    opening_cash = closing_cash - net_cash_flow
+
+    return render_template(
+        'cashflow_statement.html',
+        start_date=start_date,
+        end_date=end_date,
+        period=period,
+        selected_month=month,
+        selected_year=year,
+        opening_cash=opening_cash,
+        closing_cash=closing_cash,
+        op_inflows=op_inflows,
+        op_outflows=op_outflows,
+        op_net=op_net,
+        inv_inflows=inv_inflows,
+        inv_outflows=inv_outflows,
+        inv_net=inv_net,
+        fin_inflows=fin_inflows,
+        fin_outflows=fin_outflows,
+        fin_net=fin_net,
+        net_cash_flow=net_cash_flow
+    )
+    
+    
+    
+    
+@finance_web_bp.route('/balance-sheet')
+@login_required
+def balance_sheet():
+
+
+    as_at_date_str = request.args.get('as_at_date')
+    if as_at_date_str:
+        as_at_date = datetime.strptime(as_at_date_str, '%Y-%m-%d')
+    else:
+        as_at_date = datetime.now()
+
+    # --- ASSETS ---
+    cash_bank = float(db.session.query(func.sum(CashAccount.current_balance)).scalar() or 0.0) + \
+                float(db.session.query(func.sum(BankAccount.current_balance)).scalar() or 0.0)
+
+    accounts_receivable = float(db.session.query(func.sum(Invoice.balance)).filter(
+        Invoice.status.in_(['pending', 'overdue', 'partially_paid']),
+        Invoice.issue_date <= as_at_date
+    ).scalar() or 0.0)
+
+    pharm_inv = float(db.session.query(func.sum(PharmacyInventory.buying_price * PharmacyInventory.quantity)).scalar() or 0.0)
+    lab_inv = float(db.session.query(func.sum(LabInventory.buying_price * LabInventory.quantity)).scalar() or 0.0)
+    rad_inv = float(db.session.query(func.sum(RadiologyInventory.buying_price * RadiologyInventory.quantity)).scalar() or 0.0)
+    inventory = pharm_inv + lab_inv + rad_inv
+
+    fixed_assets = float(db.session.query(func.sum(Asset.current_value)).filter(
+        Asset.purchase_date <= as_at_date
+    ).scalar() or 0.0)
+
+    total_assets = cash_bank + accounts_receivable + inventory + fixed_assets
+
+    # --- LIABILITIES ---
+    accounts_payable = float(db.session.query(func.sum(SupplierInvoice.balance_due)).filter(
+        SupplierInvoice.status.in_(['pending', 'overdue', 'partially_paid']),
+        SupplierInvoice.invoice_date <= as_at_date
+    ).scalar() or 0.0)
+
+    statutory_liabilities = float(db.session.query(func.sum(StatutoryLiability.amount)).filter(
+        StatutoryLiability.paid_at.is_(None),
+        StatutoryLiability.created_at <= as_at_date
+    ).scalar() or 0.0)
+
+    loans_payable = 0.0  # placeholder for future loans
+
+    total_liabilities = accounts_payable + statutory_liabilities + loans_payable
+
+    # --- EQUITY ---
+    equity = total_assets - total_liabilities
+
+    assets_breakdown = [
+        {'name': 'Cash & Bank', 'amount': cash_bank},
+        {'name': 'Accounts Receivable', 'amount': accounts_receivable},
+        {'name': 'Inventory', 'amount': inventory},
+        {'name': 'Fixed Assets', 'amount': fixed_assets},
+    ]
+
+    liabilities_breakdown = [
+        {'name': 'Accounts Payable', 'amount': accounts_payable},
+        {'name': 'Statutory Liabilities', 'amount': statutory_liabilities},
+        {'name': 'Loans Payable', 'amount': loans_payable},
+    ]
+
+    current_assets = cash_bank + accounts_receivable + inventory
+    current_liabilities = accounts_payable + statutory_liabilities   # loans excluded
+    working_capital = current_assets - current_liabilities
+
+    return render_template(
+        'balance_sheet.html',
+        as_at_date=as_at_date.strftime('%Y-%m-%d'),
+        assets_breakdown=assets_breakdown,
+        liabilities_breakdown=liabilities_breakdown,
+        total_assets=total_assets,
+        total_liabilities=total_liabilities,
+        equity=equity,
+        working_capital=working_capital
+    )

@@ -1,0 +1,881 @@
+{% extends "base.html" %}
+
+{% block title %}Recruitment Selection{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+            <i class="fas fa-trophy text-red-600 mr-2"></i>
+            Recruitment Selection & Offers
+        </h1>
+        <p class="text-gray-600 dark:text-gray-400">
+            Select winners for jobs with completed interviews and manage job offers.
+        </p>
+    </div>
+
+    <!-- Tabs Navigation -->
+    <div class="mb-8">
+        <div class="border-b border-gray-200 dark:border-gray-700">
+            <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                <button id="selection-tab" 
+                        class="tab-button border-b-2 border-transparent py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 flex items-center transition-colors"
+                        onclick="switchTab('selection')">
+                    <i class="fas fa-trophy mr-2"></i>
+                    Candidate Selection
+                    <span class="ml-2 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 text-xs font-semibold px-2 py-0.5 rounded-full">
+                        {{ jobs_with_candidates|length }}
+                    </span>
+                </button>
+                <button id="offers-tab" 
+                        class="tab-button border-b-2 border-transparent py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 flex items-center transition-colors"
+                        onclick="switchTab('offers')">
+                    <i class="fas fa-file-contract mr-2"></i>
+                    Job Offers
+                    <span class="ml-2 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 text-xs font-semibold px-2 py-0.5 rounded-full">
+                        {{ job_offers|length }}
+                    </span>
+                </button>
+                <button id="stats-tab" 
+                        class="tab-button border-b-2 border-transparent py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 flex items-center transition-colors"
+                        onclick="switchTab('stats')">
+                    <i class="fas fa-chart-bar mr-2"></i>
+                    Statistics
+                </button>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Tab 1: Candidate Selection -->
+    <div id="selection-content" class="tab-content">
+        <!-- Stats Cards for Selection -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-purple-100 dark:bg-purple-900 mr-4">
+                        <i class="fas fa-briefcase text-purple-600 dark:text-purple-400 text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Jobs Ready for Selection</p>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ jobs_with_candidates|length }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-blue-100 dark:bg-blue-900 mr-4">
+                        <i class="fas fa-users text-blue-600 dark:text-blue-400 text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Total Candidates</p>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                            {{ jobs_with_candidates|map(attribute='candidates')|map('length')|sum }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-green-100 dark:bg-green-900 mr-4">
+                        <i class="fas fa-star text-green-600 dark:text-green-400 text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Top Scorer Average</p>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                            {% set top_scores = [] %}
+                            {% for job_data in jobs_with_candidates %}
+                                {% if job_data.candidates %}
+                                    {% set top_scores = top_scores + [job_data.candidates.0.avg_score] %}
+                                {% endif %}
+                            {% endfor %}
+                            {{ (top_scores|sum / top_scores|length if top_scores else 0)|round(1) }}/5
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Jobs List -->
+        {% if jobs_with_candidates %}
+            <div class="space-y-6">
+                {% for job_data in jobs_with_candidates %}
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+                    <!-- Job Header -->
+                    <div class="px-6 py-4 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 border-b">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100">
+                                    {{ job_data.job.title }}
+                                    <span class="ml-2 text-sm font-normal px-2 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 rounded">
+                                        {{ job_data.job.reference_no }}
+                                    </span>
+                                </h3>
+                                <div class="flex items-center mt-2 space-x-4">
+                                    <span class="text-sm text-gray-600 dark:text-gray-400">
+                                        <i class="fas fa-building mr-1"></i>
+                                        {{ job_data.job.department.name }}
+                                    </span>
+                                    <span class="text-sm text-gray-600 dark:text-gray-400">
+                                        <i class="fas fa-users mr-1"></i>
+                                        {{ job_data.job.positions_available }} position(s)
+                                    </span>
+                                    <span class="text-sm text-gray-600 dark:text-gray-400">
+                                        <i class="fas fa-calendar-alt mr-1"></i>
+                                        Deadline: {{ job_data.job.application_deadline.strftime('%d %b %Y') }}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
+                                    <i class="fas fa-check-circle mr-1"></i>
+                                    {{ job_data.candidates|length }} candidates interviewed
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Candidates Table -->
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                            <thead class="bg-gray-50 dark:bg-gray-700">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                        Candidate
+                                    </th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                        Interview Date
+                                    </th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                        Average Score
+                                    </th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                        Recommendation
+                                    </th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                        Actions
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                {% for candidate_data in job_data.candidates %}
+                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                    <!-- Candidate Info -->
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <div class="flex-shrink-0 h-10 w-10">
+                                                <div class="h-10 w-10 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
+                                                    <span class="font-medium text-purple-800 dark:text-purple-200">
+                                                        {{ candidate_data.candidate.first_name[0] }}{{ candidate_data.candidate.last_name[0] }}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div class="ml-4">
+                                                <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                                    {{ candidate_data.candidate.full_name }}
+                                                </div>
+                                                <div class="text-sm text-gray-500 dark:text-gray-400">
+                                                    {{ candidate_data.candidate.email }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    
+                                    <!-- Interview Date -->
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900 dark:text-gray-100">
+                                            {{ candidate_data.interview.scheduled_date.strftime('%d %b %Y') }}
+                                        </div>
+                                        <div class="text-sm text-gray-500 dark:text-gray-400">
+                                            {{ candidate_data.interview.scheduled_date.strftime('%I:%M %p') }}
+                                        </div>
+                                    </td>
+                                    
+                                    <!-- Average Score -->
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <div class="w-24">
+                                                <div class="flex items-center">
+                                                    <div class="text-sm font-medium text-gray-900 dark:text-gray-100 mr-2">
+                                                        {{ candidate_data.avg_score }}/5
+                                                    </div>
+                                                    {% set score_percentage = (candidate_data.avg_score / 5 * 100)|int %}
+                                                    <div class="relative w-full">
+                                                        <div class="overflow-hidden h-2 text-xs flex rounded bg-gray-200 dark:bg-gray-700">
+                                                            <div style="width: {{ score_percentage }}%" 
+                                                                class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center
+                                                                        {% if candidate_data.avg_score >= 4 %}bg-green-500
+                                                                        {% elif candidate_data.avg_score >= 3 %}bg-yellow-500
+                                                                        {% else %}bg-red-500{% endif %}">
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    
+                                    <!-- Recommendation -->
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        {% if candidate_data.interview.recommendation %}
+                                            {% set rec = candidate_data.interview.recommendation %}
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                                                {% if rec == 'Strong Hire' %}bg-green-100 text-green-800
+                                                {% elif rec == 'Hire' %}bg-blue-100 text-blue-800
+                                                {% elif rec == 'Neutral' %}bg-yellow-100 text-yellow-800
+                                                {% elif rec == 'No Hire' %}bg-red-100 text-red-800
+                                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                                {{ rec }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-sm text-gray-500 dark:text-gray-400">Pending</span>
+                                        {% endif %}
+                                    </td>
+                                    
+                                    <!-- Actions -->
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <div class="flex space-x-2">
+                                            <a href="{{ url_for('hr_web.selection_candidate_details', 
+                                                                job_id=job_data.job.id, 
+                                                                candidate_id=candidate_data.candidate.id) }}"
+                                            class="inline-flex items-center text-purple-600 dark:text-purple-400 hover:text-purple-900 dark:hover:text-purple-300">
+                                                <i class="fas fa-eye mr-1"></i> Details
+                                            </a>
+                                            
+                                            <a href="{{ url_for('hr_web.create_job_offer', job_id=job_data.job.id, candidate_id=candidate_data.candidate.id) }}"
+                                            class="inline-flex items-center text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300 ml-4">
+                                                <i class="fas fa-trophy mr-1"></i> Create Offer
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Summary -->
+                    <div class="px-6 py-4 bg-gray-50 dark:bg-gray-700 border-t">
+                        <div class="flex justify-between items-center">
+                            <div class="text-sm text-gray-600 dark:text-gray-400">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                Review all scores before making a selection. Top scorer is highlighted.
+                            </div>
+                            {% if job_data.candidates %}
+                            <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                Top Scorer: 
+                                <span class="text-green-600 dark:text-green-400">
+                                    {{ job_data.candidates.0.candidate.full_name }} 
+                                    ({{ job_data.candidates.0.avg_score }}/5)
+                                </span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <!-- Empty State -->
+            <div class="text-center py-12">
+                <div class="mx-auto h-24 w-24 text-gray-400 dark:text-gray-500 mb-4">
+                    <i class="fas fa-trophy text-6xl opacity-50"></i>
+                </div>
+                <h3 class="text-xl font-medium text-gray-900 dark:text-gray-100 mb-2">
+                    No jobs ready for selection
+                </h3>
+                <p class="text-gray-600 dark:text-gray-400 max-w-md mx-auto mb-6">
+                    Jobs will appear here once interviews are completed and candidates are ready for final selection.
+                </p>
+                <a href="{{ url_for('hr_web.recruitment_interviews') }}"
+                class="inline-flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors">
+                    <i class="fas fa-calendar-alt mr-2"></i>
+                    View Interviews
+                </a>
+            </div>
+        {% endif %}
+    </div>
+
+<!-- Tab 2: Job Offers -->
+<div id="offers-content" class="tab-content hidden">
+    <!-- Stats Cards for Offers -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-green-100 dark:bg-green-900 mr-4">
+                    <i class="fas fa-check-circle text-green-600 dark:text-green-400 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Accepted</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                        {% set accepted_count = job_offers|selectattr('status', 'equalto', 'Accepted')|list|length %}
+                        {{ accepted_count }}
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-blue-100 dark:bg-blue-900 mr-4">
+                    <i class="fas fa-paper-plane text-blue-600 dark:text-blue-400 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Sent</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                        {% set sent_count = job_offers|selectattr('status', 'equalto', 'Sent')|list|length %}
+                        {{ sent_count }}
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-yellow-100 dark:bg-yellow-900 mr-4">
+                    <i class="fas fa-file-alt text-yellow-600 dark:text-yellow-400 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Draft</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                        {% set draft_count = job_offers|selectattr('status', 'equalto', 'Draft')|list|length %}
+                        {{ draft_count }}
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-red-100 dark:bg-red-900 mr-4">
+                    <i class="fas fa-times-circle text-red-600 dark:text-red-400 text-xl"></i>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Rejected</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                        {% set rejected_count = job_offers|selectattr('status', 'equalto', 'Rejected')|list|length %}
+                        {{ rejected_count }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Job Offers Table -->
+    {% if job_offers %}
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+            <div class="px-6 py-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 border-b">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100">
+                        <i class="fas fa-file-contract mr-2"></i>
+                        Job Offers
+                    </h3>
+                    <div class="flex space-x-2">
+                        <button class="px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600">
+                            <i class="fas fa-filter mr-1"></i> Filter
+                        </button>
+                        <button class="px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600">
+                            <i class="fas fa-download mr-1"></i> Export
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                Candidate
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                Position
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                Offer Details
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                Status
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                Actions
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        {% for offer in job_offers %}
+                        {% if offer.candidate and offer.department %}
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                            <!-- Candidate -->
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 h-10 w-10">
+                                        <div class="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+                                            <span class="font-medium text-blue-800 dark:text-blue-200">
+                                                {{ offer.candidate.first_name[0] }}{{ offer.candidate.last_name[0] }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="ml-4">
+                                        <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                            {{ offer.candidate.full_name }}
+                                        </div>
+                                        <div class="text-sm text-gray-500 dark:text-gray-400">
+                                            {{ offer.candidate.email }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            
+                            <!-- Position -->
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                    {{ offer.position }}
+                                </div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400">
+                                    {{ offer.department.name }}
+                                </div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400">
+                                    Starts: {{ offer.start_date.strftime('%d %b %Y') }}
+                                </div>
+                            </td>
+                            
+                            <!-- Offer Details -->
+                            <td class="px-6 py-4">
+                                <div class="text-sm text-gray-900 dark:text-gray-100">
+                                    <div class="flex items-center mb-1">
+                                        <i class="fas fa-money-bill-wave text-green-500 mr-2 text-xs"></i>
+                                        <span class="font-medium">{{ offer.currency }} {{ "{:,.2f}".format(offer.base_salary) }}</span>
+                                    </div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                                        <i class="fas fa-clock mr-1"></i>
+                                        Created: {{ offer.created_at.strftime('%d %b %Y') }}
+                                    </div>
+                                    {% if offer.sent_date %}
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                                        <i class="fas fa-paper-plane mr-1"></i>
+                                        Sent: {{ offer.sent_date.strftime('%d %b %Y') }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            
+                            <!-- Status -->
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% set status_colors = {
+                                    'Draft': 'bg-gray-100 text-gray-800',
+                                    'Sent': 'bg-blue-100 text-blue-800',
+                                    'Accepted': 'bg-green-100 text-green-800',
+                                    'Rejected': 'bg-red-100 text-red-800',
+                                    'Expired': 'bg-yellow-100 text-yellow-800',
+                                    'Withdrawn': 'bg-purple-100 text-purple-800'
+                                } %}
+                                
+                                <div class="space-y-1">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ status_colors.get(offer.status, 'bg-gray-100 text-gray-800') }}">
+                                        {{ offer.status }}
+                                    </span>
+                                    
+                                    {% if offer.expiry_date %}
+                                        {% set days_remaining = (offer.expiry_date.date() - datetime.utcnow().date()).days %}
+                                        {% if days_remaining >= 0 and offer.status == 'Sent' %}
+                                        <div class="text-xs {% if days_remaining <= 3 %}text-red-500{% elif days_remaining <= 7 %}text-yellow-500{% else %}text-green-500{% endif %}">
+                                            <i class="fas fa-clock mr-1"></i>
+                                            {{ days_remaining }} day{{ 's' if days_remaining != 1 }} left
+                                        </div>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                            </td>
+                            
+                            <!-- Actions -->
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <div class="flex space-x-2">
+                                    <a href="{{ url_for('hr_web.view_job_offer', offer_id=offer.id) }}"
+                                       class="inline-flex items-center text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300">
+                                        <i class="fas fa-eye mr-1"></i> View
+                                    </a>
+                                    
+                                    {% if offer.status == 'Draft' %}
+                                    <a href="{{ url_for('hr_web.preview_job_offer', offer_id=offer.id) }}"
+                                       class="inline-flex items-center text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300 ml-2">
+                                        <i class="fas fa-paper-plane mr-1"></i> Send
+                                    </a>
+                                    {% endif %}
+                                    
+                                    {% if offer.status == 'Sent' %}
+                                    <div class="relative group">
+                                        <button class="inline-flex items-center text-purple-600 dark:text-purple-400 hover:text-purple-900 dark:hover:text-purple-300 ml-2">
+                                            <i class="fas fa-edit mr-1"></i> Update
+                                        </button>
+                                        <div class="hidden group-hover:block absolute right-0 mt-2 w-32 bg-white dark:bg-gray-800 shadow-lg rounded-lg border border-gray-200 dark:border-gray-700 z-10">
+                                            <div class="py-1">
+                                                <form method="POST" action="{{ url_for('hr_web.update_offer_status', offer_id=offer.id) }}" class="px-2 py-1">
+                                                    <button type="submit" name="status" value="Accepted" class="w-full text-left text-xs text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 px-2 py-1 rounded">
+                                                        <i class="fas fa-check mr-1"></i> Accept
+                                                    </button>
+                                                </form>
+                                                <form method="POST" action="{{ url_for('hr_web.update_offer_status', offer_id=offer.id) }}" class="px-2 py-1">
+                                                    <button type="submit" name="status" value="Rejected" class="w-full text-left text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 px-2 py-1 rounded">
+                                                        <i class="fas fa-times mr-1"></i> Reject
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Summary -->
+            <div class="px-6 py-4 bg-gray-50 dark:bg-gray-700 border-t">
+                <div class="flex justify-between items-center">
+                    <div class="text-sm text-gray-600 dark:text-gray-400">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        Showing {{ job_offers|length }} job offers
+                    </div>
+                    <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                        Total Value: 
+                        <span class="text-green-600 dark:text-green-400">
+                            KES {{ "{:,.2f}".format(job_offers|sum(attribute='base_salary')) }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <!-- Empty State -->
+        <div class="text-center py-12">
+            <div class="mx-auto h-24 w-24 text-gray-400 dark:text-gray-500 mb-4">
+                <i class="fas fa-file-contract text-6xl opacity-50"></i>
+            </div>
+            <h3 class="text-xl font-medium text-gray-900 dark:text-gray-100 mb-2">
+                No job offers yet
+            </h3>
+            <p class="text-gray-600 dark:text-gray-400 max-w-md mx-auto mb-6">
+                Create job offers by selecting winners from the Candidate Selection tab.
+            </p>
+            <button onclick="switchTab('selection')"
+                    class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
+                <i class="fas fa-trophy mr-2"></i>
+                Go to Candidate Selection
+            </button>
+        </div>
+    {% endif %}
+</div>
+
+    <!-- Tab 3: Statistics -->
+    <div id="stats-content" class="tab-content hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Left Column -->
+            <div class="space-y-6">
+                <!-- Selection Statistics -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                        <i class="fas fa-chart-pie text-purple-600 mr-2"></i>
+                        Selection Statistics
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        {% for job_data in jobs_with_candidates %}
+                        <div class="border-b border-gray-100 dark:border-gray-700 pb-3 last:border-0 last:pb-0">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    {{ job_data.job.title }}
+                                </span>
+                                <span class="text-xs text-gray-500 dark:text-gray-400">
+                                    {{ job_data.candidates|length }} candidates
+                                </span>
+                            </div>
+                            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                {% if job_data.candidates %}
+                                    {% set top_score = job_data.candidates.0.avg_score %}
+                                    <div class="h-2 rounded-full bg-gradient-to-r from-green-400 to-blue-500" 
+                                         style="width: {{ (top_score / 5 * 100)|int }}%">
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                <span>
+                                    {% if job_data.candidates %}
+                                        Top: {{ job_data.candidates.0.avg_score }}/5
+                                    {% else %}
+                                        No scores
+                                    {% endif %}
+                                </span>
+                                <span>{{ job_data.job.department.name }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- Quick Actions -->
+                <div class="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                        <i class="fas fa-bolt text-yellow-600 mr-2"></i>
+                        Quick Actions
+                    </h3>
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                        <a href="{{ url_for('hr_web.recruitment_interviews') }}"
+                           class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 text-center hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                            <i class="fas fa-calendar-alt text-blue-600 dark:text-blue-400 text-xl mb-2"></i>
+                            <p class="text-sm font-medium text-gray-900 dark:text-gray-100">View Interviews</p>
+                        </a>
+                        
+                        <a href="{{ url_for('hr_web.new_interview') }}"
+                           class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 text-center hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                            <i class="fas fa-plus-circle text-green-600 dark:text-green-400 text-xl mb-2"></i>
+                            <p class="text-sm font-medium text-gray-900 dark:text-gray-100">Schedule Interview</p>
+                        </a>
+                        
+                        <a href="{{ url_for('hr_web.recruitment_jobs') }}"
+                           class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 text-center hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                            <i class="fas fa-briefcase text-purple-600 dark:text-purple-400 text-xl mb-2"></i>
+                            <p class="text-sm font-medium text-gray-900 dark:text-gray-100">Job Postings</p>
+                        </a>
+                        
+                        <a href="#"
+                           class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 text-center hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                            <i class="fas fa-chart-line text-red-600 dark:text-red-400 text-xl mb-2"></i>
+                            <p class="text-sm font-medium text-gray-900 dark:text-gray-100">Reports</p>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Column -->
+            <div class="space-y-6">
+                <!-- Offer Status Distribution -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                        <i class="fas fa-chart-bar text-green-600 mr-2"></i>
+                        Offer Status Distribution
+                    </h3>
+                    
+                    <div class="space-y-3">
+                        {% set status_counts = {
+                            'Draft': job_offers|selectattr('status', 'equalto', 'Draft')|list|length,
+                            'Sent': job_offers|selectattr('status', 'equalto', 'Sent')|list|length,
+                            'Accepted': job_offers|selectattr('status', 'equalto', 'Accepted')|list|length,
+                            'Rejected': job_offers|selectattr('status', 'equalto', 'Rejected')|list|length
+                        } %}
+                        
+                        {% for status, count in status_counts.items() %}
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="text-gray-700 dark:text-gray-300">{{ status }}</span>
+                                <span class="font-medium text-gray-900 dark:text-gray-100">{{ count }}</span>
+                            </div>
+                            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                {% set percentage = (count / job_offers|length * 100) if job_offers|length > 0 else 0 %}
+                                <div class="h-2 rounded-full 
+                                    {% if status == 'Accepted' %}bg-green-500
+                                    {% elif status == 'Sent' %}bg-blue-500
+                                    {% elif status == 'Draft' %}bg-yellow-500
+                                    {% else %}bg-red-500{% endif %}" 
+                                     style="width: {{ percentage }}%">
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600 dark:text-gray-400">Total Offers</span>
+                            <span class="font-bold text-gray-900 dark:text-gray-100">{{ job_offers|length }}</span>
+                        </div>
+                        <div class="flex justify-between text-sm mt-1">
+                            <span class="text-gray-600 dark:text-gray-400">Acceptance Rate</span>
+                            <span class="font-bold text-green-600 dark:text-green-400">
+                                {% if job_offers|length > 0 %}
+                                    {{ ((status_counts['Accepted'] / job_offers|length) * 100)|round(1) }}%
+                                {% else %}
+                                    0%
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Recent Activity -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                        <i class="fas fa-history text-blue-600 mr-2"></i>
+                        Recent Activity
+                    </h3>
+                    
+<!-- In the Statistics tab, update the Recent Activity section -->
+<div class="space-y-3">
+    {% for offer in job_offers|sort(attribute='updated_at', reverse=True)|slice(5) %}
+    {% if offer.candidate %}
+    <div class="flex items-start">
+        <div class="flex-shrink-0 mt-1">
+            <div class="h-8 w-8 rounded-full 
+                {% if offer.status == 'Accepted' %}bg-green-100 text-green-800
+                {% elif offer.status == 'Sent' %}bg-blue-100 text-blue-800
+                {% elif offer.status == 'Draft' %}bg-yellow-100 text-yellow-800
+                {% else %}bg-red-100 text-red-800{% endif %} 
+                flex items-center justify-center">
+                <i class="fas 
+                    {% if offer.status == 'Accepted' %}fa-check
+                    {% elif offer.status == 'Sent' %}fa-paper-plane
+                    {% elif offer.status == 'Draft' %}fa-edit
+                    {% else %}fa-times{% endif %} 
+                    text-xs">
+                </i>
+            </div>
+        </div>
+        <div class="ml-3">
+            <p class="text-sm text-gray-900 dark:text-gray-100">
+                <span class="font-medium">{{ offer.candidate.full_name }}</span>
+                {% if offer.status == 'Accepted' %}
+                    accepted offer for
+                {% elif offer.status == 'Sent' %}
+                    was sent offer for
+                {% elif offer.status == 'Draft' %}
+                    has draft offer for
+                {% else %}
+                    rejected offer for
+                {% endif %}
+                <span class="font-medium">{{ offer.position }}</span>
+            </p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">
+                {{ offer.updated_at.strftime('%d %b %Y at %H:%M') }}
+            </p>
+        </div>
+    </div>
+    {% endif %}
+    {% endfor %}
+</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div id="confirmationModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-800">
+        <div class="mt-3">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 dark:bg-green-900 mb-4">
+                <i class="fas fa-trophy text-green-600 dark:text-green-400 text-xl"></i>
+            </div>
+            <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100 mb-2">
+                Confirm Selection
+            </h3>
+            <div class="mt-2 px-7 py-3">
+                <p class="text-sm text-gray-500 dark:text-gray-400">
+                    Are you sure you want to select <span id="candidateName" class="font-medium"></span> as the winner?
+                    This will:
+                </p>
+                <ul class="text-sm text-gray-500 dark:text-gray-400 mt-2 ml-4 list-disc">
+                    <li>Mark this candidate for offer extension</li>
+                    <li>Reject other interviewed candidates for this job</li>
+                    <li>Create an offer letter draft</li>
+                </ul>
+            </div>
+            <div class="items-center px-4 py-3">
+                <form id="selectionForm" method="POST">
+                    <div class="flex justify-end space-x-3">
+                        <button type="button" onclick="closeModal()"
+                                class="px-4 py-2 bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm font-medium rounded-md hover:bg-gray-400 dark:hover:bg-gray-600 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit"
+                                class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md transition-colors">
+                            <i class="fas fa-check mr-1"></i> Confirm Selection
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function selectWinner(jobId, candidateId, candidateName) {
+    document.getElementById('candidateName').textContent = candidateName;
+    
+    // Set form action
+    const form = document.getElementById('selectionForm');
+    form.action = `/hr/recruitment/selection/${jobId}/select-winner/${candidateId}`;
+    
+    // Show modal
+    document.getElementById('confirmationModal').classList.remove('hidden');
+}
+
+function closeModal() {
+    document.getElementById('confirmationModal').classList.add('hidden');
+}
+
+// Tab switching functionality
+function switchTab(tabName) {
+    // Hide all tab contents
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.add('hidden');
+    });
+    
+    // Remove active class from all tabs
+    document.querySelectorAll('.tab-button').forEach(button => {
+        button.classList.remove('border-blue-500', 'text-blue-600', 'dark:text-blue-400');
+        button.classList.add('border-transparent', 'text-gray-500', 'dark:text-gray-400');
+    });
+    
+    // Show selected tab content
+    document.getElementById(`${tabName}-content`).classList.remove('hidden');
+    
+    // Add active class to selected tab
+    document.getElementById(`${tabName}-tab`).classList.remove('border-transparent', 'text-gray-500', 'dark:text-gray-400');
+    document.getElementById(`${tabName}-tab`).classList.add('border-blue-500', 'text-blue-600', 'dark:text-blue-400');
+}
+
+// Initialize with first tab active
+document.addEventListener('DOMContentLoaded', function() {
+    // Set first tab as active
+    document.getElementById('selection-tab').classList.add('border-blue-500', 'text-blue-600', 'dark:text-blue-400');
+    
+    // Close modal when clicking outside
+    document.getElementById('confirmationModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeModal();
+        }
+    });
+});
+</script>
+
+<style>
+.tab-button {
+    transition: all 0.2s ease;
+}
+
+.tab-button:hover {
+    border-color: rgba(59, 130, 246, 0.5);
+}
+
+.tab-content {
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+</style>
+{% endblock %}

@@ -143,87 +143,86 @@
             <h3 class="font-semibold text-gray-900 dark:text-white">ORDER ITEMS</h3>
         </div>
 
-        <div class="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
-            <table class="w-full text-sm">
-                <thead class="bg-gray-50 dark:bg-gray-800">
-                    <tr>
-                        <th class="px-4 py-2 text-left font-medium text-gray-700 dark:text-gray-300">#</th>
-                        <th class="px-4 py-2 text-left font-medium text-gray-700 dark:text-gray-300">Item Description</th>
-                        <th class="px-4 py-2 text-center font-medium text-gray-700 dark:text-gray-300">Qty</th>
-                        <th class="px-4 py-2 text-right font-medium text-gray-700 dark:text-gray-300">Unit Price</th>
-                        <th class="px-4 py-2 text-right font-medium text-gray-700 dark:text-gray-300">Total</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                    <tr>
-                        <td class="px-4 py-3">
-                            <div class="w-6 h-6 bg-blue-100 dark:bg-blue-900 rounded flex items-center justify-center">
-                                <span class="text-blue-600 dark:text-blue-400 font-semibold text-xs">1</span>
-                            </div>
-                        </td>
-                        <td class="px-4 py-3">
-                            <div>
-                                <p class="font-semibold text-gray-900 dark:text-white">{{ lpo.item_name }}</p>
-                                <p class="text-gray-600 dark:text-gray-400 text-xs mt-0.5">Category: {{ lpo.category|replace('_', ' ')|title if lpo.category else 'General' }}</p>
-                                {% if lpo.external_order and lpo.external_order.reason %}
-                                <p class="text-gray-600 dark:text-gray-400 text-xs mt-1">
-                                    <span class="font-medium">Reason:</span> {{ lpo.external_order.reason }}
-                                </p>
-                                {% endif %}
-                            </div>
-                        </td>
-                        <td class="px-4 py-3 text-center">
-                            <div class="inline-flex items-center gap-1 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">
-                                <span class="font-bold text-gray-900 dark:text-white">{{ lpo.quantity or 0 }}</span>
-                                <span class="text-gray-600 dark:text-gray-400 text-xs">{{ lpo.unit }}</span>
-                            </div>
-                        </td>
-
-                        {% set unit_price = (lpo.unit_price or 0) %}
-                        {% set qty = (lpo.quantity or 0) %}
-                        {% set subtotal = unit_price * qty %}
-                        {% set tax_rate = (lpo.tax_rate or 0) %}
-                        {% set tax_amount = (subtotal * tax_rate / 100) %}
-                        {% set computed_total = (subtotal + tax_amount) %}
-                        {% set line_total = (lpo.total_price if lpo.total_price is not none else computed_total) %}
-
-                        <td class="px-4 py-3 text-right">
-                            <p class="font-semibold text-gray-900 dark:text-white">KSh {{ "{:,.2f}".format(unit_price) }}</p>
-                        </td>
-                        <td class="px-4 py-3 text-right">
-                            <p class="font-bold text-green-600 dark:text-green-400">KSh {{ "{:,.2f}".format(line_total) }}</p>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+<div class="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
+    <table class="w-full text-sm">
+        <thead class="bg-gray-50 dark:bg-gray-800">
+            <tr>
+                <th class="px-4 py-2 text-left font-medium text-gray-700 dark:text-gray-300">#</th>
+                <th class="px-4 py-2 text-left font-medium text-gray-700 dark:text-gray-300">Item Description</th>
+                <th class="px-4 py-2 text-center font-medium text-gray-700 dark:text-gray-300">Qty</th>
+                <th class="px-4 py-2 text-right font-medium text-gray-700 dark:text-gray-300">Unit Price</th>
+                <th class="px-4 py-2 text-right font-medium text-gray-700 dark:text-gray-300">Total</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+            {% for item in items %}
+            <tr>
+                <td class="px-4 py-3">
+                    <div class="w-6 h-6 bg-blue-100 dark:bg-blue-900 rounded flex items-center justify-center">
+                        <span class="text-blue-600 dark:text-blue-400 font-semibold text-xs">{{ loop.index }}</span>
+                    </div>
+                </td>
+                <td class="px-4 py-3">
+                    <div>
+                        <p class="font-semibold text-gray-900 dark:text-white">{{ item.item_name }}</p>
+                        <p class="text-gray-600 dark:text-gray-400 text-xs mt-0.5">Category: {{ item.category|replace('_', ' ')|title if item.category else 'General' }}</p>
+                        {% if item.reason %}
+                        <p class="text-gray-600 dark:text-gray-400 text-xs mt-1">
+                            <span class="font-medium">Reason:</span> {{ item.reason }}
+                        </p>
+                        {% endif %}
+                    </div>
+                </td>
+                <td class="px-4 py-3 text-center">
+                    <div class="inline-flex items-center gap-1 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">
+                        <span class="font-bold text-gray-900 dark:text-white">{{ item.quantity or 0 }}</span>
+                        <span class="text-gray-600 dark:text-gray-400 text-xs">{{ item.unit }}</span>
+                    </div>
+                </td>
+                <td class="px-4 py-3 text-right">
+                    <p class="font-semibold text-gray-900 dark:text-white">KSh {{ "{:,.2f}".format(item.unit_price or 0) }}</p>
+                </td>
+                <td class="px-4 py-3 text-right">
+                    <p class="font-bold text-green-600 dark:text-green-400">KSh {{ "{:,.2f}".format(item.total_price or 0) }}</p>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                    No items found for this LPO.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
     </div>
 
     <!-- Compact Financial Summary -->
-    <div class="px-6 pb-6">
-        <div class="max-w-xs ml-auto">
-            <div class="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-                <h4 class="font-semibold text-gray-900 dark:text-white mb-3 text-center text-sm">FINANCIAL SUMMARY</h4>
+<div class="px-6 pb-6">
+    <div class="max-w-xs ml-auto">
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+            <h4 class="font-semibold text-gray-900 dark:text-white mb-3 text-center text-sm">FINANCIAL SUMMARY</h4>
+            
+            <div class="space-y-2 text-sm">
+                <div class="flex justify-between items-center py-1 border-b border-gray-100 dark:border-gray-700">
+                    <span class="text-gray-600 dark:text-gray-400">Subtotal:</span>
+                    <span class="font-semibold text-gray-900 dark:text-white">KSh {{ "{:,.2f}".format(subtotal) }}</span>
+                </div>
                 
-                <div class="space-y-2 text-sm">
-                    <div class="flex justify-between items-center py-1 border-b border-gray-100 dark:border-gray-700">
-                        <span class="text-gray-600 dark:text-gray-400">Subtotal:</span>
-                        <span class="font-semibold text-gray-900 dark:text-white">KSh {{ "{:,.2f}".format(subtotal) }}</span>
-                    </div>
-                    
-                    <div class="flex justify-between items-center py-1 border-b border-gray-100 dark:border-gray-700">
-                        <span class="text-gray-600 dark:text-gray-400">Tax ({{ tax_rate }}%):</span>
-                        <span class="font-semibold text-gray-900 dark:text-white">KSh {{ "{:,.2f}".format(tax_amount) }}</span>
-                    </div>
-                    
-                    <div class="flex justify-between items-center py-2 bg-blue-50 dark:bg-blue-900/20 rounded px-3 -mx-1">
-                        <span class="font-bold text-gray-900 dark:text-white">Total:</span>
-                        <span class="font-bold text-blue-600 dark:text-blue-400">KSh {{ "{:,.2f}".format(line_total) }}</span>
-                    </div>
+                <div class="flex justify-between items-center py-1 border-b border-gray-100 dark:border-gray-700">
+                    <span class="text-gray-600 dark:text-gray-400">Tax ({{ tax_rate }}%):</span>
+                    <span class="font-semibold text-gray-900 dark:text-white">KSh {{ "{:,.2f}".format(tax_amount) }}</span>
+                </div>
+                
+                <div class="flex justify-between items-center py-2 bg-blue-50 dark:bg-blue-900/20 rounded px-3 -mx-1">
+                    <span class="font-bold text-gray-900 dark:text-white">Total:</span>
+                    <span class="font-bold text-blue-600 dark:text-blue-400">KSh {{ "{:,.2f}".format(total) }}</span>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
     <!-- Compact Approvals -->
     <div class="p-6 border-t border-gray-200 dark:border-gray-700">

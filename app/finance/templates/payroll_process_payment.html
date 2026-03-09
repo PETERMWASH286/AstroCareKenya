@@ -1,0 +1,313 @@
+{% extends "base.html" %}
+
+{% block title %}Process Payroll #{{ payroll.id }} Payment{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Header with gradient -->
+    <div class="bg-gradient-info text-white p-4 rounded-4 mb-4 shadow-sm">
+        <div class="d-flex flex-wrap justify-content-between align-items-center">
+            <div>
+                <h1 class="display-6 fw-bold">Process Payroll Payment</h1>
+                <p class="text-white-80 mb-0">Payroll #{{ payroll.id }} – {{ payroll.period.start_date.strftime('%d %b %Y') }} to {{ payroll.period.end_date.strftime('%d %b %Y') }}</p>
+            </div>
+            <div class="mt-3 mt-md-0">
+                <span class="badge bg-light text-dark fs-5 p-2">Total Net: KSh {{ "{:,.2f}".format(payroll.total_net) }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payroll Summary Card -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4 hover-lift">
+        <div class="card-body p-4">
+            <h5 class="fw-bold mb-3"><i class="fas fa-chart-pie me-2 text-info"></i>Payroll Summary</h5>
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-primary bg-opacity-10 me-3" style="width: 48px; height: 48px;">
+                            <i class="fas fa-users text-primary"></i>
+                        </div>
+                        <div>
+                            <p class="text-muted small mb-0">Employees</p>
+                            <p class="fw-bold mb-0 fs-5">{{ payroll.employee_count or payroll.payslips|length }}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-success bg-opacity-10 me-3" style="width: 48px; height: 48px;">
+                            <i class="fas fa-calendar-alt text-success"></i>
+                        </div>
+                        <div>
+                            <p class="text-muted small mb-0">Pay Date</p>
+                            <p class="fw-bold mb-0">{{ payroll.period.pay_date.strftime('%d %b %Y') }}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-warning bg-opacity-10 me-3" style="width: 48px; height: 48px;">
+                            <i class="fas fa-money-bill-wave text-warning"></i>
+                        </div>
+                        <div>
+                            <p class="text-muted small mb-0">Total Net</p>
+                            <p class="fw-bold mb-0 fs-5">KSh {{ "{:,.2f}".format(payroll.total_net) }}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-circle bg-info bg-opacity-10 me-3" style="width: 48px; height: 48px;">
+                            <i class="fas fa-check-circle text-info"></i>
+                        </div>
+                        <div>
+                            <p class="text-muted small mb-0">Status</p>
+                            <p class="fw-bold mb-0 text-success">{{ payroll.status }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <form method="POST" id="paymentForm">
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-header bg-success bg-opacity-10 border-0 pt-4 px-4">
+                <h5 class="fw-bold text-success"><i class="fas fa-money-bill-wave me-2"></i>Payment Details by Method</h5>
+            </div>
+            <div class="card-body p-4">
+                {% for key, group in groups.items() %}
+                <div class="mb-5 p-3 bg-light rounded-4 payment-group" data-group="{{ key }}">
+                    <!-- Group Header -->
+                    <div class="d-flex flex-wrap align-items-center justify-content-between mb-2">
+                        <h6 class="fw-bold mb-0">
+                            {% if group.method.name == 'BANK_TRANSFER' %}
+                                <i class="fas fa-university me-2 text-primary"></i>Bank Transfer – 
+                                <span class="badge bg-primary">{{ group.bank_name }}</span>
+                            {% elif group.method.name == 'M_PESA' %}
+                                <i class="fas fa-mobile-alt me-2 text-success"></i>M‑PESA
+                            {% elif group.method.name == 'CASH' %}
+                                <i class="fas fa-money-bill me-2 text-warning"></i>Cash
+                            {% elif group.method.name == 'CHEQUE' %}
+                                <i class="fas fa-money-check me-2 text-info"></i>Cheque
+                            {% endif %}
+                        </h6>
+                        <div>
+                            <span class="badge bg-secondary me-2">{{ group.count }} employees</span>
+                            <span class="badge bg-success">Total: KSh {{ "{:,.2f}".format(group.total) }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Payment Inputs -->
+                    <div class="row g-2 align-items-end">
+                        <input type="hidden" name="method_{{ key }}" value="{{ group.method.name }}">
+
+                        <div class="col-md-2">
+                            <label class="form-label fw-semibold small">Amount (KES)</label>
+                            <input type="number" name="amount_{{ key }}" step="0.01" class="form-control amount-input" value="{{ group.total }}" required data-group="{{ key }}">
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold small">Transaction Reference</label>
+                            <input type="text" name="ref_{{ key }}" class="form-control" 
+                                   placeholder="{% if group.method.name == 'CHEQUE' %}Cheque number{% else %}e.g., bank ref, M‑PESA ID{% endif %}">
+                        </div>
+
+                        {% if group.method.name == 'BANK_TRANSFER' %}
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold small">Source Bank Account</label>
+                            <select name="bank_account_{{ key }}" class="form-select bank-select" data-group="{{ key }}">
+                                <option value="">Select hospital account</option>
+                                {% for ba in bank_accounts %}
+                                <option value="{{ ba.id }}" data-balance="{{ ba.current_balance }}">{{ ba.bank_name }} – {{ ba.account_number }} (Bal: KSh {{ "{:,.2f}".format(ba.current_balance) }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% endif %}
+
+                        <div class="col-md-2">
+                            <label class="form-label fw-semibold small">Notes</label>
+                            <input type="text" name="notes_{{ key }}" class="form-control" placeholder="Optional">
+                        </div>
+                    </div>
+
+                    <!-- Balance Warning (for bank transfers) -->
+                    {% if group.method.name == 'BANK_TRANSFER' %}
+                    <div class="mt-2 balance-warning" id="warning_{{ key }}" style="display: none;">
+                        <div class="alert alert-danger py-1 small">
+                            <i class="fas fa-exclamation-triangle me-1"></i>Insufficient balance in selected account.
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Employee Toggle -->
+                    <div class="mt-2">
+                        <button class="btn btn-outline-secondary btn-sm toggle-employees" type="button" data-target="emp-{{ loop.index }}">
+                            <i class="fas fa-chevron-down me-1"></i> Show employees
+                        </button>
+                        <div class="employee-list mt-2" id="emp-{{ loop.index }}" style="display: none;">
+                            <ul class="list-group">
+                                {% for slip in group.details %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center py-2">
+                                    <span>
+                                        <i class="fas fa-user-circle text-primary me-2"></i>{{ slip.employee.full_name }}
+                                        {% if slip.employee.payroll_info and slip.employee.payroll_info.staff_no %}
+                                            <small class="text-muted">({{ slip.employee.payroll_info.staff_no }})</small>
+                                        {% endif %}
+                                    </span>
+                                    <span class="badge bg-primary">KSh {{ "{:,.2f}".format(slip.net_pay) }}</span>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+
+                <!-- Total Validation Alert -->
+                <div class="alert alert-info d-flex align-items-center" role="alert">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <div>
+                        Please ensure the total amount recorded matches the payroll net amount: 
+                        <strong>KSh {{ "{:,.2f}".format(payroll.total_net) }}</strong>
+                    </div>
+                </div>
+
+                <!-- Important Information Footer -->
+                <div class="alert alert-secondary d-flex align-items-start mt-3" role="alert">
+                    <i class="fas fa-info-circle me-2 mt-1"></i>
+                    <div>
+                        <p class="mb-1"><strong>Note:</strong> Upon confirmation, the selected bank accounts will be debited and payslips will be marked as paid. Payslips will be sent to employees via email (if configured).</p>
+                        <p class="mb-0">Funds will reflect in employee accounts once the bank finalises the transfers – this may take 1-2 working days.</p>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="d-flex justify-content-end gap-2 mt-3">
+                    <a href="{{ url_for('finance_web_bp.payroll_payment') }}" class="btn btn-outline-secondary rounded-pill px-4">
+                        <i class="fas fa-times me-1"></i>Cancel
+                    </a>
+                    <button type="submit" class="btn btn-success rounded-pill px-4" id="submitBtn">
+                        <i class="fas fa-check-circle me-1"></i>Confirm & Mark Paid
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- JavaScript remains unchanged – keep it exactly as before -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const bankSelects = document.querySelectorAll('.bank-select');
+    bankSelects.forEach(select => {
+        select.addEventListener('change', function() {
+            const group = this.dataset.group;
+            const amountInput = document.querySelector(`input[name="amount_${group}"]`);
+            const warningDiv = document.getElementById(`warning_${group}`);
+            if (!amountInput || !warningDiv) return;
+
+            const amount = parseFloat(amountInput.value) || 0;
+            const selectedOption = this.options[this.selectedIndex];
+            if (selectedOption && selectedOption.value) {
+                const balance = parseFloat(selectedOption.dataset.balance) || 0;
+                if (amount > balance) {
+                    warningDiv.style.display = 'block';
+                } else {
+                    warningDiv.style.display = 'none';
+                }
+            } else {
+                warningDiv.style.display = 'none';
+            }
+        });
+    });
+
+    const amountInputs = document.querySelectorAll('.amount-input');
+    amountInputs.forEach(input => {
+        input.addEventListener('input', function() {
+            const group = this.dataset.group;
+            const bankSelect = document.querySelector(`select[name="bank_account_${group}"]`);
+            if (bankSelect) {
+                const event = new Event('change', { bubbles: true });
+                bankSelect.dispatchEvent(event);
+            }
+        });
+    });
+
+    const toggleButtons = document.querySelectorAll('.toggle-employees');
+    toggleButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const targetId = this.dataset.target;
+            const targetDiv = document.getElementById(targetId);
+            const icon = this.querySelector('i');
+
+            if (targetDiv.style.display === 'none') {
+                targetDiv.style.display = 'block';
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-up');
+                this.innerHTML = this.innerHTML.replace('Show employees', 'Hide employees');
+            } else {
+                targetDiv.style.display = 'none';
+                icon.classList.remove('fa-chevron-up');
+                icon.classList.add('fa-chevron-down');
+                this.innerHTML = this.innerHTML.replace('Hide employees', 'Show employees');
+            }
+        });
+    });
+
+    document.getElementById('paymentForm').addEventListener('submit', function(e) {
+        let total = 0;
+        const amounts = document.querySelectorAll('.amount-input');
+        amounts.forEach(input => {
+            total += parseFloat(input.value) || 0;
+        });
+        const expected = {{ payroll.total_net }};
+        if (Math.abs(total - expected) > 0.01) {
+            e.preventDefault();
+            alert(`Total amount (KSh ${total.toFixed(2)}) does not match payroll net (KSh ${expected.toFixed(2)}). Please adjust.`);
+        }
+    });
+});
+</script>
+
+<style>
+    .bg-gradient-info {
+        background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+    }
+    .text-white-80 {
+        color: rgba(255,255,255,0.8);
+    }
+    .icon-circle {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .hover-lift {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hover-lift:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.1) !important;
+    }
+    .payment-group {
+        border-left: 4px solid #28a745;
+        transition: all 0.2s;
+    }
+    .payment-group:hover {
+        background-color: #ffffff !important;
+    }
+    .badge {
+        font-weight: 500;
+    }
+    .alert {
+        border-radius: 0.75rem;
+    }
+    .employee-list {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+</style>
+{% endblock %}

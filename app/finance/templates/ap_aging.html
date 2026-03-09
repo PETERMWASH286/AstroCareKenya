@@ -1,0 +1,268 @@
+{% extends "base.html" %}
+
+{% block title %}Accounts Payable Aging{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Header with gradient -->
+    <div class="bg-gradient-primary text-white p-4 rounded-4 mb-4 shadow-sm">
+        <div class="d-flex flex-wrap justify-content-between align-items-center">
+            <div>
+                <h1 class="display-6 fw-bold">Accounts Payable Aging</h1>
+                <p class="text-white-80 mb-0">Track outstanding supplier invoices</p>
+            </div>
+            <div class="mt-3 mt-md-0">
+                <span class="badge bg-light text-dark fs-5 p-2">Total Payables: KSh {{ "{:,.2f}".format(total_outstanding) }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <p class="text-uppercase small fw-bold text-success mb-1">Current (0-30 days)</p>
+                    <h3 class="mb-0 fw-bold">KSh {{ "{:,.2f}".format(bucket_totals.current) }}</h3>
+                    <small class="text-muted">{{ aging.current|length }} invoices</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <p class="text-uppercase small fw-bold text-warning mb-1">31-60 Days</p>
+                    <h3 class="mb-0 fw-bold">KSh {{ "{:,.2f}".format(bucket_totals['30_60']) }}</h3>
+                    <small class="text-muted">{{ aging['30_60']|length }} invoices</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <p class="text-uppercase small fw-bold text-orange mb-1">61-90 Days</p>
+                    <h3 class="mb-0 fw-bold">KSh {{ "{:,.2f}".format(bucket_totals['60_90']) }}</h3>
+                    <small class="text-muted">{{ aging['60_90']|length }} invoices</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <p class="text-uppercase small fw-bold text-danger mb-1">90+ Days</p>
+                    <h3 class="mb-0 fw-bold">KSh {{ "{:,.2f}".format(bucket_totals['90_plus']) }}</h3>
+                    <small class="text-muted">{{ aging['90_plus']|length }} invoices</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+            <ul class="nav nav-tabs card-header-tabs" id="agingTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="current-tab" data-bs-toggle="tab" data-bs-target="#current" type="button" role="tab">Current (0-30)</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="30-60-tab" data-bs-toggle="tab" data-bs-target="#30-60" type="button" role="tab">31-60 Days</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="60-90-tab" data-bs-toggle="tab" data-bs-target="#60-90" type="button" role="tab">61-90 Days</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="90-plus-tab" data-bs-toggle="tab" data-bs-target="#90-plus" type="button" role="tab">90+ Days</button>
+                </li>
+            </ul>
+        </div>
+        <div class="card-body p-4">
+            <div class="tab-content" id="agingTabsContent">
+                <!-- Current Tab -->
+                <div class="tab-pane fade show active" id="current" role="tabpanel">
+                    {% if aging.current %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle" id="currentTable">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>Invoice #</th>
+                                    <th>Supplier</th>
+                                    <th>Due Date</th>
+                                    <th>Days Overdue</th>
+                                    <th class="text-end">Balance Due</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for inv in aging.current %}
+                                <tr>
+                                    <td><span class="fw-semibold">{{ inv.invoice_number }}</span></td>
+                                    <td>{{ inv.supplier_name }}</td>
+                                    <td>{{ inv.due_date }}</td>
+                                    <td>
+                                        {% if inv.days_overdue > 0 %}
+                                        <span class="badge bg-warning text-dark">{{ inv.days_overdue }} days</span>
+                                        {% else %}
+                                        <span class="badge bg-success">Current</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end fw-bold">KSh {{ "{:,.2f}".format(inv.balance_due) }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-center text-muted py-4">No current invoices.</p>
+                    {% endif %}
+                </div>
+
+                <!-- 31-60 Days Tab -->
+                <div class="tab-pane fade" id="30-60" role="tabpanel">
+                    {% if aging['30_60'] %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle" id="tab30-60">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>Invoice #</th>
+                                    <th>Supplier</th>
+                                    <th>Due Date</th>
+                                    <th>Days Overdue</th>
+                                    <th class="text-end">Balance Due</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for inv in aging['30_60'] %}
+                                <tr>
+                                    <td>{{ inv.invoice_number }}</td>
+                                    <td>{{ inv.supplier_name }}</td>
+                                    <td>{{ inv.due_date }}</td>
+                                    <td><span class="badge bg-warning text-dark">{{ inv.days_overdue }} days</span></td>
+                                    <td class="text-end fw-bold">KSh {{ "{:,.2f}".format(inv.balance_due) }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-center text-muted py-4">No invoices in this range.</p>
+                    {% endif %}
+                </div>
+
+                <!-- 61-90 Days Tab -->
+                <div class="tab-pane fade" id="60-90" role="tabpanel">
+                    {% if aging['60_90'] %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle" id="tab60-90">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>Invoice #</th>
+                                    <th>Supplier</th>
+                                    <th>Due Date</th>
+                                    <th>Days Overdue</th>
+                                    <th class="text-end">Balance Due</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for inv in aging['60_90'] %}
+                                <tr>
+                                    <td>{{ inv.invoice_number }}</td>
+                                    <td>{{ inv.supplier_name }}</td>
+                                    <td>{{ inv.due_date }}</td>
+                                    <td><span class="badge bg-orange">{{ inv.days_overdue }} days</span></td>
+                                    <td class="text-end fw-bold">KSh {{ "{:,.2f}".format(inv.balance_due) }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-center text-muted py-4">No invoices in this range.</p>
+                    {% endif %}
+                </div>
+
+                <!-- 90+ Days Tab -->
+                <div class="tab-pane fade" id="90-plus" role="tabpanel">
+                    {% if aging['90_plus'] %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle" id="tab90-plus">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>Invoice #</th>
+                                    <th>Supplier</th>
+                                    <th>Due Date</th>
+                                    <th>Days Overdue</th>
+                                    <th class="text-end">Balance Due</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for inv in aging['90_plus'] %}
+                                <tr>
+                                    <td>{{ inv.invoice_number }}</td>
+                                    <td>{{ inv.supplier_name }}</td>
+                                    <td>{{ inv.due_date }}</td>
+                                    <td><span class="badge bg-danger">{{ inv.days_overdue }} days</span></td>
+                                    <td class="text-end fw-bold">KSh {{ "{:,.2f}".format(inv.balance_due) }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-center text-muted py-4">No invoices in this range.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Button -->
+    <div class="text-end">
+        <button class="btn btn-outline-primary rounded-pill px-4" onclick="window.print()">
+            <i class="fas fa-print me-2"></i>Print Report
+        </button>
+    </div>
+</div>
+
+<!-- DataTables initialization -->
+<script>
+$(document).ready(function() {
+    $('.table').DataTable({
+        pageLength: 25,
+        lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "All"]],
+        order: [[2, 'asc']], // sort by due date
+        responsive: true
+    });
+});
+</script>
+
+<style>
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .text-white-80 {
+        color: rgba(255,255,255,0.8);
+    }
+    .hover-lift {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hover-lift:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.75rem 1.5rem rgba(0,0,0,0.1) !important;
+    }
+    .bg-orange {
+        background-color: #fd7e14;
+        color: #fff;
+    }
+    .nav-tabs .nav-link {
+        color: #495057;
+        font-weight: 500;
+    }
+    .nav-tabs .nav-link.active {
+        color: #667eea;
+        border-bottom: 2px solid #667eea;
+    }
+    .badge {
+        font-weight: 500;
+        padding: 0.5em 0.8em;
+    }
+</style>
+{% endblock %}

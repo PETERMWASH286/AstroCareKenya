@@ -1,0 +1,424 @@
+{% extends "base.html" %}
+
+{% block title %}Stock Pricing Management{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header with Stats -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Stock Pricing</h1>
+        <p class="text-gray-600 dark:text-gray-400">Manage selling prices for all stock items</p>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Total Items</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ total_items }}</p>
+                </div>
+                <div class="p-3 bg-blue-100 dark:bg-blue-900 rounded-full">
+                    <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Priced</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ priced_count }}</p>
+                </div>
+                <div class="p-3 bg-green-100 dark:bg-green-900 rounded-full">
+                    <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Need Pricing</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ unpriced_count }}</p>
+                </div>
+                <div class="p-3 bg-amber-100 dark:bg-amber-900 rounded-full">
+                    <svg class="w-6 h-6 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Categories</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ categories|length }}</p>
+                </div>
+                <div class="p-3 bg-purple-100 dark:bg-purple-900 rounded-full">
+                    <svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters Card -->
+    <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6 mb-8">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Filters</h2>
+            <button id="clearFilters" class="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+                Clear all
+            </button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Search -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Search</label>
+                <div class="relative">
+                    <input type="text" id="searchInput" placeholder="Name or SKU..." 
+                           class="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    <div class="absolute left-3 top-2.5 text-gray-400">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            <!-- Category Filter -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
+                <select id="categoryFilter" class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    <option value="">All Categories</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat }}">{{ cat }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <!-- Supplier Filter -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Supplier</label>
+                <select id="supplierFilter" class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    <option value="">All Suppliers</option>
+                    {% for sup in suppliers %}
+                    <option value="{{ sup }}">{{ sup }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <!-- Date Range -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Created after</label>
+                <input type="date" id="dateFrom" class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+            </div>
+        </div>
+        <div class="flex justify-end mt-4">
+            <p class="text-sm text-gray-500 dark:text-gray-400" id="filterResultCount">Showing all items</p>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="mb-4 border-b border-gray-200 dark:border-gray-700">
+        <ul class="flex flex-wrap -mb-px text-sm font-medium text-center" id="pricingTabs">
+            <li class="mr-2">
+                <button class="inline-block p-4 border-b-2 rounded-t-lg active-tab" id="tab-need" data-tab="need">
+                    Need Pricing <span class="ml-1 text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">{{ unpriced_count }}</span>
+                </button>
+            </li>
+            <li class="mr-2">
+                <button class="inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:border-gray-300 dark:hover:border-gray-500" id="tab-priced" data-tab="priced">
+                    Priced Items <span class="ml-1 text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">{{ priced_count }}</span>
+                </button>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Need Pricing Table -->
+    <div id="needTable" class="tab-content">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Item</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">SKU</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Supplier</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider">Buying Price</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider">Current Stock</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Created</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">New Selling Price</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                        {% for item in without_price %}
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors item-row" 
+                            data-name="{{ item.name|lower }}"
+                            data-sku="{{ item.sku|lower }}"
+                            data-category="{{ item.category|lower }}"
+                            data-supplier="{{ item.supplier|lower }}"
+                            data-created="{{ item.created_at.strftime('%Y-%m-%d') if item.created_at else '' }}">
+                            <td class="px-6 py-4">
+                                <div class="font-medium text-gray-900 dark:text-white">{{ item.name }}</div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400">{{ item.category }}</div>
+                            </td>
+                            <td class="px-6 py-4 text-gray-700 dark:text-gray-300">{{ item.sku }}</td>
+                            <td class="px-6 py-4 text-gray-700 dark:text-gray-300">{{ item.supplier }}</td>
+                            <td class="px-6 py-4 text-right text-gray-700 dark:text-gray-300">KSh {{ "{:,.2f}".format(item.unit_price) }}</td>
+                            <td class="px-6 py-4 text-right">
+                                <span class="inline-flex items-center gap-1">
+                                    <span class="text-gray-900 dark:text-white">{{ item.current_stock or 0 }}</span>
+                                    <span class="text-xs text-gray-500 dark:text-gray-400">({{ item.quantity or 0 }})</span>
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-gray-500 dark:text-gray-400 text-sm">
+                                {% if item.created_at %}
+                                    {{ item.created_at.strftime('%d %b %Y') }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4">
+                                <form method="POST" class="flex items-center gap-2">
+                                    <input type="hidden" name="stock_id" value="{{ item.id }}">
+                                    <input type="number" name="selling_price" step="0.01" min="0"
+                                           class="w-28 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                           placeholder="Price">
+                                    <button type="submit"
+                                            class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-md transition-colors shadow-sm flex items-center gap-1">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                        </svg>
+                                        Set
+                                    </button>
+                                </form>
+                            </td>
+                            <td class="px-6 py-4 text-center">
+                                <form method="POST" onsubmit="return confirm('Clear selling price?')">
+                                    <input type="hidden" name="stock_id" value="{{ item.id }}">
+                                    <input type="hidden" name="selling_price" value="">
+                                    <button type="submit"
+                                            class="text-xs text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 flex items-center justify-center gap-1">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                        </svg>
+                                        Clear
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="8" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">No items need pricing</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Priced Items Table -->
+    <div id="pricedTable" class="tab-content hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Item</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">SKU</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Supplier</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider">Buying Price</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider">Selling Price</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider">Markup</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Last Restocked</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Edit Price</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                        {% for item in with_price %}
+                        {% set markup = ((item.selling_price - item.unit_price) / item.unit_price * 100) if item.unit_price > 0 else 0 %}
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors item-row" 
+                            data-name="{{ item.name|lower }}"
+                            data-sku="{{ item.sku|lower }}"
+                            data-category="{{ item.category|lower }}"
+                            data-supplier="{{ item.supplier|lower }}"
+                            data-created="{{ item.created_at.strftime('%Y-%m-%d') if item.created_at else '' }}">
+                            <td class="px-6 py-4">
+                                <div class="font-medium text-gray-900 dark:text-white">{{ item.name }}</div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400">{{ item.category }}</div>
+                            </td>
+                            <td class="px-6 py-4 text-gray-700 dark:text-gray-300">{{ item.sku }}</td>
+                            <td class="px-6 py-4 text-gray-700 dark:text-gray-300">{{ item.supplier }}</td>
+                            <td class="px-6 py-4 text-right text-gray-700 dark:text-gray-300">KSh {{ "{:,.2f}".format(item.unit_price) }}</td>
+                            <td class="px-6 py-4 text-right font-medium text-green-600 dark:text-green-400">KSh {{ "{:,.2f}".format(item.selling_price) }}</td>
+                            <td class="px-6 py-4 text-right">
+                                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium 
+                                    {% if markup >= 50 %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
+                                    {% elif markup >= 20 %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200
+                                    {% else %}bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300{% endif %}">
+                                    {{ "%.1f"|format(markup) }}%
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-gray-500 dark:text-gray-400 text-sm">
+                                {% if item.last_restocked %}
+                                    {{ item.last_restocked.strftime('%d %b %Y') }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4">
+                                <form method="POST" class="flex items-center gap-2">
+                                    <input type="hidden" name="stock_id" value="{{ item.id }}">
+                                    <input type="number" name="selling_price" step="0.01" min="0"
+                                           value="{{ item.selling_price }}"
+                                           class="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                    <button type="submit"
+                                            class="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-md transition-colors">
+                                        Update
+                                    </button>
+                                </form>
+                            </td>
+                            <td class="px-6 py-4 text-center">
+                                <form method="POST" onsubmit="return confirm('Remove selling price?')">
+                                    <input type="hidden" name="stock_id" value="{{ item.id }}">
+                                    <input type="hidden" name="selling_price" value="">
+                                    <button type="submit"
+                                            class="text-xs text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 flex items-center justify-center gap-1">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                        </svg>
+                                        Remove
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="9" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">No priced items found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript for tabs and filtering -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Tab switching
+        const tabNeed = document.getElementById('tab-need');
+        const tabPriced = document.getElementById('tab-priced');
+        const needTable = document.getElementById('needTable');
+        const pricedTable = document.getElementById('pricedTable');
+        const tabs = [tabNeed, tabPriced];
+
+        function activateTab(active) {
+            tabs.forEach(t => t.classList.remove('active-tab', 'border-blue-600', 'text-blue-600', 'dark:text-blue-500'));
+            if (active === 'need') {
+                tabNeed.classList.add('active-tab', 'border-blue-600', 'text-blue-600', 'dark:text-blue-500');
+                needTable.classList.remove('hidden');
+                pricedTable.classList.add('hidden');
+            } else {
+                tabPriced.classList.add('active-tab', 'border-blue-600', 'text-blue-600', 'dark:text-blue-500');
+                pricedTable.classList.remove('hidden');
+                needTable.classList.add('hidden');
+            }
+        }
+
+        tabNeed.addEventListener('click', () => activateTab('need'));
+        tabPriced.addEventListener('click', () => activateTab('priced'));
+
+        // Filtering
+        const searchInput = document.getElementById('searchInput');
+        const categoryFilter = document.getElementById('categoryFilter');
+        const supplierFilter = document.getElementById('supplierFilter');
+        const dateFrom = document.getElementById('dateFrom');
+        const clearBtn = document.getElementById('clearFilters');
+        const resultCountSpan = document.getElementById('filterResultCount');
+
+        function filterRows() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const category = categoryFilter.value.toLowerCase();
+            const supplier = supplierFilter.value.toLowerCase();
+            const fromDate = dateFrom.value ? new Date(dateFrom.value) : null;
+
+            const rows = document.querySelectorAll('.item-row');
+            let visibleCount = 0;
+
+            rows.forEach(row => {
+                const name = row.getAttribute('data-name') || '';
+                const sku = row.getAttribute('data-sku') || '';
+                const rowCategory = row.getAttribute('data-category') || '';
+                const rowSupplier = row.getAttribute('data-supplier') || '';
+                const createdStr = row.getAttribute('data-created');
+                let matches = true;
+
+                // Search
+                if (searchTerm && !(name.includes(searchTerm) || sku.includes(searchTerm))) {
+                    matches = false;
+                }
+                // Category
+                if (category && rowCategory !== category) {
+                    matches = false;
+                }
+                // Supplier
+                if (supplier && rowSupplier !== supplier) {
+                    matches = false;
+                }
+                // Date
+                if (fromDate && createdStr) {
+                    const createdDate = new Date(createdStr);
+                    if (createdDate < fromDate) matches = false;
+                }
+
+                if (matches) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            // Update result count
+            resultCountSpan.textContent = `Showing ${visibleCount} items`;
+        }
+
+        [searchInput, categoryFilter, supplierFilter, dateFrom].forEach(el => {
+            el.addEventListener('input', filterRows);
+            el.addEventListener('change', filterRows);
+        });
+
+        clearBtn.addEventListener('click', function() {
+            searchInput.value = '';
+            categoryFilter.value = '';
+            supplierFilter.value = '';
+            dateFrom.value = '';
+            filterRows();
+        });
+
+        // Initial filter call
+        filterRows();
+    });
+</script>
+
+<style>
+    /* Active tab styling */
+    .active-tab {
+        border-bottom-color: #3b82f6;
+        color: #3b82f6;
+    }
+    .dark .active-tab {
+        border-bottom-color: #3b82f6;
+        color: #60a5fa;
+    }
+</style>
+{% endblock %}

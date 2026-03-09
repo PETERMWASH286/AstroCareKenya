@@ -5,7 +5,7 @@ from sqlalchemy import or_
 from flask import current_app, flash, g, redirect, render_template, request, jsonify, url_for
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import joinedload, subqueryload
-from app.finance.models import Insurance, InsuranceService, Invoice, InvoiceItem
+from app.finance.models import CashAccount, CashTransaction, Insurance, InsuranceService, Invoice, InvoiceItem, SalesReport, SalesReportItem
 from app.super_admin.models import HospitalProfile
 from . import patients_web_bp
 from app.extensions import db
@@ -794,10 +794,35 @@ def process_payment():
             # --- COMPREHENSIVE LOGIC: Handle all scenarios for service records ---
             current_app.logger.info(f"Processing services for visit {visit.id}. Category: {visit.visit_type_category}")
 
+            computed_total = 0.0
             for svc in services:
-                # Get all consultations for this visit
+                if patient_category == 'walkin':
+                    unit_price = svc.walkin_price or svc.price
+                elif patient_category == 'special_clinic':
+                    unit_price = svc.special_clinic_price or svc.price
+                else:  # general
+                    unit_price = svc.price
+
+                # Optional: verify that the computed total matches the submitted total_amount
+                computed_total += unit_price
+
+            if abs(computed_total - total_amount) > 0.01:  # tolerate small rounding
+                raise ValueError(f"Total amount mismatch: expected {computed_total:.2f}, got {total_amount:.2f}")
+
+            # ───────────────────────────────────────────────────────────
+            # --- Create service records with the correct price ---
+            # ───────────────────────────────────────────────────────────
+            for svc in services:
+                # Determine price again (or reuse from above)
+                if patient_category == 'walkin':
+                    unit_price = svc.walkin_price or svc.price
+                elif patient_category == 'special_clinic':
+                    unit_price = svc.special_clinic_price or svc.price
+                else:
+                    unit_price = svc.price
+
                 consultation_ids = [c.id for c in visit.consultations] if visit.consultations else []
-                
+
                 if svc.category.lower() == 'pharmacy':
                     # Strategy: Prefer updating consultation records, fallback to creating visit records
                     existing_medication = None
@@ -815,6 +840,8 @@ def process_payment():
                         existing_medication.visit_id = visit.id
                         existing_medication.payment_status = 'paid'
                         existing_medication.is_paid = True
+                        existing_medication.price = unit_price  # <-- use category‑specific price
+
                         current_app.logger.info(f"UPDATED: Consultation Medication {existing_medication.id} for {svc.name} -> Visit {visit.id}, marked as paid")
                     
                     else:
@@ -831,7 +858,7 @@ def process_payment():
                                 service_id=svc.id,
                                 visit_id=visit.id, 
                                 quantity=1, 
-                                price=svc.price,
+                            price=unit_price,  # <-- use category‑specific price
                                 is_paid=True,          
                                 payment_status='paid'
                             )
@@ -839,77 +866,76 @@ def process_payment():
                             current_app.logger.info(f"CREATED: New Medication for {svc.name} in Visit {visit.id}")
 
                 elif svc.category == 'Laboratory':
-                    # Similar logic for Lab Tests
                     existing_lab_test = None
-                    
                     if consultation_ids:
                         existing_lab_test = LabTest.query.filter(
                             LabTest.consultation_id.in_(consultation_ids),
                             LabTest.service_id == svc.id,
                             LabTest.payment_status == 'pending'
                         ).first()
-                    
+
                     if existing_lab_test:
                         # Update existing consultation lab test
                         existing_lab_test.visit_id = visit.id
                         existing_lab_test.payment_status = 'paid'
                         existing_lab_test.is_paid = True
+                        existing_lab_test.price = unit_price
                         current_app.logger.info(f"UPDATED: Consultation LabTest {existing_lab_test.id} for {svc.name} -> Visit {visit.id}, marked as paid")
-                    
+
                     else:
                         existing_visit_lab_test = LabTest.query.filter_by(visit_id=visit.id, service_id=svc.id).first()
                         if existing_visit_lab_test:
                             existing_visit_lab_test.payment_status = 'paid'
                             existing_visit_lab_test.is_paid = True
+                            existing_visit_lab_test.price = svc.price
                             current_app.logger.info(f"UPDATED: Existing Visit LabTest {existing_visit_lab_test.id} for {svc.name} -> marked as paid")
                         else:
                             lab_test = LabTest(
                                 service_id=svc.id,
-                                visit_id=visit.id, 
+                                visit_id=visit.id,
                                 status='requested',
-                                is_paid=True,      
+                                is_paid=True,
                                 payment_status='paid',
+                            price=unit_price,  # <-- use category‑specific price
                                 requested_at=datetime.utcnow()
                             )
                             db.session.add(lab_test)
                             current_app.logger.info(f"CREATED: New LabTest for {svc.name} in Visit {visit.id}")
-
                 elif svc.category.lower() == 'radiology':
-                    # Similar logic for Radiology
                     existing_radiology = None
-                    
                     if consultation_ids:
                         existing_radiology = Radiology.query.filter(
                             Radiology.consultation_id.in_(consultation_ids),
                             Radiology.service_id == svc.id,
                             Radiology.payment_status == 'pending'
                         ).first()
-                    
+
                     if existing_radiology:
-                        # Update existing consultation radiology
                         existing_radiology.visit_id = visit.id
                         existing_radiology.payment_status = 'paid'
                         existing_radiology.is_paid = True
+                        existing_radiology.price = svc.price   # 👈 set price
                         current_app.logger.info(f"UPDATED: Consultation Radiology {existing_radiology.id} for {svc.name} -> Visit {visit.id}, marked as paid")
-                    
+
                     else:
                         existing_visit_radiology = Radiology.query.filter_by(visit_id=visit.id, service_id=svc.id).first()
                         if existing_visit_radiology:
                             existing_visit_radiology.payment_status = 'paid'
                             existing_visit_radiology.is_paid = True
+                            existing_radiology.price = unit_price
                             current_app.logger.info(f"UPDATED: Existing Visit Radiology {existing_visit_radiology.id} for {svc.name} -> marked as paid")
                         else:
                             radiology_order = Radiology(
                                 service_id=svc.id,
-                                visit_id=visit.id, 
+                                visit_id=visit.id,
                                 status='requested',
-                                is_paid=True,      
+                                is_paid=True,
                                 payment_status='paid',
+                            price=unit_price,  # <-- use category‑specific price
                                 requested_at=datetime.utcnow()
                             )
                             db.session.add(radiology_order)
                             current_app.logger.info(f"CREATED: New Radiology for {svc.name} in Visit {visit.id}")
-
             # 10) Create CASH invoice (pending)
             invoice = Invoice(
                 visit_id=visit.id,
@@ -1289,6 +1315,128 @@ def mpesa_callback():
             tx.status        = 'failed'
             tx.error_message = result_desc
 
+
+        # Create SalesReport if it doesn't already exist for this transaction
+        if not SalesReport.query.filter_by(transaction_id=tx.id).first():
+            # Gather patient name from patient object
+            patient = tx.visit.patient if tx.visit and tx.visit.patient else None
+            patient_name = f"{patient.first_name} {patient.last_name}" if patient else "Unknown"
+            invoice = Invoice.query.filter_by(visit_id=tx.visit.id).first()
+
+            # Create the sales report record
+            sales_report = SalesReport(
+                patient_id=tx.visit.patient_id,
+                patient_reg_no=patient.reg_no if patient else "",
+                patient_name=patient_name,
+                visit_id=tx.visit.id,
+                transaction_id=tx.id,
+                invoice_id=invoice.id if invoice else None,
+                total_amount=tx.amount,
+                payment_method='mpesa',
+                receipt_number=tx.receipt_number,
+                served_by=tx.served_by if hasattr(tx, 'served_by') else None,
+                patient_category=tx.visit.patient_category,
+                visit_type_category=tx.visit.visit_type_category,
+                sale_date=datetime.utcnow()  # or use tx.paid_at if set
+            )
+            db.session.add(sales_report)
+            db.session.flush()  # to get sales_report.id
+
+            # Add items for each service in the transaction
+            for svc in tx.services:
+                # Determine department (service.category)
+                department = svc.category
+                # For each service, there may be multiple items (e.g., multiple medications)
+                # We'll collect all relevant instances paid under this transaction.
+                # For simplicity, we'll create one item per service, but if you need per‑instance,
+                # you can query Medication/LabTest/Radiology filtered by visit and service.
+                # We'll also link to the specific instance if possible.
+
+                # For medications
+                if department.lower() == 'pharmacy':
+                    meds = Medication.query.filter_by(visit_id=tx.visit.id, service_id=svc.id, is_paid=True).all()
+                    for med in meds:
+                        item = SalesReportItem(
+                            sales_report_id=sales_report.id,
+                            service_id=svc.id,
+                            service_name=svc.name,
+                            department=department,
+                            quantity=med.quantity or 1,
+                            unit_price=med.price,
+                            total_price=med.price * (med.quantity or 1),
+                            medication_id=med.id
+                        )
+                        db.session.add(item)
+                # For laboratory
+                elif department == 'Laboratory':
+                    labs = LabTest.query.filter_by(visit_id=tx.visit.id, service_id=svc.id, is_paid=True).all()
+                    for lab in labs:
+                        item = SalesReportItem(
+                            sales_report_id=sales_report.id,
+                            service_id=svc.id,
+                            service_name=svc.name,
+                            department=department,
+                            quantity=1,
+                            unit_price=lab.price,
+                            total_price=lab.price,
+                            lab_test_id=lab.id
+                        )
+                        db.session.add(item)
+                # For radiology
+                elif department.lower() == 'radiology':
+                    rads = Radiology.query.filter_by(visit_id=tx.visit.id, service_id=svc.id, is_paid=True).all()
+                    for rad in rads:
+                        item = SalesReportItem(
+                            sales_report_id=sales_report.id,
+                            service_id=svc.id,
+                            service_name=svc.name,
+                            department=department,
+                            quantity=1,
+                            unit_price=rad.price,
+                            total_price=rad.price,
+                            radiology_id=rad.id
+                        )
+                        db.session.add(item)
+                else:
+                    # Fallback: generic item
+                    item = SalesReportItem(
+                        sales_report_id=sales_report.id,
+                        service_id=svc.id,
+                        service_name=svc.name,
+                        department=department,
+                        quantity=1,
+                        unit_price=svc.price,
+                        total_price=svc.price
+                    )
+                    db.session.add(item)
+
+            # Optional: log creation
+            current_app.logger.info(f"SalesReport {sales_report.id} created for transaction {tx.id}")
+        # --- Credit the Paybill Cash Account ---
+        paybill_account = CashAccount.query.filter_by(account_type='paybill', is_active=True).first()
+
+        if paybill_account:
+            # Create cash transaction instance with all fields except transaction_ref
+            cash_tx = CashTransaction(
+                transaction_type='deposit',
+                amount=tx.amount,
+                description=f"M-Pesa payment from {tx.phone} - Receipt: {tx.receipt_number}",
+                dest_cash_account_id=paybill_account.id,
+                source_transaction_id=tx.id,
+                status='completed',
+                completed_at=datetime.utcnow()
+            )
+            # Generate reference after transaction_type is set
+            cash_tx.transaction_ref = cash_tx.generate_ref()
+            db.session.add(cash_tx)
+
+            # Update cash account balance
+            paybill_account.current_balance += tx.amount
+            db.session.add(paybill_account)
+
+            current_app.logger.info(f"Paybill account {paybill_account.name} credited with {tx.amount}")
+        else:
+            current_app.logger.warning("No active paybill cash account found. Money not recorded in cash account.")
         db.session.commit()
         return jsonify({"status": "success"}), 200
 

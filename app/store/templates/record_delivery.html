@@ -57,46 +57,55 @@
 
             <div class="p-6">
                 <!-- LPO Details Card -->
-                <div class="bg-gray-50 rounded-lg p-6 mb-6 border border-gray-200">
-                    <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
-                        </svg>
-                        LPO Details - {{ lpo.lpo_number }}
-                    </h2>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="space-y-3">
-                            <div>
-                                <label class="text-sm text-gray-500">Supplier</label>
-                                <p class="font-medium">{{ lpo.supplier.name }}</p>
-                            </div>
-                            <div>
-                                <label class="text-sm text-gray-500">Item Name</label>
-                                <p class="font-medium">{{ lpo.item_name }}</p>
-                            </div>
-                            <div>
-                                <label class="text-sm text-gray-500">Category</label>
-                                <p class="font-medium">{{ lpo.category }}</p>
-                            </div>
-                        </div>
-                        
-                        <div class="space-y-3">
-                            <div>
-                                <label class="text-sm text-gray-500">Ordered Quantity</label>
-                                <p class="font-medium">{{ lpo.quantity }} {{ lpo.unit }}</p>
-                            </div>
-                            <div>
-                                <label class="text-sm text-gray-500">Unit Price</label>
-                                <p class="font-medium">KSh {{ "%.2f"|format(lpo.unit_price) }}</p>
-                            </div>
-                            <div>
-                                <label class="text-sm text-gray-500">Total Amount</label>
-                                <p class="font-medium text-green-600">KSh {{ "%.2f"|format(lpo.total_price) }}</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+<!-- LPO Details Card -->
+<div class="bg-gray-50 rounded-lg p-6 mb-6 border border-gray-200">
+    <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+        </svg>
+        LPO Details - {{ lpo.lpo_number }}
+    </h2>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="space-y-3">
+            <div>
+                <label class="text-sm text-gray-500">Supplier</label>
+                <p class="font-medium">{{ lpo.supplier.name }}</p>
+            </div>
+            <div>
+                <label class="text-sm text-gray-500">Item Name</label>
+                <p class="font-medium">{{ purchase_order.item_name }}</p>
+            </div>
+            <div>
+                <label class="text-sm text-gray-500">Category</label>
+                <p class="font-medium">{{ purchase_order.category }}</p>
+            </div>
+        </div>
+        
+        <div class="space-y-3">
+            <div>
+                <label class="text-sm text-gray-500">Ordered Quantity</label>
+                <p class="font-medium">{{ purchase_order.quantity }} {{ purchase_order.unit }}</p>
+            </div>
+            <div>
+                <label class="text-sm text-gray-500">Already Delivered</label>
+                <p class="font-medium">{{ purchase_order.quantity_delivered }} {{ purchase_order.unit }}</p>
+            </div>
+            <div>
+                <label class="text-sm text-gray-500">Pending Quantity</label>
+                <p class="font-medium">{{ purchase_order.pending_quantity }} {{ purchase_order.unit }}</p>
+            </div>
+            <div>
+                <label class="text-sm text-gray-500">Unit Price</label>
+                <p class="font-medium">KSh {{ "%.2f"|format(purchase_order.unit_price) }}</p>
+            </div>
+            <div>
+                <label class="text-sm text-gray-500">Total Amount</label>
+                <p class="font-medium text-green-600">KSh {{ "%.2f"|format(purchase_order.total_price) }}</p>
+            </div>
+        </div>
+    </div>
+</div>
 
                 <!-- Items Received Comparison -->
                 <div class="bg-white border border-gray-200 rounded-lg p-6">
@@ -104,53 +113,61 @@
                     
                     <form method="POST" class="space-y-4">
                         <input type="hidden" name="step" value="confirm_comparison">
-                        <input type="hidden" name="lpo_number" value="{{ lpo.lpo_number }}">
-                        
+<input type="hidden" name="order_id" value="{{ purchase_order.id }}">
+<input type="hidden" name="lpo_number" value="{{ lpo.lpo_number }}">                        
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <!-- Ordered Items -->
-                            <div>
-                                <h4 class="font-medium text-gray-700 mb-3">Ordered (LPO)</h4>
-                                <div class="space-y-2">
-                                    <div class="flex justify-between py-2 border-b">
-                                        <span class="text-gray-600">Item:</span>
-                                        <span class="font-medium">{{ lpo.item_name }}</span>
-                                    </div>
-                                    <div class="flex justify-between py-2 border-b">
-                                        <span class="text-gray-600">Quantity:</span>
-                                        <span class="font-medium">{{ lpo.quantity }} {{ lpo.unit }}</span>
-                                    </div>
-                                    <div class="flex justify-between py-2 border-b">
-                                        <span class="text-gray-600">Unit Price:</span>
-                                        <span class="font-medium">KSh {{ "%.2f"|format(lpo.unit_price) }}</span>
-                                    </div>
-                                </div>
-                            </div>
+<div>
+    <h4 class="font-medium text-gray-700 mb-3">Ordered (LPO)</h4>
+    <div class="space-y-2">
+        <div class="flex justify-between py-2 border-b">
+            <span class="text-gray-600">Item:</span>
+            <span class="font-medium">{{ purchase_order.item_name }}</span>
+        </div>
+        <div class="flex justify-between py-2 border-b">
+            <span class="text-gray-600">Total Ordered:</span>
+            <span class="font-medium">{{ purchase_order.quantity }} {{ purchase_order.unit }}</span>
+        </div>
+        <div class="flex justify-between py-2 border-b">
+            <span class="text-gray-600">Already Delivered:</span>
+            <span class="font-medium">{{ purchase_order.quantity_delivered }} {{ purchase_order.unit }}</span>
+        </div>
+        <div class="flex justify-between py-2 border-b">
+            <span class="text-gray-600">Pending:</span>
+            <span class="font-medium">{{ purchase_order.pending_quantity }} {{ purchase_order.unit }}</span>
+        </div>
+        <div class="flex justify-between py-2 border-b">
+            <span class="text-gray-600">Unit Price:</span>
+            <span class="font-medium">KSh {{ "%.2f"|format(purchase_order.unit_price) }}</span>
+        </div>
+    </div>
+</div>
                             
                             <!-- Received Items -->
-                            <div>
-                                <h4 class="font-medium text-gray-700 mb-3">Received</h4>
-                                <div class="space-y-3">
-                                    <div>
-                                        <label class="block text-sm text-gray-600 mb-1">Quantity Received</label>
-                                        <input type="number" 
-                                               name="quantity_received" 
-                                               value="{{ lpo.quantity }}"
-                                               min="0"
-                                               max="{{ lpo.quantity * 2 }}"
-                                               class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                               required>
-                                        <p class="text-xs text-gray-500 mt-1">Expected: {{ lpo.quantity }} {{ lpo.unit }}</p>
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm text-gray-600 mb-1">Condition</label>
-                                        <select name="preliminary_condition" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                            <option value="good">Good Condition</option>
-                                            <option value="partial_damage">Partial Damage</option>
-                                            <option value="damaged">Damaged</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
+<div>
+    <h4 class="font-medium text-gray-700 mb-3">Received</h4>
+    <div class="space-y-3">
+        <div>
+            <label class="block text-sm text-gray-600 mb-1">Quantity Received</label>
+            <input type="number" 
+                   name="quantity_received" 
+                   value="{{ purchase_order.pending_quantity }}"
+                   min="0"
+                   max="{{ purchase_order.pending_quantity }}"
+                   class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                   required>
+            <p class="text-xs text-gray-500 mt-1">Pending: {{ purchase_order.pending_quantity }} {{ purchase_order.unit }}</p>
+        </div>
+        <div>
+            <label class="block text-sm text-gray-600 mb-1">Condition</label>
+            <select name="preliminary_condition" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="good">Good Condition</option>
+                <option value="partial_damage">Partial Damage</option>
+                <option value="damaged">Damaged</option>
+            </select>
+        </div>
+    </div>
+</div>
                         </div>
 
                         <!-- Comparison Notes -->
@@ -212,20 +229,20 @@
                     <p class="text-sm text-gray-500">LPO Number</p>
                     <p class="font-medium">{{ lpo.lpo_number }}</p>
                 </div>
-                <div>
-                    <p class="text-sm text-gray-500">Item Name</p>
-                    <p class="font-medium">{{ lpo.item_name }}</p>
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <p class="text-sm text-gray-500">Ordered Qty</p>
-                        <p class="font-medium">{{ lpo.quantity }} {{ lpo.unit }}</p>
-                    </div>
-                    <div>
-                        <p class="text-sm text-gray-500">Received Qty</p>
-                        <p class="font-medium text-green-600">{{ quantity_received }} {{ lpo.unit }}</p>
-                    </div>
-                </div>
+<div>
+    <p class="text-sm text-gray-500">Item Name</p>
+    <p class="font-medium">{{ purchase_order.item_name }}</p>
+</div>
+<div class="grid grid-cols-2 gap-3">
+    <div>
+        <p class="text-sm text-gray-500">Ordered Qty</p>
+        <p class="font-medium">{{ purchase_order.quantity }} {{ purchase_order.unit }}</p>
+    </div>
+    <div>
+        <p class="text-sm text-gray-500">Received Qty</p>
+        <p class="font-medium text-green-600">{{ quantity_received }} {{ purchase_order.unit }}</p>
+    </div>
+</div>
             </div>
         </div>
 

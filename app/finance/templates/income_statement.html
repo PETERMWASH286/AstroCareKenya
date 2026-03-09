@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+
+{% block title %}Income Statement{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Header with gradient -->
+    <div class="bg-gradient-primary text-white p-4 rounded-4 mb-4 shadow-sm">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+            <div>
+                <h1 class="display-6 fw-bold">Income Statement</h1>
+                <p class="text-white-80 mb-0">Profit & Loss for {{ start_date.strftime('%d %b %Y') }} – {{ end_date.strftime('%d %b %Y') }}</p>
+            </div>
+            <div class="mt-3 mt-md-0 d-flex gap-2">
+                <button class="btn btn-light" onclick="window.print()">
+                    <i class="fas fa-print me-2"></i>Print
+                </button>
+                <button class="btn btn-success" id="exportExcel">
+                    <i class="fas fa-file-excel me-2"></i>Excel
+                </button>
+                <button class="btn btn-danger" id="exportPDF">
+                    <i class="fas fa-file-pdf me-2"></i>PDF
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Date Range Picker -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body p-4">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">Period</label>
+                    <select name="period" class="form-select" id="periodSelect">
+                        <option value="month" {% if period_type == 'month' %}selected{% endif %}>Monthly</option>
+                        <option value="year" {% if period_type == 'year' %}selected{% endif %}>Yearly</option>
+                        <option value="custom" {% if period_type == 'custom' %}selected{% endif %}>Custom Range</option>
+                    </select>
+                </div>
+                <div class="col-md-2" id="monthPicker">
+                    <label class="form-label fw-semibold">Month</label>
+                    <input type="month" name="month" class="form-control" value="{{ selected_month }}">
+                </div>
+                <div class="col-md-2" id="yearPicker" style="display:none;">
+                    <label class="form-label fw-semibold">Year</label>
+                    <input type="number" name="year" class="form-control" value="{{ selected_year }}" min="2020" max="2030">
+                </div>
+                <div class="col-md-2" id="startDatePicker" style="display:none;">
+                    <label class="form-label fw-semibold">From</label>
+                    <input type="date" name="start_date" class="form-control" value="{{ start_date.strftime('%Y-%m-%d') }}">
+                </div>
+                <div class="col-md-2" id="endDatePicker" style="display:none;">
+                    <label class="form-label fw-semibold">To</label>
+                    <input type="date" name="end_date" class="form-control" value="{{ end_date.strftime('%Y-%m-%d') }}">
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-filter me-2"></i>Update
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <p class="text-uppercase small text-muted mb-1">Revenue</p>
+                    <h3 class="mb-0 fw-bold text-primary">KSh {{ "{:,.2f}".format(revenue_total) }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <p class="text-uppercase small text-muted mb-1">COGS</p>
+                    <h3 class="mb-0 fw-bold text-warning">KSh {{ "{:,.2f}".format(cogs) }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <p class="text-uppercase small text-muted mb-1">Gross Profit</p>
+                    <h3 class="mb-0 fw-bold text-info">KSh {{ "{:,.2f}".format(gross_profit) }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <p class="text-uppercase small text-muted mb-1">Net Profit</p>
+<h3 class="mb-0 fw-bold {% if net_profit < 0 %}text-danger{% else %}text-success{% endif %}">
+    KSh {{ "{:,.2f}".format(net_profit) }}
+</h3>                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Income Statement Table -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+            <h5 class="fw-bold text-primary"><i class="fas fa-chart-line me-2"></i>Income Statement Details</h5>
+        </div>
+        <div class="card-body p-4">
+            <div class="table-responsive">
+                <table class="table table-borderless" style="width:100%; max-width:600px; margin:0 auto;">
+                    <tbody>
+                        <!-- Revenue -->
+                        <tr class="border-bottom">
+                            <th colspan="2" class="h5 text-primary py-3">REVENUE</th>
+                        </tr>
+                        {% for dept in dept_revenue %}
+                        <tr>
+                            <td class="ps-4">{{ dept.department }}</td>
+                            <td class="text-end">KSh {{ "{:,.2f}".format(dept.total) }}</td>
+                        </tr>
+                        {% endfor %}
+                        <tr class="fw-bold">
+                            <td>Total Revenue</td>
+                            <td class="text-end border-top">KSh {{ "{:,.2f}".format(revenue_total) }}</td>
+                        </tr>
+
+                        <!-- COGS -->
+                        <tr class="border-bottom">
+                            <th colspan="2" class="h5 text-warning py-3">COST OF GOODS SOLD</th>
+                        </tr>
+                        <tr>
+                            <td class="ps-4">Pharmacy (medications)</td>
+                            <td class="text-end">KSh {{ "{:,.2f}".format(cogs) }}</td>
+                        </tr>
+                        <tr class="fw-bold">
+                            <td>Total COGS</td>
+                            <td class="text-end border-top">KSh {{ "{:,.2f}".format(cogs) }}</td>
+                        </tr>
+
+                        <!-- Gross Profit -->
+                        <tr class="border-bottom">
+                            <th colspan="2" class="h5 text-info py-3">GROSS PROFIT</th>
+                        </tr>
+                        <tr class="fw-bold fs-5">
+                            <td></td>
+                            <td class="text-end">KSh {{ "{:,.2f}".format(gross_profit) }}</td>
+                        </tr>
+
+                        <!-- Expenses -->
+                        <tr class="border-bottom">
+                            <th colspan="2" class="h5 text-danger py-3">OPERATING EXPENSES</th>
+                        </tr>
+                        {% for cat, total in expenses_by_cat %}
+                        <tr>
+                            <td class="ps-4">{{ cat }}</td>
+                            <td class="text-end">KSh {{ "{:,.2f}".format(total) }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td class="ps-4 text-muted">No expenses recorded</td>
+                            <td class="text-end">KSh 0.00</td>
+                        </tr>
+                        {% endfor %}
+                        <tr class="fw-bold">
+                            <td>Total Expenses</td>
+                            <td class="text-end border-top">KSh {{ "{:,.2f}".format(expenses_total) }}</td>
+                        </tr>
+
+                        <!-- Net Profit -->
+                        <tr class="border-bottom">
+                            <th colspan="2" class="h5 text-success py-3">NET PROFIT</th>
+                        </tr>
+<tr class="fw-bold fs-4">
+    <td></td>
+    <td class="text-end border-top border-bottom border-dark {% if net_profit < 0 %}text-danger{% else %}text-success{% endif %}">
+        KSh {{ "{:,.2f}".format(net_profit) }}
+    </td>
+</tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript for dynamic date pickers -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const periodSelect = document.getElementById('periodSelect');
+    const monthPicker = document.getElementById('monthPicker');
+    const yearPicker = document.getElementById('yearPicker');
+    const startDatePicker = document.getElementById('startDatePicker');
+    const endDatePicker = document.getElementById('endDatePicker');
+
+    function togglePickers() {
+        const val = periodSelect.value;
+        monthPicker.style.display = val === 'month' ? 'block' : 'none';
+        yearPicker.style.display = val === 'year' ? 'block' : 'none';
+        startDatePicker.style.display = val === 'custom' ? 'block' : 'none';
+        endDatePicker.style.display = val === 'custom' ? 'block' : 'none';
+    }
+    periodSelect.addEventListener('change', togglePickers);
+    togglePickers();
+
+    // Export Excel (placeholder – implement with XLSX or similar)
+    document.getElementById('exportExcel').addEventListener('click', function() {
+        alert('Excel export – to be implemented with a library like XLSX or via server endpoint.');
+    });
+
+    // Export PDF (placeholder – could use window.print or jsPDF)
+    document.getElementById('exportPDF').addEventListener('click', function() {
+        window.print(); // simple print; can be enhanced with PDF library
+    });
+});
+</script>
+
+<!-- Custom CSS -->
+<style>
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .text-white-80 {
+        color: rgba(255,255,255,0.8);
+    }
+    .hover-lift {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hover-lift:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.75rem 1.5rem rgba(0,0,0,0.1) !important;
+    }
+    .table-borderless td, .table-borderless th {
+        border: none;
+    }
+    .border-top {
+        border-top: 1px solid #dee2e6 !important;
+    }
+    .border-bottom {
+        border-bottom: 2px solid #dee2e6 !important;
+    }
+    .border-dark {
+        border-color: #000 !important;
+    }
+</style>
+{% endblock %}

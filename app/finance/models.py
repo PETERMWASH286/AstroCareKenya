@@ -2,6 +2,7 @@ from datetime import datetime
 
 from flask import current_app
 from app.extensions import db
+from app.hr.models import PaymentMethod
 
 class Insurance(db.Model):
     __tablename__ = 'insurances'
@@ -291,11 +292,17 @@ class Expense(db.Model):
     attachments = db.Column(db.Text)  # Comma-separated file paths
     notes = db.Column(db.Text)
     
+    
+    # In Expense class
+    account_type = db.Column(db.String(20), nullable=True)  # 'bank' or 'cash'
+    account_id = db.Column(db.Integer, nullable=True)  # ID of BankAccount or CashAccount
+    receipt_number = db.Column(db.String(100), nullable=True)
     # Timestamps
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     payment_date = db.Column(db.DateTime)
-    
+    payroll_id = db.Column(db.Integer, db.ForeignKey('payrolls.id'), nullable=True)
+    payroll = db.relationship('Payroll', backref=db.backref('expense', uselist=False))
     # Relationships - FIXED Department reference
     category = db.relationship('ExpenseCategory', backref='expenses')
     department = db.relationship('Department', backref='expenses')  # Fixed
@@ -343,3 +350,318 @@ class Expense(db.Model):
         prefix = "EXP"
         date_str = self.expense_date.strftime("%y%m%d")
         return f"{prefix}-{date_str}-{self.id:06d}"
+    
+    
+
+class SalesReport(db.Model):
+    __tablename__ = 'sales_reports'
+    __audit_trail__ = True
+
+    id = db.Column(db.Integer, primary_key=True)
+    patient_id = db.Column(db.Integer, db.ForeignKey('patients.id'), nullable=False)
+    patient_reg_no = db.Column(db.String(50), nullable=False)
+    patient_name = db.Column(db.String(200))          # denormalised for quick access
+    visit_id = db.Column(db.Integer, db.ForeignKey('visits.id'), nullable=False)
+    transaction_id = db.Column(db.Integer, db.ForeignKey('transactions.id'), unique=True, nullable=False)
+    invoice_id = db.Column(db.Integer, db.ForeignKey('invoices.id'), nullable=False)
+    total_amount = db.Column(db.Float, nullable=False)
+    payment_method = db.Column(db.String(20))         # e.g., 'mpesa', 'cash'
+    receipt_number = db.Column(db.String(50))         # M-Pesa receipt, etc.
+    served_by = db.Column(db.String(100))             # staff name
+    patient_category = db.Column(db.String(20))       # general, walkin, special_clinic
+    visit_type_category = db.Column(db.String(50))    # from visit
+    sale_date = db.Column(db.DateTime, nullable=False)   # date/time of payment completion
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationships
+    patient = db.relationship('Patient')
+    visit = db.relationship('Visit')
+    transaction = db.relationship('Transaction')
+    invoice = db.relationship('Invoice')
+    items = db.relationship('SalesReportItem', backref='report', lazy='dynamic', cascade='all, delete-orphan')
+
+
+class SalesReportItem(db.Model):
+    __tablename__ = 'sales_report_items'
+    __audit_trail__ = True
+
+    id = db.Column(db.Integer, primary_key=True)
+    sales_report_id = db.Column(db.Integer, db.ForeignKey('sales_reports.id'), nullable=False)
+    service_id = db.Column(db.Integer, db.ForeignKey('services.id'), nullable=False)
+    service_name = db.Column(db.String(200))          # denormalised
+    department = db.Column(db.String(64))             # e.g., Pharmacy, Laboratory, Radiology
+    quantity = db.Column(db.Integer, default=1)
+    unit_price = db.Column(db.Float, nullable=False)
+    total_price = db.Column(db.Float, nullable=False)
+
+    # Optional: link to specific service instance (medication, labtest, radiology) for traceability
+    medication_id = db.Column(db.Integer, db.ForeignKey('medications.id'), nullable=True)
+    lab_test_id = db.Column(db.Integer, db.ForeignKey('lab_tests.id'), nullable=True)
+    radiology_id = db.Column(db.Integer, db.ForeignKey('radiology_orders.id'), nullable=True)
+    
+    
+    
+    
+    
+# app/finance/models.py
+
+class CashAccount(db.Model):
+    __tablename__ = 'cash_accounts'
+    __audit_trail__ = True
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)          # e.g., "Main Paybill", "Cash Drawer 1"
+    account_type = db.Column(db.String(50), nullable=False)   # 'paybill', 'cash_drawer', 'mobile_money'
+    account_number = db.Column(db.String(50), unique=True)    # paybill number (if applicable)
+    current_balance = db.Column(db.Float, nullable=False, default=0.0)
+    currency = db.Column(db.String(10), default='KES')
+    is_active = db.Column(db.Boolean, default=True)
+    description = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Explicit relationships – no ambiguity
+    outgoing_transactions = db.relationship(
+        'CashTransaction',
+        foreign_keys='CashTransaction.source_cash_account_id',
+        backref='source_account',
+        lazy='dynamic'
+    )
+    incoming_transactions = db.relationship(
+        'CashTransaction',
+        foreign_keys='CashTransaction.dest_cash_account_id',
+        backref='dest_account',
+        lazy='dynamic'
+    )
+
+    def __repr__(self):
+        return f'<CashAccount {self.name} ({self.account_type}) balance: {self.current_balance}>'
+    # In CashAccount model
+    def get_ledger_entries(self):
+        """Return list of dicts with date, description, debit, credit, balance for this cash account."""
+        from app.finance.models import CashTransaction
+        entries = []
+        # Combine incoming and outgoing transactions
+        for tx in self.incoming_transactions.order_by(CashTransaction.completed_at).all():
+            entries.append({
+                'date': tx.completed_at or tx.initiated_at,
+                'description': tx.description,
+                'debit': tx.amount,
+                'credit': 0,
+                'ref': tx.transaction_ref,
+                'type': tx.transaction_type
+            })
+        for tx in self.outgoing_transactions.order_by(CashTransaction.completed_at).all():
+            entries.append({
+                'date': tx.completed_at or tx.initiated_at,
+                'description': tx.description,
+                'debit': 0,
+                'credit': tx.amount,
+                'ref': tx.transaction_ref,
+                'type': tx.transaction_type
+            })
+        # Sort by date
+        entries.sort(key=lambda x: x['date'])
+        # Compute running balance
+        balance = 0
+        for e in entries:
+            balance += e['debit'] - e['credit']
+            e['balance'] = balance
+        return entries
+
+class BankAccount(db.Model):
+    __tablename__ = 'bank_accounts'
+    __audit_trail__ = True
+
+    id = db.Column(db.Integer, primary_key=True)
+    bank_name = db.Column(db.String(100), nullable=False)
+    account_name = db.Column(db.String(200), nullable=False)
+    account_number = db.Column(db.String(50), nullable=False, unique=True)
+    branch = db.Column(db.String(100))
+    swift_code = db.Column(db.String(20))
+    # NEW: Balance tracking
+    initial_balance = db.Column(db.Float, default=0.0)
+    current_balance = db.Column(db.Float, default=0.0)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    cash_transactions = db.relationship(
+        'CashTransaction',
+        foreign_keys='CashTransaction.dest_bank_account_id',
+        backref='bank_account',
+        lazy='dynamic'
+    )
+    manual_transactions = db.relationship(
+        'BankTransaction',
+        backref='bank_account',
+        lazy='dynamic',
+        cascade='all, delete-orphan'
+    )
+
+    def __repr__(self):
+        return f'<BankAccount {self.bank_name} - {self.account_number}>'
+
+    # In BankAccount model
+    def get_ledger_entries(self):
+        """Combine cash transfers and manual bank transactions into one ledger."""
+        from app.finance.models import CashTransaction, BankTransaction
+        entries = []
+        # Cash transfers into this bank
+        for tx in self.cash_transactions.order_by(CashTransaction.completed_at).all():
+            entries.append({
+                'date': tx.completed_at or tx.initiated_at,
+                'description': tx.description,
+                'debit': tx.amount,   # incoming to bank
+                'credit': 0,
+                'ref': tx.transaction_ref,
+                'type': 'cash_transfer'
+            })
+        # Manual transactions
+        for tx in self.manual_transactions.order_by(BankTransaction.transaction_date).all():
+            if tx.transaction_type in ('deposit', 'interest'):
+                debit = tx.amount
+                credit = 0
+            else:  # withdrawal, fee
+                debit = 0
+                credit = tx.amount
+            entries.append({
+                'date': tx.transaction_date,
+                'description': tx.description,
+                'debit': debit,
+                'credit': credit,
+                'ref': tx.reference,
+                'type': tx.transaction_type
+            })
+        entries.sort(key=lambda x: x['date'])
+        balance = self.initial_balance
+        for e in entries:
+            balance += e['debit'] - e['credit']
+            e['balance'] = balance
+        return entries
+
+class BankTransaction(db.Model):
+    __tablename__ = 'bank_transactions'
+    __audit_trail__ = True
+
+    id = db.Column(db.Integer, primary_key=True)
+    bank_account_id = db.Column(db.Integer, db.ForeignKey('bank_accounts.id'), nullable=False)
+    transaction_date = db.Column(db.DateTime, default=datetime.utcnow)
+    transaction_type = db.Column(db.String(20))  # 'deposit', 'withdrawal', 'fee', 'interest'
+    amount = db.Column(db.Float, nullable=False)
+    description = db.Column(db.Text)
+    reference = db.Column(db.String(100))
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    creator = db.relationship('User', foreign_keys=[created_by])
+
+    def __repr__(self):
+        return f'<BankTransaction {self.transaction_type} {self.amount}>'
+
+
+class CashTransaction(db.Model):
+    __tablename__ = 'cash_transactions'
+    __audit_trail__ = True
+
+    id = db.Column(db.Integer, primary_key=True)
+    transaction_ref = db.Column(db.String(100), unique=True, nullable=False)
+    transaction_type = db.Column(db.String(20), nullable=False)  # 'deposit', 'withdrawal', 'transfer', 'bank_transfer'
+    amount = db.Column(db.Float, nullable=False)
+    description = db.Column(db.Text)
+
+    source_cash_account_id = db.Column(db.Integer, db.ForeignKey('cash_accounts.id'), nullable=True)
+    dest_cash_account_id = db.Column(db.Integer, db.ForeignKey('cash_accounts.id'), nullable=True)
+    dest_bank_account_id = db.Column(db.Integer, db.ForeignKey('bank_accounts.id'), nullable=True)
+
+    # Link to original M‑Pesa transaction (if deposit)
+    source_transaction_id = db.Column(db.Integer, db.ForeignKey('transactions.id'), nullable=True)
+    source_transaction = db.relationship('Transaction', foreign_keys=[source_transaction_id])
+
+    # Batch tracking
+    batch_number = db.Column(db.String(50), nullable=True)
+    batch_date = db.Column(db.Date, nullable=True)
+
+    status = db.Column(db.String(20), default='completed')  # 'pending', 'completed', 'failed'
+    initiated_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    initiated_at = db.Column(db.DateTime, default=datetime.utcnow)
+    completed_at = db.Column(db.DateTime)
+
+    external_reference = db.Column(db.String(100))  # e.g., M‑Pesa business payment receipt
+
+    initiator = db.relationship('User', foreign_keys=[initiated_by])
+
+    def __repr__(self):
+        return f'<CashTransaction {self.transaction_ref} type={self.transaction_type} amount={self.amount}>'
+
+    def generate_ref(self):
+        """Generate a unique reference number."""
+        import random
+        import string
+        date_str = datetime.utcnow().strftime('%Y%m%d')
+        rand_part = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+        return f"{self.transaction_type.upper()}-{date_str}-{rand_part}"
+    
+    
+    
+class PayrollPayment(db.Model):
+    __tablename__ = 'payroll_payments'
+    __audit_trail__ = True
+
+    id = db.Column(db.Integer, primary_key=True)
+    payroll_id = db.Column(db.Integer, db.ForeignKey('payrolls.id'), nullable=False)
+    payment_method = db.Column(db.Enum(PaymentMethod), nullable=False)
+    amount = db.Column(db.Numeric(12, 2), nullable=False)
+    transaction_date = db.Column(db.DateTime, default=datetime.utcnow)
+    reference = db.Column(db.String(100), nullable=True)  # Bank ref, M-PESA ID, cheque number
+    bank_account_id = db.Column(db.Integer, db.ForeignKey('bank_accounts.id'), nullable=True)
+    notes = db.Column(db.Text, nullable=True)
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationships
+    payroll = db.relationship('Payroll', backref=db.backref('payments', lazy='dynamic'))
+    bank_account = db.relationship('BankAccount', backref='payroll_payments')
+    creator = db.relationship('User', foreign_keys=[created_by])
+
+    def __repr__(self):
+        return f'<PayrollPayment #{self.id} for Payroll {self.payroll_id}: {self.payment_method} KES {self.amount}>'
+    
+    
+
+
+class BankStatement(db.Model):
+    __tablename__ = 'bank_statements'
+    __audit_trail__ = True
+
+    id = db.Column(db.Integer, primary_key=True)
+    account_id = db.Column(db.Integer, db.ForeignKey('bank_accounts.id'), nullable=False)
+    statement_date = db.Column(db.Date, nullable=False)
+    opening_balance = db.Column(db.Float, default=0.0)
+    closing_balance = db.Column(db.Float, default=0.0)
+    file_path = db.Column(db.String(255))  # original uploaded file
+    uploaded_at = db.Column(db.DateTime, default=datetime.utcnow)
+    uploaded_by = db.Column(db.Integer, db.ForeignKey('user.id'))
+    is_reconciled = db.Column(db.Boolean, default=False)
+
+    # Relationships
+    account = db.relationship('BankAccount')
+    uploader = db.relationship('User', foreign_keys=[uploaded_by])
+    lines = db.relationship('BankStatementLine', backref='statement', lazy='dynamic', cascade='all, delete-orphan')
+
+
+class BankStatementLine(db.Model):
+    __tablename__ = 'bank_statement_lines'
+    __audit_trail__ = True
+
+    id = db.Column(db.Integer, primary_key=True)
+    statement_id = db.Column(db.Integer, db.ForeignKey('bank_statements.id'), nullable=False)
+    transaction_date = db.Column(db.Date, nullable=False)
+    description = db.Column(db.String(255))
+    reference = db.Column(db.String(100))
+    amount = db.Column(db.Float, nullable=False)  # positive for credit, negative for debit
+    balance = db.Column(db.Float)  # running balance after this line
+    matched_transaction_id = db.Column(db.Integer, db.ForeignKey('bank_transactions.id'), nullable=True)
+    matched_transaction = db.relationship('BankTransaction', foreign_keys=[matched_transaction_id])
+    is_matched = db.Column(db.Boolean, default=False)

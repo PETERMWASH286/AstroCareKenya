@@ -1,0 +1,368 @@
+{% extends "base.html" %}
+
+{% block title %}Candidate Details - {{ candidate.full_name }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex justify-between items-start">
+            <div>
+                <a href="{{ url_for('hr_web.recruitment_selection') }}"
+                   class="inline-flex items-center text-sm text-purple-600 dark:text-purple-400 hover:text-purple-900 dark:hover:text-purple-300 mb-4">
+                    <i class="fas fa-arrow-left mr-1"></i> Back to Selection
+                </a>
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+                    <i class="fas fa-user-circle text-purple-600 mr-2"></i>
+                    {{ candidate.full_name }}
+                </h1>
+                <p class="text-gray-600 dark:text-gray-400">
+                    Interview scores and feedback for {{ job.title }} ({{ job.reference_no }})
+                </p>
+            </div>
+            
+            {% if has_privilege('hr:recruitment:selection:choose') and candidate.status == 'Interviewed' %}
+            <form action="{{ url_for('hr_web.select_winner', job_id=job.id, candidate_id=candidate.id) }}" 
+                  method="POST" onsubmit="return confirm('Select {{ candidate.full_name }} as the winner?')">
+                {{ csrf_token()|safe }}
+                <button type="submit"
+                        class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors">
+                    <i class="fas fa-trophy mr-2"></i>
+                    Select as Winner
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Left Column: Candidate Info -->
+        <div class="lg:col-span-1">
+            <!-- Candidate Card -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
+                <div class="text-center mb-6">
+                    <div class="mx-auto h-24 w-24 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center mb-4">
+                        <span class="text-2xl font-bold text-purple-800 dark:text-purple-200">
+                            {{ candidate.first_name[0] }}{{ candidate.last_name[0] }}
+                        </span>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100">
+                        {{ candidate.full_name }}
+                    </h3>
+                    <p class="text-gray-600 dark:text-gray-400">
+                        {{ candidate.current_position or 'Candidate' }}
+                        {% if candidate.current_company %}
+                            at {{ candidate.current_company }}
+                        {% endif %}
+                    </p>
+                </div>
+                
+                <div class="space-y-4">
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Contact Information</h4>
+                        <div class="space-y-2">
+                            <div class="flex items-center">
+                                <i class="fas fa-envelope text-gray-400 dark:text-gray-500 w-5 mr-2"></i>
+                                <span class="text-gray-700 dark:text-gray-300">{{ candidate.email }}</span>
+                            </div>
+                            {% if candidate.phone %}
+                            <div class="flex items-center">
+                                <i class="fas fa-phone text-gray-400 dark:text-gray-500 w-5 mr-2"></i>
+                                <span class="text-gray-700 dark:text-gray-300">{{ candidate.phone }}</span>
+                            </div>
+                            {% endif %}
+                            {% if candidate.linkedin_url %}
+                            <div class="flex items-center">
+                                <i class="fab fa-linkedin text-gray-400 dark:text-gray-500 w-5 mr-2"></i>
+                                <a href="{{ candidate.linkedin_url }}" target="_blank" 
+                                   class="text-blue-600 dark:text-blue-400 hover:underline">
+                                    LinkedIn Profile
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Application Details</h4>
+                        <div class="space-y-2">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-gray-400">Applied:</span>
+                                <span class="text-gray-900 dark:text-gray-100 font-medium">
+                                    {{ candidate.application_date.strftime('%d %b %Y') }}
+                                </span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-gray-400">Experience:</span>
+                                <span class="text-gray-900 dark:text-gray-100 font-medium">
+                                    {{ candidate.years_of_experience or 0 }} years
+                                </span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-gray-400">Expected Salary:</span>
+                                <span class="text-gray-900 dark:text-gray-100 font-medium">
+                                    {% if candidate.expected_salary %}
+                                        KES {{ "{:,.2f}".format(candidate.expected_salary) }}
+                                    {% else %}
+                                        Not specified
+                                    {% endif %}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Interview Details -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <h4 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
+                    <i class="fas fa-calendar-alt text-purple-600 mr-2"></i>
+                    Interview Details
+                </h4>
+                <div class="space-y-3">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600 dark:text-gray-400">Date & Time:</span>
+                        <span class="text-gray-900 dark:text-gray-100 font-medium">
+                            {{ interview.scheduled_date.strftime('%d %b %Y, %I:%M %p') }}
+                        </span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600 dark:text-gray-400">Type:</span>
+                        <span class="text-gray-900 dark:text-gray-100 font-medium">
+                            {{ interview.interview_type }}
+                        </span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600 dark:text-gray-400">Duration:</span>
+                        <span class="text-gray-900 dark:text-gray-100 font-medium">
+                            {{ interview.duration_minutes }} minutes
+                        </span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600 dark:text-gray-400">Panel:</span>
+                        <span class="text-gray-900 dark:text-gray-100 font-medium">
+                            {{ interview.panel.name }}
+                        </span>
+                    </div>
+                    {% if interview.overall_feedback %}
+                    <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <h5 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Overall Feedback</h5>
+                        <p class="text-gray-700 dark:text-gray-300 text-sm">
+                            {{ interview.overall_feedback }}
+                        </p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Column: Scores -->
+        <div class="lg:col-span-2">
+            <!-- Overall Score Summary -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
+                <h4 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
+                    <i class="fas fa-chart-bar text-purple-600 mr-2"></i>
+                    Interview Scores Summary
+                </h4>
+                
+                <!-- Overall Recommendation -->
+                <div class="mb-6">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-gray-600 dark:text-gray-400">Overall Recommendation:</span>
+                        {% if interview.recommendation %}
+                            <span class="px-3 py-1 rounded-full text-sm font-semibold
+                                {% if interview.recommendation == 'Strong Hire' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
+                                {% elif interview.recommendation == 'Hire' %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200
+                                {% elif interview.recommendation == 'Neutral' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200
+                                {% elif interview.recommendation == 'No Hire' %}bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200
+                                {% else %}bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200{% endif %}">
+                                {{ interview.recommendation }}
+                            </span>
+                        {% else %}
+                            <span class="text-gray-500 dark:text-gray-400 text-sm">Pending</span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Score Breakdown -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    {% for category, avg in category_averages.items() %}
+                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                {{ category.replace('_', ' ')|title }}
+                            </span>
+                            <span class="text-lg font-bold 
+                                {% if avg >= 4 %}text-green-600 dark:text-green-400
+                                {% elif avg >= 3 %}text-yellow-600 dark:text-yellow-400
+                                {% else %}text-red-600 dark:text-red-400{% endif %}">
+                                {{ "%.1f"|format(avg) }}/5
+                            </span>
+                        </div>
+                        <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                            <div class="h-2 rounded-full 
+                                {% if avg >= 4 %}bg-green-500
+                                {% elif avg >= 3 %}bg-yellow-500
+                                {% else %}bg-red-500{% endif %}" 
+                                 style="width: {{ (avg / 5 * 100)|int }}%">
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Average Score -->
+                <div class="text-center p-4 bg-purple-50 dark:bg-purple-900/30 rounded-lg">
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Average Interview Score</p>
+                    <p class="text-3xl font-bold text-purple-600 dark:text-purple-400">
+                        {% set total_avg = category_averages.values()|sum / category_averages|length if category_averages %}
+                        {{ "%.2f"|format(total_avg or 0) }}/5
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Individual Panel Scores -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <h4 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
+                    <i class="fas fa-users text-purple-600 mr-2"></i>
+                    Panel Member Scores
+                </h4>
+                
+                {% if scores %}
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead class="bg-gray-50 dark:bg-gray-700">
+                            <tr>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                                    Panel Member
+                                </th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                                    Technical
+                                </th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                                    Communication
+                                </th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                                    Problem Solving
+                                </th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                                    Culture Fit
+                                </th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                                    Leadership
+                                </th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                                    Total
+                                </th>
+                                <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">
+                                    Recommendation
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                            {% for score in scores %}
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                <td class="px-4 py-3 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                        {{ score.panel_member.user.full_name }}
+                                    </div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                                        {{ score.panel_member.role }}
+                                    </div>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap">
+                                    <span class="text-sm font-medium {% if score.technical_competence and score.technical_competence >= 4 %}text-green-600 dark:text-green-400{% elif score.technical_competence and score.technical_competence >= 3 %}text-yellow-600 dark:text-yellow-400{% else %}text-red-600 dark:text-red-400{% endif %}">
+                                        {{ score.technical_competence or '-' }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap">
+                                    <span class="text-sm font-medium {% if score.communication_skills and score.communication_skills >= 4 %}text-green-600 dark:text-green-400{% elif score.communication_skills and score.communication_skills >= 3 %}text-yellow-600 dark:text-yellow-400{% else %}text-red-600 dark:text-red-400{% endif %}">
+                                        {{ score.communication_skills or '-' }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap">
+                                    <span class="text-sm font-medium {% if score.problem_solving and score.problem_solving >= 4 %}text-green-600 dark:text-green-400{% elif score.problem_solving and score.problem_solving >= 3 %}text-yellow-600 dark:text-yellow-400{% else %}text-red-600 dark:text-red-400{% endif %}">
+                                        {{ score.problem_solving or '-' }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap">
+                                    <span class="text-sm font-medium {% if score.cultural_fit and score.cultural_fit >= 4 %}text-green-600 dark:text-green-400{% elif score.cultural_fit and score.cultural_fit >= 3 %}text-yellow-600 dark:text-yellow-400{% else %}text-red-600 dark:text-red-400{% endif %}">
+                                        {{ score.cultural_fit or '-' }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap">
+                                    <span class="text-sm font-medium {% if score.leadership_potential and score.leadership_potential >= 4 %}text-green-600 dark:text-green-400{% elif score.leadership_potential and score.leadership_potential >= 3 %}text-yellow-600 dark:text-yellow-400{% else %}text-red-600 dark:text-red-400{% endif %}">
+                                        {{ score.leadership_potential or '-' }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap">
+                                    <span class="text-lg font-bold text-gray-900 dark:text-gray-100">
+                                        {{ score.score or '-' }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap">
+                                    {% if score.recommendation %}
+                                    <span class="px-2 py-1 text-xs rounded-full font-medium
+                                        {% if score.recommendation == 'Strong Hire' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
+                                        {% elif score.recommendation == 'Hire' %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200
+                                        {% elif score.recommendation == 'Neutral' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200
+                                        {% elif score.recommendation == 'No Hire' %}bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200
+                                        {% else %}bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200{% endif %}">
+                                        {{ score.recommendation }}
+                                    </span>
+                                    {% else %}
+                                    <span class="text-gray-400 dark:text-gray-500 text-sm">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% if score.overall_feedback or score.strengths or score.weaknesses %}
+                            <tr>
+                                <td colspan="8" class="px-4 py-3 bg-gray-50 dark:bg-gray-700/50">
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                                        {% if score.strengths %}
+                                        <div>
+                                            <span class="font-medium text-green-600 dark:text-green-400">Strengths:</span>
+                                            <p class="text-gray-600 dark:text-gray-400 mt-1">{{ score.strengths }}</p>
+                                        </div>
+                                        {% endif %}
+                                        {% if score.weaknesses %}
+                                        <div>
+                                            <span class="font-medium text-red-600 dark:text-red-400">Weaknesses:</span>
+                                            <p class="text-gray-600 dark:text-gray-400 mt-1">{{ score.weaknesses }}</p>
+                                        </div>
+                                        {% endif %}
+                                        {% if score.overall_feedback %}
+                                        <div class="md:col-span-{% if score.strengths and score.weaknesses %}1{% else %}2{% endif %}">
+                                            <span class="font-medium text-purple-600 dark:text-purple-400">Feedback:</span>
+                                            <p class="text-gray-600 dark:text-gray-400 mt-1">{{ score.overall_feedback }}</p>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-8">
+                    <i class="fas fa-clipboard-list text-4xl text-gray-300 dark:text-gray-600 mb-3"></i>
+                    <p class="text-gray-500 dark:text-gray-400">No scores have been submitted yet.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Add some custom styles for better visual hierarchy */
+tr:nth-child(even) {
+    background-color: rgba(249, 250, 251, 0.5);
+}
+.dark tr:nth-child(even) {
+    background-color: rgba(55, 65, 81, 0.3);
+}
+</style>
+{% endblock %}

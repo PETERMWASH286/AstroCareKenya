@@ -908,44 +908,44 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- Service Selection and Total Calculation ---
 
-    function updateTotal() {
-        total = 0;
-        const selectedServiceIds = [];
-        const selectedServiceNames = []; // Array to store names for the summary
+function updateTotal() {
+    total = 0;
+    const selectedServiceIds = [];
+    const selectedServiceNames = [];
 
-        serviceCheckboxes.forEach(checkbox => {
-            if (checkbox.checked) {
-                total += Number(checkbox.dataset.price);
-                selectedServiceIds.push(checkbox.dataset.serviceId);
-                // Get service name from data attribute and add to array
-                selectedServiceNames.push({
-                    name: checkbox.dataset.serviceName,
-                    price: Number(checkbox.dataset.price)
-                });
-            }
-        });
-
-        totalAmountDisplay.textContent = `Ksh ${total.toLocaleString()}`;
-        totalAmountValueInput.value = total;
-        selectedServiceIdsInput.value = selectedServiceIds.join(',');
-
-        // --- Update Selected Services Summary ---
-        summaryList.innerHTML = ''; // Clear previous summary items
-
-        if (selectedServiceNames.length > 0) {
-            selectedServicesSummaryDiv.classList.remove('hidden'); // Show the summary section
-            selectedServiceNames.forEach(service => {
-                const li = document.createElement('li');
-                li.className = 'flex justify-between items-center py-1'; // Tailwind for styling list item
-                li.innerHTML = `
-                    <span>${service.name}</span>
-                    <span class="font-medium text-gray-800 dark:text-gray-200">Ksh ${service.price.toLocaleString()}</span>
-                `;
-                summaryList.appendChild(li);
+    serviceCheckboxes.forEach(checkbox => {
+        if (checkbox.checked) {
+            // Use current-price (set by category change) or fallback to general price
+            const price = parseFloat(checkbox.dataset.currentPrice || checkbox.dataset.price) || 0;
+            total += price;
+            selectedServiceIds.push(checkbox.dataset.serviceId);
+            selectedServiceNames.push({
+                name: checkbox.dataset.serviceName,
+                price: price
             });
-        } else {
-            selectedServicesSummaryDiv.classList.add('hidden'); // Hide if no services are selected
         }
+    });
+
+    totalAmountDisplay.textContent = `Ksh ${total.toLocaleString()}`;
+    totalAmountValueInput.value = total;
+    selectedServiceIdsInput.value = selectedServiceIds.join(',');
+
+    // Update the summary list
+    summaryList.innerHTML = '';
+    if (selectedServiceNames.length > 0) {
+        selectedServicesSummaryDiv.classList.remove('hidden');
+        selectedServiceNames.forEach(service => {
+            const li = document.createElement('li');
+            li.className = 'flex justify-between items-center py-1';
+            li.innerHTML = `
+                <span>${service.name}</span>
+                <span class="font-medium text-gray-800 dark:text-gray-200">Ksh ${service.price.toLocaleString()}</span>
+            `;
+            summaryList.appendChild(li);
+        });
+    } else {
+        selectedServicesSummaryDiv.classList.add('hidden');
+    }
         // --- End Update Selected Services Summary ---
 
 

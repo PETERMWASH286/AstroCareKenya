@@ -78,54 +78,32 @@ def dispense_single_medication(medication_id):
 
 
 
-@pharmacy_web_bp.route('/pharmacy/inventory')
+@pharmacy_web_bp.route('/inventory')
 def manage_inventory():
-    """Inventory management route: fetch real-time data from PharmacyInventory model."""
-    from datetime import date
-    
-    # 1. Fetch all pharmacy inventory items
-    inventory = (
-        PharmacyInventory.query
-        .order_by(PharmacyInventory.item_name.asc())
-        .all()
-    )
-
-    # 2. Compute summary stats
-    total_medications = len(inventory)
-    
-    # Low stock items (quantity less than 10)
-    low_stock_items = sum(1 for item in inventory if item.quantity < 10)
-    
-    # Expired or expiring soon items
+    from datetime import date, timedelta
+    inventory = PharmacyInventory.query.order_by(PharmacyInventory.item_name).all()
     today = date.today()
-    expired_items = sum(1 for item in inventory 
-                       if item.expiry_date and item.expiry_date < today)
-    
-    # Items expiring within 30 days
-    expiring_soon_items = sum(1 for item in inventory 
-                             if item.expiry_date and 
-                             today <= item.expiry_date <= (today + timedelta(days=30)))
-    
-    # Pending stock requests
-    pending_requests = StockRequest.query.filter_by(
-        department='Pharmacy',
-        status='pending'
-    ).count()
 
-    # 3. Calculate total value (if we had unit price)
-    total_value = sum(item.quantity * getattr(item, 'unit_price', 0) for item in inventory)
+    total_medications = len(inventory)
+    low_stock_items = sum(1 for i in inventory if i.is_low_stock)
+    expired_items = sum(1 for i in inventory if i.is_expired)
+    expiring_soon_items = sum(1 for i in inventory if i.is_expiring_soon)
+    pending_requests = StockRequest.query.filter_by(department='Pharmacy', status='pending').count()
+    total_value = sum(i.total_value for i in inventory)
 
-    return render_template(
-        'inventory_management.html',
-        inventory=inventory,
-        total_medications=total_medications,
-        low_stock_items=low_stock_items,
-        expired_items=expired_items,
-        expiring_soon_items=expiring_soon_items,
-        pending_requests=pending_requests,
-        total_value=total_value,
-        today=today
-    )
+    return render_template('inventory_management.html',
+                           inventory=inventory,
+                           total_medications=total_medications,
+                           low_stock_items=low_stock_items,
+                           expired_items=expired_items,
+                           expiring_soon_items=expiring_soon_items,
+                           pending_requests=pending_requests,
+                           total_value=total_value,
+                           today=today)
+    
+    
+    
+    
 @pharmacy_web_bp.route('/pharmacy/prescriptions')
 def track_prescriptions():
     """Prescription tracking route"""
@@ -193,29 +171,7 @@ def stock_requests():
     )
 
 
-@pharmacy_web_bp.route('/pharmacy/inventory')
-def manage_inventory_stock():
-    """Inventory management route"""
-    inventory = (
-        Service.query
-        .filter(Service.category == 'Pharmacy')
-        .order_by(Service.name.asc())
-        .all()
-    )
 
-    # Get real pending requests
-    pending_requests = StockRequest.query.filter_by(
-        department='Pharmacy',
-        status='pending'
-    ).count()
-
-    return render_template(
-        'inventory_management.html',
-        inventory=inventory,
-        total_medications=len(inventory),
-        low_stock_items=sum(1 for item in inventory if item.low_stock),
-        pending_requests=pending_requests
-    )
 
 
 

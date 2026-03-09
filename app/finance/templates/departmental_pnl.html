@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block title %}Departmental P&L Report{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Header with gradient -->
+    <div class="bg-gradient-primary text-white p-4 rounded-4 mb-4 shadow-sm">
+        <div class="d-flex flex-wrap justify-content-between align-items-center">
+            <div>
+                <h1 class="display-6 fw-bold">Departmental Profit & Loss</h1>
+                <p class="text-white-80 mb-0">Revenue, expenses, and net profit by department</p>
+            </div>
+            <div class="mt-3 mt-md-0">
+                <span class="badge bg-light text-dark fs-5 p-2">
+                    {{ period|capitalize }}: {% if period == 'month' %}{{ month }}/{{ year }}{% else %}{{ year }}{% endif %}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Card -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body p-4">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Period</label>
+                    <select name="period" class="form-select" id="periodSelect">
+                        <option value="month" {% if period == 'month' %}selected{% endif %}>Monthly</option>
+                        <option value="year" {% if period == 'year' %}selected{% endif %}>Yearly</option>
+                    </select>
+                </div>
+                <div class="col-md-3" id="monthPicker">
+                    <label class="form-label fw-semibold">Month</label>
+                    <input type="month" name="month" class="form-control" value="{{ year }}-{{ '%02d' % month }}">
+                </div>
+                <div class="col-md-3" id="yearPicker" style="display:none;">
+                    <label class="form-label fw-semibold">Year</label>
+                    <input type="number" name="year" class="form-control" value="{{ year }}" min="2020" max="2030">
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-filter me-2"></i>Apply
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    {% set total_revenue = pnl.values()|sum(attribute='revenue') %}
+    {% set total_expenses = pnl.values()|sum(attribute='expenses') %}
+    {% set total_net = total_revenue - total_expenses %}
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <p class="text-uppercase small fw-bold text-success mb-1">Total Revenue</p>
+                    <h3 class="mb-0 fw-bold">KSh {{ "{:,.2f}".format(total_revenue) }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <p class="text-uppercase small fw-bold text-danger mb-1">Total Expenses</p>
+                    <h3 class="mb-0 fw-bold">KSh {{ "{:,.2f}".format(total_expenses) }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <p class="text-uppercase small fw-bold text-primary mb-1">Net Profit</p>
+                    <h3 class="mb-0 fw-bold {% if total_net >= 0 %}text-success{% else %}text-danger{% endif %}">
+                        KSh {{ "{:,.2f}".format(total_net) }}
+                    </h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Department P&L Table -->
+    <div class="card border-0 shadow-sm rounded-4 mb-5">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+            <h5 class="fw-bold text-primary"><i class="fas fa-building me-2"></i>Department Breakdown</h5>
+        </div>
+        <div class="card-body p-4">
+            {% if pnl %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle" id="pnlTable">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Department</th>
+                            <th class="text-end">Revenue</th>
+                            <th class="text-end">Expenses</th>
+                            <th class="text-end">Net Profit</th>
+                            <th class="text-center">Margin</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for dept, data in pnl.items() %}
+                        {% set net = data.revenue - data.expenses %}
+                        {% set margin = (net / data.revenue * 100) if data.revenue > 0 else 0 %}
+                        <tr>
+                            <td class="fw-semibold">{{ dept }}</td>
+                            <td class="text-end">KSh {{ "{:,.2f}".format(data.revenue) }}</td>
+                            <td class="text-end">KSh {{ "{:,.2f}".format(data.expenses) }}</td>
+                            <td class="text-end fw-bold {% if net >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                KSh {{ "{:,.2f}".format(net) }}
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-{{ 'success' if margin >= 20 else 'warning' if margin >= 0 else 'danger' }}">
+                                    {{ "%.1f"|format(margin) }}%
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-center text-muted py-5">No data available for the selected period.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Chart Section -->
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+            <h5 class="fw-bold text-info"><i class="fas fa-chart-bar me-2"></i>Revenue vs Expenses by Department</h5>
+        </div>
+        <div class="card-body">
+            <canvas id="deptChart" height="100"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle month/year picker
+    const periodSelect = document.getElementById('periodSelect');
+    const monthPicker = document.getElementById('monthPicker');
+    const yearPicker = document.getElementById('yearPicker');
+    function togglePickers() {
+        if (periodSelect.value === 'month') {
+            monthPicker.style.display = 'block';
+            yearPicker.style.display = 'none';
+        } else {
+            monthPicker.style.display = 'none';
+            yearPicker.style.display = 'block';
+        }
+    }
+    periodSelect.addEventListener('change', togglePickers);
+    togglePickers();
+
+    // Chart data from Jinja
+    const departments = {{ pnl.keys()|list|tojson }};
+    const revenueData = {{ pnl.values()|map(attribute='revenue')|list|tojson }};
+    const expenseData = {{ pnl.values()|map(attribute='expenses')|list|tojson }};
+
+    new Chart(document.getElementById('deptChart'), {
+        type: 'bar',
+        data: {
+            labels: departments,
+            datasets: [
+                {
+                    label: 'Revenue',
+                    data: revenueData,
+                    backgroundColor: '#28a745',
+                },
+                {
+                    label: 'Expenses',
+                    data: expenseData,
+                    backgroundColor: '#dc3545',
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) { return 'KSh ' + value.toLocaleString(); }
+                    }
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(ctx) {
+                            return ctx.dataset.label + ': KSh ' + ctx.raw.toLocaleString();
+                        }
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+
+<style>
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .text-white-80 {
+        color: rgba(255,255,255,0.8);
+    }
+    .hover-lift {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hover-lift:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.75rem 1.5rem rgba(0,0,0,0.1) !important;
+    }
+    .badge {
+        font-weight: 500;
+        padding: 0.5em 0.8em;
+    }
+</style>
+{% endblock %}

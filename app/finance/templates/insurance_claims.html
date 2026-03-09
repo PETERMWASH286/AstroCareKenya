@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+
+{% block title %}Insurance Claims Report{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Header with gradient -->
+    <div class="bg-gradient-primary text-white p-4 rounded-4 mb-4 shadow-sm">
+        <div class="d-flex flex-wrap justify-content-between align-items-center">
+            <div>
+                <h1 class="display-6 fw-bold">Insurance Claims Report</h1>
+                <p class="text-white-80 mb-0">Track and analyze insurance claims</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <p class="text-uppercase small fw-bold text-primary mb-1">Total Claims</p>
+                    <h3 class="mb-0 fw-bold">{{ total_claims }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <p class="text-uppercase small fw-bold text-success mb-1">Total Approved</p>
+                    <h3 class="mb-0 fw-bold">KSh {{ "{:,.2f}".format(total_approved) }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <p class="text-uppercase small fw-bold text-danger mb-1">Total Denied</p>
+                    <h3 class="mb-0 fw-bold">KSh {{ "{:,.2f}".format(total_denied) }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <p class="text-uppercase small fw-bold text-warning mb-1">Pending Claims</p>
+                    <h3 class="mb-0 fw-bold">{{ pending_claims }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters (optional) -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body p-4">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Insurance</label>
+                    <select name="insurance_id" class="form-select">
+                        <option value="">All Insurances</option>
+                        {% for insurance in insurances %}
+                        <option value="{{ insurance.id }}">{{ insurance.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">All</option>
+                        <option value="submitted">Submitted</option>
+                        <option value="approved">Approved</option>
+                        <option value="denied">Denied</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">From</label>
+                    <input type="date" name="start_date" class="form-control">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">To</label>
+                    <input type="date" name="end_date" class="form-control">
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary w-100">Apply Filters</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Claims Table -->
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+            <h5 class="fw-bold text-primary"><i class="fas fa-file-invoice me-2"></i>Claims List</h5>
+        </div>
+        <div class="card-body p-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle" id="claimsTable">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Claim ID</th>
+                            <th>Insurance</th>
+                            <th>Invoice #</th>
+                            <th>Patient</th>
+                            <th>Claim Date</th>
+                            <th>Status</th>
+                            <th class="text-end">Approved</th>
+                            <th class="text-end">Denied</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for claim in claims %}
+                        <tr>
+                            <td><span class="fw-semibold">{{ claim.claim_reference or claim.id }}</span></td>
+                            <td>{{ claim.insurance.name if claim.insurance else 'N/A' }}</td>
+                            <td>{{ claim.invoice.invoice_number if claim.invoice else 'N/A' }}</td>
+                            <td>{{ claim.invoice.patient.full_name if claim.invoice and claim.invoice.patient else 'N/A' }}</td>
+                            <td>{{ claim.claim_date.strftime('%Y-%m-%d') }}</td>
+                            <td>
+                                <span class="badge 
+                                    {% if claim.status == 'submitted' and not claim.response_received %}bg-warning text-dark
+                                    {% elif claim.status == 'approved' %}bg-success
+                                    {% elif claim.status == 'denied' %}bg-danger
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ claim.status|title }}
+                                </span>
+                            </td>
+                            <td class="text-end">KSh {{ "{:,.2f}".format(claim.approved_amount or 0) }}</td>
+                            <td class="text-end">KSh {{ "{:,.2f}".format(claim.denied_amount or 0) }}</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#responseModal{{ claim.id }}">
+                                    <i class="fas fa-eye"></i> Responses
+                                </button>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="9" class="text-center text-muted py-5">No claims found.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modals for claim responses -->
+{% for claim in claims %}
+<div class="modal fade" id="responseModal{{ claim.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">Claim Responses - {{ claim.claim_reference or claim.id }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p><strong>Insurance:</strong> {{ claim.insurance.name if claim.insurance else 'N/A' }}</p>
+                <p><strong>Claim Date:</strong> {{ claim.claim_date.strftime('%Y-%m-%d') }}</p>
+                <p><strong>Status:</strong> {{ claim.status }}</p>
+                <hr>
+                <h6>Responses</h6>
+                {% if claim.claim_responses %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th class="text-end">Approved</th>
+                                <th class="text-end">Denied</th>
+                                <th>Reason</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for resp in claim.claim_responses %}
+                            <tr>
+                                <td>{{ resp.response_date.strftime('%Y-%m-%d') if resp.response_date else '' }}</td>
+                                <td><span class="badge bg-{{ 'success' if resp.response_status=='approved' else 'danger' if resp.response_status=='denied' else 'secondary' }}">{{ resp.response_status|title }}</span></td>
+                                <td class="text-end">KSh {{ "{:,.2f}".format(resp.approved_amount or 0) }}</td>
+                                <td class="text-end">KSh {{ "{:,.2f}".format(resp.denied_amount or 0) }}</td>
+                                <td>{{ resp.reason }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">No responses recorded.</p>
+                {% endif %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<!-- DataTables -->
+<script>
+$(document).ready(function() {
+    $('#claimsTable').DataTable({
+        order: [[4, 'desc']], // sort by claim date desc
+        pageLength: 25,
+        lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "All"]],
+        columnDefs: [
+            { type: 'num', targets: [6,7] }
+        ]
+    });
+});
+</script>
+
+<style>
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .text-white-80 {
+        color: rgba(255,255,255,0.8);
+    }
+    .hover-lift {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hover-lift:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.75rem 1.5rem rgba(0,0,0,0.1) !important;
+    }
+    .badge {
+        font-weight: 500;
+        padding: 0.5em 0.8em;
+    }
+</style>
+{% endblock %}

@@ -150,97 +150,7 @@
         </li>
         {% endif %}
 
-        {# Laboratory Section #}
-        {% if has_privilege('lab:orders') or has_privilege('lab:results') or has_privilege('lab:add_quick') %}
-        <li class="dropdown-subgroup">
-            <button class="dropdown-sub-btn flex items-center justify-between w-full p-2 text-sm rounded-lg hover:bg-blue-200 transition-all dark:hover:bg-gray-600 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400">
-                <div class="flex items-center space-x-3">
-                    <i class="fas fa-flask text-purple-500 dark:text-purple-300"></i>
-                    <span class="sidebar-text transition-opacity duration-300">Lab Tests</span>
-                    <span class="px-2 py-1 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-200 text-xs rounded-full">New</span>
-                </div>
-                <i class="fas fa-chevron-down text-xs transition-transform duration-200 text-gray-400 dark:text-gray-500"></i>
-            </button>
-            <ul class="dropdown-subcontent ml-4 pl-3 border-l-2 border-blue-400 dark:border-blue-600 space-y-1 mt-1">
-                {% if has_privilege('lab:orders') %}
-                <li>
-                    <a href="{{ url_for('consultations_web.lab_orders') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg
-                                hover:bg-blue-300 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300
-                                focus:outline-none focus:ring-2 focus:ring-blue-300 transition-all" data-tippy-content="View pending lab orders">
-                        <i class="fas fa-vial text-purple-500"></i>
-                        <span class="sidebar-text transition-opacity duration-300">Lab Orders</span>
-                    </a>
-                </li>
-                {% endif %}
-                {% if has_privilege('lab:results') %}
-                <li>
-                    <a href="{{ url_for('consultations_web.lab_results') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg
-                                hover:bg-blue-300 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300
-                                focus:outline-none focus:ring-2 focus:ring-blue-300 transition-all">
-                        <i class="fas fa-file-medical text-green-500"></i>
-                        <span class="sidebar-text transition-opacity duration-300">Test Results</span>
-                    </a>
-                </li>
-                {% endif %}
-                {% if has_privilege('lab:add_quick') %}
-                <li>
-                    <button class="w-full flex items-center space-x-3 p-2 text-xs rounded-lg
-                                hover:bg-blue-300 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300
-                                focus:outline-none focus:ring-2 focus:ring-blue-300 transition-all">
-                        <i class="fas fa-plus-circle text-blue-500"></i>
-                        <span class="sidebar-text transition-opacity duration-300">Add Quick Test</span>
-                    </button>
-                </li>
-                {% endif %}
-            </ul>
-        </li>
-        {% endif %}
 
-        {# Radiology Section #}
-        {% if has_privilege('radiology:imaging_requests') or has_privilege('radiology:scan_results') or has_privilege('radiology:archived_reports') %}
-        <li class="dropdown-subgroup">
-            <button class="dropdown-sub-btn flex items-center justify-between w-full p-2 text-sm rounded-lg hover:bg-blue-200 transition-all dark:hover:bg-gray-600 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400">
-                <div class="flex items-center space-x-3">
-                    <i class="fas fa-x-ray text-orange-500 dark:text-orange-300"></i>
-                    <span class="sidebar-text transition-opacity duration-300">Radiology</span>
-                    <span class="px-2 py-1 bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-200 text-xs rounded-full">3 Pending</span>
-                </div>
-                <i class="fas fa-chevron-down text-xs transition-transform duration-200 text-gray-400 dark:text-gray-500"></i>
-            </button>
-            <ul class="dropdown-subcontent ml-4 pl-3 border-l-2 border-blue-400 dark:border-blue-600 space-y-1 mt-1">
-                {% if has_privilege('radiology:imaging_requests') %}
-                <li>
-                    <a href="{{ url_for('consultations_web.imaging_requests') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg
-                                hover:bg-blue-300 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300
-                                focus:outline-none focus:ring-2 focus:ring-blue-300 transition-all">
-                        <i class="fas fa-radiation text-orange-500"></i>
-                        <span class="sidebar-text transition-opacity duration-300">Imaging Requests</span>
-                    </a>
-                </li>
-                {% endif %}
-                {% if has_privilege('radiology:scan_results') %}
-                <li>
-                    <a href="{{ url_for('consultations_web.scan_results') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg
-                                hover:bg-blue-300 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300
-                                focus:outline-none focus:ring-2 focus:ring-blue-300 transition-all">
-                        <i class="fas fa-diagnoses text-red-500"></i>
-                        <span class="sidebar-text transition-opacity duration-300">Scan Results</span>
-                    </a>
-                </li>
-                {% endif %}
-                {% if has_privilege('radiology:archived_reports') %}
-                <li>
-                    <a href="{{ url_for('consultations_web.archived_reports') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg
-                                hover:bg-blue-300 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300
-                                focus:outline-none focus:ring-2 focus:ring-blue-300 transition-all">
-                        <i class="fas fa-archive text-gray-500"></i>
-                        <span class="sidebar-text transition-opacity duration-300">Archived Reports</span>
-                    </a>
-                </li>
-                {% endif %}
-            </ul>
-        </li>
-        {% endif %}
 
         {# Diagnosis Section #}
         {% if has_privilege('diagnosis:manage') %}
@@ -1058,7 +968,7 @@
         {# Selection #}
         {% if has_privilege('hr:recruitment:selection') %}
         <li>
-            <a href="" 
+            <a href="{{ url_for('hr_web.recruitment_selection') }}" 
                class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-purple-200 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-300">
                 <i class="fas fa-trophy text-red-600 dark:text-red-400"></i>
                 <span class="sidebar-text transition-opacity duration-300">Selection</span>
@@ -1370,14 +1280,7 @@
                     </a>
                 </li>
                 {% endif %}
-                {% if has_privilege('finance:reports') %}
-                <li>
-                    <a href="{{ url_for('finance_web_bp.financial_report') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
-                        <i class="fas fa-chart-pie text-purple-600 dark:text-purple-400"></i>
-                        <span class="sidebar-text transition-opacity duration-300">Financial Reports</span>
-                    </a>
-                </li>
-                {% endif %}
+
             </ul>
         </li>
         {% endif %}
@@ -1416,14 +1319,21 @@
                     </a>
                 </li>
                 {% endif %}
-                {% if has_privilege('finance:services') %}
-                <li>
-                    <a href="{{ url_for('finance_web_bp.manage_services_prices') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
-                        <i class="fas fa-stethoscope text-indigo-500"></i>
-                        <span class="sidebar-text transition-opacity duration-300">Service Pricing</span>
-                    </a>
-                </li>
-                {% endif %}
+        {% if has_privilege('finance:services') %}
+        <li>
+            <a href="{{ url_for('finance_web_bp.manage_services_prices') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                <i class="fas fa-stethoscope text-indigo-500"></i>
+                <span class="sidebar-text transition-opacity duration-300">Service Pricing</span>
+            </a>
+        </li>
+        <!-- New Stock Pricing Link -->
+        <li>
+            <a href="{{ url_for('finance_web_bp.stock_pricing') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                <i class="fas fa-boxes text-orange-500"></i>
+                <span class="sidebar-text transition-opacity duration-300">Stock Pricing</span>
+            </a>
+        </li>
+        {% endif %}
             </ul>
         </li>
         {% endif %}
@@ -1488,36 +1398,39 @@
 </li>
 {% endif %}
 
-        {# Cost Management Subgroup #}
+ {# Cost Management Subgroup #}
+{% if has_privilege('finance:expenses') or has_privilege('finance:payroll') %}
+<li class="dropdown-subgroup">
+    <button class="dropdown-sub-btn flex items-center justify-between w-full p-2 text-sm rounded-lg hover:bg-emerald-200 transition-all dark:hover:bg-gray-600 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+        <div class="flex items-center space-x-3">
+            <i class="fas fa-chart-line text-red-600 dark:text-red-400"></i>
+            <span class="sidebar-text transition-opacity duration-300">Cost Management</span>
+        </div>
+        <i class="fas fa-chevron-down text-xs transition-transform duration-200 text-gray-400 dark:text-gray-500"></i>
+    </button>
+    <ul class="dropdown-subcontent ml-4 pl-3 border-l-2 border-emerald-400 dark:border-emerald-600 space-y-1 mt-1">
         {% if has_privilege('finance:expenses') %}
-        <li class="dropdown-subgroup">
-            <button class="dropdown-sub-btn flex items-center justify-between w-full p-2 text-sm rounded-lg hover:bg-emerald-200 transition-all dark:hover:bg-gray-600 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-400">
-                <div class="flex items-center space-x-3">
-                    <i class="fas fa-chart-line text-red-600 dark:text-red-400"></i>
-                    <span class="sidebar-text transition-opacity duration-300">Cost Management</span>
-                </div>
-                <i class="fas fa-chevron-down text-xs transition-transform duration-200 text-gray-400 dark:text-gray-500"></i>
-            </button>
-            <ul class="dropdown-subcontent ml-4 pl-3 border-l-2 border-emerald-400 dark:border-emerald-600 space-y-1 mt-1">
-                {% if has_privilege('finance:expenses') %}
-                <li>
-                    <a href="{{ url_for('finance_web_bp.expenses') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
-                        <i class="fas fa-money-check-alt text-red-500"></i>
-                        <span class="sidebar-text transition-opacity duration-300">Expenses Tracking</span>
-                    </a>
-                </li>
-                {% endif %}
-                <!-- Additional cost management links can be added here -->
-                <li>
-                    <a href="#" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
-                        <i class="fas fa-chart-bar text-orange-500"></i>
-                        <span class="sidebar-text transition-opacity duration-300">Cost Analysis</span>
-                        <span class="px-1.5 py-0.5 bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-200 text-xs rounded-full">Soon</span>
-                    </a>
-                </li>
-            </ul>
+        <li>
+            <a href="{{ url_for('finance_web_bp.expenses') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                <i class="fas fa-money-check-alt text-red-500"></i>
+                <span class="sidebar-text transition-opacity duration-300">Expenses Tracking</span>
+            </a>
         </li>
         {% endif %}
+        <!-- Payroll Management Link -->
+        {% if has_privilege('finance:payroll') %}
+<li>
+    <a href="{{ url_for('finance_web_bp.payroll_payment') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+        <i class="fas fa-hand-holding-usd text-green-500"></i>
+        <span class="sidebar-text transition-opacity duration-300">Payroll Payment</span>
+        <span class="px-1.5 py-0.5 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200 text-xs rounded-full">New</span>
+    </a>
+</li>
+        {% endif %}
+
+    </ul>
+</li>
+{% endif %}
 
         {# Insurance & Risk Management Subgroup #}
         {% if has_privilege('finance:insurance') %}
@@ -1539,39 +1452,175 @@
                 </li>
                 {% endif %}
                 <!-- Additional insurance links can be added here -->
-                <li>
-                    <a href="#" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
-                        <i class="fas fa-exclamation-triangle text-yellow-500"></i>
-                        <span class="sidebar-text transition-opacity duration-300">Risk Assessment</span>
-                        <span class="px-1.5 py-0.5 bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-200 text-xs rounded-full">Soon</span>
-                    </a>
-                </li>
+
             </ul>
         </li>
         {% endif %}
 
-        {# Treasury & Cash Management Subgroup #}
+{# Treasury Management #}
+<li class="dropdown-subgroup">
+    <button class="dropdown-sub-btn flex items-center justify-between w-full p-2 text-sm rounded-lg hover:bg-emerald-200 transition-all dark:hover:bg-gray-600 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+        <div class="flex items-center space-x-3">
+            <i class="fas fa-piggy-bank text-indigo-600 dark:text-indigo-400"></i>
+            <span class="sidebar-text transition-opacity duration-300">Treasury Management</span>
+        </div>
+        <i class="fas fa-chevron-down text-xs transition-transform duration-200 text-gray-400 dark:text-gray-500"></i>
+    </button>
+    <ul class="dropdown-subcontent ml-4 pl-3 border-l-2 border-emerald-400 dark:border-emerald-600 space-y-1 mt-1">
+        <li>
+            <a href="{{ url_for('finance_web_bp.bank_reconciliation') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                <i class="fas fa-university text-indigo-500"></i>
+                <span class="sidebar-text transition-opacity duration-300">Bank Reconciliation</span>
+                <span class="px-1.5 py-0.5 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-200 text-xs rounded-full">Soon</span>
+            </a>
+        </li>
+<li>
+    <a href="{{ url_for('finance_web_bp.bank_accounts_management') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+        <i class="fas fa-university text-blue-500"></i>
+        <span class="sidebar-text transition-opacity duration-300">Bank Accounts Management</span>
+    </a>
+</li>
+        <li>
+            <a href="{{ url_for('finance_web_bp.cashflow_analysis') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                <i class="fas fa-chart-line text-teal-500"></i>
+                <span class="sidebar-text transition-opacity duration-300">Cashflow Analysis</span>
+                <span class="px-1.5 py-0.5 bg-teal-100 dark:bg-teal-900 text-teal-700 dark:text-teal-200 text-xs rounded-full">Soon</span>
+            </a>
+        </li>
+        <!-- New Paybill Cash Management Link -->
+<li>
+    <a href="{{ url_for('finance_web_bp.cash_management') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+        <i class="fas fa-wallet text-green-500"></i>
+        <span class="sidebar-text transition-opacity duration-300">Cash Accounts Management</span>
+        <span class="px-1.5 py-0.5 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200 text-xs rounded-full">New</span>
+    </a>
+</li>
+    </ul>
+</li>
+{# Reports #}
+<li class="dropdown-subgroup">
+    <button class="dropdown-sub-btn flex items-center justify-between w-full p-2 text-sm rounded-lg hover:bg-emerald-200 transition-all dark:hover:bg-gray-600 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+        <div class="flex items-center space-x-3">
+            <i class="fas fa-chart-bar text-purple-600 dark:text-purple-400"></i>
+            <span class="sidebar-text transition-opacity duration-300">Reports</span>
+        </div>
+        <i class="fas fa-chevron-down text-xs transition-transform duration-200 text-gray-400 dark:text-gray-500"></i>
+    </button>
+    <ul class="dropdown-subcontent ml-4 pl-3 border-l-2 border-emerald-400 dark:border-emerald-600 space-y-1 mt-1">
+        <!-- Existing Reports -->
+        <li>
+            <a href="{{ url_for('finance_web_bp.sales_reports') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                <i class="fas fa-chart-line text-green-500"></i>
+                <span class="sidebar-text transition-opacity duration-300">Sales Reports</span>
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('finance_web_bp.stock_reports') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                <i class="fas fa-boxes text-amber-500"></i>
+                <span class="sidebar-text transition-opacity duration-300">Stock Reports</span>
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('finance_web_bp.expense_reports') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                <i class="fas fa-money-check-alt text-red-500"></i>
+                <span class="sidebar-text transition-opacity duration-300">Expense Reports</span>
+            </a>
+        </li>
+
+        <!-- Separator -->
+        <li class="border-t border-emerald-200 dark:border-emerald-800 my-1"></li>
+
+        <!-- New Reports -->
+        <li>
+            <a href="{{ url_for('finance_web_bp.ar_aging') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                <i class="fas fa-user-clock text-blue-500"></i>
+                <span class="sidebar-text transition-opacity duration-300">Receivables Aging</span>
+                <span class="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200 text-xs rounded-full">Soon</span>
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('finance_web_bp.ap_aging') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                <i class="fas fa-truck text-orange-500"></i>
+                <span class="sidebar-text transition-opacity duration-300">Payables Aging</span>
+                <span class="px-1.5 py-0.5 bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-200 text-xs rounded-full">Soon</span>
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('finance_web_bp.insurance_claims_report') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                <i class="fas fa-shield-alt text-cyan-500"></i>
+                <span class="sidebar-text transition-opacity duration-300">Insurance Claims</span>
+                <span class="px-1.5 py-0.5 bg-cyan-100 dark:bg-cyan-900 text-cyan-700 dark:text-cyan-200 text-xs rounded-full">Soon</span>
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('finance_web_bp.departmental_pnl') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                <i class="fas fa-building text-purple-500"></i>
+                <span class="sidebar-text transition-opacity duration-300">Departmental P&L</span>
+                <span class="px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-200 text-xs rounded-full">Soon</span>
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('finance_web_bp.budget_vs_actual') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                <i class="fas fa-balance-scale text-indigo-500"></i>
+                <span class="sidebar-text transition-opacity duration-300">Budget vs Actual</span>
+                <span class="px-1.5 py-0.5 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-200 text-xs rounded-full">Soon</span>
+            </a>
+        </li>
+    </ul>
+</li>
+
+        {# Accounting #}
         <li class="dropdown-subgroup">
             <button class="dropdown-sub-btn flex items-center justify-between w-full p-2 text-sm rounded-lg hover:bg-emerald-200 transition-all dark:hover:bg-gray-600 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-400">
                 <div class="flex items-center space-x-3">
-                    <i class="fas fa-piggy-bank text-indigo-600 dark:text-indigo-400"></i>
-                    <span class="sidebar-text transition-opacity duration-300">Treasury Management</span>
+                    <i class="fas fa-book text-blue-600 dark:text-blue-400"></i>
+                    <span class="sidebar-text transition-opacity duration-300">Accounting</span>
                 </div>
                 <i class="fas fa-chevron-down text-xs transition-transform duration-200 text-gray-400 dark:text-gray-500"></i>
             </button>
             <ul class="dropdown-subcontent ml-4 pl-3 border-l-2 border-emerald-400 dark:border-emerald-600 space-y-1 mt-1">
                 <li>
-                    <a href="#" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
-                        <i class="fas fa-university text-indigo-500"></i>
-                        <span class="sidebar-text transition-opacity duration-300">Bank Reconciliation</span>
-                        <span class="px-1.5 py-0.5 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-200 text-xs rounded-full">Soon</span>
+                    <a href="{{ url_for('finance_web_bp.general_ledger') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                        <i class="fas fa-address-book text-cyan-500"></i>
+                        <span class="sidebar-text transition-opacity duration-300">General Ledger</span>
+                        <span class="px-1.5 py-0.5 bg-cyan-100 dark:bg-cyan-900 text-cyan-700 dark:text-cyan-200 text-xs rounded-full">Soon</span>
                     </a>
                 </li>
                 <li>
-                    <a href="#" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
-                        <i class="fas fa-chart-line text-teal-500"></i>
-                        <span class="sidebar-text transition-opacity duration-300">Cash Flow Analysis</span>
-                        <span class="px-1.5 py-0.5 bg-teal-100 dark:bg-teal-900 text-teal-700 dark:text-teal-200 text-xs rounded-full">Soon</span>
+                    <a href="{{ url_for('finance_web_bp.trial_balance') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                        <i class="fas fa-scale-balanced text-blue-500"></i>
+                        <span class="sidebar-text transition-opacity duration-300">Trial Balance</span>
+                    </a>
+                </li>
+            </ul>
+        </li>
+
+        {# Financial Statements #}
+        <li class="dropdown-subgroup">
+            <button class="dropdown-sub-btn flex items-center justify-between w-full p-2 text-sm rounded-lg hover:bg-emerald-200 transition-all dark:hover:bg-gray-600 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-file-invoice text-emerald-600 dark:text-emerald-400"></i>
+                    <span class="sidebar-text transition-opacity duration-300">Financial Statements</span>
+                </div>
+                <i class="fas fa-chevron-down text-xs transition-transform duration-200 text-gray-400 dark:text-gray-500"></i>
+            </button>
+            <ul class="dropdown-subcontent ml-4 pl-3 border-l-2 border-emerald-400 dark:border-emerald-600 space-y-1 mt-1">
+                <li>
+                    <a href="{{ url_for('finance_web_bp.income_statement') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                        <i class="fas fa-chart-pie text-purple-500"></i>
+                        <span class="sidebar-text transition-opacity duration-300">Income Statement (P&L)</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('finance_web_bp.balance_sheet') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                        <i class="fas fa-file-alt text-blue-500"></i>
+                        <span class="sidebar-text transition-opacity duration-300">Balance Sheet</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('finance_web_bp.cashflow_statement') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                        <i class="fas fa-water text-cyan-500"></i>
+                        <span class="sidebar-text transition-opacity duration-300">Cash Flow Statement</span>
                     </a>
                 </li>
             </ul>
@@ -1627,7 +1676,16 @@
     </a>
 </li>
 {% endif %}
-
+{% if has_privilege('admin:approve_payroll') %}
+<li>
+    <a href="{{ url_for('admin_web_bp.approve_payrolls') }}" 
+       class="flex items-center space-x-3 p-2 text-sm rounded-lg hover:bg-indigo-100 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 transition-all">
+        <i class="fas fa-check-double text-yellow-500"></i>
+        <span>Approve Payrolls</span>
+        <span class="px-1.5 py-0.5 bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-200 text-xs rounded-full">New</span>
+    </a>
+</li>
+{% endif %}
         {% if has_privilege('admin:orders_progress') %}
         <li>
             <a href="{{ url_for('admin_web_bp.orders_progress') }}" 

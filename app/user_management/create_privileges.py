@@ -126,7 +126,25 @@ def create_initial_privileges(session):
                     ('finance:doctor_accounts', 'Finance', 'Manage Doctor Accounts'),  # New privilege added
 
                 ('finance:approve_payments', 'Finance', 'Approve Payments'),
+# Finance - Treasury Management
+('finance:bank_reconciliation', 'Finance', 'Access Bank Reconciliation'),
+('finance:bank_reports', 'Finance', 'View Bank Reports'),
+('finance:cashflow_analysis', 'Finance', 'View Cashflow Analysis'),
 
+# Finance - Operational Reports
+('finance:sales_reports', 'Finance', 'View Sales Reports'),
+('finance:stock_reports', 'Finance', 'View Stock Reports'),
+('finance:expense_reports', 'Finance', 'View Expense Reports'),
+
+# Finance - Accounting
+('finance:general_ledger', 'Finance', 'View General Ledger'),
+('finance:trial_balance', 'Finance', 'View Trial Balance'),
+
+# Finance - Financial Statements
+('finance:income_statement', 'Finance', 'View Income Statement (P&L)'),
+('finance:balance_sheet', 'Finance', 'View Balance Sheet'),
+('finance:cashflow_statement', 'Finance', 'View Cash Flow Statement'),
+('finance:payroll', 'Finance', 'Process and manage payroll'),
         ('reports:clinical', 'Reports', 'Access Clinical Reports'),
         ('reports:financial', 'Reports', 'Access Financial Reports'),
         ('reports:analytics', 'Reports', 'Access Analytics Dashboard'),
@@ -202,6 +220,7 @@ def create_initial_privileges(session):
     ('admin:reports_overview', 'Admin & Director', 'Access consolidated reports (financial, clinical, HR, assets)'),
     ('admin:approve_lpo', 'Admin & Director', 'Approve Local Purchase Orders (LPOs)'),
     ('admin:approve_payments', 'Admin & Director', 'Approve Payments'),
+    ('admin:approve_payroll', 'Admin & Director', 'Approve processed payrolls'),
 
     ]
 

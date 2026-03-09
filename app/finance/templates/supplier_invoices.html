@@ -292,11 +292,10 @@
                                         </button>
                                         <div id="dropdown-{{ invoice.id }}" 
                                              class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 border border-gray-200">
-                                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Edit Invoice</a>
-                                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Add Note</a>
-                                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">View History</a>
-                                            <div class="border-t border-gray-100"></div>
-                                            <a href="#" class="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100">Void Invoice</a>
+
+<a href="javascript:void(0)" onclick="viewPaymentHistory({{ invoice.id }})" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">View payment History</a>
+<div class="border-t border-gray-100"></div>
+<a href="javascript:void(0)" onclick="voidInvoice({{ invoice.id }})" class="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100">Void Invoice</a>
                                         </div>
                                     </div>
                                 </div>
@@ -403,7 +402,32 @@ KSh {{ "%.2f"|format(upcoming_31_60) }}
         {% endif %}
     </div>
 </div>
-
+<!-- Invoice Details Modal -->
+<div id="invoiceModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50" onclick="closeModal(event)">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-lg bg-white dark:bg-gray-800" onclick="event.stopPropagation()">
+        <div class="flex justify-between items-center pb-3">
+            <h3 class="text-xl font-semibold text-gray-900 dark:text-white" id="modalTitle">Invoice Details</h3>
+            <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        <div id="modalContent" class="mt-2">
+            <!-- Content will be loaded here via AJAX -->
+            <div class="text-center py-4">
+                <svg class="animate-spin h-8 w-8 text-blue-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p class="mt-2 text-gray-600 dark:text-gray-400">Loading...</p>
+            </div>
+        </div>
+        <div class="mt-4 flex justify-end">
+            <button onclick="closeInvoiceModal()" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">Close</button>
+        </div>
+    </div>
+</div>
 <!-- Modern Payment Modal -->
 <div id="paymentModal" class="hidden fixed inset-0  overflow-y-auto h-full w-full z-50 transition-all duration-300">
     <div class="relative min-h-screen flex items-center justify-center p-4">
@@ -484,7 +508,20 @@ KSh {{ "%.2f"|format(upcoming_31_60) }}
                         <option value="cash">💵 Cash</option>
                     </select>
                 </div>
-
+<!-- Account Selection -->
+<div id="accountSelection" class="space-y-3 hidden">
+    <label class="block text-sm font-semibold text-gray-700 flex items-center space-x-2">
+        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+        </svg>
+        <span>Select Account</span>
+    </label>
+    <select id="accountSelect" class="block w-full px-4 py-3.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all duration-200">
+        <option value="">Choose an account</option>
+    </select>
+    <p id="accountBalance" class="text-xs text-gray-500">Balance: KSh <span>0.00</span></p>
+    <p id="balanceWarning" class="text-xs text-red-600 hidden">Insufficient balance for this payment</p>
+</div>
                 <!-- Reference Number -->
                 <div class="space-y-3">
                     <label class="block text-sm font-semibold text-gray-700 flex items-center space-x-2">
@@ -652,6 +689,72 @@ function payInvoice(invoiceId) {
     document.getElementById('paymentModal').classList.remove('hidden');
 }
 
+// Fetch accounts when payment method changes
+document.getElementById('paymentMethod').addEventListener('change', function() {
+    const method = this.value;
+    const accountDiv = document.getElementById('accountSelection');
+    const accountSelect = document.getElementById('accountSelect');
+    const balanceSpan = document.getElementById('accountBalance').querySelector('span');
+    const warning = document.getElementById('balanceWarning');
+
+    if (!method) {
+        accountDiv.classList.add('hidden');
+        return;
+    }
+
+    accountSelect.innerHTML = '<option value="">Loading accounts...</option>';
+    accountDiv.classList.remove('hidden');
+    balanceSpan.textContent = '0.00';
+    warning.classList.add('hidden');
+
+    fetch(`/finance/accounts-by-method?method=${method}`)
+        .then(res => res.json())
+        .then(accounts => {
+            accountSelect.innerHTML = '<option value="">Choose an account</option>';
+            accounts.forEach(acc => {
+                accountSelect.innerHTML += `<option value="${acc.id}" data-balance="${acc.balance}" data-type="${acc.type}">${acc.name} (Bal: KSh ${acc.balance.toFixed(2)})</option>`;
+            });
+        })
+        .catch(err => {
+            accountSelect.innerHTML = '<option value="">Error loading accounts</option>';
+        });
+});
+
+// When account is selected, show balance and validate
+document.getElementById('accountSelect').addEventListener('change', function() {
+    const selected = this.options[this.selectedIndex];
+    const balanceSpan = document.getElementById('accountBalance').querySelector('span');
+    const warning = document.getElementById('balanceWarning');
+    if (selected && selected.value) {
+        const balance = parseFloat(selected.dataset.balance) || 0;
+        balanceSpan.textContent = balance.toFixed(2);
+        const paymentAmount = parseFloat(document.getElementById('paymentAmount').value) || 0;
+        if (paymentAmount > balance) {
+            warning.classList.remove('hidden');
+        } else {
+            warning.classList.add('hidden');
+        }
+    } else {
+        balanceSpan.textContent = '0.00';
+        warning.classList.add('hidden');
+    }
+});
+
+// Re‑validate on amount change
+document.getElementById('paymentAmount').addEventListener('input', function() {
+    const paymentAmount = parseFloat(this.value) || 0;
+    const selected = document.getElementById('accountSelect').selectedOptions[0];
+    if (selected && selected.value) {
+        const balance = parseFloat(selected.dataset.balance) || 0;
+        const warning = document.getElementById('balanceWarning');
+        if (paymentAmount > balance) {
+            warning.classList.remove('hidden');
+        } else {
+            warning.classList.add('hidden');
+        }
+    }
+});
+
 function updatePaymentSummary() {
     const paymentAmount = parseFloat(document.getElementById('paymentAmount').value) || 0;
     const remainingBalance = Math.max(0, currentBalanceDue - paymentAmount);
@@ -675,29 +778,44 @@ async function processPayment() {
     const amount = parseFloat(document.getElementById('paymentAmount').value);
     const method = document.getElementById('paymentMethod').value;
     const reference = document.getElementById('paymentReference').value;
-    
-    // Basic validation
+    const accountSelect = document.getElementById('accountSelect');
+    const accountId = accountSelect.value;
+    const accountType = accountSelect.options[accountSelect.selectedIndex]?.dataset.type;
+
+    if (!accountId) {
+        showNotification('Please select an account', 'error');
+        return;
+    }
+
+    const balance = parseFloat(accountSelect.options[accountSelect.selectedIndex].dataset.balance) || 0;
+    if (amount > balance) {
+        showNotification('Insufficient balance in selected account', 'error');
+        return;
+    }
+
     if (!amount || amount <= 0) {
         showNotification('Please enter a valid payment amount', 'error');
         return;
     }
-    
+
     if (amount > currentBalanceDue) {
         showNotification(`Payment amount cannot exceed the balance due of KSh ${currentBalanceDue.toFixed(2)}`, 'error');
         return;
     }
-    
+
     if (!reference) {
         showNotification('Please enter a payment reference number', 'error');
         return;
     }
-    
-    // Create payment data object
+
     const paymentData = {
         amount: amount,
         payment_method: method,
-        reference: reference
+        reference: reference,
+        account_type: accountType,
+        account_id: accountId
     };
+
     
     // Show loading state
     const processBtn = document.querySelector('button[onclick="processPayment()"]');
@@ -852,8 +970,210 @@ function filterByStatus(status) {
 }
 
 function viewInvoice(invoiceId) {
-    // Implement view invoice details
-    alert('Viewing invoice ' + invoiceId);
+    const modal = document.getElementById('invoiceModal');
+    const contentDiv = document.getElementById('modalContent');
+    modal.classList.remove('hidden');
+
+    // Show loading spinner
+    contentDiv.innerHTML = `
+        <div class="text-center py-4">
+            <svg class="animate-spin h-8 w-8 text-blue-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p class="mt-2 text-gray-600 dark:text-gray-400">Loading...</p>
+        </div>
+    `;
+
+    fetch(`/finance/supplier-invoice/${invoiceId}/json`)
+        .then(response => response.json())
+        .then(data => {
+            // Parse items_delivered – it could be an object or array
+            let itemsHtml = '';
+            let items = data.items_delivered || [];
+            // If it's a single object, wrap it in an array
+            if (!Array.isArray(items)) {
+                items = [items];
+            }
+
+            if (items.length > 0 && items[0] && Object.keys(items[0]).length > 0) {
+                itemsHtml = `
+                    <div class="mt-4">
+                        <p class="text-xs text-gray-500 uppercase mb-2">Items Delivered</p>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full text-sm">
+                                <thead class="bg-gray-50 dark:bg-gray-700">
+                                    <tr>
+                                        <th class="px-4 py-2 text-left">Item</th>
+                                        <th class="px-4 py-2 text-right">Quantity</th>
+                                        <th class="px-4 py-2 text-right">Unit Price</th>
+                                        <th class="px-4 py-2 text-right">Total</th>
+                                        <th class="px-4 py-2 text-left">Batch</th>
+                                        <th class="px-4 py-2 text-left">Condition</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                `;
+                items.forEach(item => {
+                    itemsHtml += `
+                        <tr>
+                            <td class="px-4 py-2">${item.item_name || 'N/A'}</td>
+                            <td class="px-4 py-2 text-right">${item.quantity_delivered || item.quantity || 0}</td>
+                            <td class="px-4 py-2 text-right">KSh ${(item.unit_price || 0).toFixed(2)}</td>
+                            <td class="px-4 py-2 text-right">KSh ${(item.total_amount || item.total_price || 0).toFixed(2)}</td>
+                            <td class="px-4 py-2">${item.batch_number || 'N/A'}</td>
+                            <td class="px-4 py-2">${item.delivery_condition || 'N/A'}</td>
+                        </tr>
+                    `;
+                });
+                itemsHtml += `
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Build the full content
+            let html = `
+                <div class="space-y-4">
+                    <!-- Header -->
+                    <div class="border-b pb-3">
+                        <h4 class="font-semibold text-gray-800 dark:text-white">Invoice #${data.invoice_number}</h4>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Supplier: ${data.supplier_name || 'N/A'}</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">PO: ${data.purchase_order_number || 'N/A'}</p>
+                        ${data.delivery_number ? `<p class="text-sm text-gray-600 dark:text-gray-400">Delivery: ${data.delivery_number}</p>` : ''}
+                    </div>
+
+                    <!-- Dates & Terms -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-xs text-gray-500 uppercase">Invoice Date</p>
+                            <p class="font-medium">${data.invoice_date ? new Date(data.invoice_date).toLocaleDateString() : 'N/A'}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500 uppercase">Due Date</p>
+                            <p class="font-medium">${data.due_date ? new Date(data.due_date).toLocaleDateString() : 'N/A'}</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-xs text-gray-500 uppercase">Payment Terms</p>
+                            <p class="font-medium">${data.payment_terms || 'N/A'}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500 uppercase">Delivery Date</p>
+                            <p class="font-medium">${data.delivery_date ? new Date(data.delivery_date).toLocaleDateString() : 'N/A'}</p>
+                        </div>
+                    </div>
+
+                    <!-- Financial Summary -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-xs text-gray-500 uppercase">Subtotal</p>
+                            <p class="font-medium">KSh ${(data.subtotal_amount || 0).toFixed(2)}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500 uppercase">Tax</p>
+                            <p class="font-medium">KSh ${(data.tax_amount || 0).toFixed(2)}</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-xs text-gray-500 uppercase">Discount</p>
+                            <p class="font-medium">KSh ${(data.discount_amount || 0).toFixed(2)}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500 uppercase">Total</p>
+                            <p class="font-medium text-lg text-blue-600">KSh ${(data.total_amount || 0).toFixed(2)}</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-xs text-gray-500 uppercase">Amount Paid</p>
+                            <p class="font-medium">KSh ${(data.amount_paid || 0).toFixed(2)}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500 uppercase">Balance Due</p>
+                            <p class="font-medium ${data.balance_due > 0 ? 'text-red-600' : 'text-green-600'}">KSh ${(data.balance_due || 0).toFixed(2)}</p>
+                        </div>
+                    </div>
+
+                    <!-- Status -->
+                    <div>
+                        <p class="text-xs text-gray-500 uppercase">Status</p>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                            ${data.status === 'paid' ? 'bg-green-100 text-green-800' : 
+                              data.status === 'overdue' ? 'bg-red-100 text-red-800' : 
+                              data.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
+                              data.status === 'issued' ? 'bg-blue-100 text-blue-800' : 
+                              'bg-gray-100 text-gray-800'}">
+                            ${(data.status || 'N/A').toUpperCase()}
+                        </span>
+                    </div>
+
+                    <!-- Items Delivered Table -->
+                    ${itemsHtml}
+
+                    <!-- Delivery Notes -->
+                    ${data.delivery_notes ? `
+                    <div>
+                        <p class="text-xs text-gray-500 uppercase">Delivery Notes</p>
+                        <p class="text-sm text-gray-700 dark:text-gray-300 mt-1">${data.delivery_notes}</p>
+                    </div>
+                    ` : ''}
+
+                    <!-- Attachments -->
+                    <div class="grid grid-cols-3 gap-2 text-xs">
+                        ${data.invoice_file_path ? `<a href="${data.invoice_file_path}" target="_blank" class="text-blue-600 hover:underline">📄 Invoice PDF</a>` : ''}
+                        ${data.delivery_note_path ? `<a href="${data.delivery_note_path}" target="_blank" class="text-blue-600 hover:underline">📦 Delivery Note</a>` : ''}
+                        ${data.payment_proof_path ? `<a href="${data.payment_proof_path}" target="_blank" class="text-blue-600 hover:underline">💰 Payment Proof</a>` : ''}
+                    </div>
+                </div>
+            `;
+            contentDiv.innerHTML = html;
+        })
+        .catch(error => {
+            contentDiv.innerHTML = `<p class="text-red-600 text-center">Error loading invoice: ${error.message}</p>`;
+        });
+}
+
+function closeInvoiceModal(event) {
+    if (event && event.target === document.getElementById('invoiceModal')) {
+        document.getElementById('invoiceModal').classList.add('hidden');
+    } else if (!event) {
+        document.getElementById('invoiceModal').classList.add('hidden');
+    }
+}  
+
+
+// View payment history – navigate to a new page (or modal)
+function viewPaymentHistory(invoiceId) {
+    window.location.href = `/finance/supplier-invoice/${invoiceId}/payments`; // adjust URL as needed
+}
+
+// Void invoice – show confirmation and POST
+function voidInvoice(invoiceId) {
+    if (confirm('Are you sure you want to void this invoice? This action cannot be undone.')) {
+        fetch(`/finance/supplier-invoice/${invoiceId}/void`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Remove the row or update status
+                document.getElementById(`invoice-row-${invoiceId}`).remove();
+                // Or refresh the page
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => alert('Request failed: ' + error));
+    }
 }
 
 function downloadInvoice(invoiceId) {
@@ -872,12 +1192,11 @@ function toggleDropdown(dropdownId) {
     dropdown.classList.toggle('hidden');
 }
 
-// Close dropdowns when clicking outside
+// Close dropdown when clicking outside
 document.addEventListener('click', function(event) {
-    if (!event.target.matches('.dropdown-button')) {
-        const dropdowns = document.querySelectorAll('.dropdown-menu');
-        dropdowns.forEach(dropdown => {
-            dropdown.classList.add('hidden');
+    if (!event.target.closest('.relative')) {
+        document.querySelectorAll('[id^="dropdown-"]').forEach(dd => {
+            dd.classList.add('hidden');
         });
     }
 });

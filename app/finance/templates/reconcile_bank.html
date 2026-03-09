@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}Bank Reconciliation{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <h1 class="display-6 fw-bold">Bank Reconciliation</h1>
+    <p class="text-muted">Account: {{ account.bank_name }} - {{ account.account_number }} | Statement: {{ statement.statement_date }}</p>
+
+    <div class="row">
+        <!-- Unmatched Statement Lines -->
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning text-white">
+                    <h5 class="mb-0">Unmatched Statement Lines</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Description</th>
+                                <th>Reference</th>
+                                <th>Amount</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="statementLines">
+                            {% for line in unmatched_lines %}
+                            <tr data-line-id="{{ line.id }}">
+                                <td>{{ line.transaction_date }}</td>
+                                <td>{{ line.description }}</td>
+                                <td>{{ line.reference }}</td>
+                                <td class="{% if line.amount < 0 %}text-danger{% else %}text-success{% endif %}">
+                                    {{ "{:,.2f}".format(line.amount) }}
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary match-btn" data-line-id="{{ line.id }}">Match</button>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="5" class="text-center">No unmatched lines.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Unmatched Bank Transactions -->
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Unmatched Bank Transactions</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Description</th>
+                                <th>Reference</th>
+                                <th>Amount</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transactionsList">
+                            {% for tx in unmatched_transactions %}
+                            <tr data-tx-id="{{ tx.id }}">
+                                <td>{{ tx.transaction_date.strftime('%Y-%m-%d') }}</td>
+                                <td>{{ tx.description }}</td>
+                                <td>{{ tx.reference or '—' }}</td>
+                                <td class="{% if tx.amount < 0 %}text-danger{% else %}text-success{% endif %}">
+                                    {{ "{:,.2f}".format(tx.amount) }}
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-secondary select-tx" data-tx-id="{{ tx.id }}">Select</button>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="5" class="text-center">No unmatched transactions.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Match Modal (hidden) -->
+<div class="modal fade" id="matchModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Match Transaction</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Match this statement line with the selected transaction?</p>
+                <p><strong>Statement:</strong> <span id="stmtDesc"></span> (<span id="stmtAmt"></span>)</p>
+                <p><strong>Transaction:</strong> <span id="txDesc"></span> (<span id="txAmt"></span>)</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmMatch">Match</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentLineId = null;
+let currentTxId = null;
+
+document.querySelectorAll('.match-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const lineId = this.dataset.lineId;
+        const row = this.closest('tr');
+        currentLineId = lineId;
+        document.getElementById('stmtDesc').innerText = row.cells[1].innerText;
+        document.getElementById('stmtAmt').innerText = row.cells[3].innerText;
+
+        // Show modal and wait for transaction selection
+        // For simplicity, we'll just alert to select a transaction first.
+        alert('Please select a transaction from the right table first.');
+    });
+});
+
+document.querySelectorAll('.select-tx').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const txId = this.dataset.txId;
+        const row = this.closest('tr');
+        currentTxId = txId;
+        document.getElementById('txDesc').innerText = row.cells[1].innerText;
+        document.getElementById('txAmt').innerText = row.cells[3].innerText;
+
+        if (!currentLineId) {
+            alert('Please select a statement line first.');
+            return;
+        }
+
+        // Show modal
+        new bootstrap.Modal(document.getElementById('matchModal')).show();
+    });
+});
+
+document.getElementById('confirmMatch').addEventListener('click', function() {
+    fetch('/finance/bank-reconciliation/match', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ line_id: currentLineId, transaction_id: currentTxId })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            // Remove rows from both tables
+            document.querySelector(`[data-line-id="${currentLineId}"]`).remove();
+            document.querySelector(`[data-tx-id="${currentTxId}"]`).remove();
+            bootstrap.Modal.getInstance(document.getElementById('matchModal')).hide();
+            currentLineId = currentTxId = null;
+        } else {
+            alert('Error matching');
+        }
+    });
+});
+</script>
+{% endblock %}

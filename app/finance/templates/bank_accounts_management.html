@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+
+{% block title %}Bank Accounts Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Header with gradient -->
+    <div class="bg-gradient-primary text-white p-4 rounded-4 mb-4 shadow-sm">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+            <div>
+                <h1 class="display-6 fw-bold">Bank Accounts Management</h1>
+                <p class="text-white-80 mb-0">Manage accounts, view balances, record transactions, and access ledgers</p>
+            </div>
+            <div class="mt-3 mt-md-0">
+                <button class="btn btn-light" data-bs-toggle="modal" data-bs-target="#addBankModal">
+                    <i class="fas fa-plus-circle me-2"></i>Add Bank Account
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-primary mb-1">Total Accounts</p>
+                            <h2 class="mb-0 fw-bold">{{ bank_accounts|length }}</h2>
+                        </div>
+                        <div class="icon-circle bg-primary bg-opacity-10">
+                            <i class="fas fa-university text-primary fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-success mb-1">Total Balance</p>
+                            <h2 class="mb-0 fw-bold">KSh {{ "{:,.2f}".format(bank_accounts|sum(attribute='current_balance')) }}</h2>
+                        </div>
+                        <div class="icon-circle bg-success bg-opacity-10">
+                            <i class="fas fa-coins text-success fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-info mb-1">Recent Transactions</p>
+                            <h2 class="mb-0 fw-bold">{{ total_recent_transactions }}</h2>
+                        </div>
+                        <div class="icon-circle bg-info bg-opacity-10">
+                            <i class="fas fa-history text-info fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <input type="text" id="accountSearch" class="form-control form-control-lg rounded-3" placeholder="Search accounts by name, bank, or number...">
+        </div>
+    </div>
+
+<!-- Bank Accounts List -->
+<div class="row g-4" id="accountsContainer">
+    {% for bank in bank_accounts %}
+    <div class="col-12 account-card" data-name="{{ bank.bank_name|lower }} {{ bank.account_name|lower }} {{ bank.account_number }}">
+        <div class="card border-0 shadow-sm rounded-4 hover-lift overflow-hidden">
+            <!-- Card Header with larger bank name -->
+            <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
+                <div class="d-flex flex-wrap justify-content-between align-items-start">
+                    <div class="mb-3 mb-sm-0">
+                        <h3 class="display-6 fw-bold text-primary mb-1">{{ bank.bank_name }}</h3>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-light text-dark fs-6 px-3 py-2">
+                                <i class="fas fa-hashtag me-1"></i>{{ bank.account_number }}
+                            </span>
+                            {% if bank.swift_code %}
+                            <span class="badge bg-secondary bg-opacity-10 text-secondary fs-6 px-3 py-2">
+                                SWIFT: {{ bank.swift_code }}
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a href="{{ url_for('finance_web_bp.bank_account_ledger', account_id=bank.id) }}" class="btn btn-outline-info rounded-pill px-3">
+                            <i class="fas fa-book me-1"></i> Ledger
+                        </a>
+                        <button class="btn btn-outline-primary rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#editBankModal{{ bank.id }}">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-outline-danger rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#deleteBankModal{{ bank.id }}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card Body with account details -->
+            <div class="card-body p-4">
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="d-flex flex-column gap-2">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-user-circle text-primary me-2" style="width: 20px;"></i>
+                                <span><strong>Account Name:</strong> {{ bank.account_name }}</span>
+                            </div>
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-code-branch text-primary me-2" style="width: 20px;"></i>
+                                <span><strong>Branch:</strong> {{ bank.branch or 'N/A' }}</span>
+                            </div>
+                            {% if bank.swift_code %}
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-globe text-primary me-2" style="width: 20px;"></i>
+                                <span><strong>SWIFT:</strong> {{ bank.swift_code }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="bg-light rounded-3 p-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="text-muted">Initial Balance</span>
+                                <span class="fw-semibold">KSh {{ "{:,.2f}".format(bank.initial_balance) }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-muted">Current Balance</span>
+                                <span class="h4 text-success mb-0">KSh {{ "{:,.2f}".format(bank.current_balance) }}</span>
+                            </div>
+                        </div>
+                        <div class="mt-3 d-flex gap-2 justify-content-end">
+                            <button class="btn btn-sm btn-success rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#depositModal{{ bank.id }}">
+                                <i class="fas fa-plus-circle me-1"></i> Deposit
+                            </button>
+                            <button class="btn btn-sm btn-warning rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#withdrawModal{{ bank.id }}">
+                                <i class="fas fa-minus-circle me-1"></i> Withdraw
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transaction History Toggle -->
+                <div class="mt-4 border-top pt-3">
+                    <button class="btn btn-link text-decoration-none p-0 toggle-transactions" data-target="txns{{ bank.id }}">
+                        <i class="fas fa-chevron-down me-1"></i> <span class="fw-semibold">Show Recent Transactions</span>
+                    </button>
+                    <div class="transactions-container mt-3" id="txns{{ bank.id }}" style="display: none;">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover align-middle">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Type</th>
+                                        <th>Description</th>
+                                        <th>Reference</th>
+                                        <th class="text-end">Amount</th>
+                                        <th>Source</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for tx in bank.combined_transactions[:10] %}
+                                    <tr>
+                                        <td>{{ tx.date.strftime('%Y-%m-%d %H:%M') if tx.date else '' }}</td>
+                                        <td>
+                                            <span class="badge bg-{{ 'success' if tx.type in ['deposit','cash_transfer'] else 'danger' if tx.type == 'withdrawal' else 'secondary' }} px-3 py-2">
+                                                {{ tx.type|replace('_',' ')|title }}
+                                            </span>
+                                        </td>
+                                        <td>{{ tx.description }}</td>
+                                        <td><code class="bg-light">{{ tx.reference or '—' }}</code></td>
+                                        <td class="text-end fw-bold">{{ "{:,.2f}".format(tx.amount) }}</td>
+                                        <td>{{ tx.source }}</td>
+                                    </tr>
+                                    {% else %}
+                                    <tr><td colspan="6" class="text-center text-muted py-3">No transactions yet.</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                            {% if bank.combined_transactions|length > 10 %}
+                            <div class="text-center mt-2">
+                                <a href="{{ url_for('finance_web_bp.bank_account_ledger', account_id=bank.id) }}" class="btn btn-sm btn-outline-primary rounded-pill px-4">View Full Ledger</a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% include '_bank_modals.html' %}
+
+    {% else %}
+    <div class="col-12">
+        <div class="card border-0 shadow-sm rounded-4 p-5 text-center">
+            <i class="fas fa-university fa-3x text-muted mb-3"></i>
+            <h5>No bank accounts yet</h5>
+            <p class="text-muted">Click "Add Bank Account" to get started.</p>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Account search
+    const searchInput = document.getElementById('accountSearch');
+    if (searchInput) {
+        searchInput.addEventListener('keyup', function() {
+            const value = this.value.toLowerCase();
+            document.querySelectorAll('.account-card').forEach(card => {
+                const name = card.getAttribute('data-name') || '';
+                card.style.display = name.includes(value) ? '' : 'none';
+            });
+        });
+    }
+
+    // Transaction toggle
+    document.querySelectorAll('.toggle-transactions').forEach(button => {
+        button.addEventListener('click', function() {
+            const targetId = this.getAttribute('data-target');
+            const targetDiv = document.getElementById(targetId);
+            const icon = this.querySelector('i');
+            const span = this.querySelector('span');
+
+            if (targetDiv.style.display === 'none') {
+                targetDiv.style.display = '';
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-up');
+                span.textContent = 'Hide Recent Transactions';
+            } else {
+                targetDiv.style.display = 'none';
+                icon.classList.remove('fa-chevron-up');
+                icon.classList.add('fa-chevron-down');
+                span.textContent = 'Show Recent Transactions';
+            }
+        });
+    });
+});
+</script>
+
+<!-- Custom CSS -->
+<style>
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .text-white-80 {
+        color: rgba(255,255,255,0.8);
+    }
+    .icon-circle {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .hover-lift {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hover-lift:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.75rem 1.5rem rgba(0,0,0,0.1) !important;
+    }
+    .badge {
+        font-weight: 500;
+        padding: 0.5em 0.8em;
+    }
+</style>
+{% endblock %}

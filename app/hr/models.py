@@ -28,7 +28,22 @@ class PayrollPeriod(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
+    # Add these columns for uniqueness constraint
+    year = db.Column(db.Integer, nullable=False)
+    month = db.Column(db.Integer, nullable=False)
+    
+    __table_args__ = (
+        db.UniqueConstraint('year', 'month', 'frequency', name='unique_period_per_month'),
+    )
+    
     payrolls = db.relationship('Payroll', backref='period', lazy=True)
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # Auto-calculate year and month from start_date
+        if self.start_date:
+            self.year = self.start_date.year
+            self.month = self.start_date.month
     
     def __repr__(self):
         return f"<PayrollPeriod {self.start_date} to {self.end_date}>"
@@ -45,7 +60,14 @@ class Payroll(db.Model):
     status = db.Column(db.Enum('Draft', 'Approved', 'Processed', 'Paid'), default='Draft')
     notes = db.Column(db.Text)
     employee_count = db.Column(db.Integer, default=0)  # Add this if missing
+    approved_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    approved_at = db.Column(db.DateTime, nullable=True)
 
+    paid_at = db.Column(db.DateTime, nullable=True)   # when payroll was marked as paid
+    paid_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # who marked it
+
+    # ... relationships (you may want to add a relationship for paid_by)
+    payer = db.relationship('User', foreign_keys=[paid_by])
     payslips = db.relationship('Payslip', backref='payroll', lazy=True)
     
     def __repr__(self):
@@ -68,6 +90,7 @@ class Payslip(db.Model):
     earnings = db.relationship('PayslipEarning', backref='payslip', lazy=True, cascade='all, delete-orphan')
     deductions = db.relationship('PayslipDeduction', backref='payslip', lazy=True, cascade='all, delete-orphan')
     employee = db.relationship('User', backref='payslips')
+    # The loan_repayments relationship is automatically created by the backref in LoanRepayment model
     
     def calculate_totals(self):
         """Calculate gross earnings, total deductions, and net pay"""
@@ -78,7 +101,6 @@ class Payslip(db.Model):
         for earning in self.earnings:
             gross += Decimal(str(earning.amount or 0))
         
-        self.gross_earnings = gross
         self.gross_earnings = gross
         
         # Calculate total deductions
@@ -256,6 +278,11 @@ class EmployeePayrollInfo(db.Model):
     transport_allowance = db.Column(db.Numeric(10, 2), default=0.00)
     other_allowance = db.Column(db.Numeric(10, 2), default=0.00)
     payment_method = db.Column(db.Enum(PaymentMethod), default=PaymentMethod.BANK_TRANSFER)
+    
+    # NEW: Active status column
+    is_active = db.Column(db.Boolean, default=True, nullable=False, 
+                          server_default=text("true"))
+    
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -263,13 +290,17 @@ class EmployeePayrollInfo(db.Model):
     
     def calculate_gross_salary(self):
         """Calculate total gross salary"""
+        if not self.is_active:
+            return Decimal('0')
+        
         return (self.basic_salary or Decimal('0')) + \
                (self.housing_allowance or Decimal('0')) + \
                (self.transport_allowance or Decimal('0')) + \
                (self.other_allowance or Decimal('0'))
     
     def __repr__(self):
-        return f"<PayrollInfo for Employee {self.employee_id}>"
+        status = "Active" if self.is_active else "Inactive"
+        return f"<PayrollInfo for Employee {self.employee_id} ({status})>"
 class PayrollAdjustment(db.Model):
     __tablename__ = 'payroll_adjustments'
     id = db.Column(db.Integer, primary_key=True)
@@ -301,7 +332,20 @@ class PayrollLoan(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
+    employee = db.relationship('User', backref='loans', lazy=True)
     repayments = db.relationship('LoanRepayment', backref='loan', lazy=True)
+    
+    @property
+    def employee_name(self):
+        """Safely get employee name"""
+        return self.employee.full_name if self.employee else f"Employee {self.employee_id}"
+    
+    @property
+    def staff_no(self):
+        """Safely get staff number"""
+        if self.employee and self.employee.payroll_info:
+            return self.employee.payroll_info.staff_no
+        return "N/A"
     
     def __repr__(self):
         return f"<PayrollLoan #{self.id} for Employee {self.employee_id}>"
@@ -317,9 +361,11 @@ class LoanRepayment(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     created_by = db.Column(db.Integer, db.ForeignKey('user.id'))  # Add this field
     
+    # ADD THIS RELATIONSHIP
+    payslip = db.relationship('Payslip', backref=db.backref('loan_repayments', lazy=True))
+    
     def __repr__(self):
         return f"<LoanRepayment #{self.id} for Loan {self.loan_id}>"
-
 class PayrollReport(db.Model):
     __tablename__ = 'payroll_reports'
     id = db.Column(db.Integer, primary_key=True)
@@ -332,6 +378,27 @@ class PayrollReport(db.Model):
     def __repr__(self):
         return f"<PayrollReport {self.report_type} for Period {self.period_id}>"
 
+
+
+class StatutoryLiability(db.Model):
+    __tablename__ = 'statutory_liabilities'
+    __audit_trail__ = True
+
+    id = db.Column(db.Integer, primary_key=True)
+    payroll_id = db.Column(db.Integer, db.ForeignKey('payrolls.id'), nullable=False)
+    deduction_type_id = db.Column(db.Integer, db.ForeignKey('deduction_types.id'), nullable=False)
+    amount = db.Column(db.Numeric(12, 2), nullable=False)
+    due_date = db.Column(db.Date, nullable=False)          # e.g., 9th of next month
+    paid_at = db.Column(db.DateTime, nullable=True)        # when remitted to authority
+    reference = db.Column(db.String(100), nullable=True)   # payment reference
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationships
+    payroll = db.relationship('Payroll', backref=db.backref('statutory_liabilities', lazy='dynamic'))
+    deduction_type = db.relationship('DeductionType', backref='liabilities')
+
+    def __repr__(self):
+        return f'<StatutoryLiability {self.deduction_type.code} KES {self.amount} for Payroll #{self.payroll_id}>'
 
 # =============================
 # DUTY ROTA & ATTENDANCE MODELS
@@ -751,7 +818,15 @@ class HRInventory(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     
-    
+# Association table for many-to-many relationship between panels and job postings
+panel_job_postings = db.Table('panel_job_postings',
+    db.Column('panel_id', db.Integer, db.ForeignKey('interview_panels.id'), primary_key=True),
+    db.Column('job_posting_id', db.Integer, db.ForeignKey('job_postings.id'), primary_key=True),
+    db.Column('assigned_at', db.DateTime, default=datetime.utcnow),
+    db.Column('assigned_by', db.Integer, db.ForeignKey('user.id')),
+    db.Column('is_primary', db.Boolean, default=False),  # If this is the main panel for the job
+    db.Column('notes', db.Text)
+)    
     
     
 # Recruitment Models
@@ -816,8 +891,27 @@ class JobPosting(db.Model):
     
     # Relationships
     candidates = db.relationship('Candidate', backref='job_posting', lazy=True)
-    interview_panels = db.relationship('InterviewPanel', backref='job_posting', lazy=True)
     department = db.relationship('Department', backref='job_postings')
+    interview_panels = db.relationship('InterviewPanel', 
+                                      secondary=panel_job_postings,
+                                      backref='assigned_job_postings',  # Changed from 'job_postings'
+                                      lazy=True)
+    # Add a method to get primary panel
+    def get_primary_panel(self):
+        """Get the primary panel for this job"""
+        from sqlalchemy import select
+        
+        stmt = select(InterviewPanel).join(
+            panel_job_postings,
+            InterviewPanel.id == panel_job_postings.c.panel_id
+        ).where(
+            db.and_(
+                panel_job_postings.c.job_posting_id == self.id,
+                panel_job_postings.c.is_primary == True
+            )
+        )
+        result = db.session.execute(stmt).scalar()
+        return result
     
     def __repr__(self):
         return f"<JobPosting {self.reference_no}: {self.title}>"
@@ -837,6 +931,11 @@ class JobPosting(db.Model):
         elif self.salary_disclosure == 'Range' and self.salary_range_min and self.salary_range_max:
             return f"{self.salary_currency} {self.salary_range_min:,.2f} - {self.salary_range_max:,.2f}"
         return 'Not Specified'
+    
+    @property
+    def assigned_panels_count(self):
+        """Count of panels assigned to this job"""
+        return len(self.interview_panels.all()) if hasattr(self, 'interview_panels') else 0
 
 class Candidate(db.Model):
     __tablename__ = 'candidates'
@@ -946,24 +1045,79 @@ class Candidate(db.Model):
 class InterviewPanel(db.Model):
     __tablename__ = 'interview_panels'
     id = db.Column(db.Integer, primary_key=True)
-    job_posting_id = db.Column(db.Integer, db.ForeignKey('job_postings.id'), nullable=False)
     name = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text)
     panel_type = db.Column(db.Enum('Technical', 'HR', 'Management', 'Final', 'Other', name='panel_type_enum'))
     
     # Status
     is_active = db.Column(db.Boolean, default=True)
+    is_shared = db.Column(db.Boolean, default=False)  # Can be shared across multiple jobs
     
     # Timestamps
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'))
     
     # Relationships
     panel_members = db.relationship('InterviewPanelMember', backref='panel', lazy=True, cascade='all, delete-orphan')
     interviews = db.relationship('Interview', backref='panel', lazy=True)
+    creator = db.relationship('User', foreign_keys=[created_by], backref='created_panels')
+    
+    # You can add a property to access job_postings if needed
+    @property
+    def job_postings(self):
+        """Get all job postings assigned to this panel"""
+        return self.assigned_job_postings
     
     def __repr__(self):
         return f"<InterviewPanel {self.name}>"
+    
+    @property
+    def active_jobs_count(self):
+        """Count of active job postings assigned to this panel"""
+        return self.job_postings.filter(
+            JobPosting.status.in_(['Published', 'Draft'])
+        ).count()
+    
+    def assign_to_job(self, job_posting_id, assigned_by, is_primary=False, notes=None):
+        """Assign this panel to a job posting"""
+        from sqlalchemy import insert
+        
+        # Check if already assigned
+        existing = db.session.execute(
+            db.select([panel_job_postings]).where(
+                db.and_(
+                    panel_job_postings.c.panel_id == self.id,
+                    panel_job_postings.c.job_posting_id == job_posting_id
+                )
+            )
+        ).fetchone()
+        
+        if not existing:
+            # Insert new assignment
+            stmt = insert(panel_job_postings).values(
+                panel_id=self.id,
+                job_posting_id=job_posting_id,
+                assigned_by=assigned_by,
+                is_primary=is_primary,
+                notes=notes
+            )
+            db.session.execute(stmt)
+            return True
+        return False
+    
+    def remove_from_job(self, job_posting_id):
+        """Remove this panel from a job posting"""
+        from sqlalchemy import delete
+        
+        stmt = delete(panel_job_postings).where(
+            db.and_(
+                panel_job_postings.c.panel_id == self.id,
+                panel_job_postings.c.job_posting_id == job_posting_id
+            )
+        )
+        db.session.execute(stmt)
+        return True
 
 class InterviewPanelMember(db.Model):
     __tablename__ = 'interview_panel_members'

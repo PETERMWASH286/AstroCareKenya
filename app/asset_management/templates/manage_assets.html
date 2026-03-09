@@ -123,11 +123,11 @@
                     <div class="flex justify-between items-center mb-4">
                         <div>
                             <p class="text-gray-500 text-sm">Current Value</p>
-                            <p class="text-lg font-semibold text-gray-800">${{ asset.current_value|default(asset.purchase_price, true)|round(2) }}</p>
+                            <p class="text-lg font-semibold text-gray-800">Ksh {{ asset.current_value|default(asset.purchase_price, true)|round(2) }}</p>
                         </div>
                         <div>
                             <p class="text-gray-500 text-sm">Purchase Price</p>
-                            <p class="text-lg font-semibold text-gray-800">${{ asset.purchase_price }}</p>
+                            <p class="text-lg font-semibold text-gray-800">Ksh {{ asset.purchase_price }}</p>
                         </div>
                     </div>
 

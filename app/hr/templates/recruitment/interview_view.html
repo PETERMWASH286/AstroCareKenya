@@ -1,535 +1,1082 @@
 {% extends "base.html" %}
 
-{% block title %}Interview Details - Recruitment{% endblock %}
+{% block title %}Interview #{{ interview.id }} - {{ interview.candidate.full_name }} - AstroCare HR{% endblock %}
 
 {% block content %}
-<div class="container-fluid px-4">
-    <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h1 class="h3 mb-2 text-gray-800">Interview Details</h1>
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{{ url_for('hr_web.recruitment_interviews') }}">Interviews</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">Interview #{{ interview.id }}</li>
-                </ol>
-            </nav>
-        </div>
-        <div>
-            <a href="{{ url_for('hr_web.recruitment_interviews') }}" class="btn btn-secondary">
-                <i class="fas fa-arrow-left mr-2"></i>Back to Interviews
-            </a>
-            {% if interview.status in ['Scheduled', 'Confirmed'] %}
-            <a href="{{ url_for('hr_web.edit_interview', interview_id=interview.id) }}" class="btn btn-warning">
-                <i class="fas fa-edit mr-2"></i>Edit
-            </a>
-            {% endif %}
-            <a href="{{ url_for('hr_web.score_interview', interview_id=interview.id) }}" class="btn btn-primary">
-                <i class="fas fa-star mr-2"></i>Submit Score
-            </a>
-        </div>
-    </div>
-
-    <div class="row">
-        <!-- Interview Details -->
-        <div class="col-lg-8">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Interview Information</h6>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h5 class="font-weight-bold text-primary mb-3">Interview Details</h5>
-                            <table class="table table-borderless">
-                                <tr>
-                                    <th width="40%">Status:</th>
-                                    <td>
-                                        <span class="badge badge-{{ 
-                                            'primary' if interview.status == 'Scheduled'
-                                            else 'info' if interview.status == 'Confirmed'
-                                            else 'warning' if interview.status == 'In Progress'
-                                            else 'success' if interview.status == 'Completed'
-                                            else 'danger' if interview.status == 'Cancelled'
-                                            else 'secondary' if interview.status == 'No Show'
-                                            else 'warning' if interview.status == 'Rescheduled'
-                                        }}">
-                                            {{ interview.status }}
-                                        </span>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <th>Type:</th>
-                                    <td>{{ interview.interview_type }}</td>
-                                </tr>
-                                <tr>
-                                    <th>Scheduled Date:</th>
-                                    <td>{{ interview.scheduled_date.strftime('%A, %B %d, %Y') }}</td>
-                                </tr>
-                                <tr>
-                                    <th>Time:</th>
-                                    <td>{{ interview.scheduled_date.strftime('%I:%M %p') }}</td>
-                                </tr>
-                                <tr>
-                                    <th>Duration:</th>
-                                    <td>{{ interview.duration_minutes }} minutes</td>
-                                </tr>
-                                {% if interview.actual_start_time and interview.actual_end_time %}
-                                <tr>
-                                    <th>Actual Duration:</th>
-                                    <td>{{ (interview.actual_end_time - interview.actual_start_time).seconds // 60 }} minutes</td>
-                                </tr>
-                                {% endif %}
-                            </table>
-                        </div>
-                        <div class="col-md-6">
-                            <h5 class="font-weight-bold text-primary mb-3">Location & Logistics</h5>
-                            <table class="table table-borderless">
-                                <tr>
-                                    <th width="40%">Location:</th>
-                                    <td>{{ interview.location or 'Not specified' }}</td>
-                                </tr>
-                                {% if interview.meeting_link %}
-                                <tr>
-                                    <th>Meeting Link:</th>
-                                    <td>
-                                        <a href="{{ interview.meeting_link }}" target="_blank" class="btn btn-sm btn-outline-primary">
-                                            <i class="fas fa-video mr-1"></i> Join Meeting
-                                        </a>
-                                    </td>
-                                </tr>
-                                {% endif %}
-                                <tr>
-                                    <th>Panel:</th>
-                                    <td>
-                                        {% if interview.panel %}
-                                        <a href="#panel-members">{{ interview.panel.name }}</a>
-                                        {% else %}
-                                        <span class="text-muted">No panel assigned</span>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                {% if interview.recommendation %}
-                                <tr>
-                                    <th>Recommendation:</th>
-                                    <td>
-                                        <span class="badge badge-{{ 
-                                            'success' if interview.recommendation in ['Strong Hire', 'Hire']
-                                            else 'warning' if interview.recommendation == 'Neutral'
-                                            else 'danger'
-                                        }}">
-                                            {{ interview.recommendation }}
-                                        </span>
-                                    </td>
-                                </tr>
-                                {% endif %}
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- Overall Feedback -->
-                    {% if interview.overall_feedback %}
-                    <div class="mt-4">
-                        <h5 class="font-weight-bold text-primary mb-3">Overall Feedback</h5>
-                        <div class="card bg-light">
-                            <div class="card-body">
-                                {{ interview.overall_feedback|nl2br }}
+<div class="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+    <!-- Header with Gradient -->
+    <div class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-xl">
+        <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center flex-wrap gap-4">
+                        <div>
+                            <div class="h-16 w-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
+                                <svg class="h-8 w-8 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
                             </div>
                         </div>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-
-            <!-- Candidate Information -->
-            <div class="card shadow mb-4">
-                <div class="card-header py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="m-0 font-weight-bold text-primary">Candidate Information</h6>
-                    <a href="{{ url_for('hr_web.view_candidate', candidate_id=interview.candidate.id) }}" 
-                       class="btn btn-sm btn-outline-primary">
-                        <i class="fas fa-external-link-alt mr-1"></i> View Full Profile
-                    </a>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <table class="table table-borderless">
-                                <tr>
-                                    <th width="40%">Name:</th>
-                                    <td>
-                                        <a href="{{ url_for('hr_web.view_candidate', candidate_id=interview.candidate.id) }}">
-                                            {{ interview.candidate.full_name }}
-                                        </a>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <th>Email:</th>
-                                    <td>
-                                        <a href="mailto:{{ interview.candidate.email }}">{{ interview.candidate.email }}</a>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <th>Phone:</th>
-                                    <td>{{ interview.candidate.phone or 'N/A' }}</td>
-                                </tr>
-                                <tr>
-                                    <th>Current Position:</th>
-                                    <td>{{ interview.candidate.current_position or 'N/A' }}</td>
-                                </tr>
-                            </table>
-                        </div>
-                        <div class="col-md-6">
-                            <table class="table table-borderless">
-                                <tr>
-                                    <th width="40%">Job Applied:</th>
-                                    <td>
-                                        {% if interview.candidate.job_posting %}
-                                        <a href="{{ url_for('hr_web.view_job_posting', job_id=interview.candidate.job_posting.id) }}">
-                                            {{ interview.candidate.job_posting.title }}
-                                        </a>
-                                        {% else %}
-                                        <span class="text-muted">N/A</span>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <th>Application Date:</th>
-                                    <td>{{ interview.candidate.application_date.strftime('%Y-%m-%d') }}</td>
-                                </tr>
-                                <tr>
-                                    <th>Candidate Status:</th>
-                                    <td>
-                                        <span class="badge badge-{{ 
-                                            'secondary' if interview.candidate.status == 'Applied' 
-                                            else 'info' if interview.candidate.status == 'Under Review' 
-                                            else 'primary' if interview.candidate.status == 'Shortlisted' 
-                                            else 'warning' if interview.candidate.status == 'Interview Scheduled' 
-                                            else 'info' if interview.candidate.status == 'Interviewed' 
-                                            else 'warning' if interview.candidate.status == 'Reference Check' 
-                                            else 'success' if interview.candidate.status == 'Offer Extended' 
-                                            else 'success' if interview.candidate.status == 'Offer Accepted' 
-                                            else 'danger' if interview.candidate.status == 'Rejected' 
-                                            else 'secondary' if interview.candidate.status == 'On Hold' 
-                                            else 'dark' 
-                                        }}">
-                                            {{ interview.candidate.status }}
-                                        </span>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <th>Overall Score:</th>
-                                    <td>
-                                        {% if interview.candidate.overall_score %}
-                                        <div class="progress" style="height: 20px; width: 150px;">
-                                            <div class="progress-bar bg-success" role="progressbar" 
-                                                 style="width: {{ interview.candidate.overall_score }}%;" 
-                                                 aria-valuenow="{{ interview.candidate.overall_score }}" 
-                                                 aria-valuemin="0" 
-                                                 aria-valuemax="100">
-                                                {{ "%.1f"|format(interview.candidate.overall_score) }}%
-                                            </div>
-                                        </div>
-                                        {% else %}
-                                        <span class="text-muted">Not scored</span>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Sidebar -->
-        <div class="col-lg-4">
-            <!-- Panel Members -->
-            <div class="card shadow mb-4" id="panel-members">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Interview Panel</h6>
-                </div>
-                <div class="card-body">
-                    {% if panel_members %}
-                    <div class="list-group list-group-flush">
-                        {% for member in panel_members %}
-                        <div class="list-group-item d-flex align-items-center">
-                            <div class="mr-3">
-                                <div class="avatar-circle-sm bg-primary text-white">
-                                    {{ member.full_name }}
-                                </div>
-                            </div>
-                            <div class="flex-grow-1">
-                                <div class="font-weight-bold">{{ member.user.full_name }}</div>
-                                <small class="text-muted">{{ member.role }}</small>
-                                {% if member.is_required %}
-                                <span class="badge badge-success badge-sm ml-2">Required</span>
-                                {% endif %}
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    {% else %}
-                    <p class="text-muted">No panel members assigned.</p>
-                    {% endif %}
-                </div>
-            </div>
-
-            <!-- Interview Scores -->
-            <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Interview Scores</h6>
-                </div>
-                <div class="card-body">
-                    {% if scores %}
-                    {% for score in scores %}
-                    <div class="mb-3">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <div class="font-weight-bold">{{ score.panel_member.user.full_name }}</div>
-                            <div>
-                                <span class="badge badge-{{ 
-                                    'success' if score.recommendation in ['Strong Hire', 'Hire']
-                                    else 'warning' if score.recommendation == 'Neutral'
-                                    else 'danger'
-                                }}">
-                                    {{ score.recommendation or 'Not rated' }}
+                        <div>
+                            <h1 class="text-3xl font-bold tracking-tight">
+                                Interview with {{ interview.candidate.full_name }}
+                            </h1>
+                            <div class="mt-2 flex flex-wrap gap-3">
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-white/20 backdrop-blur-sm">
+                                    <span class="w-2 h-2 rounded-full bg-white mr-2"></span>
+                                    ID: {{ interview.id }}
+                                </span>
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-white/20 backdrop-blur-sm">
+                                    {{ interview.interview_type }} Interview
+                                </span>
+                                <span id="interview-status-badge" class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium 
+                                    {% if interview.status == 'Scheduled' %}bg-yellow-500/20 text-yellow-100
+                                    {% elif interview.status == 'Confirmed' %}bg-green-500/20 text-green-100
+                                    {% elif interview.status == 'In Progress' %}bg-blue-500/20 text-blue-100
+                                    {% elif interview.status == 'Completed' %}bg-emerald-500/20 text-emerald-100
+                                    {% elif interview.status == 'Cancelled' %}bg-red-500/20 text-red-100
+                                    {% else %}bg-gray-500/20 text-gray-100{% endif %}">
+                                    {{ interview.status }}
                                 </span>
                             </div>
                         </div>
-                        <div class="progress mb-1" style="height: 10px;">
-                            <div class="progress-bar bg-primary" role="progressbar" 
-                                 style="width: {{ (score.score / 5) * 100 }}%;" 
-                                 aria-valuenow="{{ score.score }}" 
-                                 aria-valuemin="0" 
-                                 aria-valuemax="5">
+                    </div>
+                </div>
+                <div class="mt-6 lg:mt-0 flex flex-wrap gap-3">
+                    <a href="{{ url_for('hr_web.recruitment_interviews') }}" 
+                       class="inline-flex items-center px-4 py-2.5 border border-white/30 rounded-lg text-sm font-medium text-white bg-white/10 hover:bg-white/20 backdrop-blur-sm transition-all duration-200">
+                        <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+                        </svg>
+                        Back to Interviews
+                    </a>
+                    
+                    {% if interview.status in ['Scheduled', 'Confirmed'] %}
+                    <a href="{{ url_for('hr_web.edit_interview', interview_id=interview.id) }}" 
+                       class="inline-flex items-center px-4 py-2.5 border border-transparent rounded-lg text-sm font-medium text-blue-600 bg-white hover:bg-gray-50 shadow-sm transition-all duration-200">
+                        <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                        </svg>
+                        Edit Interview
+                    </a>
+                    {% endif %}
+                    
+                    {% if current_user.id in panel_members|map(attribute='user_id') %}
+                    <a href="{{ url_for('hr_web.score_interview', interview_id=interview.id) }}" 
+                       class="inline-flex items-center px-4 py-2.5 border border-transparent rounded-lg text-sm font-medium text-white bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 shadow-lg transition-all duration-200">
+                        <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                        </svg>
+                        {% if scores|selectattr('panel_member.user_id', 'equalto', current_user.id)|list %}Update Score{% else %}Submit Score{% endif %}
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left Column - Interview & Candidate Details -->
+            <div class="lg:col-span-2 space-y-8">
+                <!-- Interview Timeline & Status -->
+                <div class="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+                    <div class="p-6 border-b border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <h2 class="text-xl font-bold text-gray-900">Interview Timeline</h2>
+                            <div class="flex items-center space-x-2">
+                                <div class="text-sm text-gray-500">
+                                    {{ interview.scheduled_date.strftime('%A, %B %d, %Y') }}
+                                </div>
+                                <div class="w-2 h-2 rounded-full bg-gray-300"></div>
+                                <div class="text-sm text-gray-500">
+                                    {{ interview.scheduled_date.strftime('%I:%M %p') }}
+                                </div>
                             </div>
                         </div>
-                        <div class="text-center">
-                            <small class="text-muted">{{ "%.1f"|format(score.score) }} / 5.0</small>
+                    </div>
+                    
+                    <div class="p-6">
+                        <!-- Timeline Visualization -->
+                        <div class="relative">
+                            <div class="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200"></div>
+                            
+                            <!-- Scheduled -->
+                            <div class="relative flex items-start mb-8">
+                                <div class="absolute left-3 mt-1">
+                                    <div class="h-4 w-4 rounded-full bg-blue-500 border-4 border-white shadow"></div>
+                                </div>
+                                <div class="ml-12 flex-1">
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <h4 class="text-lg font-semibold text-gray-900">Scheduled</h4>
+                                            <p class="text-sm text-gray-600">Interview was scheduled</p>
+                                        </div>
+                                        <div class="text-sm text-gray-500">
+                                            {{ interview.created_at.strftime('%b %d, %Y') }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Confirmed -->
+                            {% if interview.status in ['Confirmed', 'In Progress', 'Completed', 'Cancelled'] %}
+                            <div class="relative flex items-start mb-8">
+                                <div class="absolute left-3 mt-1">
+                                    <div class="h-4 w-4 rounded-full bg-green-500 border-4 border-white shadow"></div>
+                                </div>
+                                <div class="ml-12 flex-1">
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <h4 class="text-lg font-semibold text-gray-900">Confirmed</h4>
+                                            <p class="text-sm text-gray-600">Candidate confirmed attendance</p>
+                                        </div>
+                                        <div class="text-sm text-gray-500">
+                                            {{ interview.updated_at.strftime('%b %d, %Y') }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            <!-- In Progress / Completed -->
+                            {% if interview.status in ['In Progress', 'Completed'] %}
+                            <div class="relative flex items-start mb-8">
+                                <div class="absolute left-3 mt-1">
+                                    <div class="h-4 w-4 rounded-full bg-purple-500 border-4 border-white shadow"></div>
+                                </div>
+                                <div class="ml-12 flex-1">
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <h4 class="text-lg font-semibold text-gray-900">
+                                                {% if interview.status == 'Completed' %}Completed{% else %}In Progress{% endif %}
+                                            </h4>
+                                            <p class="text-sm text-gray-600">
+                                                {% if interview.status == 'Completed' %}
+                                                    Interview completed successfully
+                                                {% else %}
+                                                    Interview is currently ongoing
+                                                {% endif %}
+                                            </p>
+                                        </div>
+                                        {% if interview.actual_start_time %}
+                                        <div class="text-sm text-gray-500">
+                                            {{ interview.actual_start_time.strftime('%I:%M %p') }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    {% if interview.actual_start_time and interview.actual_end_time %}
+                                    <div class="mt-2 p-3 bg-gray-50 rounded-lg">
+                                        <div class="flex items-center justify-between text-sm">
+                                            <span class="font-medium text-gray-700">Actual Duration:</span>
+                                            <span class="text-gray-900 font-semibold">
+                                                {{ ((interview.actual_end_time - interview.actual_start_time).seconds // 60) }} minutes
+                                            </span>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endif %}
                         </div>
-                        {% if score.overall_feedback %}
-                        <div class="mt-2">
-                            <small class="text-muted">Feedback:</small>
-                            <p class="mb-0 small">{{ score.overall_feedback|truncate(100) }}</p>
+                        
+                        <!-- Interview Details Grid -->
+                        <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="space-y-4">
+                                <div>
+                                    <h4 class="text-sm font-medium text-gray-500 mb-2">Interview Type</h4>
+                                    <div class="flex items-center">
+                                        <div class="h-10 w-10 rounded-lg bg-blue-50 flex items-center justify-center mr-3">
+                                            {% if interview.interview_type == 'Video' %}
+                                            <svg class="h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
+                                            </svg>
+                                            {% elif interview.interview_type == 'Phone' %}
+                                            <svg class="h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                                            </svg>
+                                            {% else %}
+                                            <svg class="h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+                                            </svg>
+                                            {% endif %}
+                                        </div>
+                                        <span class="text-lg font-semibold text-gray-900">{{ interview.interview_type }}</span>
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <h4 class="text-sm font-medium text-gray-500 mb-2">Duration</h4>
+                                    <div class="flex items-center">
+                                        <div class="h-10 w-10 rounded-lg bg-green-50 flex items-center justify-center mr-3">
+                                            <svg class="h-5 w-5 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                                            </svg>
+                                        </div>
+                                        <span class="text-lg font-semibold text-gray-900">{{ interview.duration_minutes }} minutes</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="space-y-4">
+                                <div>
+                                    <h4 class="text-sm font-medium text-gray-500 mb-2">Location</h4>
+                                    <div class="flex items-center">
+                                        <div class="h-10 w-10 rounded-lg bg-purple-50 flex items-center justify-center mr-3">
+                                            <svg class="h-5 w-5 text-purple-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <span class="text-lg font-semibold text-gray-900 block">{{ interview.location or 'Not specified' }}</span>
+                                            {% if interview.meeting_link %}
+                                            <a href="{{ interview.meeting_link }}" target="_blank" 
+                                               class="text-sm text-blue-600 hover:text-blue-800 inline-flex items-center mt-1">
+                                                <svg class="h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
+                                                </svg>
+                                                Join Video Call
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <h4 class="text-sm font-medium text-gray-500 mb-2">Panel</h4>
+                                    <div class="flex items-center">
+                                        <div class="h-10 w-10 rounded-lg bg-orange-50 flex items-center justify-center mr-3">
+                                            <svg class="h-5 w-5 text-orange-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
+                                            </svg>
+                                        </div>
+                                        {% if interview.panel %}
+                                        <div>
+                                            <a href="#panel-section" 
+                                               class="text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors">
+                                                {{ interview.panel.name }}
+                                            </a>
+                                            <div class="text-sm text-gray-500">{{ interview.panel.panel_type }} Panel</div>
+                                        </div>
+                                        {% else %}
+                                        <span class="text-lg font-semibold text-gray-900">No panel assigned</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Candidate Profile Card -->
+                <div class="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+                    <div class="p-6 border-b border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <h2 class="text-xl font-bold text-gray-900">Candidate Profile</h2>
+                            <a href="{{ url_for('hr_web.view_candidate', candidate_id=interview.candidate.id) }}" 
+                               class="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-800">
+                                View Full Profile
+                                <svg class="ml-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                </svg>
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="p-6">
+                        <div class="flex flex-col md:flex-row md:items-start gap-6">
+                            <!-- Candidate Avatar & Basic Info -->
+                            <div class="md:w-1/3">
+                                <div class="flex flex-col items-center text-center">
+                                    <div class="h-24 w-24 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg mb-4">
+                                        <span class="text-2xl font-bold text-white">
+                                            {{ interview.candidate.full_name[:2]|upper }}
+                                        </span>
+                                    </div>
+                                    <h3 class="text-xl font-bold text-gray-900">{{ interview.candidate.full_name }}</h3>
+                                    <p class="text-sm text-gray-600">{{ interview.candidate.current_position or 'Not specified' }}</p>
+                                    
+                                    <div class="mt-4 space-y-2 w-full">
+                                        <a href="mailto:{{ interview.candidate.email }}" 
+                                           class="flex items-center justify-center text-sm text-gray-600 hover:text-blue-600">
+                                            <svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                                                <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                                            </svg>
+                                            {{ interview.candidate.email }}
+                                        </a>
+                                        {% if interview.candidate.phone %}
+                                        <div class="flex items-center justify-center text-sm text-gray-600">
+                                            <svg class="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                                            </svg>
+                                            {{ interview.candidate.phone }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Candidate Details -->
+                            <div class="md:w-2/3">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div class="space-y-4">
+                                        <div>
+                                            <h4 class="text-sm font-medium text-gray-500 mb-2">Job Applied For</h4>
+                                            {% if interview.candidate.job_posting %}
+                                            <a href="{{ url_for('hr_web.view_job_posting', job_id=interview.candidate.job_posting.id) }}" 
+                                               class="inline-flex items-center text-base font-semibold text-gray-900 hover:text-blue-600">
+                                                {{ interview.candidate.job_posting.title }}
+                                                <svg class="ml-1 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fill-rule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                                </svg>
+                                            </a>
+                                            <div class="text-sm text-gray-600 mt-1">
+                                                {{ interview.candidate.job_posting.reference_no }}
+                                            </div>
+                                            {% else %}
+                                            <span class="text-base font-semibold text-gray-900">No job specified</span>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div>
+                                            <h4 class="text-sm font-medium text-gray-500 mb-2">Application Date</h4>
+                                            <div class="flex items-center">
+                                                <svg class="h-5 w-5 text-gray-400 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd" />
+                                                </svg>
+                                                <span class="text-base font-semibold text-gray-900">
+                                                    {{ interview.candidate.application_date.strftime('%B %d, %Y') }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="space-y-4">
+                                        <div>
+                                            <h4 class="text-sm font-medium text-gray-500 mb-2">Candidate Status</h4>
+                                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium 
+                                                {% if interview.candidate.status == 'Applied' %}bg-gray-100 text-gray-800
+                                                {% elif interview.candidate.status == 'Shortlisted' %}bg-blue-100 text-blue-800
+                                                {% elif interview.candidate.status == 'Interview Scheduled' %}bg-yellow-100 text-yellow-800
+                                                {% elif interview.candidate.status == 'Interviewed' %}bg-purple-100 text-purple-800
+                                                {% elif interview.candidate.status == 'Offer Extended' %}bg-green-100 text-green-800
+                                                {% elif interview.candidate.status == 'Hired' %}bg-emerald-100 text-emerald-800
+                                                {% elif interview.candidate.status == 'Rejected' %}bg-red-100 text-red-800
+                                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                                {{ interview.candidate.status }}
+                                            </span>
+                                        </div>
+                                        
+                                        <div>
+                                            <h4 class="text-sm font-medium text-gray-500 mb-2">Overall Score</h4>
+                                            <div class="flex items-center">
+                                                {% if interview.candidate.overall_score %}
+                                                <div class="flex-1 mr-4">
+                                                    <div class="w-full bg-gray-200 rounded-full h-3">
+                                                        <div class="bg-gradient-to-r from-green-400 to-green-500 h-3 rounded-full" 
+                                                             style="width: {{ interview.candidate.overall_score }}%"></div>
+                                                    </div>
+                                                </div>
+                                                <span class="text-lg font-bold text-gray-900">
+                                                    {{ "%.1f"|format(interview.candidate.overall_score) }}
+                                                </span>
+                                                {% else %}
+                                                <span class="text-gray-500 italic">Not scored yet</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Additional Info -->
+                                {% if interview.candidate.current_company or interview.candidate.years_of_experience %}
+                                <div class="mt-6 pt-6 border-t border-gray-200">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {% if interview.candidate.current_company %}
+                                        <div>
+                                            <h4 class="text-sm font-medium text-gray-500 mb-1">Current Company</h4>
+                                            <p class="text-gray-900">{{ interview.candidate.current_company }}</p>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        {% if interview.candidate.years_of_experience %}
+                                        <div>
+                                            <h4 class="text-sm font-medium text-gray-500 mb-1">Experience</h4>
+                                            <p class="text-gray-900">{{ interview.candidate.years_of_experience }} years</p>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Overall Feedback Section -->
+                {% if interview.overall_feedback or interview.recommendation %}
+                <div class="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+                    <div class="p-6 border-b border-gray-200">
+                        <h2 class="text-xl font-bold text-gray-900">Interview Outcome</h2>
+                    </div>
+                    
+                    <div class="p-6">
+                        {% if interview.recommendation %}
+                        <div class="mb-6">
+                            <h4 class="text-sm font-medium text-gray-500 mb-3">Final Recommendation</h4>
+                            <div class="inline-flex items-center px-4 py-2 rounded-lg 
+                                {% if interview.recommendation in ['Strong Hire', 'Hire'] %}bg-green-50 border border-green-200
+                                {% elif interview.recommendation == 'Neutral' %}bg-yellow-50 border border-yellow-200
+                                {% else %}bg-red-50 border border-red-200{% endif %}">
+                                <div class="mr-3">
+                                    {% if interview.recommendation in ['Strong Hire', 'Hire'] %}
+                                    <svg class="h-6 w-6 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                    </svg>
+                                    {% elif interview.recommendation == 'Neutral' %}
+                                    <svg class="h-6 w-6 text-yellow-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 000 2h6a1 1 0 100-2H7z" clip-rule="evenodd" />
+                                    </svg>
+                                    {% else %}
+                                    <svg class="h-6 w-6 text-red-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                    </svg>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <div class="font-semibold text-gray-900">{{ interview.recommendation }}</div>
+                                    <div class="text-sm text-gray-600">
+                                        {% if interview.recommendation in ['Strong Hire', 'Hire'] %}Recommended for next stage
+                                        {% elif interview.recommendation == 'Neutral' %}Needs further evaluation
+                                        {% else %}Not recommended{% endif %}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         {% endif %}
-                        <hr class="my-2">
+                        
+                        {% if interview.overall_feedback %}
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-500 mb-3">Overall Feedback</h4>
+                            <div class="bg-gray-50 rounded-xl p-4">
+                                <div class="prose prose-sm max-w-none">
+                                    {{ interview.overall_feedback|nl2br }}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
                     </div>
-                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Right Column - Panel, Scores & Actions -->
+            <div class="space-y-8">
+                <!-- Panel Members -->
+                <div id="panel-section" class="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+                    <div class="p-6 border-b border-gray-200">
+                        <h2 class="text-xl font-bold text-gray-900">Interview Panel</h2>
+                        <p class="text-sm text-gray-600 mt-1">{{ panel_members|length }} member{{ 's' if panel_members|length != 1 else '' }}</p>
+                    </div>
                     
-                    <!-- Average Score -->
-                    {% set avg_score = scores|selectattr('score')|map(attribute='score')|list|average %}
-                    {% if avg_score %}
-                    <div class="mt-3 pt-3 border-top">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div class="font-weight-bold">Average Score:</div>
-                            <div class="h5 mb-0">{{ "%.1f"|format(avg_score) }} / 5.0</div>
+                    <div class="p-6">
+                        {% if panel_members %}
+                        <div class="space-y-4">
+                            {% for member in panel_members %}
+                            <div class="flex items-center p-3 rounded-lg border border-gray-200 hover:border-blue-300 transition-colors">
+                                <div class="mr-4">
+                                    <div class="h-12 w-12 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center">
+                                        <span class="text-white font-semibold text-sm">{{ member.user.full_name[:2]|upper }}</span>
+                                    </div>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <h4 class="font-semibold text-gray-900">{{ member.user.full_name }}</h4>
+                                            <div class="flex items-center mt-1">
+                                                <span class="text-sm text-gray-600 mr-3">{{ member.role }}</span>
+                                                {% if member.is_required %}
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                                    Required
+                                                </span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        {% if member.user_id == current_user.id %}
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                            You
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                    {% if member.user.department %}
+                                    <div class="mt-2 text-sm text-gray-500">
+                                        {{ member.user.department.name }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="text-center py-8">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            <h3 class="mt-2 text-sm font-medium text-gray-900">No panel members</h3>
+                            <p class="mt-1 text-sm text-gray-500">Assign panel members to this interview.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Interview Scores -->
+                <div class="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+                    <div class="p-6 border-b border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <h2 class="text-xl font-bold text-gray-900">Interview Scores</h2>
+                            <span class="text-sm text-gray-600">{{ scores|length }} submitted</span>
                         </div>
                     </div>
-                    {% endif %}
-                    {% else %}
-                    <p class="text-muted">No scores submitted yet.</p>
-                    {% endif %}
                     
-                    <!-- Score Button -->
-                    <div class="mt-3">
-                        <a href="{{ url_for('hr_web.score_interview', interview_id=interview.id) }}" 
-                           class="btn btn-primary btn-block">
-                            <i class="fas fa-star mr-2"></i>
-                            {% if scores %}Update Score{% else %}Submit Score{% endif %}
-                        </a>
+                    <div class="p-6">
+                        {% if scores %}
+                        <!-- Average Score -->
+                        {% set avg_score = scores|selectattr('score')|map(attribute='score')|list|average %}
+                        {% if avg_score %}
+                        <div class="mb-6 text-center">
+                            <div class="inline-block">
+                                <div class="text-4xl font-bold text-gray-900 mb-1">{{ "%.1f"|format(avg_score) }}</div>
+                                <div class="text-sm text-gray-600">Average Score / 5.0</div>
+                            </div>
+                            <div class="mt-4">
+                                <div class="w-full bg-gray-200 rounded-full h-3">
+                                    <div class="bg-gradient-to-r from-blue-500 to-indigo-500 h-3 rounded-full" 
+                                         style="width: {{ (avg_score / 5) * 100 }}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Individual Scores -->
+                        <div class="space-y-4">
+                            {% for score in scores %}
+                            <div class="border border-gray-200 rounded-xl p-4 hover:border-blue-300 transition-colors">
+                                <div class="flex items-start justify-between mb-3">
+                                    <div>
+                                        <h4 class="font-semibold text-gray-900">{{ score.panel_member.user.full_name }}</h4>
+                                        <div class="flex items-center mt-1">
+                                            <span class="text-sm text-gray-600">{{ score.panel_member.role }}</span>
+                                            {% if score.panel_member.user_id == current_user.id %}
+                                            <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                                Your Score
+                                            </span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-2xl font-bold text-gray-900">{{ "%.1f"|format(score.score) }}</div>
+                                        <div class="text-sm text-gray-600">/ 5.0</div>
+                                    </div>
+                                </div>
+                                
+                                {% if score.recommendation %}
+                                <div class="flex items-center justify-between mt-3">
+                                    <span class="text-sm font-medium text-gray-700">Recommendation:</span>
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                        {% if score.recommendation in ['Strong Hire', 'Hire'] %}bg-green-100 text-green-800
+                                        {% elif score.recommendation == 'Neutral' %}bg-yellow-100 text-yellow-800
+                                        {% else %}bg-red-100 text-red-800{% endif %}">
+                                        {{ score.recommendation }}
+                                    </span>
+                                </div>
+                                {% endif %}
+                                
+                                {% if score.overall_feedback %}
+                                <div class="mt-3 pt-3 border-t border-gray-200">
+                                    <h5 class="text-sm font-medium text-gray-700 mb-1">Feedback</h5>
+                                    <p class="text-sm text-gray-600 line-clamp-2">{{ score.overall_feedback }}</p>
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- Score Submission Button -->
+                        {% if current_user.id in panel_members|map(attribute='user_id') %}
+                        <div class="mt-6">
+                            <a href="{{ url_for('hr_web.score_interview', interview_id=interview.id) }}" 
+                               class="w-full inline-flex items-center justify-center px-4 py-3 border border-transparent rounded-xl text-sm font-medium text-white bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 shadow-sm transition-all duration-200">
+                                <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                </svg>
+                                {% if scores|selectattr('panel_member.user_id', 'equalto', current_user.id)|list %}Update Your Score{% else %}Submit Your Score{% endif %}
+                            </a>
+                        </div>
+                        {% endif %}
+                        
+                        {% else %}
+                        <div class="text-center py-8">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                            </svg>
+                            <h3 class="mt-2 text-sm font-medium text-gray-900">No scores submitted</h3>
+                            <p class="mt-1 text-sm text-gray-500">Panel members can submit their scores after the interview.</p>
+                            {% if current_user.id in panel_members|map(attribute='user_id') %}
+                            <div class="mt-4">
+                                <a href="{{ url_for('hr_web.score_interview', interview_id=interview.id) }}" 
+                                   class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700">
+                                    Submit First Score
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+                    <div class="p-6 border-b border-gray-200">
+                        <h2 class="text-xl font-bold text-gray-900">Quick Actions</h2>
+                    </div>
+                    
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 gap-3">
+                            {% if interview.status in ['Scheduled', 'Confirmed'] %}
+                            {% if current_user.id in panel_members|map(attribute='user_id') %}
+                            <button type="button" onclick="startInterview('{{ interview.id }}')" 
+                                    class="w-full inline-flex items-center justify-center px-4 py-3 border border-transparent rounded-xl text-sm font-medium text-white bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 shadow-sm transition-all duration-200">
+                                <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 1.414L10.586 9H7a1 1 0 100 2h3.586l-1.293 1.293a1 1 0 101.414 1.414l3-3a1 1 0 000-1.414z" clip-rule="evenodd" />
+                                </svg>
+                                Start Interview
+                            </button>
+                            {% endif %}
+                            
+                            <a href="{{ url_for('hr_web.edit_interview', interview_id=interview.id) }}" 
+                               class="w-full inline-flex items-center justify-center px-4 py-3 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 shadow-sm transition-all duration-200">
+                                <svg class="-ml-1 mr-2 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                                </svg>
+                                Edit Details
+                            </a>
+                            
+                            <button type="button" onclick="showCancelModal('{{ interview.id }}', '{{ interview.candidate.full_name }}')" 
+                                    class="w-full inline-flex items-center justify-center px-4 py-3 border border-gray-300 rounded-xl text-sm font-medium text-red-700 bg-white hover:bg-red-50 shadow-sm transition-all duration-200">
+                                <svg class="-ml-1 mr-2 h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                </svg>
+                                Cancel Interview
+                            </button>
+                            
+                            {% if interview.status == 'In Progress' %}
+                            <button type="button" onclick="completeInterview('{{ interview.id }}')" 
+                                    class="w-full inline-flex items-center justify-center px-4 py-3 border border-transparent rounded-xl text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 shadow-sm transition-all duration-200">
+                                <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                </svg>
+                                Mark as Complete
+                            </button>
+                            {% endif %}
+                            {% endif %}
+                            
+                            {% if interview.meeting_link %}
+                            <a href="{{ interview.meeting_link }}" target="_blank" 
+                               class="w-full inline-flex items-center justify-center px-4 py-3 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 shadow-sm transition-all duration-200">
+                                <svg class="-ml-1 mr-2 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
+                                </svg>
+                                Join Video Call
+                            </a>
+                            {% endif %}
+                            
+                            <a href="{{ url_for('hr_web.view_candidate', candidate_id=interview.candidate.id) }}" 
+                               class="w-full inline-flex items-center justify-center px-4 py-3 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 shadow-sm transition-all duration-200">
+                                <svg class="-ml-1 mr-2 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+                                </svg>
+                                View Candidate Profile
+                            </a>
+                            
+                            <a href="{{ url_for('hr_web.recruitment_interviews') }}" 
+                               class="w-full inline-flex items-center justify-center px-4 py-3 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 shadow-sm transition-all duration-200">
+                                <svg class="-ml-1 mr-2 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+                                </svg>
+                                Back to All Interviews
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
+        </div>
+    </main>
+</div>
 
-            <!-- Quick Actions -->
-            <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Quick Actions</h6>
-                </div>
-                <div class="card-body">
-                    <div class="d-grid gap-2">
-                        {% if interview.status in ['Scheduled', 'Confirmed'] %}
-                        <a href="{{ url_for('hr_web.edit_interview', interview_id=interview.id) }}" 
-                           class="btn btn-warning">
-                            <i class="fas fa-edit mr-2"></i>Edit Interview
-                        </a>
-                        <button type="button" class="btn btn-danger cancel-interview" 
-                                data-interview-id="{{ interview.id }}"
-                                data-candidate-name="{{ interview.candidate.full_name }}">
-                            <i class="fas fa-times mr-2"></i>Cancel Interview
-                        </button>
-                        <button type="button" class="btn btn-success complete-interview" 
-                                data-interview-id="{{ interview.id }}">
-                            <i class="fas fa-check mr-2"></i>Mark as Complete
-                        </button>
-                        {% endif %}
-                        
-                        {% if interview.meeting_link %}
-                        <a href="{{ interview.meeting_link }}" target="_blank" class="btn btn-secondary">
-                            <i class="fas fa-video mr-2"></i>Join Meeting
-                        </a>
-                        {% endif %}
-                        
-                        <a href="{{ url_for('hr_web.view_candidate', candidate_id=interview.candidate.id) }}" 
-                           class="btn btn-info">
-                            <i class="fas fa-user mr-2"></i>View Candidate
-                        </a>
+<!-- Modals -->
+<!-- Cancel Interview Modal -->
+<div id="cancelModal" class="fixed z-50 inset-0 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        <div class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <div class="bg-white px-6 pt-6 pb-4">
+                <div class="sm:flex sm:items-start">
+                    <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                        <svg class="h-6 w-6 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.698-.833-2.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                        </svg>
                     </div>
+                    <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                            Cancel Interview
+                        </h3>
+                        <div class="mt-2">
+                            <p class="text-sm text-gray-500">
+                                Are you sure you want to cancel the interview with 
+                                <span id="candidateName" class="font-semibold text-gray-900"></span>?
+                                This action cannot be undone.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 px-6 py-4 rounded-b-2xl">
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="closeModal('cancelModal')" 
+                            class="inline-flex justify-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        Keep Interview
+                    </button>
+                    <button type="button" id="confirmCancelBtn" 
+                            class="inline-flex justify-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                        Yes, Cancel Interview
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-
-{% endblock %}
-
-{% block scripts %}
-{{ super() }}
+<!-- JavaScript -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize interview action handlers
-    initializeInterviewActions();
+    // Initialize any interactive elements
+    initializeInterviewPage();
 });
 
-function initializeInterviewActions() {
-    // Cancel interview
-    $('.cancel-interview').click(function() {
-        const interviewId = $(this).data('interview-id');
-        const candidateName = $(this).data('candidate-name');
-        
-        $('#cancelCandidateName').text(candidateName);
-        $('#confirmCancelInterview').data('interview-id', interviewId);
-        $('#cancelInterviewModal').modal('show');
-    });
-    
-    $('#confirmCancelInterview').click(function() {
-        const interviewId = $(this).data('interview-id');
-        
-        $.ajax({
-            url: '{{ url_for("hr_web.cancel_interview", interview_id=0) }}'.replace('0', interviewId),
-            type: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify({}),
-            success: function(response) {
-                if (response.success) {
-                    showToast('success', response.message);
-                    setTimeout(function() {
-                        location.reload();
-                    }, 1500);
-                } else {
-                    showToast('error', response.message);
-                }
-                $('#cancelInterviewModal').modal('hide');
-            },
-            error: function() {
-                showToast('error', 'An error occurred while cancelling the interview.');
-                $('#cancelInterviewModal').modal('hide');
+function initializeInterviewPage() {
+    // Add event listeners for quick actions
+    document.querySelectorAll('.quick-action').forEach(button => {
+        button.addEventListener('click', function() {
+            const action = this.dataset.action;
+            const interviewId = this.dataset.interviewId;
+            
+            if (action === 'start') {
+                startInterview(interviewId);
+            } else if (action === 'complete') {
+                completeInterview(interviewId);
+            } else if (action === 'cancel') {
+                showCancelModal(interviewId, this.dataset.candidateName);
             }
         });
     });
     
-    // Complete interview
-    $('.complete-interview').click(function() {
-        const interviewId = $(this).data('interview-id');
-        
-        $('#confirmCompleteInterview').data('interview-id', interviewId);
-        $('#completeInterviewModal').modal('show');
+    // Initialize tooltips
+    initializeTooltips();
+}
+
+function startInterview(interviewId) {
+    fetch(`/recruitment/interviews/${interviewId}/start`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Interview started successfully!', 'success');
+            // Update status badge and page
+            updateInterviewStatus('In Progress');
+        } else {
+            showNotification(data.message || 'Failed to start interview', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('An error occurred. Please try again.', 'error');
     });
+}
+
+function completeInterview(interviewId) {
+    fetch(`/recruitment/interviews/${interviewId}/complete`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Interview marked as completed!', 'success');
+            updateInterviewStatus('Completed');
+        } else {
+            showNotification(data.message || 'Failed to complete interview', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('An error occurred. Please try again.', 'error');
+    });
+}
+
+function showCancelModal(interviewId, candidateName) {
+    document.getElementById('candidateName').textContent = candidateName;
     
-    $('#confirmCompleteInterview').click(function() {
-        const interviewId = $(this).data('interview-id');
+    // Set up confirm button
+    const confirmBtn = document.getElementById('confirmCancelBtn');
+    confirmBtn.onclick = function() {
+        cancelInterview(interviewId);
+    };
+    
+    // Show modal
+    document.getElementById('cancelModal').classList.remove('hidden');
+    document.body.classList.add('overflow-hidden');
+}
+
+function closeModal(modalId) {
+    document.getElementById(modalId).classList.add('hidden');
+    document.body.classList.remove('overflow-hidden');
+}
+
+function cancelInterview(interviewId) {
+    fetch(`/recruitment/interviews/${interviewId}/cancel`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Interview cancelled successfully!', 'success');
+            closeModal('cancelModal');
+            updateInterviewStatus('Cancelled');
+        } else {
+            showNotification(data.message || 'Failed to cancel interview', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('An error occurred. Please try again.', 'error');
+    });
+}
+
+function updateInterviewStatus(newStatus) {
+    const statusBadge = document.getElementById('interview-status-badge');
+    
+    // Update text
+    statusBadge.textContent = newStatus;
+    
+    // Update colors based on status
+    statusBadge.className = 'inline-flex items-center px-3 py-1 rounded-full text-sm font-medium';
+    
+    if (newStatus === 'Scheduled') {
+        statusBadge.classList.add('bg-yellow-500/20', 'text-yellow-100');
+    } else if (newStatus === 'Confirmed') {
+        statusBadge.classList.add('bg-green-500/20', 'text-green-100');
+    } else if (newStatus === 'In Progress') {
+        statusBadge.classList.add('bg-blue-500/20', 'text-blue-100');
+    } else if (newStatus === 'Completed') {
+        statusBadge.classList.add('bg-emerald-500/20', 'text-emerald-100');
+    } else if (newStatus === 'Cancelled') {
+        statusBadge.classList.add('bg-red-500/20', 'text-red-100');
+    } else {
+        statusBadge.classList.add('bg-gray-500/20', 'text-gray-100');
+    }
+    
+    // Reload page after a delay to show updated status
+    setTimeout(() => {
+        location.reload();
+    }, 1500);
+}
+
+function showNotification(message, type = 'info') {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 z-50 px-6 py-4 rounded-xl shadow-lg transform transition-all duration-300 translate-x-full ${type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500'} text-white`;
+    notification.innerHTML = `
+        <div class="flex items-center">
+            <svg class="h-5 w-5 mr-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                ${type === 'success' ? '<path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />' :
+                type === 'error' ? '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />' :
+                '<path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />'}
+            </svg>
+            <span>${message}</span>
+        </div>
+    `;
+    
+    // Add to page
+    document.body.appendChild(notification);
+    
+    // Animate in
+    setTimeout(() => {
+        notification.classList.remove('translate-x-full');
+        notification.classList.add('translate-x-0');
+    }, 10);
+    
+    // Remove after 3 seconds
+    setTimeout(() => {
+        notification.classList.remove('translate-x-0');
+        notification.classList.add('translate-x-full');
+        setTimeout(() => {
+            document.body.removeChild(notification);
+        }, 300);
+    }, 3000);
+}
+
+function initializeTooltips() {
+    // Initialize any tooltips if needed
+    const tooltipTriggers = document.querySelectorAll('[data-tooltip]');
+    tooltipTriggers.forEach(trigger => {
+        trigger.addEventListener('mouseenter', function() {
+            const tooltip = document.createElement('div');
+            tooltip.className = 'absolute z-50 px-3 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg shadow-sm';
+            tooltip.textContent = this.dataset.tooltip;
+            tooltip.style.top = `${this.offsetTop - 40}px`;
+            tooltip.style.left = `${this.offsetLeft + this.offsetWidth / 2}px`;
+            tooltip.style.transform = 'translateX(-50%)';
+            tooltip.id = 'dynamic-tooltip';
+            
+            document.body.appendChild(tooltip);
+        });
         
-        $.ajax({
-            url: '{{ url_for("hr_web.complete_interview", interview_id=0) }}'.replace('0', interviewId),
-            type: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify({}),
-            success: function(response) {
-                if (response.success) {
-                    showToast('success', response.message);
-                    setTimeout(function() {
-                        location.reload();
-                    }, 1500);
-                } else {
-                    showToast('error', response.message);
-                }
-                $('#completeInterviewModal').modal('hide');
-            },
-            error: function() {
-                showToast('error', 'An error occurred while completing the interview.');
-                $('#completeInterviewModal').modal('hide');
+        trigger.addEventListener('mouseleave', function() {
+            const tooltip = document.getElementById('dynamic-tooltip');
+            if (tooltip) {
+                document.body.removeChild(tooltip);
             }
         });
     });
 }
 
-// Toast notification function
-function showToast(type, message) {
-    const toast = $(`
-        <div class="toast align-items-center text-white bg-${type} border-0" role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="d-flex">
-                <div class="toast-body">
-                    ${message}
-                </div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-            </div>
-        </div>
-    `);
+// Add keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    // Escape to close modals
+    if (e.key === 'Escape') {
+        const modals = document.querySelectorAll('[id$="Modal"]');
+        modals.forEach(modal => {
+            if (!modal.classList.contains('hidden')) {
+                closeModal(modal.id);
+            }
+        });
+    }
     
-    $('#toastContainer').append(toast);
-    const bsToast = new bootstrap.Toast(toast[0]);
-    bsToast.show();
+    // Ctrl + S to submit score (if panel member)
+    if (e.ctrlKey && e.key === 's') {
+        e.preventDefault();
+        const scoreBtn = document.querySelector('a[href*="score_interview"]');
+        if (scoreBtn) {
+            scoreBtn.click();
+        }
+    }
     
-    // Remove toast after it hides
-    toast.on('hidden.bs.toast', function() {
-        $(this).remove();
-    });
-}
+    // Ctrl + E to edit
+    if (e.ctrlKey && e.key === 'e') {
+        e.preventDefault();
+        const editBtn = document.querySelector('a[href*="edit_interview"]');
+        if (editBtn) {
+            editBtn.click();
+        }
+    }
+});
 </script>
 
 <style>
-.avatar-circle-sm {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
+/* Custom Styles */
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
-.badge-sm {
-    font-size: 0.7em;
-    padding: 0.2em 0.4em;
+/* Smooth transitions */
+.transition-all {
+    transition-property: all;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 300ms;
 }
 
-.progress {
-    border-radius: 10px;
+/* Gradient backgrounds */
+.bg-gradient-to-r {
+    background-image: linear-gradient(to right, var(--tw-gradient-stops));
 }
 
-.progress-bar {
-    border-radius: 10px;
+/* Shadow effects */
+.shadow-xl {
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
-.table-borderless th {
-    font-weight: 600;
-    color: #6c757d;
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
 }
 
-.card {
-    border: none;
-    border-radius: 0.5rem;
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
 }
 
-.shadow {
-    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15) !important;
+::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
 }
 
-.d-grid.gap-2 .btn {
-    margin-bottom: 0.5rem;
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Print styles */
+@media print {
+    .bg-gradient-to-r, .shadow-xl, button, a {
+        display: none !important;
+    }
+    
+    .bg-white {
+        border: 1px solid #ddd !important;
+        box-shadow: none !important;
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .text-3xl {
+        font-size: 1.875rem;
+    }
+    
+    .grid-cols-1 {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Animation for status updates */
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 </style>
-
-<div id="toastContainer" class="position-fixed top-0 end-0 p-3" style="z-index: 9999"></div>
 {% endblock %}

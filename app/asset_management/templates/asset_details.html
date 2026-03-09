@@ -35,7 +35,7 @@
                 <div class="flex justify-between items-center">
                     <div>
                         <p class="text-gray-500 text-sm">Current Value</p>
-                        <h3 class="text-2xl font-bold text-gray-800">${{ asset.current_value|default(asset.purchase_price, true)|round(2) }}</h3>
+                        <h3 class="text-2xl font-bold text-gray-800">Ksh {{ asset.current_value|default(asset.purchase_price, true)|round(2) }}</h3>
                     </div>
                     <div class="p-3 bg-blue-100 rounded-full">
                         <i class="fas fa-coins text-blue-500 text-xl"></i>
@@ -47,7 +47,7 @@
                 <div class="flex justify-between items-center">
                     <div>
                         <p class="text-gray-500 text-sm">Purchase Price</p>
-                        <h3 class="text-2xl font-bold text-gray-800">${{ asset.purchase_price }}</h3>
+                        <h3 class="text-2xl font-bold text-gray-800">Ksh {{ asset.purchase_price }}</h3>
                     </div>
                     <div class="p-3 bg-green-100 rounded-full">
                         <i class="fas fa-shopping-cart text-green-500 text-xl"></i>
@@ -258,7 +258,7 @@
                                     <div class="text-gray-500">by {{ record.technician.name }}</div>
                                 </div>
                                 <div class="text-right">
-                                    <div class="font-bold text-lg">${{ record.cost }}</div>
+                                    <div class="font-bold text-lg">Ksh {{ record.cost }}</div>
                                     <div class="text-gray-500">{{ record.maintenance_type }}</div>
                                 </div>
                             </div>
@@ -383,7 +383,7 @@
                         </h3>
                         <div class="text-right">
                             <div class="text-sm text-gray-500">Current Value</div>
-                            <div class="text-2xl font-bold">${{ asset.current_value|default(asset.purchase_price, true)|round(2) }}</div>
+                            <div class="text-2xl font-bold">Ksh {{ asset.current_value|default(asset.purchase_price, true)|round(2) }}</div>
                         </div>
                     </div>
 
@@ -407,10 +407,10 @@
                                     <td class="px-6 py-4 font-medium text-gray-900">
                                         {{ record.record_date.strftime('%b %d, %Y') }}
                                     </td>
-                                    <td class="px-6 py-4">${{ record.value|round(2) }}</td>
-                                    <td class="px-6 py-4">${{ record.depreciation_amount|round(2) }}</td>
+                                    <td class="px-6 py-4">Ksh {{ record.value|round(2) }}</td>
+                                    <td class="px-6 py-4">Ksh {{ record.depreciation_amount|round(2) }}</td>
                                     <td class="px-6 py-4">
-                                        ${{ (asset.purchase_price - record.value)|round(2) }}
+                                        Ksh {{ (asset.purchase_price - record.value)|round(2) }}
                                     </td>
                                 </tr>
                                 {% endfor %} {% else %}

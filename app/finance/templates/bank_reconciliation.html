@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block title %}Bank Reconciliation{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Header -->
+    <div class="bg-gradient-primary text-white p-4 rounded-4 mb-4 shadow-sm">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="display-6 fw-bold">Bank Reconciliation</h1>
+                <p class="text-white-80 mb-0">Match your bank statements with internal transactions</p>
+            </div>
+            <button class="btn btn-light" data-bs-toggle="modal" data-bs-target="#uploadStatementModal">
+                <i class="fas fa-upload me-2"></i>Upload New Statement
+            </button>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-primary mb-1">Total Statements</p>
+                            <h2 class="mb-0 fw-bold">{{ total_statements }}</h2>
+                        </div>
+                        <div class="icon-circle bg-primary bg-opacity-10">
+                            <i class="fas fa-file-invoice text-primary fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-success mb-1">Reconciled</p>
+                            <h2 class="mb-0 fw-bold">{{ reconciled }}</h2>
+                        </div>
+                        <div class="icon-circle bg-success bg-opacity-10">
+                            <i class="fas fa-check-circle text-success fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-warning mb-1">Pending</p>
+                            <h2 class="mb-0 fw-bold">{{ unreconciled }}</h2>
+                        </div>
+                        <div class="icon-circle bg-warning bg-opacity-10">
+                            <i class="fas fa-clock text-warning fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statements Table -->
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+            <h5 class="text-uppercase fw-bold text-primary"><i class="fas fa-list me-2"></i>Uploaded Statements</h5>
+        </div>
+        <div class="card-body p-4">
+            {% if statements %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Bank Account</th>
+                            <th>Statement Date</th>
+                            <th>Opening</th>
+                            <th>Closing</th>
+                            <th>Uploaded</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for stmt in statements %}
+                        <tr>
+                            <td>{{ stmt.account.bank_name }} ({{ stmt.account.account_number }})</td>
+                            <td>{{ stmt.statement_date.strftime('%d %b %Y') }}</td>
+                            <td class="text-end">{{ "{:,.2f}".format(stmt.opening_balance) }}</td>
+                            <td class="text-end">{{ "{:,.2f}".format(stmt.closing_balance) }}</td>
+                            <td>{{ stmt.uploaded_at.strftime('%d %b %Y') }}</td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if stmt.is_reconciled else 'warning' }}">
+                                    {{ 'Reconciled' if stmt.is_reconciled else 'Pending' }}
+                                </span>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('finance_web_bp.reconcile_bank', statement_id=stmt.id) }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-balance-scale me-1"></i>Reconcile
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-center text-muted py-5">No statements uploaded yet.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Upload Modal -->
+<div class="modal fade" id="uploadStatementModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Upload Bank Statement</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('finance_web_bp.upload_bank_statement') }}" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Bank Account</label>
+                        <select name="account_id" class="form-select" required>
+                            <option value="">Select account</option>
+                            {% for acc in accounts %}
+                            <option value="{{ acc.id }}">{{ acc.bank_name }} - {{ acc.account_number }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Statement Date</label>
+                        <input type="date" name="statement_date" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">CSV File</label>
+                        <input type="file" name="statement_file" accept=".csv" class="form-control" required>
+                        <div class="form-text">CSV must have columns: date, description, reference, amount, balance</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Upload</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .text-white-80 {
+        color: rgba(255,255,255,0.8);
+    }
+    .icon-circle {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .hover-lift {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hover-lift:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.75rem 1.5rem rgba(0,0,0,0.1) !important;
+    }
+</style>
+{% endblock %}

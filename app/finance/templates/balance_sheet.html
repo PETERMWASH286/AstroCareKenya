@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block title %}Balance Sheet{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Header with gradient -->
+    <div class="bg-gradient-primary text-white p-4 rounded-4 mb-4 shadow-sm">
+        <div class="d-flex flex-wrap justify-content-between align-items-center">
+            <div>
+                <h1 class="display-6 fw-bold">Balance Sheet</h1>
+                <p class="text-white-80 mb-0">As at {{ as_at_date }}</p>
+            </div>
+            <div class="mt-3 mt-md-0">
+                <span class="badge bg-light text-dark fs-5 p-2">Total Assets: KSh {{ "{:,.2f}".format(total_assets) }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Date Filter -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body p-4">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">As at Date</label>
+                    <input type="date" name="as_at_date" class="form-control" value="{{ as_at_date }}">
+                </div>
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-filter me-2"></i>Update
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Two‑column layout for Assets and Liabilities -->
+    <div class="row g-4">
+        <!-- Assets Column -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h4 class="fw-bold text-success"><i class="fas fa-chart-pie me-2"></i>ASSETS</h4>
+                </div>
+                <div class="card-body p-4">
+                    <div class="table-responsive">
+                        <table class="table table-borderless">
+                            <tbody>
+                                {% for item in assets_breakdown %}
+                                <tr>
+                                    <td class="fw-medium">{{ item.name }}</td>
+                                    <td class="text-end">KSh {{ "{:,.2f}".format(item.amount) }}</td>
+                                </tr>
+                                {% endfor %}
+                                <tr class="border-top">
+                                    <td class="fw-bold fs-5">Total Assets</td>
+                                    <td class="text-end fw-bold fs-5">KSh {{ "{:,.2f}".format(total_assets) }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Liabilities & Equity Column -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h4 class="fw-bold text-danger"><i class="fas fa-balance-scale me-2"></i>LIABILITIES & EQUITY</h4>
+                </div>
+                <div class="card-body p-4">
+                    <div class="table-responsive">
+                        <table class="table table-borderless">
+                            <tbody>
+                                {% for item in liabilities_breakdown %}
+                                <tr>
+                                    <td class="fw-medium">{{ item.name }}</td>
+                                    <td class="text-end">KSh {{ "{:,.2f}".format(item.amount) }}</td>
+                                </tr>
+                                {% endfor %}
+                                <tr class="border-top">
+                                    <td class="fw-bold">Total Liabilities</td>
+                                    <td class="text-end fw-bold">KSh {{ "{:,.2f}".format(total_liabilities) }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold fs-5 text-primary">Equity</td>
+                                    <td class="text-end fw-bold fs-5 text-primary">KSh {{ "{:,.2f}".format(equity) }}</td>
+                                </tr>
+                                <tr class="border-top">
+                                    <td class="fw-bold fs-5">Total Liabilities & Equity</td>
+                                    <td class="text-end fw-bold fs-5">KSh {{ "{:,.2f}".format(total_liabilities + equity) }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Optional: Quick ratio / working capital indicator -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm rounded-4 bg-light">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fw-bold">Working Capital (Current Assets - Current Liabilities)</span>
+<span class="fw-bold {% if working_capital >= 0 %}text-success{% else %}text-danger{% endif %}">
+    KSh {{ "{:,.2f}".format(working_capital) }}
+</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .text-white-80 {
+        color: rgba(255,255,255,0.8);
+    }
+    .hover-lift {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hover-lift:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.75rem 1.5rem rgba(0,0,0,0.1) !important;
+    }
+    .table-borderless td {
+        border: none;
+        padding: 0.75rem 0.5rem;
+    }
+    .border-top {
+        border-top: 2px solid #dee2e6 !important;
+    }
+</style>
+{% endblock %}
