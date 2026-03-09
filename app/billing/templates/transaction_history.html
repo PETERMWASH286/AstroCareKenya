@@ -1,6 +1,202 @@
-{% extends "base.html" %} {% block content %}
-<div class="container mx-auto px-4 py-8">
-    <h1 class="text-3xl font-bold mb-6">Transaction History</h1>
-    <!-- Add transaction history table here -->
+{% extends "base.html" %}
+
+{% block title %}Transaction History{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Header -->
+    <div class="bg-gradient-primary text-white p-4 rounded-4 mb-4 shadow-sm">
+        <h1 class="display-6 fw-bold">Transaction History</h1>
+        <p class="text-white-80 mb-0">View and search all patient payments</p>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <p class="text-uppercase small fw-bold text-primary mb-1">Total Completed</p>
+                    <h3 class="mb-0 fw-bold">KSh {{ "{:,.2f}".format(total_amount) }}</h3>
+                    <small class="text-muted">{{ total_count }} transactions</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <p class="text-uppercase small fw-bold text-warning mb-1">Pending</p>
+                    <h3 class="mb-0 fw-bold">{{ pending_count }}</h3>
+                    <small class="text-muted">awaiting completion</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <p class="text-uppercase small fw-bold text-danger mb-1">Failed</p>
+                    <h3 class="mb-0 fw-bold">{{ failed_count }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <p class="text-uppercase small fw-bold text-info mb-1">Average</p>
+                    <h3 class="mb-0 fw-bold">KSh {{ "{:,.2f}".format(total_amount / total_count if total_count else 0) }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body p-4">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">From</label>
+                    <input type="date" name="start_date" class="form-control" value="{{ filters.start_date }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">To</label>
+                    <input type="date" name="end_date" class="form-control" value="{{ filters.end_date }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">Patient Reg No.</label>
+                    <input type="text" name="patient_reg" class="form-control" placeholder="e.g., P00123" value="{{ filters.patient_reg }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">All</option>
+                        {% for s in status_options %}
+                        <option value="{{ s }}" {% if filters.status == s %}selected{% endif %}>{{ s|capitalize }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">Payment Method</label>
+                    <select name="payment_method" class="form-select">
+                        <option value="">All</option>
+                        {% for pm in payment_methods %}
+                        <option value="{{ pm }}" {% if filters.payment_method == pm %}selected{% endif %}>{{ pm|capitalize }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-filter me-2"></i>Apply
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Transactions Table -->
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+            <h5 class="fw-bold text-primary"><i class="fas fa-list me-2"></i>Transactions</h5>
+        </div>
+        <div class="card-body p-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle" id="transactionsTable">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>Transaction ID</th>
+                            <th>Patient</th>
+                            <th>Reg No.</th>
+                            <th>Amount</th>
+                            <th>Method</th>
+                            <th>Status</th>
+                            <th>Served By</th>
+                            <th>Reference</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for t in transactions %}
+                        <tr>
+                            <td>{{ t.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td><span class="fw-semibold">#{{ t.id }}</span></td>
+                            <td>{{ t.patient.full_name if t.patient else 'N/A' }}</td>
+                            <td>{{ t.patient.reg_no if t.patient else 'N/A' }}</td>
+                            <td class="text-end fw-bold">KSh {{ "{:,.2f}".format(t.amount) }}</td>
+                            <td>
+                                <span class="badge bg-secondary">{{ t.payment_method|capitalize }}</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-{% if t.status == 'completed' %}success{% elif t.status == 'failed' %}danger{% else %}warning{% endif %}">
+                                    {{ t.status|capitalize }}
+                                </span>
+                            </td>
+                            <td>{{ t.served_by or (t.staff_member.full_name if t.staff_member else '—') }}</td>
+                            <td>{{ t.receipt_number or t.checkout_request_id or '—' }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="9" class="text-center py-5 text-muted">No transactions found.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <!-- Pagination -->
+            {% if pagination.pages > 1 %}
+            <nav class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if pagination.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('billing_web_bp.transaction_history', page=pagination.prev_num, **filters) }}">Previous</a>
+                    </li>
+                    {% endif %}
+                    {% for p in pagination.iter_pages() %}
+                        {% if p %}
+                            <li class="page-item {% if p == pagination.page %}active{% endif %}">
+                                <a class="page-link" href="{{ url_for('billing_web.transaction_history', page=p, **filters) }}">{{ p }}</a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">…</span></li>
+                        {% endif %}
+                    {% endfor %}
+                    {% if pagination.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('billing_web.transaction_history', page=pagination.next_num, **filters) }}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
 </div>
+
+<!-- DataTables (optional for client-side sorting/search) -->
+<script>
+$(document).ready(function() {
+    $('#transactionsTable').DataTable({
+        paging: false,        // we already have server‑side pagination
+        searching: false,      // you can enable if you prefer client‑side
+        ordering: true,
+        info: false,
+        order: [[0, 'desc']]
+    });
+});
+</script>
+
+<style>
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .text-white-80 {
+        color: rgba(255,255,255,0.8);
+    }
+    .hover-lift {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hover-lift:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.75rem 1.5rem rgba(0,0,0,0.1) !important;
+    }
+    .badge {
+        font-weight: 500;
+        padding: 0.5em 0.8em;
+    }
+</style>
 {% endblock %}

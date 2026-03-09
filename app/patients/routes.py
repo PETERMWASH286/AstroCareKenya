@@ -806,8 +806,6 @@ def process_payment():
                 # Optional: verify that the computed total matches the submitted total_amount
                 computed_total += unit_price
 
-            if abs(computed_total - total_amount) > 0.01:  # tolerate small rounding
-                raise ValueError(f"Total amount mismatch: expected {computed_total:.2f}, got {total_amount:.2f}")
 
             # ───────────────────────────────────────────────────────────
             # --- Create service records with the correct price ---
@@ -838,8 +836,8 @@ def process_payment():
                     if existing_medication:
                         # Update existing consultation medication
                         existing_medication.visit_id = visit.id
-                        existing_medication.payment_status = 'paid'
-                        existing_medication.is_paid = True
+                        existing_medication.payment_status = 'pending'
+                        existing_medication.is_paid = False
                         existing_medication.price = unit_price  # <-- use category‑specific price
 
                         current_app.logger.info(f"UPDATED: Consultation Medication {existing_medication.id} for {svc.name} -> Visit {visit.id}, marked as paid")
@@ -849,8 +847,8 @@ def process_payment():
                         existing_visit_medication = Medication.query.filter_by(visit_id=visit.id, service_id=svc.id).first()
                         if existing_visit_medication:
                             # Update existing visit medication payment status
-                            existing_visit_medication.payment_status = 'paid'
-                            existing_visit_medication.is_paid = True
+                            existing_visit_medication.payment_status = 'pending'
+                            existing_visit_medication.is_paid = False
                             current_app.logger.info(f"UPDATED: Existing Visit Medication {existing_visit_medication.id} for {svc.name} -> marked as paid")
                         else:
                             # Create new medication record
@@ -877,8 +875,8 @@ def process_payment():
                     if existing_lab_test:
                         # Update existing consultation lab test
                         existing_lab_test.visit_id = visit.id
-                        existing_lab_test.payment_status = 'paid'
-                        existing_lab_test.is_paid = True
+                        existing_lab_test.payment_status = 'pending'
+                        existing_lab_test.is_paid = False
                         existing_lab_test.price = unit_price
                         current_app.logger.info(f"UPDATED: Consultation LabTest {existing_lab_test.id} for {svc.name} -> Visit {visit.id}, marked as paid")
 
@@ -912,16 +910,16 @@ def process_payment():
 
                     if existing_radiology:
                         existing_radiology.visit_id = visit.id
-                        existing_radiology.payment_status = 'paid'
-                        existing_radiology.is_paid = True
+                        existing_radiology.payment_status = 'pending'
+                        existing_radiology.is_paid = False
                         existing_radiology.price = svc.price   # 👈 set price
                         current_app.logger.info(f"UPDATED: Consultation Radiology {existing_radiology.id} for {svc.name} -> Visit {visit.id}, marked as paid")
 
                     else:
                         existing_visit_radiology = Radiology.query.filter_by(visit_id=visit.id, service_id=svc.id).first()
                         if existing_visit_radiology:
-                            existing_visit_radiology.payment_status = 'paid'
-                            existing_visit_radiology.is_paid = True
+                            existing_visit_radiology.payment_status = 'pending'
+                            existing_visit_radiology.is_paid = False
                             existing_radiology.price = unit_price
                             current_app.logger.info(f"UPDATED: Existing Visit Radiology {existing_visit_radiology.id} for {svc.name} -> marked as paid")
                         else:
@@ -1356,44 +1354,56 @@ def mpesa_callback():
                 if department.lower() == 'pharmacy':
                     meds = Medication.query.filter_by(visit_id=tx.visit.id, service_id=svc.id, is_paid=True).all()
                     for med in meds:
+                        price = med.price if med.price is not None else svc.price
+                        if med.price is None:
+                            current_app.logger.warning(f"Medication #{med.id} had NULL price; using service price {price}")
+                        quantity = med.quantity or 1
                         item = SalesReportItem(
                             sales_report_id=sales_report.id,
                             service_id=svc.id,
                             service_name=svc.name,
                             department=department,
-                            quantity=med.quantity or 1,
-                            unit_price=med.price,
-                            total_price=med.price * (med.quantity or 1),
+                            quantity=quantity,
+                            unit_price=price,
+                            total_price=price * quantity,
                             medication_id=med.id
                         )
                         db.session.add(item)
+
                 # For laboratory
                 elif department == 'Laboratory':
                     labs = LabTest.query.filter_by(visit_id=tx.visit.id, service_id=svc.id, is_paid=True).all()
                     for lab in labs:
+                        price = lab.price if lab.price is not None else svc.price
+                        if lab.price is None:
+                            current_app.logger.warning(f"LabTest #{lab.id} had NULL price; using service price {price}")
                         item = SalesReportItem(
                             sales_report_id=sales_report.id,
                             service_id=svc.id,
                             service_name=svc.name,
                             department=department,
                             quantity=1,
-                            unit_price=lab.price,
-                            total_price=lab.price,
+                            unit_price=price,
+                            total_price=price,
                             lab_test_id=lab.id
                         )
                         db.session.add(item)
+
                 # For radiology
                 elif department.lower() == 'radiology':
                     rads = Radiology.query.filter_by(visit_id=tx.visit.id, service_id=svc.id, is_paid=True).all()
                     for rad in rads:
+                        price = rad.price if rad.price is not None else svc.price
+                        if rad.price is None:
+                            current_app.logger.warning(f"Radiology #{rad.id} had NULL price; using service price {price}")
                         item = SalesReportItem(
                             sales_report_id=sales_report.id,
                             service_id=svc.id,
                             service_name=svc.name,
                             department=department,
                             quantity=1,
-                            unit_price=rad.price,
-                            total_price=rad.price,
+                            unit_price=price,
+                            total_price=price,
                             radiology_id=rad.id
                         )
                         db.session.add(item)

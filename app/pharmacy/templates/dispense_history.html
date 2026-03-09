@@ -1,105 +1,123 @@
-{% extends "base.html" %} {% block content %}
+{% extends "base.html" %}
+
+{% block content %}
 <div class="container mx-auto px-4 py-8">
-
-    <!-- Header with Animated Gradient -->
-    <div class="mb-8 text-center bg-gradient-to-r from-blue-500 to-purple-600 text-white p-8 rounded-3xl shadow-2xl animate-gradient-x">
-        <h1 class="text-4xl font-bold mb-2">Dispense History</h1>
-        <p class="text-white/90 text-lg">Comprehensive medication dispensing records</p>
+<!-- Enhanced Header with Animated Gradient and Pattern (smaller, left-aligned) -->
+<div class="relative overflow-hidden mb-6 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-700 text-white p-6 rounded-2xl shadow-xl">
+    <div class="absolute inset-0 bg-grid-white/10 bg-grid"></div>
+    <div class="relative z-10">
+        <h1 class="text-3xl md:text-4xl font-bold mb-2 tracking-tight">Dispense History</h1>
+        <p class="text-white/90 text-base md:text-lg max-w-xl">Comprehensive medication dispensing records</p>
     </div>
+</div>
 
-    <!-- Summary Dashboard -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <!-- Total Records Card -->
-        <div class="bg-white/80 backdrop-blur-md border border-gray-100 dark:border-gray-800 dark:bg-gray-900 rounded-2xl shadow-xl p-6">
-            <div class="flex items-center">
-                <div class="p-3 rounded-full bg-blue-100 dark:bg-blue-900/50 mr-4">
-                    <i class="fas fa-history text-blue-600 dark:text-blue-400 text-xl"></i>
-                </div>
-                <div>
-                    <p class="text-gray-500 dark:text-gray-400">Total Records</p>
-                    <p class="text-2xl font-bold text-gray-800 dark:text-white">{{ history_records|length }}</p>
-                </div>
+<!-- Summary Dashboard (4 cards) – smaller stats -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <!-- Total Records -->
+    <div class="bg-white/80 backdrop-blur-md border border-gray-100 dark:border-gray-800 dark:bg-gray-900/80 rounded-xl shadow-md p-4 hover:shadow-lg transition-shadow">
+        <div class="flex items-center">
+            <div class="p-2.5 rounded-full bg-blue-100 dark:bg-blue-900/50 mr-3">
+                <i class="fas fa-history text-blue-600 dark:text-blue-400 text-lg"></i>
             </div>
-        </div>
-
-        <!-- Last Dispensed Card -->
-        <div class="bg-white/80 backdrop-blur-md border border-gray-100 dark:border-gray-800 dark:bg-gray-900 rounded-2xl shadow-xl p-6">
-            <div class="flex items-center">
-                <div class="p-3 rounded-full bg-green-100 dark:bg-green-900/50 mr-4">
-                    <i class="fas fa-clock text-green-600 dark:text-green-400 text-xl"></i>
-                </div>
-                <div>
-                    <p class="text-gray-500 dark:text-gray-400">Last Dispensed</p>
-                    <p class="text-2xl font-bold text-gray-800 dark:text-white">
-                        {% if history_records %} {{ history_records[0].dispense_date.strftime('%d %b %Y') }} {% else %} N/A {% endif %}
-                    </p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Medication Summary Card -->
-        <div class="bg-white/80 backdrop-blur-md border border-gray-100 dark:border-gray-800 dark:bg-gray-900 rounded-2xl shadow-xl p-6">
-            <div class="flex items-center">
-                <div class="p-3 rounded-full bg-purple-100 dark:bg-purple-900/50 mr-4">
-                    <i class="fas fa-pills text-purple-600 dark:text-purple-400 text-xl"></i>
-                </div>
-                <div>
-                    <p class="text-gray-500 dark:text-gray-400">Medication Summary</p>
-                    <div id="medicationSummary" class="text-2xl font-bold text-gray-800 dark:text-white">Select a medication</div>
-                </div>
+            <div>
+                <p class="text-xs text-gray-500 dark:text-gray-400">Total Records</p>
+                <p class="text-xl font-bold text-gray-800 dark:text-white" id="statTotalRecords">{{ history_records|length }}</p>
             </div>
         </div>
     </div>
+    <!-- Total Quantity -->
+    <div class="bg-white/80 backdrop-blur-md border border-gray-100 dark:border-gray-800 dark:bg-gray-900/80 rounded-xl shadow-md p-4 hover:shadow-lg transition-shadow">
+        <div class="flex items-center">
+            <div class="p-2.5 rounded-full bg-green-100 dark:bg-green-900/50 mr-3">
+                <i class="fas fa-pills text-green-600 dark:text-green-400 text-lg"></i>
+            </div>
+            <div>
+                <p class="text-xs text-gray-500 dark:text-gray-400">Total Quantity</p>
+                <p class="text-xl font-bold text-gray-800 dark:text-white" id="statTotalQuantity">{{ total_quantity }}</p>
+            </div>
+        </div>
+    </div>
+    <!-- Unique Patients -->
+    <div class="bg-white/80 backdrop-blur-md border border-gray-100 dark:border-gray-800 dark:bg-gray-900/80 rounded-xl shadow-md p-4 hover:shadow-lg transition-shadow">
+        <div class="flex items-center">
+            <div class="p-2.5 rounded-full bg-purple-100 dark:bg-purple-900/50 mr-3">
+                <i class="fas fa-users text-purple-600 dark:text-purple-400 text-lg"></i>
+            </div>
+            <div>
+                <p class="text-xs text-gray-500 dark:text-gray-400">Unique Patients</p>
+                <p class="text-xl font-bold text-gray-800 dark:text-white" id="statUniquePatients">{{ unique_patients }}</p>
+            </div>
+        </div>
+    </div>
+    <!-- Last Dispensed -->
+    <div class="bg-white/80 backdrop-blur-md border border-gray-100 dark:border-gray-800 dark:bg-gray-900/80 rounded-xl shadow-md p-4 hover:shadow-lg transition-shadow">
+        <div class="flex items-center">
+            <div class="p-2.5 rounded-full bg-amber-100 dark:bg-amber-900/50 mr-3">
+                <i class="fas fa-clock text-amber-600 dark:text-amber-400 text-lg"></i>
+            </div>
+            <div>
+                <p class="text-xs text-gray-500 dark:text-gray-400">Last Dispensed</p>
+                <p class="text-xl font-bold text-gray-800 dark:text-white" id="statLastDispensed">
+                    {% if history_records %}{{ history_records[0].dispense_date.strftime('%d %b %Y') }}{% else %}N/A{% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
 
-    <!-- Control Panel with Search + Filters -->
-    <div class="mb-6 bg-white/80 backdrop-blur-md border border-gray-100 dark:border-gray-800 dark:bg-gray-900 rounded-2xl shadow-xl p-6">
+    <!-- Chart: Top Medications (will be updated on filter) -->
+    {% if top_meds %}
+    <div class="mb-8 bg-white/80 backdrop-blur-md border border-gray-100 dark:border-gray-800 dark:bg-gray-900/80 rounded-2xl shadow-lg p-6">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center">
+            <i class="fas fa-chart-bar text-blue-500 mr-2"></i> Top Medications Dispensed
+        </h3>
+        <div style="position: relative; height: 80px;">
+            <canvas id="topMedsChart"></canvas>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Filter Bar – all filters inline -->
+    <div class="mb-8 bg-white/80 backdrop-blur-md border border-gray-100 dark:border-gray-800 dark:bg-gray-900/80 rounded-2xl shadow-lg p-5">
         <div class="flex flex-col md:flex-row gap-4 items-center">
-            <!-- Search Box -->
-            <div class="flex-1 relative w-full">
-                <input type="text" id="searchHistoryInput" placeholder="Search by patient, medication, reg no, or dispenser..." class="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white/50 dark:bg-gray-700/50 focus:ring-4 focus:ring-blue-300/30 focus:border-blue-400"
-                    oninput="filterHistoryTable()" />
-                <i class="fas fa-search absolute left-4 top-4 text-gray-500 dark:text-gray-400"></i>
+            <!-- Search -->
+            <div class="relative flex-1">
+                <i class="fas fa-search absolute left-4 top-4 text-gray-400"></i>
+                <input type="text" id="searchHistoryInput" placeholder="Search patient, medication, reg no, dispenser..."
+                       class="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white/50 dark:bg-gray-700/50 focus:ring-4 focus:ring-blue-300/30 focus:border-blue-400"
+                       oninput="applyFilters()">
             </div>
 
-            <!-- Date Range Filter -->
-            <div class="relative w-full md:w-auto">
-                <button class="w-full md:w-auto bg-white/90 dark:bg-gray-700/90 px-4 py-2.5 rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2" onclick="toggleHistoryFilters()" aria-expanded="false" aria-controls="historyFilterPanel"
-                    id="historyFilterToggleBtn">
-                    <i class="fas fa-sliders-h text-purple-500"></i>
-                    <span class="md:hidden">Filters</span>
-                    <span class="hidden md:inline">Filters</span>
-                </button>
-                <div id="historyFilterPanel" class="absolute z-20 mt-2 w-72 p-4 bg-white/80 backdrop-blur-md border border-gray-100 dark:border-gray-800 dark:bg-gray-900 rounded-xl shadow-lg hidden" aria-labelledby="historyFilterToggleBtn">
-                    <label class="block mb-2 text-gray-700 dark:text-gray-300 font-semibold" for="filterDateFrom">Date From</label>
-                    <input type="date" id="filterDateFrom" class="bg-white/80 backdrop-blur-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700/50 w-full rounded-md p-2 mb-4" onchange="filterHistoryTable()" />
-
-                    <label class="block mb-2 text-gray-700 dark:text-gray-300 font-semibold" for="filterDateTo">Date To</label>
-                    <input type="date" id="filterDateTo" class="bg-white/80 backdrop-blur-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700/50 w-full rounded-md p-2" onchange="filterHistoryTable()" />
-                </div>
+            <!-- Date From -->
+            <div class="relative w-full md:w-40">
+                <label class="absolute -top-2 left-2 bg-white dark:bg-gray-800 px-1 text-xs text-gray-500">From</label>
+                <input type="date" id="filterDateFrom" class="w-full px-3 py-3 border border-gray-200 dark:border-gray-600 rounded-xl bg-white/50 dark:bg-gray-700/50 focus:ring-2 focus:ring-blue-300"
+                       onchange="applyFilters()">
             </div>
 
-            <!-- Medication Selector (NOW using medication_list) -->
-            <div class="relative w-full md:w-auto">
-                <select id="medicationSelect" onchange="updateMedicationSummary()" class="w-full bg-white/90 dark:bg-gray-700/90 px-4 py-2.5 rounded-xl shadow-md 
-                 appearance-none border border-gray-200 dark:border-gray-600">
-          <option value="">All Medications</option>
-          {% for med_id, med_name in medication_list %}
-            <option value="{{ med_id }}">{{ med_name }}</option>
-          {% endfor %}
-        </select>
-                <i class="fas fa-chevron-down absolute right-4 top-3.5 text-gray-500 dark:text-gray-400 pointer-events-none"></i>
+            <!-- Date To -->
+            <div class="relative w-full md:w-40">
+                <label class="absolute -top-2 left-2 bg-white dark:bg-gray-800 px-1 text-xs text-gray-500">To</label>
+                <input type="date" id="filterDateTo" class="w-full px-3 py-3 border border-gray-200 dark:border-gray-600 rounded-xl bg-white/50 dark:bg-gray-700/50 focus:ring-2 focus:ring-blue-300"
+                       onchange="applyFilters()">
             </div>
 
-
-            <button class="w-full md:w-auto bg-white/90 dark:bg-gray-700/90 px-4 py-2.5 rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2" onclick="location.reload()">
-                <i class="fas fa-sync-alt text-blue-500"></i>
-                <span class="md:hidden">Refresh</span>
-            </button>
+            <!-- Medication Dropdown -->
+            <div class="relative w-full md:w-56">
+                <select id="medicationSelect" onchange="applyFilters()"
+                        class="w-full bg-white/90 dark:bg-gray-700/90 px-4 py-3 rounded-xl shadow-md border border-gray-200 dark:border-gray-600 appearance-none">
+                    <option value="">All Medications</option>
+                    {% for med_id, med_name in medication_list %}
+                    <option value="{{ med_id }}">{{ med_name }}</option>
+                    {% endfor %}
+                </select>
+                <i class="fas fa-chevron-down absolute right-4 top-4 text-gray-500 dark:text-gray-400 pointer-events-none"></i>
+            </div>
         </div>
     </div>
 
     <!-- History Table -->
-    <div class="bg-white/80 backdrop-blur-md border border-gray-100 dark:border-gray-800 dark:bg-gray-900 rounded-2xl shadow-xl overflow-hidden">
+    <div class="bg-white/80 backdrop-blur-md border border-gray-100 dark:border-gray-800 dark:bg-gray-900/80 rounded-2xl shadow-lg overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full" id="historyTable">
                 <thead class="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-gray-700 dark:to-gray-800">
@@ -112,10 +130,16 @@
                         <th class="px-6 py-4 text-left text-blue-600 dark:text-blue-400 font-semibold">Dispense Date</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700" id="tableBody">
                     {% for rec in history_records %}
-                    <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition-colors" data-patient="{{ rec.patient_name | lower }}" data-regno="{{ rec.patient_reg_no | lower }}" data-medication="{{ rec.medication_name | lower }}" data-medication-id="{{ rec.medication_id }}"
-                        data-quantity="{{ rec.quantity }}" data-dispenser="{{ rec.dispensed_by | lower }}" data-date="{{ rec.dispense_date.strftime('%Y-%m-%d') }}">
+                    <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition-colors"
+                        data-patient="{{ rec.patient_name | lower }}"
+                        data-regno="{{ rec.patient_reg_no | lower }}"
+                        data-medication="{{ rec.medication_name | lower }}"
+                        data-medication-id="{{ rec.medication_id }}"
+                        data-quantity="{{ rec.quantity }}"
+                        data-dispenser="{{ rec.dispensed_by | lower }}"
+                        data-date="{{ rec.dispense_date.strftime('%Y-%m-%d') }}">
                         <td class="px-6 py-4">{{ loop.index }}</td>
                         <td class="px-6 py-4">
                             <div class="font-semibold">{{ rec.patient_name }}</div>
@@ -137,11 +161,11 @@
                         </td>
                     </tr>
                     {% else %}
-                    <tr>
+                    <tr class="no-data-row">
                         <td colspan="6" class="px-6 py-12 text-center">
                             <div class="text-gray-500 dark:text-gray-400">
                                 <i class="fas fa-history text-4xl mb-4"></i>
-                                <div class="text-xl">No dispense records to display</div>
+                                <p class="text-xl">No dispense records to display</p>
                             </div>
                         </td>
                     </tr>
@@ -150,175 +174,175 @@
             </table>
         </div>
 
-        <!-- Summary Footer -->
+        <!-- Footer -->
         <div class="bg-gray-50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-700 px-6 py-4">
             <div class="flex flex-col md:flex-row justify-between items-center">
-                <div class="text-gray-600 dark:text-gray-300 mb-2 md:mb-0">
+                <div class="text-gray-600 dark:text-gray-300">
                     Showing <span id="showingRecords">{{ history_records|length }}</span> of {{ history_records|length }} records
                 </div>
-                <div id="medicationTotal" class="text-lg font-semibold text-purple-600 dark:text-purple-400">
-                    <!-- Will be populated by JavaScript -->
-                </div>
+                <div id="medicationTotal" class="text-lg font-semibold text-purple-600 dark:text-purple-400"></div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Enhanced Styles -->
+<!-- Styles -->
 <style>
-    .animate-gradient-x {
-        background-size: 300% 300%;
-        animation: gradient-x 8s ease infinite;
+    .bg-grid {
+        background-image: linear-gradient(to right, rgba(255,255,255,0.1) 1px, transparent 1px),
+                          linear-gradient(to bottom, rgba(255,255,255,0.1) 1px, transparent 1px);
+        background-size: 30px 30px;
     }
-    
-    @keyframes gradient-x {
-        0% {
-            background-position: 0% 50%;
-        }
-        50% {
-            background-position: 100% 50%;
-        }
-        100% {
-            background-position: 0% 50%;
-        }
-    }
-    
     table {
         border-spacing: 0 0.5rem;
         border-collapse: separate;
     }
-    
-    th,
-    td {
-        @apply transition-colors duration-200;
-    }
-    
-    tr {
-        @apply bg-white dark: bg-gray-800;
-    }
-    
-    .summary-badge {
-        @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
-    }
-    
     select {
         background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
         background-position: right 0.5rem center;
         background-repeat: no-repeat;
         background-size: 1.5em 1.5em;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
     }
 </style>
 
-<!-- JavaScript Enhancements -->
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- JavaScript -->
 <script>
-    // DOM Elements
-    const historyTable = document.getElementById('historyTable');
+    // Store all rows data for filtering
+    const allRows = Array.from(document.querySelectorAll('#tableBody tr:not(.no-data-row)')).map(row => ({
+        element: row,
+        patient: row.dataset.patient || '',
+        regno: row.dataset.regno || '',
+        medication: row.dataset.medication || '',
+        medicationId: row.dataset.medicationId || '',
+        quantity: parseInt(row.dataset.quantity) || 0,
+        dispenser: row.dataset.dispenser || '',
+        date: row.dataset.date || ''
+    }));
+
+    const searchInput = document.getElementById('searchHistoryInput');
+    const dateFrom = document.getElementById('filterDateFrom');
+    const dateTo = document.getElementById('filterDateTo');
     const medicationSelect = document.getElementById('medicationSelect');
-    const medicationSummary = document.getElementById('medicationSummary');
-    const medicationTotal = document.getElementById('medicationTotal');
-    const showingRecords = document.getElementById('showingRecords');
 
-    // Filter table based on search and date
-    function filterHistoryTable() {
-        const searchTerm = document.getElementById('searchHistoryInput').value.toLowerCase();
-        const dateFrom = document.getElementById('filterDateFrom').value;
-        const dateTo = document.getElementById('filterDateTo').value;
-        const selectedMedication = medicationSelect.value;
+    const statTotalRecords = document.getElementById('statTotalRecords');
+    const statTotalQuantity = document.getElementById('statTotalQuantity');
+    const statUniquePatients = document.getElementById('statUniquePatients');
+    const statLastDispensed = document.getElementById('statLastDispensed');
+    const showingRecordsSpan = document.getElementById('showingRecords');
+    const medicationTotalSpan = document.getElementById('medicationTotal');
 
-        const rows = historyTable.tBodies[0].rows;
+    // Chart instance
+    let chartInstance = null;
+    {% if top_meds %}
+    const topMedsCanvas = document.getElementById('topMedsChart');
+    if (topMedsCanvas) {
+        chartInstance = new Chart(topMedsCanvas.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Quantity Dispensed',
+                    data: [],
+                    backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                    borderColor: '#3b82f6',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { y: { beginAtZero: true } },
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+    {% endif %}
+
+    function applyFilters() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const from = dateFrom.value;
+        const to = dateTo.value;
+        const selectedMed = medicationSelect.value;
+
+        let visibleRows = [];
         let visibleCount = 0;
 
-        for (let row of rows) {
-            const patient = row.dataset.patient || "";
-            const regno = row.dataset.regno || "";
-            const medication = row.dataset.medication || "";
-            const medicationId = row.dataset.medicationId || "";
-            const dispenser = row.dataset.dispenser || "";
-            const date = row.dataset.date || "";
-
-            const matchesSearch =
-                patient.includes(searchTerm) ||
-                regno.includes(searchTerm) ||
-                medication.includes(searchTerm) ||
-                dispenser.includes(searchTerm);
+        // Filter rows
+        allRows.forEach(row => {
+            const matchesSearch = row.patient.includes(searchTerm) ||
+                                 row.regno.includes(searchTerm) ||
+                                 row.medication.includes(searchTerm) ||
+                                 row.dispenser.includes(searchTerm);
 
             let matchesDate = true;
-            if (dateFrom && date < dateFrom) matchesDate = false;
-            if (dateTo && date > dateTo) matchesDate = false;
+            if (from && row.date < from) matchesDate = false;
+            if (to && row.date > to) matchesDate = false;
 
-            let matchesMedication = true;
-            if (selectedMedication && medicationId !== selectedMedication) {
-                matchesMedication = false;
+            let matchesMed = true;
+            if (selectedMed && row.medicationId !== selectedMed) matchesMed = false;
+
+            const shouldShow = matchesSearch && matchesDate && matchesMed;
+            row.element.style.display = shouldShow ? '' : 'none';
+            if (shouldShow) {
+                visibleCount++;
+                visibleRows.push(row);
             }
+        });
 
-            const shouldShow = matchesSearch && matchesDate && matchesMedication;
-            row.style.display = shouldShow ? "" : "none";
-            if (shouldShow) visibleCount++;
-        }
+        // Update showing count
+        showingRecordsSpan.textContent = visibleCount;
 
-        showingRecords.textContent = visibleCount;
-        updateMedicationSummary();
-    }
+        // Update stats cards
+        statTotalRecords.textContent = visibleCount;
 
-    // Toggle filter panel visibility
-    function toggleHistoryFilters() {
-        const filterPanel = document.getElementById('historyFilterPanel');
-        const isHidden = filterPanel.classList.contains('hidden');
-        filterPanel.classList.toggle('hidden');
-        const btn = document.getElementById('historyFilterToggleBtn');
-        btn.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
-    }
+        const totalQuantity = visibleRows.reduce((sum, r) => sum + r.quantity, 0);
+        statTotalQuantity.textContent = totalQuantity;
 
-    // Update medication summary based on selection and filters
-    function updateMedicationSummary() {
-        const selectedMedication = medicationSelect.value;
-        const selectedOption = medicationSelect.options[medicationSelect.selectedIndex];
-        const medicationName = selectedOption.text;
+        const uniquePatients = new Set(visibleRows.map(r => r.regno)).size;
+        statUniquePatients.textContent = uniquePatients;
 
-        if (!selectedMedication) {
-            medicationSummary.textContent = "Select a medication";
-            medicationTotal.textContent = "";
-            return;
-        }
-
-        const rows = historyTable.tBodies[0].rows;
-        let total = 0;
-        let visibleRows = 0;
-
-        for (let row of rows) {
-            if (row.style.display === "none") continue;
-
-            const medicationId = row.dataset.medicationId || "";
-            const quantity = parseInt(row.dataset.quantity) || 0;
-
-            if (medicationId === selectedMedication) {
-                total += quantity;
-                visibleRows++;
+        if (visibleRows.length > 0) {
+            // Find latest date
+            const latest = visibleRows.reduce((latest, r) => r.date > latest ? r.date : latest, visibleRows[0].date);
+            // Format to something like "12 Mar 2025"
+            if (latest) {
+                const d = new Date(latest);
+                const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                statLastDispensed.textContent = `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+            } else {
+                statLastDispensed.textContent = 'N/A';
             }
+        } else {
+            statLastDispensed.textContent = 'N/A';
         }
 
-        medicationSummary.textContent = `${medicationName}: ${total} dispensed`;
-        medicationTotal.textContent = `${medicationName} Total: ${total}`;
+        // Update medication summary (total for selected med)
+        if (selectedMed) {
+            const totalForMed = visibleRows.reduce((sum, r) => r.medicationId === selectedMed ? sum + r.quantity : sum, 0);
+            medicationTotalSpan.textContent = `${medicationSelect.options[medicationSelect.selectedIndex].text} Total: ${totalForMed}`;
+        } else {
+            medicationTotalSpan.textContent = '';
+        }
+
+        // Update chart
+        if (chartInstance) {
+            // Count quantities per medication from visible rows
+            const medCounts = {};
+            visibleRows.forEach(r => {
+                medCounts[r.medication] = (medCounts[r.medication] || 0) + r.quantity;
+            });
+            // Sort and take top 5
+            const sorted = Object.entries(medCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+            chartInstance.data.labels = sorted.map(item => item[0]);
+            chartInstance.data.datasets[0].data = sorted.map(item => item[1]);
+            chartInstance.update();
+        }
     }
 
-    // Close filter panel when clicking outside
-    document.addEventListener('click', function(event) {
-        const filterPanel = document.getElementById('historyFilterPanel');
-        const toggleBtn = document.getElementById('historyFilterToggleBtn');
-
-        if (!filterPanel.classList.contains('hidden') &&
-            !filterPanel.contains(event.target) &&
-            !toggleBtn.contains(event.target)) {
-            filterPanel.classList.add('hidden');
-            toggleBtn.setAttribute('aria-expanded', 'false');
-        }
-    });
-
-    // Initialize page
-    document.addEventListener('DOMContentLoaded', function() {
-        filterHistoryTable(); // Apply initial filters
-    });
+    // Initial filter call to set everything correctly
+    document.addEventListener('DOMContentLoaded', applyFilters);
 </script>
 {% endblock %}

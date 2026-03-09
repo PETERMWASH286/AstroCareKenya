@@ -869,7 +869,7 @@ def add_treatment(visit_id):
 
     # Get services grouped by category
     services = Service.query.all()
-    medications_list = [s for s in services if s.category == 'Pharmacy'] # Renamed to avoid conflict with Medication model
+    medications_list = [s for s in services if s.category == 'Pharmacy' and (s.quantity_in_stock or 0) > 0]
     lab_tests_list = [s for s in services if s.category == 'Laboratory']
     imaging_services = [s for s in services if s.category == 'Radiology']
 

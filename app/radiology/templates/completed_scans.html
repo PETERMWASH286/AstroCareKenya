@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- Header with gradient -->
+    <div class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-6 rounded-2xl shadow-lg mb-6">
+        <h1 class="text-3xl font-bold">Completed Radiology Scans</h1>
+        <p class="text-blue-100 mt-1">View, filter, and manage all completed imaging studies</p>
+    </div>
+
+    <!-- Stats Cards (optional – you can add real counts from route) -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 flex items-center">
+            <div class="p-3 rounded-full bg-blue-100 dark:bg-blue-900/50 mr-4">
+                <i class="fas fa-file-image text-blue-600 dark:text-blue-400 text-xl"></i>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Total Scans</p>
+                <p class="text-2xl font-bold text-gray-800 dark:text-white">{{ scans.total }}</p>
+            </div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 flex items-center">
+            <div class="p-3 rounded-full bg-green-100 dark:bg-green-900/50 mr-4">
+                <i class="fas fa-calendar-check text-green-600 dark:text-green-400 text-xl"></i>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500 dark:text-gray-400">This Month</p>
+                <p class="text-2xl font-bold text-gray-800 dark:text-white">42</p>  <!-- Replace with real count -->
+            </div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 flex items-center">
+            <div class="p-3 rounded-full bg-purple-100 dark:bg-purple-900/50 mr-4">
+                <i class="fas fa-user-md text-purple-600 dark:text-purple-400 text-xl"></i>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Radiologists</p>
+                <p class="text-2xl font-bold text-gray-800 dark:text-white">8</p>   <!-- Replace with real count -->
+            </div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 flex items-center">
+            <div class="p-3 rounded-full bg-amber-100 dark:bg-amber-900/50 mr-4">
+                <i class="fas fa-image text-amber-600 dark:text-amber-400 text-xl"></i>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Images</p>
+                <p class="text-2xl font-bold text-gray-800 dark:text-white">156</p>  <!-- Replace with real count -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Advanced Filter Bar -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5 mb-6">
+        <form method="get" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+            <!-- Search (already present) -->
+            <div class="relative">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Search</label>
+                <i class="fas fa-search absolute left-4 top-10 text-gray-400"></i>
+                <input type="text" name="q" value="{{ search_query }}"
+                       placeholder="Patient, service, ID..."
+                       class="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white/50 dark:bg-gray-700/50 focus:ring-4 focus:ring-blue-300/30 focus:border-blue-400">
+            </div>
+            <!-- Date Range -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">From</label>
+                <input type="date" name="date_from" value="{{ request.args.get('date_from') }}"
+                       class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white/50 dark:bg-gray-700/50">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">To</label>
+                <input type="date" name="date_to" value="{{ request.args.get('date_to') }}"
+                       class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white/50 dark:bg-gray-700/50">
+            </div>
+            <!-- Modality (Service Category) – you can adjust based on your data -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Modality</label>
+                <select name="modality" class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white/50 dark:bg-gray-700/50">
+                    <option value="">All</option>
+                    <option value="X-Ray" {% if request.args.get('modality') == 'X-Ray' %}selected{% endif %}>X-Ray</option>
+                    <option value="CT" {% if request.args.get('modality') == 'CT' %}selected{% endif %}>CT</option>
+                    <option value="MRI" {% if request.args.get('modality') == 'MRI' %}selected{% endif %}>MRI</option>
+                    <option value="Ultrasound" {% if request.args.get('modality') == 'Ultrasound' %}selected{% endif %}>Ultrasound</option>
+                </select>
+            </div>
+            <!-- Filter Buttons -->
+            <div class="flex gap-2 md:col-span-2 lg:col-span-1 justify-end">
+                <button type="submit"
+                        class="w-full md:w-auto px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors flex items-center justify-center gap-2">
+                    <i class="fas fa-filter"></i>
+                    <span>Apply</span>
+                </button>
+                <a href="{{ url_for('radiology_web.list_completed_scans') }}"
+                   class="w-full md:w-auto px-6 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white rounded-xl transition-colors flex items-center justify-center gap-2">
+                    <i class="fas fa-times"></i>
+                    <span>Reset</span>
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Scans Table -->
+    {% if scans.items %}
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-gray-100 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">Thumbnail</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">Order #</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">Date & Time</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">Patient</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">Service</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">Images</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">Technician</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">Status</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                    {% for scan in scans.items %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                        <td class="px-4 py-3">
+                            <div class="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
+                                {% if scan.thumbnails %}
+                                    {% set first_thumb = scan.thumbnails.split(',')[0] %}
+                                    <img src="{{ url_for('static', filename='uploads/' + first_thumb) }}" alt="thumb"
+                                         class="w-full h-full object-cover">
+                                {% else %}
+                                    <div class="w-full h-full flex items-center justify-center text-gray-400">
+                                        <i class="fas fa-image"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="px-4 py-3 font-mono text-sm">#{{ scan.id }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap">
+                            <div>{{ scan.completed_at.strftime('%d %b %Y') }}</div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400">{{ scan.completed_at.strftime('%I:%M %p') }}</div>
+                        </td>
+                        <td class="px-4 py-3">
+                            <div class="font-medium">{{ scan.consultation.patient.full_name }}</div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400">Reg: {{ scan.consultation.patient.reg_no }}</div>
+                        </td>
+                        <td class="px-4 py-3">
+                            <div class="font-medium">{{ scan.service.name }}</div>
+                            {% if scan.service.strength %}
+                            <div class="text-xs text-gray-500 dark:text-gray-400">{{ scan.service.strength }}</div>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 px-2 py-1 rounded-full text-xs font-medium">
+                                {{ scan.images.split(',')|length if scan.images else 0 }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3">{{ scan.done_by.full_name if scan.done_by else '—' }}</td>
+                        <td class="px-4 py-3">
+                            <span class="bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-200 px-2 py-1 rounded-full text-xs font-medium">
+                                Completed
+                            </span>
+                        </td>
+                        <td class="px-4 py-3">
+                            <div class="flex gap-2">
+                                <a href="{{ url_for('radiology_web.view_scan', order_id=scan.id) }}"
+                                   class="p-2 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/30 dark:hover:bg-blue-800 text-blue-600 dark:text-blue-400 rounded-lg transition-colors"
+                                   title="View Scan">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="#" onclick="downloadImages({{ scan.id }})"
+                                   class="p-2 bg-green-100 hover:bg-green-200 dark:bg-green-900/30 dark:hover:bg-green-800 text-green-600 dark:text-green-400 rounded-lg transition-colors"
+                                   title="Download All">
+                                    <i class="fas fa-download"></i>
+                                </a>
+                                <button onclick="showReport({{ scan.id }})"
+                                        class="p-2 bg-purple-100 hover:bg-purple-200 dark:bg-purple-900/30 dark:hover:bg-purple-800 text-purple-600 dark:text-purple-400 rounded-lg transition-colors"
+                                        title="View Report">
+                                    <i class="fas fa-file-alt"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row justify-between items-center">
+            <div class="text-sm text-gray-600 dark:text-gray-400 mb-2 sm:mb-0">
+                Showing <span class="font-medium">{{ scans.first }}</span> to <span class="font-medium">{{ scans.last }}</span> of <span class="font-medium">{{ scans.total }}</span> results
+            </div>
+            <div class="flex gap-2">
+                {% if scans.has_prev %}
+                <a href="{{ url_for('radiology_web.list_completed_scans', page=scans.prev_num, q=search_query, date_from=request.args.get('date_from'), date_to=request.args.get('date_to'), modality=request.args.get('modality')) }}"
+                   class="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-lg transition-colors">
+                    &larr; Previous
+                </a>
+                {% endif %}
+                {% if scans.has_next %}
+                <a href="{{ url_for('radiology_web.list_completed_scans', page=scans.next_num, q=search_query, date_from=request.args.get('date_from'), date_to=request.args.get('date_to'), modality=request.args.get('modality')) }}"
+                   class="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-lg transition-colors">
+                    Next &rarr;
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="bg-white dark:bg-gray-800 rounded-xl p-12 text-center">
+        <i class="fas fa-image text-6xl text-gray-400 mb-4"></i>
+        <h3 class="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">No completed scans found</h3>
+        <p class="text-gray-500 dark:text-gray-400">Complete some radiology orders to see scans here.</p>
+        <a href="{{ url_for('radiology_web.list_imaging_requests') }}"
+           class="inline-block mt-4 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors">
+            Go to Imaging Requests
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Simple JavaScript for actions (placeholders) -->
+<script>
+function downloadImages(scanId) {
+    alert('Download images for scan #' + scanId + ' – implement as needed.');
+}
+
+function showReport(scanId) {
+    alert('Show report for scan #' + scanId + ' – open a modal or redirect to report page.');
+}
+</script>
+
+<style>
+    table {
+        border-collapse: collapse;
+    }
+    th {
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+    }
+    td, th {
+        white-space: nowrap;
+    }
+    @media (max-width: 640px) {
+        .overflow-x-auto {
+            -webkit-overflow-scrolling: touch;
+        }
+    }
+</style>
+{% endblock %}

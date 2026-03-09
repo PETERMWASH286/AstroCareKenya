@@ -31,9 +31,9 @@ class Config:
     DB_ROOT_URI = 'mysql+pymysql://root:pass@localhost/'
     DB_ROOT_PASS = 'pass'
     # config.py
-    AFRICASTALKING_USERNAME = 'your_africastalking_username'
-    AFRICASTALKING_API_KEY = 'your_africastalking_api_key'
-    SMS_SENDER_ID = 'ASTROCARE'  # 11 characters max
+    AFRICASTALKING_USERNAME = 'sandbox'
+    AFRICASTALKING_API_KEY = 'atsk_c7f2989572d254232a425a52c65e386ed46aefb63ef5b6736fe689792b46b24ef26d29e4'
+    SMS_SENDER_ID = 'AFRICASTKNG'  # 11 characters max
     # JWT Configuration
     JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY')
     if not JWT_SECRET_KEY:

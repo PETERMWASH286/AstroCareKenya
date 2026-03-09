@@ -1,0 +1,569 @@
+{% extends "base.html" %}
+
+{% block title %}Governance Dashboard{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-amber-600 to-orange-700 text-white p-6 rounded-2xl shadow-lg mb-6">
+        <h1 class="text-3xl font-bold">Governance Dashboard</h1>
+        <p class="text-amber-100 mt-1">Board meetings, policies, and compliance tracking</p>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="flex flex-wrap gap-3 mb-6">
+        <button onclick="openMeetingModal()" class="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700">
+            <i class="fas fa-plus mr-2"></i>Schedule Meeting
+        </button>
+        <button onclick="openDocumentModal()" class="px-4 py-2 bg-green-600 text-white rounded-lg shadow hover:bg-green-700">
+            <i class="fas fa-upload mr-2"></i>Upload Document
+        </button>
+        <button onclick="openComplianceModal()" class="px-4 py-2 bg-purple-600 text-white rounded-lg shadow hover:bg-purple-700">
+            <i class="fas fa-shield-alt mr-2"></i>Add Compliance Item
+        </button>
+    </div>
+
+    <!-- Upcoming Meetings & Recent Minutes -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <!-- Upcoming Meetings -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+            <h3 class="text-lg font-semibold mb-4 flex items-center">
+                <i class="fas fa-calendar-alt text-blue-500 mr-2"></i>Upcoming Meetings
+            </h3>
+            {% if upcoming_meetings %}
+            <div class="space-y-3">
+                {% for m in upcoming_meetings %}
+                <div class="flex justify-between items-center border-b pb-2">
+                    <div>
+                        <p class="font-medium">{{ m.title }}</p>
+                        <p class="text-sm text-gray-500">{{ m.meeting_date.strftime('%d %b %Y, %H:%M') }}</p>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button onclick="editMeeting({{ m.id }})" class="text-blue-600"><i class="fas fa-edit"></i></button>
+                        <button onclick="deleteMeeting({{ m.id }})" class="text-red-600"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-gray-500">No upcoming meetings scheduled.</p>
+            {% endif %}
+        </div>
+
+        <!-- Recent Minutes -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+            <h3 class="text-lg font-semibold mb-4 flex items-center">
+                <i class="fas fa-file-alt text-green-500 mr-2"></i>Recent Minutes
+            </h3>
+            {% if recent_minutes %}
+            <div class="space-y-3">
+                {% for m in recent_minutes %}
+                <div class="flex justify-between items-center border-b pb-2">
+                    <div>
+                        <p class="font-medium">{{ m.title }}</p>
+                        <p class="text-sm text-gray-500">{{ m.meeting_date.strftime('%d %b %Y') }}</p>
+                    </div>
+                    <a href="#" class="text-blue-600">View</a>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-gray-500">No minutes yet.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Documents Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <!-- Policies -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+            <h3 class="text-lg font-semibold mb-3 flex items-center">
+                <i class="fas fa-file-pdf text-red-500 mr-2"></i>Policies ({{ policies|length }})
+            </h3>
+            <ul class="space-y-2">
+                {% for doc in policies %}
+                <li class="flex justify-between items-center">
+                    <a href="{{ doc.file_path }}" target="_blank" class="text-blue-600 hover:underline">{{ doc.title }}</a>
+                    <button onclick="deleteDocument({{ doc.id }})" class="text-red-600 text-sm"><i class="fas fa-trash"></i></button>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        <!-- Charters -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+            <h3 class="text-lg font-semibold mb-3 flex items-center">
+                <i class="fas fa-file-signature text-purple-500 mr-2"></i>Charters ({{ charters|length }})
+            </h3>
+            <ul class="space-y-2">
+                {% for doc in charters %}
+                <li class="flex justify-between items-center">
+                    <a href="{{ doc.file_path }}" target="_blank" class="text-blue-600 hover:underline">{{ doc.title }}</a>
+                    <button onclick="deleteDocument({{ doc.id }})" class="text-red-600 text-sm"><i class="fas fa-trash"></i></button>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        <!-- Bylaws -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+            <h3 class="text-lg font-semibold mb-3 flex items-center">
+                <i class="fas fa-gavel text-amber-500 mr-2"></i>Bylaws ({{ bylaws|length }})
+            </h3>
+            <ul class="space-y-2">
+                {% for doc in bylaws %}
+                <li class="flex justify-between items-center">
+                    <a href="{{ doc.file_path }}" target="_blank" class="text-blue-600 hover:underline">{{ doc.title }}</a>
+                    <button onclick="deleteDocument({{ doc.id }})" class="text-red-600 text-sm"><i class="fas fa-trash"></i></button>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <!-- Compliance Status -->
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5">
+            <p class="text-sm text-gray-500">Compliant</p>
+            <p class="text-3xl font-bold text-green-600">{{ compliant_count }}</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5">
+            <p class="text-sm text-gray-500">Pending</p>
+            <p class="text-3xl font-bold text-yellow-600">{{ pending_count }}</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5">
+            <p class="text-sm text-gray-500">Overdue</p>
+            <p class="text-3xl font-bold text-orange-600">{{ overdue_count }}</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5">
+            <p class="text-sm text-gray-500">Non‑Compliant</p>
+            <p class="text-3xl font-bold text-red-600">{{ non_compliant_count }}</p>
+        </div>
+    </div>
+
+    <!-- Compliance Items Table -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+        <div class="p-4 border-b flex justify-between items-center">
+            <h3 class="font-semibold text-lg">Compliance Tracking</h3>
+            <button onclick="openComplianceModal()" class="px-3 py-1 bg-blue-600 text-white rounded-lg text-sm">+ Add</button>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-gray-100 dark:bg-gray-700">
+                    <tr>
+                        <th class="px-4 py-2 text-left">Name</th>
+                        <th class="px-4 py-2 text-left">Category</th>
+                        <th class="px-4 py-2 text-left">Due Date</th>
+                        <th class="px-4 py-2 text-left">Status</th>
+                        <th class="px-4 py-2 text-left">Assignee</th>
+                        <th class="px-4 py-2 text-left">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in compliance_items %}
+                    <tr class="border-b hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                        <td class="px-4 py-2">{{ item.name }}</td>
+                        <td class="px-4 py-2">{{ item.category }}</td>
+                        <td class="px-4 py-2">{{ item.due_date.strftime('%d %b %Y') if item.due_date else '—' }}</td>
+                        <td class="px-4 py-2">
+                            <span class="px-2 py-1 rounded-full text-xs font-medium
+                                {% if item.status == 'compliant' %}bg-green-100 text-green-800
+                                {% elif item.status == 'pending' %}bg-yellow-100 text-yellow-800
+                                {% elif item.status == 'overdue' %}bg-orange-100 text-orange-800
+                                {% elif item.status == 'non-compliant' %}bg-red-100 text-red-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ item.status|replace('-', ' ')|title }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-2">{{ item.assignee.full_name if item.assignee else '—' }}</td>
+                        <td class="px-4 py-2">
+                            <button onclick="editCompliance({{ item.id }})" class="text-blue-600 mr-2"><i class="fas fa-edit"></i></button>
+                            <button onclick="deleteCompliance({{ item.id }})" class="text-red-600"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="6" class="px-4 py-4 text-center text-gray-500">No compliance items.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Meeting Modal -->
+<div id="meetingModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh]">
+        <!-- Header -->
+        <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+            <h3 id="meetingModalTitle" class="text-xl font-bold text-gray-900 dark:text-white">Schedule Meeting</h3>
+            <button onclick="closeMeetingModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <!-- Scrollable Content -->
+        <div class="flex-1 overflow-y-auto p-6">
+            <form id="meetingForm">
+                <input type="hidden" id="meetingId">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title</label>
+                        <input type="text" id="meetingTitle" required 
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date & Time</label>
+                        <input type="datetime-local" id="meetingDate" required 
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Agenda</label>
+                        <textarea id="meetingAgenda" rows="4" 
+                                  class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
+                        <select id="meetingStatus" 
+                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700">
+                            <option value="scheduled">Scheduled</option>
+                            <option value="held">Held</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+
+                    <!-- Notification Note -->
+                    <div class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mt-4">
+                        <div class="flex items-start">
+                            <i class="fas fa-info-circle text-blue-600 dark:text-blue-400 mt-0.5 mr-2"></i>
+                            <p class="text-sm text-blue-800 dark:text-blue-200">
+                                Board members will be notified via email and system notification.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Footer -->
+        <div class="flex justify-end space-x-3 p-6 border-t border-gray-200 dark:border-gray-700">
+            <button type="button" onclick="closeMeetingModal()" 
+                    class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                Cancel
+            </button>
+            <button type="submit" form="meetingForm" 
+                    class="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-colors shadow-md">
+                Save Meeting
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Document Upload Modal -->
+<div id="documentModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh]">
+        <!-- Header -->
+        <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white">Upload Document</h3>
+            <button onclick="closeDocumentModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+
+        <!-- Scrollable Content -->
+        <div class="flex-1 overflow-y-auto p-6">
+            <form id="documentForm" enctype="multipart/form-data" method="post">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title</label>
+                        <input type="text" name="title" required 
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>
+                        <select name="document_type" required 
+                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700">
+                            <option value="policy">Policy</option>
+                            <option value="charter">Charter</option>
+                            <option value="bylaw">Bylaw</option>
+                            <option value="minutes">Minutes</option>
+                            <option value="report">Report</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description (optional)</label>
+                        <textarea name="description" rows="2" 
+                                  class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Version</label>
+                        <input type="text" name="version" 
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Effective Date</label>
+                        <input type="date" name="effective_date" 
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">File</label>
+                        <input type="file" name="file" required 
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                    </div>
+
+                    <!-- Notification Note -->
+                    <div class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mt-4">
+                        <div class="flex items-start">
+                            <i class="fas fa-info-circle text-blue-600 dark:text-blue-400 mt-0.5 mr-2"></i>
+                            <p class="text-sm text-blue-800 dark:text-blue-200">
+                                Board members will be notified via email and system notification when new documents are uploaded.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Footer -->
+        <div class="flex justify-end space-x-3 p-6 border-t border-gray-200 dark:border-gray-700">
+            <button type="button" onclick="closeDocumentModal()" 
+                    class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                Cancel
+            </button>
+            <button type="submit" form="documentForm" 
+                    class="px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-colors shadow-md">
+                Upload Document
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Compliance Modal -->
+<div id="complianceModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh]">
+        <!-- Header -->
+        <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+            <h3 id="complianceModalTitle" class="text-xl font-bold text-gray-900 dark:text-white">Add Compliance Item</h3>
+            <button onclick="closeComplianceModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+
+        <!-- Scrollable Content -->
+        <div class="flex-1 overflow-y-auto p-6">
+            <form id="complianceForm">
+                <input type="hidden" id="complianceId">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
+                        <input type="text" id="complianceName" required 
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                        <textarea id="complianceDescription" rows="2" 
+                                  class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
+                        <input type="text" id="complianceCategory" placeholder="e.g. Regulatory" 
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Due Date</label>
+                        <input type="date" id="complianceDueDate" 
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
+                        <select id="complianceStatus" 
+                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700">
+                            <option value="pending">Pending</option>
+                            <option value="compliant">Compliant</option>
+                            <option value="non-compliant">Non-Compliant</option>
+                            <option value="overdue">Overdue</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Assigned To</label>
+                        <select id="complianceAssignedTo" 
+                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700">
+                            <option value="">Unassigned</option>
+                            {% for user in users %}
+                            <option value="{{ user.id }}">{{ user.full_name or user.username }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes</label>
+                        <textarea id="complianceNotes" rows="2" 
+                                  class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700"></textarea>
+                    </div>
+
+                    <!-- Notification Note -->
+                    <div class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mt-4">
+                        <div class="flex items-start">
+                            <i class="fas fa-info-circle text-blue-600 dark:text-blue-400 mt-0.5 mr-2"></i>
+                            <p class="text-sm text-blue-800 dark:text-blue-200">
+                                The assigned person will be notified via email and system notification.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Footer -->
+        <div class="flex justify-end space-x-3 p-6 border-t border-gray-200 dark:border-gray-700">
+            <button type="button" onclick="closeComplianceModal()" 
+                    class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                Cancel
+            </button>
+            <button type="submit" form="complianceForm" 
+                    class="px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:from-purple-700 hover:to-purple-800 transition-colors shadow-md">
+                Save Item
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+// ---------- Meeting ----------
+function openMeetingModal() {
+    document.getElementById('meetingForm').reset();
+    document.getElementById('meetingId').value = '';
+    document.getElementById('meetingModalTitle').textContent = 'Schedule Meeting';
+    document.getElementById('meetingModal').classList.remove('hidden');
+}
+function closeMeetingModal() {
+    document.getElementById('meetingModal').classList.add('hidden');
+}
+document.getElementById('meetingForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const id = document.getElementById('meetingId').value;
+    const data = {
+        title: document.getElementById('meetingTitle').value,
+        meeting_date: document.getElementById('meetingDate').value,
+        agenda: document.getElementById('meetingAgenda').value,
+        status: document.getElementById('meetingStatus').value
+    };
+    const url = id ? `/board/meeting/${id}` : '/board/meeting';
+    const method = id ? 'PUT' : 'POST';
+    fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    }).then(res => res.json()).then(res => {
+        if (res.success) location.reload();
+        else alert('Error saving meeting');
+    });
+});
+function editMeeting(id) {
+    fetch(`/board/meeting/${id}`)
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById('meetingId').value = data.id;
+            document.getElementById('meetingTitle').value = data.title;
+            document.getElementById('meetingDate').value = data.meeting_date.slice(0,16);
+            document.getElementById('meetingAgenda').value = data.agenda || '';
+            document.getElementById('meetingStatus').value = data.status;
+            document.getElementById('meetingModalTitle').textContent = 'Edit Meeting';
+            document.getElementById('meetingModal').classList.remove('hidden');
+        });
+}
+function deleteMeeting(id) {
+    if (confirm('Delete this meeting?')) {
+        fetch(`/board/meeting/${id}`, { method: 'DELETE' })
+            .then(res => res.json())
+            .then(res => { if (res.success) location.reload(); });
+    }
+}
+
+// ---------- Document ----------
+function openDocumentModal() {
+    document.getElementById('documentForm').reset();
+    document.getElementById('documentModal').classList.remove('hidden');
+}
+function closeDocumentModal() {
+    document.getElementById('documentModal').classList.add('hidden');
+}
+document.getElementById('documentForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    fetch('/board/document', {
+        method: 'POST',
+        body: formData
+    }).then(res => res.json()).then(res => {
+        if (res.success) location.reload();
+        else alert('Error uploading document');
+    });
+});
+function deleteDocument(id) {
+    if (confirm('Delete this document?')) {
+        fetch(`/board/document/${id}`, { method: 'DELETE' })
+            .then(res => res.json())
+            .then(res => { if (res.success) location.reload(); });
+    }
+}
+
+// ---------- Compliance ----------
+function openComplianceModal() {
+    document.getElementById('complianceForm').reset();
+    document.getElementById('complianceId').value = '';
+    document.getElementById('complianceModalTitle').textContent = 'Add Compliance Item';
+    document.getElementById('complianceModal').classList.remove('hidden');
+}
+function closeComplianceModal() {
+    document.getElementById('complianceModal').classList.add('hidden');
+}
+document.getElementById('complianceForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const id = document.getElementById('complianceId').value;
+    const data = {
+        name: document.getElementById('complianceName').value,
+        description: document.getElementById('complianceDescription').value,
+        category: document.getElementById('complianceCategory').value,
+        due_date: document.getElementById('complianceDueDate').value,
+        status: document.getElementById('complianceStatus').value,
+        assigned_to: document.getElementById('complianceAssignedTo').value,
+        notes: document.getElementById('complianceNotes').value
+    };
+    const url = id ? `/board/compliance/${id}` : '/board/compliance';
+    const method = id ? 'PUT' : 'POST';
+    fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    }).then(res => res.json()).then(res => {
+        if (res.success) location.reload();
+        else alert('Error saving compliance item');
+    });
+});
+function editCompliance(id) {
+    fetch(`/board/compliance/${id}`)
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById('complianceId').value = data.id;
+            document.getElementById('complianceName').value = data.name;
+            document.getElementById('complianceDescription').value = data.description || '';
+            document.getElementById('complianceCategory').value = data.category || '';
+            document.getElementById('complianceDueDate').value = data.due_date;
+            document.getElementById('complianceStatus').value = data.status;
+            document.getElementById('complianceAssignedTo').value = data.assigned_to || '';
+            document.getElementById('complianceNotes').value = data.notes || '';
+            document.getElementById('complianceModalTitle').textContent = 'Edit Compliance Item';
+            document.getElementById('complianceModal').classList.remove('hidden');
+        });
+}
+function deleteCompliance(id) {
+    if (confirm('Delete this compliance item?')) {
+        fetch(`/board/compliance/${id}`, { method: 'DELETE' })
+            .then(res => res.json())
+            .then(res => { if (res.success) location.reload(); });
+    }
+}
+</script>
+<style>
+    .hidden { display: none; }
+</style>
+{% endblock %}

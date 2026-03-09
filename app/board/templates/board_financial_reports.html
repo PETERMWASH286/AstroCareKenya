@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+
+{% block title %}Financial Reports - Board{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- Header with gradient -->
+    <div class="bg-gradient-to-r from-emerald-600 to-teal-700 text-white p-6 rounded-2xl shadow-lg mb-6">
+        <h1 class="text-3xl font-bold">Financial Reports</h1>
+        <p class="text-emerald-100 mt-1">High‑level financial overview for the board</p>
+    </div>
+
+    <!-- Quick Links to Key Reports -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 mb-6">
+        <a href="{{ url_for('finance_web_bp.income_statement') }}" class="bg-white dark:bg-gray-800 rounded-xl shadow p-3 text-center hover:shadow-lg transition group">
+            <i class="fas fa-chart-line text-emerald-600 text-xl group-hover:scale-110"></i>
+            <p class="text-xs font-medium mt-1">Income Statement</p>
+        </a>
+        <a href="{{ url_for('finance_web_bp.balance_sheet') }}" class="bg-white dark:bg-gray-800 rounded-xl shadow p-3 text-center hover:shadow-lg transition group">
+            <i class="fas fa-scale-balanced text-blue-600 text-xl group-hover:scale-110"></i>
+            <p class="text-xs font-medium mt-1">Balance Sheet</p>
+        </a>
+        <a href="{{ url_for('finance_web_bp.cashflow_statement') }}" class="bg-white dark:bg-gray-800 rounded-xl shadow p-3 text-center hover:shadow-lg transition group">
+            <i class="fas fa-water text-cyan-600 text-xl group-hover:scale-110"></i>
+            <p class="text-xs font-medium mt-1">Cash Flow</p>
+        </a>
+        <a href="{{ url_for('finance_web_bp.sales_reports') }}" class="bg-white dark:bg-gray-800 rounded-xl shadow p-3 text-center hover:shadow-lg transition group">
+            <i class="fas fa-chart-simple text-green-600 text-xl group-hover:scale-110"></i>
+            <p class="text-xs font-medium mt-1">Sales</p>
+        </a>
+        <a href="{{ url_for('finance_web_bp.expense_reports') }}" class="bg-white dark:bg-gray-800 rounded-xl shadow p-3 text-center hover:shadow-lg transition group">
+            <i class="fas fa-money-check-alt text-red-600 text-xl group-hover:scale-110"></i>
+            <p class="text-xs font-medium mt-1">Expenses</p>
+        </a>
+        <a href="{{ url_for('finance_web_bp.stock_reports') }}" class="bg-white dark:bg-gray-800 rounded-xl shadow p-3 text-center hover:shadow-lg transition group">
+            <i class="fas fa-boxes text-amber-600 text-xl group-hover:scale-110"></i>
+            <p class="text-xs font-medium mt-1">Stock</p>
+        </a>
+    </div>
+
+    <!-- Period Filter -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5 mb-6">
+        <form method="get" class="flex flex-wrap gap-4 items-end">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Period</label>
+                <select name="period" class="p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700" onchange="this.form.submit()">
+                    <option value="month" {% if period == 'month' %}selected{% endif %}>Monthly</option>
+                    <option value="year" {% if period == 'year' %}selected{% endif %}>Yearly</option>
+                    <option value="custom" {% if period == 'custom' %}selected{% endif %}>Custom</option>
+                </select>
+            </div>
+            <div id="monthPicker" class="{% if period != 'month' %}hidden{% endif %}">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Month</label>
+                <input type="month" name="month" value="{{ selected_month }}" class="p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700">
+            </div>
+            <div id="yearPicker" class="{% if period != 'year' %}hidden{% endif %}">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Year</label>
+                <input type="number" name="year" value="{{ selected_year }}" class="p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700">
+            </div>
+            <div id="customRange" class="flex gap-2 {% if period != 'custom' %}hidden{% endif %}">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">From</label>
+                    <input type="date" name="start_date" value="{{ start_date.strftime('%Y-%m-%d') }}" class="p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">To</label>
+                    <input type="date" name="end_date" value="{{ end_date.strftime('%Y-%m-%d') }}" class="p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700">
+                </div>
+            </div>
+            <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">Apply</button>
+        </form>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+        <!-- Revenue -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5">
+            <div class="flex items-center justify-between">
+                <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Revenue</span>
+                <span class="text-xs px-2 py-1 rounded-full {% if revenue_change >= 0 %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                    {{ "%.1f"|format(revenue_change) }}%
+                </span>
+            </div>
+            <p class="text-2xl font-bold text-gray-800 dark:text-white mt-2">KES {{ "{:,.0f}".format(revenue) }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">vs previous period</p>
+        </div>
+
+        <!-- Expenses -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5">
+            <div class="flex items-center justify-between">
+                <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Expenses</span>
+                <span class="text-xs px-2 py-1 rounded-full {% if expense_change <= 0 %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                    {{ "%.1f"|format(expense_change) }}%
+                </span>
+            </div>
+            <p class="text-2xl font-bold text-gray-800 dark:text-white mt-2">KES {{ "{:,.0f}".format(total_expenses) }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">vs previous period</p>
+        </div>
+
+        <!-- Net Profit -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5">
+            <div class="flex items-center justify-between">
+                <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Net Profit</span>
+                <span class="text-xs px-2 py-1 rounded-full {% if net_change >= 0 %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                    {{ "%.1f"|format(net_change) }}%
+                </span>
+            </div>
+            <p class="text-2xl font-bold {% if net_profit >= 0 %}text-green-600{% else %}text-red-600{% endif %} mt-2">
+                KES {{ "{:,.0f}".format(net_profit) }}
+            </p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">vs previous period</p>
+        </div>
+
+        <!-- Cash & Bank -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5">
+            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Cash & Bank</p>
+            <p class="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-2">KES {{ "{:,.0f}".format(total_cash) }}</p>
+        </div>
+    </div>
+
+    <!-- A/R and A/P Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-8">
+        <div class="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 border border-orange-200 dark:border-orange-800 rounded-xl shadow-lg p-5">
+            <p class="text-sm font-medium text-orange-700 dark:text-orange-300">Accounts Receivable</p>
+            <p class="text-3xl font-bold text-orange-800 dark:text-orange-200">KES {{ "{:,.0f}".format(ar_total) }}</p>
+            <p class="text-xs text-orange-600 dark:text-orange-400">unpaid patient invoices</p>
+        </div>
+        <div class="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border border-red-200 dark:border-red-800 rounded-xl shadow-lg p-5">
+            <p class="text-sm font-medium text-red-700 dark:text-red-300">Accounts Payable</p>
+            <p class="text-3xl font-bold text-red-800 dark:text-red-200">KES {{ "{:,.0f}".format(ap_total) }}</p>
+            <p class="text-xs text-red-600 dark:text-red-400">unpaid supplier invoices</p>
+        </div>
+    </div>
+
+    <!-- Chart: Revenue vs Expenses -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center">
+            <i class="fas fa-chart-line text-blue-500 mr-2"></i> Revenue vs Expenses (last 6 months)
+        </h3>
+        <div style="position: relative; height: 250px;">
+            <canvas id="trendChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Additional Resources -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center">
+            <i class="fas fa-folder-open text-purple-500 mr-2"></i> Financial Resources
+        </h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            <a href="{{ url_for('finance_web_bp.trial_balance') }}" class="block p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition">
+                <i class="fas fa-scale-balanced text-indigo-500 mr-2"></i> Trial Balance
+            </a>
+            <a href="{{ url_for('finance_web_bp.general_ledger') }}" class="block p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition">
+                <i class="fas fa-book text-cyan-500 mr-2"></i> General Ledger
+            </a>
+            <a href="{{ url_for('finance_web_bp.budget_vs_actual') }}" class="block p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition">
+                <i class="fas fa-chart-bar text-amber-500 mr-2"></i> Budget vs Actual
+            </a>
+            <a href="{{ url_for('finance_web_bp.departmental_pnl') }}" class="block p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition">
+                <i class="fas fa-building text-emerald-500 mr-2"></i> Dept P&L
+            </a>
+            <a href="{{ url_for('finance_web_bp.ar_aging') }}" class="block p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition">
+                <i class="fas fa-user-clock text-orange-500 mr-2"></i> A/R Aging
+            </a>
+            <a href="{{ url_for('finance_web_bp.ap_aging') }}" class="block p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition">
+                <i class="fas fa-truck text-red-500 mr-2"></i> A/P Aging
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('trendChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: {{ months|tojson }},
+                datasets: [
+                    {
+                        label: 'Revenue',
+                        data: {{ revenue_trend|tojson }},
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16,185,129,0.1)',
+                        tension: 0.3,
+                        fill: true
+                    },
+                    {
+                        label: 'Expenses',
+                        data: {{ expense_trend|tojson }},
+                        borderColor: '#ef4444',
+                        backgroundColor: 'rgba(239,68,68,0.1)',
+                        tension: 0.3,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) { return 'KES ' + value.toLocaleString(); }
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
+<script>
+    // Toggle date pickers based on period selection
+    const periodSelect = document.querySelector('select[name="period"]');
+    function togglePickers() {
+        const val = periodSelect.value;
+        document.getElementById('monthPicker').style.display = val === 'month' ? 'block' : 'none';
+        document.getElementById('yearPicker').style.display = val === 'year' ? 'block' : 'none';
+        document.getElementById('customRange').style.display = val === 'custom' ? 'flex' : 'none';
+    }
+    periodSelect.addEventListener('change', togglePickers);
+    togglePickers();
+</script>
+{% endblock %}

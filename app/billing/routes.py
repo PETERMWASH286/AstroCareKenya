@@ -1,7 +1,9 @@
 # app/billing/routes.py
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask import flash, jsonify, redirect, render_template, request, url_for
+from flask_login import login_required
+from sqlalchemy import func
 
 from app.finance.models import Insurance, InsuranceService, Invoice, InvoiceItem
 from app.super_admin.models import HospitalProfile
@@ -340,9 +342,168 @@ def get_unpaid_for_patient(patient):
 
 
 @billing_web_bp.route('/transaction-history')
+@login_required
 def transaction_history():
-    return render_template('transaction_history.html')
+    # Get filter parameters
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    patient_reg = request.args.get('patient_reg')
+    status = request.args.get('status')
+    payment_method = request.args.get('payment_method')
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 25, type=int)
 
+    # Base query
+    query = Transaction.query.options(
+        db.joinedload(Transaction.patient),
+        db.joinedload(Transaction.staff_member)
+    )
+
+    # Apply filters
+    if start_date:
+        query = query.filter(Transaction.created_at >= datetime.strptime(start_date, '%Y-%m-%d'))
+    if end_date:
+        query = query.filter(Transaction.created_at <= datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1) - timedelta(seconds=1))
+    if patient_reg:
+        query = query.join(Patient).filter(Patient.reg_no.ilike(f'%{patient_reg}%'))
+    if status:
+        query = query.filter(Transaction.status == status)
+    if payment_method:
+        query = query.filter(Transaction.payment_method == payment_method)
+
+    # Order by most recent first
+    query = query.order_by(Transaction.created_at.desc())
+
+    # Paginate
+    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+    transactions = pagination.items
+
+    # Calculate summary statistics
+    total_amount = db.session.query(func.sum(Transaction.amount)).filter(
+        Transaction.status == 'completed'
+    ).scalar() or 0.0
+
+    total_count = db.session.query(func.count(Transaction.id)).filter(
+        Transaction.status == 'completed'
+    ).scalar() or 0
+
+    pending_count = db.session.query(func.count(Transaction.id)).filter(
+        Transaction.status.in_(['pending', 'requested'])
+    ).scalar() or 0
+
+    failed_count = db.session.query(func.count(Transaction.id)).filter(
+        Transaction.status == 'failed'
+    ).scalar() or 0
+
+    # Get distinct payment methods for filter dropdown
+    payment_methods = db.session.query(Transaction.payment_method).distinct().all()
+    payment_methods = [pm[0] for pm in payment_methods if pm[0]]
+
+    # Status options
+    status_options = ['pending', 'requested', 'completed', 'failed']
+
+    return render_template(
+        'transaction_history.html',
+        transactions=transactions,
+        pagination=pagination,
+        total_amount=total_amount,
+        total_count=total_count,
+        pending_count=pending_count,
+        failed_count=failed_count,
+        payment_methods=payment_methods,
+        status_options=status_options,
+        filters=request.args
+    )
+    
+    
+    
+@billing_web_bp.route('/billing-reports')
+@login_required
+def billing_reports():
+    # Get filter parameters
+    start_date_str = request.args.get('start_date')
+    end_date_str = request.args.get('end_date')
+    cashier = request.args.get('cashier')
+
+    # Base query: only completed transactions
+    query = Transaction.query.filter_by(status='completed')
+
+    # Date filtering using paid_at
+    if start_date_str:
+        try:
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
+            query = query.filter(Transaction.paid_at >= start_date)
+        except ValueError:
+            flash('Invalid start date format', 'danger')
+    if end_date_str:
+        try:
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d') + timedelta(days=1) - timedelta(seconds=1)
+            query = query.filter(Transaction.paid_at <= end_date)
+        except ValueError:
+            flash('Invalid end date format', 'danger')
+
+    if cashier:
+        query = query.filter(Transaction.served_by == cashier)
+
+    # Eager load relationships for efficiency
+    transactions = query.options(
+        db.joinedload(Transaction.services),
+        db.joinedload(Transaction.patient),
+        db.joinedload(Transaction.staff_member)
+    ).order_by(Transaction.paid_at.desc()).all()
+
+    # Summary statistics
+    total_amount = sum(t.amount for t in transactions)
+    total_count = len(transactions)
+    avg_transaction = total_amount / total_count if total_count else 0
+
+    # Daily totals
+    day_totals = {}
+    for t in transactions:
+        if t.paid_at:
+            day = t.paid_at.strftime('%Y-%m-%d')
+            day_totals[day] = day_totals.get(day, 0) + t.amount
+
+    # Weekly totals (ISO week)
+    week_totals = {}
+    for t in transactions:
+        if t.paid_at:
+            year, week, _ = t.paid_at.isocalendar()
+            week_key = f"{year}-W{week:02d}"
+            week_totals[week_key] = week_totals.get(week_key, 0) + t.amount
+
+    # Monthly totals
+    month_totals = {}
+    for t in transactions:
+        if t.paid_at:
+            month = t.paid_at.strftime('%Y-%m')
+            month_totals[month] = month_totals.get(month, 0) + t.amount
+
+    # Distinct cashiers for dropdown
+    cashiers = db.session.query(Transaction.served_by).distinct().filter(
+        Transaction.served_by.isnot(None),
+        Transaction.status == 'completed'
+    ).all()
+    cashiers = sorted([c[0] for c in cashiers])
+
+    filters = {
+        'start_date': start_date_str,
+        'end_date': end_date_str,
+        'cashier': cashier
+    }
+
+    return render_template(
+        'billing_reports.html',
+        transactions=transactions,
+        total_amount=total_amount,
+        total_count=total_count,
+        avg_transaction=avg_transaction,
+        day_totals=day_totals,
+        week_totals=week_totals,
+        month_totals=month_totals,
+        cashiers=cashiers,
+        filters=filters
+    )
 
 @billing_web_bp.route('/api/patients/search', methods=['GET'])
 def search_patients():

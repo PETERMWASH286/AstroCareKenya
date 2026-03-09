@@ -6,13 +6,13 @@ from app import db
 from datetime import date, datetime, timedelta, timezone
 
 from app.appointments.models import Appointment
-from app.notifications.models import MessageTemplate, SMSBroadcast
+from app.notifications.models import MessageTemplate, PatientSMSLog, SMSBroadcast
 
 # Import TemplateForm (adjust the import path if your form is defined elsewhere)
 from app.notifications.forms import TemplateForm
 from app.notifications.tasks import queue_sms_broadcast, send_sms_broadcast
 from app.patients.models import Patient
-
+from app.utils.notifications import notification_manager
 # Create Blueprint
 comms_web_bp = Blueprint('comms_web_bp', __name__,
                          template_folder='templates',
@@ -132,75 +132,103 @@ from datetime import datetime, time
 @comms_web_bp.route('/send-broadcast', methods=['POST'])
 @login_required
 def send_broadcast():
-    try:
-        data = request.get_json()
-        current_app.logger.info(f"Received broadcast request: {data}")
-        
-        # Validate input
-        required_fields = ['message', 'recipient_type', 'recipient_data']
-        if not all(field in data for field in required_fields):
-            return jsonify({'error': 'Missing required fields'}), 400
-        
-        # Get recipients
-        if data['recipient_type'] == 'group':
-            patients = get_patients_by_group(data['recipient_data']['id'])
+    """Process and send an SMS broadcast."""
+    data = request.json
+    message = data.get('message')
+    recipient_type = data.get('recipient_type')  # 'group' or 'individual'
+    recipient_data = data.get('recipient_data')
+    schedule = data.get('schedule', {})
+
+    # Validate
+    if not message:
+        return jsonify({'error': 'Message is required'}), 400
+
+    # Determine recipients
+    patient_ids = []
+    if recipient_type == 'group':
+        group_id = recipient_data.get('id')
+        if group_id == 'all':
+            patients = Patient.query.all()
+            patient_ids = [p.id for p in patients]
+        elif group_id == 'appointments':
+            from app.appointments.models import Appointment
+            today = datetime.now().date()
+            patients = Patient.query.join(Appointment).filter(Appointment.date >= today).all()
+            patient_ids = list(set(p.id for p in patients))  # distinct
+        elif group_id == 'new_patients':
+            thirty_days_ago = datetime.now() - timedelta(days=30)
+            patients = Patient.query.filter(Patient.created_at >= thirty_days_ago).all()
             patient_ids = [p.id for p in patients]
         else:
-            patient_ids = data['recipient_data']['ids']
-            patients = get_patients_by_ids(patient_ids)
-        
-        # Create broadcast
-        broadcast = SMSBroadcast(
-            message=data['message'],
-            recipient_type=data['recipient_type'],
-            group_id=data['recipient_data'].get('id') if data['recipient_type'] == 'group' else None,
-            patient_ids=patient_ids if data['recipient_type'] == 'individual' else None,
-            created_by=current_user.id,
-        )
-        
-        # Handle scheduling
-        if data.get('schedule') and data['schedule'].get('date') and data['schedule'].get('time'):
-            try:
-                # Combine date and time strings
-                datetime_str = f"{data['schedule']['date']} {data['schedule']['time']}"
-                
-                # Parse as UTC-naive datetime
-                scheduled_time = datetime.strptime(datetime_str, '%Y-%m-%d %H:%M')
-                
-                # Mark as UTC
-                scheduled_time = scheduled_time.replace(tzinfo=timezone.utc)
-                
-                broadcast.scheduled_time = scheduled_time
-                broadcast.status = 'scheduled'
-                current_app.logger.info(f"Scheduling broadcast for {scheduled_time}")
-            except Exception as e:
-                db.session.rollback()
-                current_app.logger.error(f"Schedule time error: {str(e)}")
-                return jsonify({
-                    'error': 'Invalid date/time format. Use YYYY-MM-DD and HH:MM'
-                }), 400
+            return jsonify({'error': 'Invalid group'}), 400
+    else:  # individual
+        patient_ids = recipient_data.get('ids', [])
+        if not patient_ids:
+            return jsonify({'error': 'No patients selected'}), 400
+
+    # If scheduled for later, we could store the broadcast and process later.
+    # For now, we'll send immediately and ignore schedule.
+    # (You can extend with a Celery task later.)
+
+    # Create broadcast record
+    broadcast = SMSBroadcast(
+        message=message,
+        recipient_type=recipient_type,
+        group_id=recipient_data.get('id') if recipient_type == 'group' else None,
+        patient_ids=patient_ids if recipient_type == 'individual' else None,
+        scheduled_time=datetime.strptime(f"{schedule['date']} {schedule['time']}", '%Y-%m-%d %H:%M') if schedule.get('date') and schedule.get('time') else None,
+        status='processing',
+        created_by=current_user.id
+    )
+    db.session.add(broadcast)
+    db.session.flush()  # to get broadcast.id
+
+    # For each patient, send SMS and log
+    # For each patient, send SMS and log
+    success_count = 0
+    fail_count = 0
+    for pid in patient_ids:
+        patient = Patient.query.get(pid)
+        if not patient or not patient.phone:
+            continue
+
+        raw_phone = patient.phone.strip()
+        print(f"Patient {pid} raw phone: {raw_phone}")
+
+        # Format to international: remove leading 0 or 1, then add +254
+        if raw_phone.startswith('0') or raw_phone.startswith('1'):
+            formatted_phone = '+254' + raw_phone[1:]
         else:
-            broadcast.status = 'pending'
-            current_app.logger.info("Creating immediate broadcast")
-        
-        # Commit to database
-        db.session.add(broadcast)
-        db.session.commit()
-        current_app.logger.info(f"Broadcast created with ID: {broadcast.id}")
-        
-        # Queue the task
-        current_app.logger.info(f"Queueing task for broadcast {broadcast.id}")
-        queue_sms_broadcast.delay(broadcast.id)
-        
-        return jsonify({
-            'success': True,
-            'message': f'Broadcast scheduled for {len(patients)} recipients',
-            'broadcast_id': broadcast.id
-        })
-    except Exception as e:
-        db.session.rollback()
-        current_app.logger.exception(f"Error in send_broadcast: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+            formatted_phone = '+254' + raw_phone
+        print(f"Formatted phone: {formatted_phone}")
+
+        sms_result = notification_manager.send_sms(
+            message=message,
+            recipients=[formatted_phone]
+        )
+
+        # Log the attempt
+        log = PatientSMSLog(
+            broadcast_id=broadcast.id,
+            patient_id=pid,
+            phone_number=patient.phone,  # store original number
+            message=message,
+            status='sent' if sms_result else 'failed',
+            provider_id=None
+        )
+        db.session.add(log)
+        if sms_result:
+            success_count += 1
+        else:
+            fail_count += 1
+    broadcast.status = 'completed' if fail_count == 0 else 'partial'
+    broadcast.sent_at = datetime.now()
+    db.session.commit()
+
+    return jsonify({
+        'success': True,
+        'message': f'Broadcast sent to {success_count} recipients, {fail_count} failed.'
+    })
     
 @comms_web_bp.route('/test-time')
 def test_time():

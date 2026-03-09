@@ -4,6 +4,7 @@ from flask import current_app, render_template, redirect, send_from_directory, u
 from flask_login import login_required, current_user
 from datetime import date, datetime, timedelta
 from app import db
+from app.auth.models import User
 from app.lab.models import UploadedFile
 from app.patients.models import Radiology, Service, Patient, Consultation, Visit
 from app.radiology.forms import RadiologyStockRequestForm
@@ -77,11 +78,69 @@ def view_scan(order_id):
     except Exception as e:
         flash(f'Error retrieving scan details: {str(e)}', 'danger')
         return redirect(url_for('radiology_web.list_imaging_requests'))
+    
+    
+    
+    
+@radiology_web_bp.route('/radiology/scans')
+@login_required
+def list_completed_scans():
+    """List completed radiology scans with images."""
+    try:
+        page = request.args.get('page', 1, type=int)
+        search_query = request.args.get('q', '')
+
+        # Base query: only completed scans that have images
+        base_query = Radiology.query.join(
+            Consultation, Radiology.consultation_id == Consultation.id
+        ).join(
+            Patient, Consultation.patient_id == Patient.id
+        ).join(
+            Service, Radiology.service_id == Service.id
+        ).options(
+            db.joinedload(Radiology.consultation).joinedload(Consultation.patient),
+            db.joinedload(Radiology.service)
+        ).filter(
+            Radiology.status == 'completed',
+            Radiology.images.isnot(None),
+            Radiology.images != ''
+        )
+
+        # Apply search if provided
+        if search_query:
+            base_query = base_query.filter(
+                db.or_(
+                    Service.name.ilike(f'%{search_query}%'),
+                    Patient.first_name.ilike(f'%{search_query}%'),
+                    Patient.last_name.ilike(f'%{search_query}%')
+                )
+            )
+
+        # Order by most recent first
+        base_query = base_query.order_by(Radiology.completed_at.desc())
+
+        # Paginate (15 per page)
+        scans = base_query.paginate(page=page, per_page=15, error_out=False)
+
+        return render_template(
+            'completed_scans.html',
+            scans=scans,
+            search_query=search_query,
+            title="Completed Scans"
+        )
+    except Exception as e:
+        current_app.logger.error(f"Error listing completed scans: {str(e)}")
+        flash('An error occurred while retrieving scans.', 'danger')
+        return redirect(url_for('dashboard_web.index'))    
+
 
 @radiology_web_bp.route('/radiology/reports')
 @login_required
 def list_radiology_reports():
-    """Radiology Reports Dashboard"""
+    """Radiology Reports Dashboard with technician performance"""
+    from sqlalchemy import func
+    from datetime import date, timedelta
+
 
     today = date.today()
     start_of_week = today - timedelta(days=today.weekday())
@@ -94,41 +153,72 @@ def list_radiology_reports():
             func.date(Radiology.requested_at) == today,
             Radiology.is_paid.is_(True),
             Radiology.status == 'completed'
-        ).scalar()
+        ).scalar() or 0
 
     week_count = db.session.query(func.count(Radiology.id))\
         .filter(
             Radiology.requested_at >= start_of_week,
             Radiology.is_paid.is_(True),
             Radiology.status == 'completed'
-        ).scalar()
+        ).scalar() or 0
 
     month_count = db.session.query(func.count(Radiology.id))\
         .filter(
             Radiology.requested_at >= start_of_month,
             Radiology.is_paid.is_(True),
             Radiology.status == 'completed'
-        ).scalar()
+        ).scalar() or 0
 
     year_count = db.session.query(func.count(Radiology.id))\
         .filter(
             Radiology.requested_at >= start_of_year,
             Radiology.is_paid.is_(True),
             Radiology.status == 'completed'
-        ).scalar()
+        ).scalar() or 0
 
-    # ✅ Records: only paid + completed
+    # Technician performance (completed scans by user)
+    technician_stats = db.session.query(
+        User.id,
+        User.full_name,
+        func.count(Radiology.id).label('total_completed')
+    ).join(Radiology, Radiology.done_by_id == User.id)\
+     .filter(
+        Radiology.status == 'completed',
+        Radiology.is_paid.is_(True)
+     )\
+     .group_by(User.id, User.full_name)\
+     .order_by(func.count(Radiology.id).desc()).all()
+
+    # Monthly trend for the last 6 months
+    months = []
+    monthly_data = []
+    for i in range(5, -1, -1):
+        month_start = date(today.year, today.month, 1) - timedelta(days=30*i)
+        month_start = month_start.replace(day=1)
+        if month_start.month == 12:
+            month_end = date(month_start.year+1, 1, 1) - timedelta(days=1)
+        else:
+            month_end = date(month_start.year, month_start.month+1, 1) - timedelta(days=1)
+        month_count = db.session.query(func.count(Radiology.id))\
+            .filter(
+                Radiology.requested_at >= month_start,
+                Radiology.requested_at <= month_end,
+                Radiology.is_paid.is_(True),
+                Radiology.status == 'completed'
+            ).scalar() or 0
+        months.append(month_start.strftime('%b %Y'))
+        monthly_data.append(month_count)
+
+    # All records (for the table)
     records = (
         db.session.query(Radiology)
         .join(Service, Service.id == Radiology.service_id)
         .outerjoin(Consultation, Consultation.id == Radiology.consultation_id)
         .outerjoin(Visit, Visit.id == Radiology.visit_id)
-        .outerjoin(
-            Patient, db.or_(
-                Patient.id == Consultation.patient_id,
-                Patient.id == Visit.patient_id
-            )
-        )
+        .outerjoin(Patient, db.or_(
+            Patient.id == Consultation.patient_id,
+            Patient.id == Visit.patient_id
+        ))
         .filter(
             Radiology.is_paid.is_(True),
             Radiology.status == 'completed'
@@ -142,6 +232,9 @@ def list_radiology_reports():
         .all()
     )
 
+    # Get distinct services for filter dropdown
+    services = Service.query.filter_by(category='Radiology', is_active=True).all()
+
     return render_template(
         'reports/list_reports.html',
         title="Radiology Reports",
@@ -149,7 +242,11 @@ def list_radiology_reports():
         week_count=week_count,
         month_count=month_count,
         year_count=year_count,
-        records=records
+        technician_stats=technician_stats,
+        months=months,
+        monthly_data=monthly_data,
+        records=records,
+        services=services
     )
 
 

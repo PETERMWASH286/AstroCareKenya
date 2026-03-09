@@ -147,15 +147,16 @@ class NotificationManager:
 
     def send_sms(self, message, recipients, sender_id=None):
         """
-        Send SMS via Africa's Talking
-        
-        :param message: SMS message content (max 160 characters)
-        :param recipients: List of phone numbers in international format (e.g., ['+254712345678'])
-        :param sender_id: Optional sender ID override
-        :return: Boolean indicating success
+        Send SMS via Africa's Talking with detailed logging.
         """
         try:
-            # Validate Africa's Talking configuration
+            # Log credentials (without exposing full key)
+            logger.info(f"=== SMS Attempt ===")
+            logger.info(f"AT Username: {self.africastalking_username}")
+            logger.info(f"AT Sender ID: {self.africastalking_sender}")
+            logger.info(f"Recipients (raw): {recipients}")
+            logger.info(f"Message (first 50 chars): {message[:50]}...")
+
             if not self.africastalking_username or not self.africastalking_api_key:
                 logger.error("Africa's Talking credentials not configured")
                 return False
@@ -165,40 +166,45 @@ class NotificationManager:
                 self.africastalking_username,
                 self.africastalking_api_key
             )
-            
-            # Get SMS service
             sms = africastalking.SMS
 
-            # Prepare recipients (ensure proper formatting)
+            # Format recipients
             formatted_recipients = []
             for phone in recipients:
                 phone = phone.strip()
-                # Add country code if missing (assuming Kenya)
                 if not phone.startswith('+'):
                     if phone.startswith('0'):
-                        phone = '+254' + phone[1:]  # Convert 07... to +2547...
+                        phone = '+254' + phone[1:]
                     else:
-                        phone = '+254' + phone  # Add +254 prefix
+                        phone = '+254' + phone
                 formatted_recipients.append(phone)
+
+            logger.info(f"Formatted recipients: {formatted_recipients}")
 
             # Send SMS
             response = sms.send(
                 message=message,
-                recipients=formatted_recipients,
-                sender_id=sender_id or self.africastalking_sender
+                recipients=formatted_recipients
             )
 
+            # Log the full response for debugging
+            logger.info(f"Full API response: {response}")
+
             # Check response
-            if response['SMSMessageData']['Recipients']:
-                successful_recipients = [r['number'] for r in response['SMSMessageData']['Recipients'] if r['status'] == 'Success']
-                logger.info(f"SMS sent successfully to: {successful_recipients}")
-                return True
+            if response.get('SMSMessageData', {}).get('Recipients'):
+                successful = [r for r in response['SMSMessageData']['Recipients'] if r.get('status') == 'Success']
+                logger.info(f"Successful recipients: {successful}")
+                if successful:
+                    return True
+                else:
+                    logger.error("No successful recipients. Response: %s", response)
+                    return False
             else:
-                logger.error("No recipients processed for SMS")
+                logger.error("No recipients processed. Response: %s", response)
                 return False
 
         except Exception as e:
-            logger.error(f"Error sending SMS: {str(e)}")
+            logger.exception("Exception in send_sms")
             return False
 
     def send_notification(self, subject, message, email_recipients=None, sms_recipients=None, html_message=None):
@@ -237,3 +243,11 @@ class NotificationManager:
 
 # Initialize extension
 notification_manager = NotificationManager()
+
+
+
+
+
+
+
+

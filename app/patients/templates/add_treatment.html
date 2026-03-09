@@ -669,7 +669,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="col-span-4">
                     <select class="drug-select w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500" onchange="updateDrugPrice(this)" name="drug[]">
                         <option value="">Select Medication</option>
-                        {% for med in medications %}<option value="{{ med.id }}" data-price="{{ med.price }}">{{ med.name }} - Ksh {{ med.price|number_format }}</option>{% endfor %}
+                        {% for med in medications %}<option value="{{ med.id }}" data-price="{{ med.price }}">{{ med.name }} - Qty: {{ med.quantity_in_stock }}</option>{% endfor %}
                     </select>
                     <input type="hidden" name="drug_price[]" value="">
                 </div>

@@ -84,3 +84,22 @@ class PharmacyInventory(db.Model):
     def valuation_at_selling_price(self):
         """Total potential revenue (selling price × quantity)"""
         return (self.quantity or 0) * (self.selling_price or 0)
+    
+    
+class PharmacyStockFlow(db.Model):
+    __tablename__ = 'pharmacy_stock_flows'
+    __audit_trail__ = True
+
+    id = db.Column(db.Integer, primary_key=True)
+    pharmacy_inventory_id = db.Column(db.Integer, db.ForeignKey('pharmacy_inventory.id'), nullable=False)
+    medication_id = db.Column(db.Integer, db.ForeignKey('medications.id'), nullable=True)
+    quantity_change = db.Column(db.Integer, nullable=False)  # negative for dispense
+    flow_type = db.Column(db.String(20), nullable=False)  # 'dispense', 'return', 'adjustment'
+    notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+
+    # Relationships
+    pharmacy_inventory = db.relationship('PharmacyInventory', backref='stock_flows')
+    medication = db.relationship('Medication', backref='stock_flows')
+    creator = db.relationship('User', foreign_keys=[created_by])

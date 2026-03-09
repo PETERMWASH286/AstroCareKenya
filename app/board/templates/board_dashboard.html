@@ -1,0 +1,372 @@
+{% extends "base.html" %}
+
+{% block title %}Board Dashboard{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- Header with gradient -->
+    <div class="bg-gradient-to-r from-purple-600 to-indigo-700 text-white p-6 rounded-2xl shadow-lg mb-6">
+        <h1 class="text-3xl font-bold">Board Dashboard</h1>
+        <p class="text-purple-100 mt-1">Strategic overview of hospital performance</p>
+    </div>
+
+    <!-- Quick Links to Finance Modules -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 mb-6">
+        <a href="{{ url_for('finance_web_bp.income_statement') }}" class="bg-white dark:bg-gray-800 rounded-xl shadow p-3 text-center hover:shadow-lg transition">
+            <i class="fas fa-chart-line text-purple-600 text-xl"></i>
+            <p class="text-xs font-medium mt-1">P&L</p>
+        </a>
+        <a href="{{ url_for('finance_web_bp.balance_sheet') }}" class="bg-white dark:bg-gray-800 rounded-xl shadow p-3 text-center hover:shadow-lg transition">
+            <i class="fas fa-scale-balanced text-green-600 text-xl"></i>
+            <p class="text-xs font-medium mt-1">Balance</p>
+        </a>
+        <a href="{{ url_for('finance_web_bp.cashflow_statement') }}" class="bg-white dark:bg-gray-800 rounded-xl shadow p-3 text-center hover:shadow-lg transition">
+            <i class="fas fa-water text-blue-600 text-xl"></i>
+            <p class="text-xs font-medium mt-1">Cash Flow</p>
+        </a>
+        <a href="{{ url_for('finance_web_bp.ar_aging') }}" class="bg-white dark:bg-gray-800 rounded-xl shadow p-3 text-center hover:shadow-lg transition">
+            <i class="fas fa-user-clock text-amber-600 text-xl"></i>
+            <p class="text-xs font-medium mt-1">A/R Aging</p>
+        </a>
+        <a href="{{ url_for('finance_web_bp.ap_aging') }}" class="bg-white dark:bg-gray-800 rounded-xl shadow p-3 text-center hover:shadow-lg transition">
+            <i class="fas fa-truck text-orange-600 text-xl"></i>
+            <p class="text-xs font-medium mt-1">A/P Aging</p>
+        </a>
+        <a href="{{ url_for('finance_web_bp.sales_reports') }}" class="bg-white dark:bg-gray-800 rounded-xl shadow p-3 text-center hover:shadow-lg transition">
+            <i class="fas fa-chart-simple text-emerald-600 text-xl"></i>
+            <p class="text-xs font-medium mt-1">Sales</p>
+        </a>
+    </div>
+
+    <!-- Period Filter (same as before) -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5 mb-6">
+        <form method="get" class="flex flex-wrap gap-4 items-end">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Period</label>
+                <select name="period" class="p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700" onchange="this.form.submit()">
+                    <option value="month" {% if period == 'month' %}selected{% endif %}>Monthly</option>
+                    <option value="year" {% if period == 'year' %}selected{% endif %}>Yearly</option>
+                    <option value="custom" {% if period == 'custom' %}selected{% endif %}>Custom</option>
+                </select>
+            </div>
+            <div id="monthPicker" class="{% if period != 'month' %}hidden{% endif %}">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Month</label>
+                <input type="month" name="month" value="{{ selected_month }}" class="p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700">
+            </div>
+            <div id="yearPicker" class="{% if period != 'year' %}hidden{% endif %}">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Year</label>
+                <input type="number" name="year" value="{{ selected_year }}" class="p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700">
+            </div>
+            <div id="customRange" class="flex gap-2 {% if period != 'custom' %}hidden{% endif %}">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">From</label>
+                    <input type="date" name="start_date" value="{{ start_date.strftime('%Y-%m-%d') }}" class="p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">To</label>
+                    <input type="date" name="end_date" value="{{ end_date.strftime('%Y-%m-%d') }}" class="p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700">
+                </div>
+            </div>
+            <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">Apply</button>
+        </form>
+    </div>
+
+    <!-- Main KPI Row (5 cards) -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5 mb-8">
+        <!-- Revenue -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5">
+            <div class="flex items-center justify-between">
+                <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Revenue</span>
+                <span class="text-xs px-2 py-1 rounded-full {% if revenue_change >= 0 %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                    {{ "%.1f"|format(revenue_change) }}%
+                </span>
+            </div>
+            <p class="text-2xl font-bold text-gray-800 dark:text-white mt-2">KES {{ "{:,.0f}".format(revenue) }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">vs previous period</p>
+        </div>
+
+        <!-- Expenses -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5">
+            <div class="flex items-center justify-between">
+                <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Expenses</span>
+                <span class="text-xs px-2 py-1 rounded-full {% if expense_change <= 0 %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                    {{ "%.1f"|format(expense_change) }}%
+                </span>
+            </div>
+            <p class="text-2xl font-bold text-gray-800 dark:text-white mt-2">KES {{ "{:,.0f}".format(total_expenses) }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">vs previous period</p>
+        </div>
+
+        <!-- Net Profit -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5">
+            <div class="flex items-center justify-between">
+                <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Net Profit</span>
+                <span class="text-xs px-2 py-1 rounded-full {% if net_change >= 0 %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                    {{ "%.1f"|format(net_change) }}%
+                </span>
+            </div>
+            <p class="text-2xl font-bold {% if net_profit >= 0 %}text-green-600{% else %}text-red-600{% endif %} mt-2">
+                KES {{ "{:,.0f}".format(net_profit) }}
+            </p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">vs previous period</p>
+        </div>
+
+        <!-- Revenue per Visit -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5">
+            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Revenue / Visit</p>
+            <p class="text-2xl font-bold text-gray-800 dark:text-white mt-2">
+                KES {{ "{:,.0f}".format(revenue / total_visits if total_visits else 0) }}
+            </p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ total_visits }} visits</p>
+        </div>
+
+        <!-- Patient Visits -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5">
+            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Patient Visits</p>
+            <p class="text-2xl font-bold text-gray-800 dark:text-white mt-2">{{ total_visits }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Walk‑in: {{ walkin_visits }}</p>
+        </div>
+    </div>
+
+    <!-- Financial Health Indicators -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+        <!-- Current Ratio (approximated) -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5">
+            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Current Ratio</p>
+            <p class="text-2xl font-bold text-gray-800 dark:text-white mt-2">{{ "%.2f"|format((total_cash + ar_total) / ap_total if ap_total else 0) }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">(Cash + A/R) / A/P</p>
+        </div>
+
+        <!-- Days in A/R (simplified) -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5">
+            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Days in A/R</p>
+            <p class="text-2xl font-bold text-gray-800 dark:text-white mt-2">{{ "%.0f"|format((ar_total / revenue * 365) if revenue else 0) }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">based on annual revenue</p>
+        </div>
+
+        <!-- Days in A/P -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5">
+            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Days in A/P</p>
+            <p class="text-2xl font-bold text-gray-800 dark:text-white mt-2">{{ "%.0f"|format((ap_total / total_expenses * 365) if total_expenses else 0) }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">based on annual expenses</p>
+        </div>
+
+        <!-- Operating Margin -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-5">
+            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Operating Margin</p>
+            <p class="text-2xl font-bold {% if net_profit >= 0 %}text-green-600{% else %}text-red-600{% endif %} mt-2">
+                {{ "%.1f"|format((net_profit / revenue * 100) if revenue else 0) }}%
+            </p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">net profit / revenue</p>
+        </div>
+    </div>
+
+    <!-- Cash Position & Working Capital -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
+        <!-- Cash & Bank -->
+        <div class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border border-blue-200 dark:border-blue-800 rounded-xl shadow-lg p-5">
+            <p class="text-sm font-medium text-blue-700 dark:text-blue-300">Cash & Bank</p>
+            <p class="text-3xl font-bold text-blue-800 dark:text-blue-200">KES {{ "{:,.0f}".format(total_cash) }}</p>
+        </div>
+
+        <!-- Working Capital -->
+        <div class="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border border-purple-200 dark:border-purple-800 rounded-xl shadow-lg p-5">
+            <p class="text-sm font-medium text-purple-700 dark:text-purple-300">Working Capital</p>
+            <p class="text-3xl font-bold text-purple-800 dark:text-purple-200">KES {{ "{:,.0f}".format(total_cash + ar_total - ap_total) }}</p>
+            <p class="text-xs text-purple-600 dark:text-purple-400">current assets - current liabilities</p>
+        </div>
+
+        <!-- Cash Runway (months) -->
+        <div class="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20 border border-amber-200 dark:border-amber-800 rounded-xl shadow-lg p-5">
+            <p class="text-sm font-medium text-amber-700 dark:text-amber-300">Cash Runway</p>
+            <p class="text-3xl font-bold text-amber-800 dark:text-amber-200">{{ "%.1f"|format(total_cash / (total_expenses / 12) if total_expenses else 0) }}</p>
+            <p class="text-xs text-amber-600 dark:text-amber-400">months (expense rate)</p>
+        </div>
+    </div>
+
+    <!-- Chart: Revenue vs Expenses -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center">
+            <i class="fas fa-chart-line text-blue-500 mr-2"></i> Revenue vs Expenses (last 6 months)
+        </h3>
+        <div style="position: relative; height: 250px;">
+            <canvas id="trendChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Top Departments & Key Ratios Table -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Top Departments -->
+        <div class="lg:col-span-1 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center">
+                <i class="fas fa-chart-pie text-green-500 mr-2"></i> Top Departments
+            </h3>
+            <div class="space-y-3">
+                {% for dept, total in top_depts %}
+                <div class="flex justify-between items-center">
+                    <span class="font-medium text-gray-700 dark:text-gray-300">{{ dept }}</span>
+                    <span class="text-sm font-semibold text-gray-900 dark:text-white">KES {{ "{:,.0f}".format(total) }}</span>
+                </div>
+                {% else %}
+                <p class="text-gray-500 dark:text-gray-400 text-center py-4">No data</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Key Ratios Table -->
+        <div class="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center">
+                <i class="fas fa-calculator text-purple-500 mr-2"></i> Key Financial Ratios
+            </h3>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <tbody>
+                        <tr class="border-b border-gray-200 dark:border-gray-700">
+                            <td class="py-2 font-medium">Current Ratio</td>
+                            <td class="py-2 text-right">{{ "%.2f"|format((total_cash + ar_total) / ap_total if ap_total else 0) }}</td>
+                            <td class="py-2 text-right text-xs text-gray-500">(Cash + A/R) / A/P</td>
+                        </tr>
+                        <tr class="border-b border-gray-200 dark:border-gray-700">
+                            <td class="py-2 font-medium">Quick Ratio</td>
+                            <td class="py-2 text-right">{{ "%.2f"|format(total_cash / ap_total if ap_total else 0) }}</td>
+                            <td class="py-2 text-right text-xs text-gray-500">Cash / A/P</td>
+                        </tr>
+                        <tr class="border-b border-gray-200 dark:border-gray-700">
+                            <td class="py-2 font-medium">Operating Margin</td>
+                            <td class="py-2 text-right">{{ "%.1f"|format((net_profit / revenue * 100) if revenue else 0) }}%</td>
+                            <td class="py-2 text-right text-xs text-gray-500">Net profit / Revenue</td>
+                        </tr>
+                        <tr class="border-b border-gray-200 dark:border-gray-700">
+                            <td class="py-2 font-medium">Revenue per Visit</td>
+                            <td class="py-2 text-right">KES {{ "{:,.0f}".format(revenue / total_visits if total_visits else 0) }}</td>
+                            <td class="py-2 text-right text-xs text-gray-500">Total revenue / Visits</td>
+                        </tr>
+                        <tr class="border-b border-gray-200 dark:border-gray-700">
+                            <td class="py-2 font-medium">Cost per Visit</td>
+                            <td class="py-2 text-right">KES {{ "{:,.0f}".format(total_expenses / total_visits if total_visits else 0) }}</td>
+                            <td class="py-2 text-right text-xs text-gray-500">Total expenses / Visits</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Sales & Expenses -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        <!-- Recent Sales -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center">
+                <i class="fas fa-shopping-cart text-blue-500 mr-2"></i> Recent Sales
+            </h3>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-gray-200 dark:border-gray-700">
+                            <th class="py-2 text-left">Patient</th>
+                            <th class="py-2 text-right">Amount</th>
+                            <th class="py-2 text-right">Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sale in recent_sales %}
+                        <tr class="border-b border-gray-100 dark:border-gray-700">
+                            <td class="py-2">{{ sale.patient_name }}</td>
+                            <td class="py-2 text-right">KES {{ "{:,.0f}".format(sale.total_amount) }}</td>
+                            <td class="py-2 text-right text-xs text-gray-500">{{ sale.sale_date.strftime('%d %b') }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="3" class="py-4 text-center text-gray-500">No recent sales</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Recent Expenses -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center">
+                <i class="fas fa-credit-card text-red-500 mr-2"></i> Recent Expenses
+            </h3>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-gray-200 dark:border-gray-700">
+                            <th class="py-2 text-left">Description</th>
+                            <th class="py-2 text-right">Amount</th>
+                            <th class="py-2 text-right">Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for exp in recent_expenses %}
+                        <tr class="border-b border-gray-100 dark:border-gray-700">
+                            <td class="py-2 truncate max-w-xs">{{ exp.description }}</td>
+                            <td class="py-2 text-right">KES {{ "{:,.0f}".format(exp.amount + exp.tax_amount) }}</td>
+                            <td class="py-2 text-right text-xs text-gray-500">{{ exp.expense_date.strftime('%d %b') }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="3" class="py-4 text-center text-gray-500">No recent expenses</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('trendChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: {{ months|tojson }},
+                datasets: [
+                    {
+                        label: 'Revenue',
+                        data: {{ revenue_trend|tojson }},
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59,130,246,0.1)',
+                        tension: 0.3,
+                        fill: true
+                    },
+                    {
+                        label: 'Expenses',
+                        data: {{ expense_trend|tojson }},
+                        borderColor: '#ef4444',
+                        backgroundColor: 'rgba(239,68,68,0.1)',
+                        tension: 0.3,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) { return 'KES ' + value.toLocaleString(); }
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
+<script>
+    // Toggle date pickers based on period selection
+    const periodSelect = document.querySelector('select[name="period"]');
+    function togglePickers() {
+        const val = periodSelect.value;
+        document.getElementById('monthPicker').style.display = val === 'month' ? 'block' : 'none';
+        document.getElementById('yearPicker').style.display = val === 'year' ? 'block' : 'none';
+        document.getElementById('customRange').style.display = val === 'custom' ? 'flex' : 'none';
+    }
+    periodSelect.addEventListener('change', togglePickers);
+    togglePickers();
+</script>
+{% endblock %}

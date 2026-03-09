@@ -1,0 +1,298 @@
+{% extends "base.html" %}
+
+{% block title %}Billing Reports{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Header with gradient -->
+    <div class="bg-gradient-primary text-white p-4 rounded-4 mb-4 shadow-sm">
+        <h1 class="display-6 fw-bold">Billing Reports</h1>
+        <p class="text-white-80 mb-0">Analyze completed transactions by time and cashier</p>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <p class="text-uppercase small fw-bold text-primary mb-1">Total Transactions</p>
+                    <h3 class="mb-0 fw-bold">{{ total_count }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <p class="text-uppercase small fw-bold text-success mb-1">Total Revenue</p>
+                    <h3 class="mb-0 fw-bold">KSh {{ "{:,.2f}".format(total_amount) }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <p class="text-uppercase small fw-bold text-info mb-1">Average Transaction</p>
+                    <h3 class="mb-0 fw-bold">KSh {{ "{:,.2f}".format(avg_transaction) }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Form -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body p-4">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">From</label>
+                    <input type="date" name="start_date" class="form-control" value="{{ filters.start_date }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">To</label>
+                    <input type="date" name="end_date" class="form-control" value="{{ filters.end_date }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Cashier</label>
+                    <select name="cashier" class="form-select">
+                        <option value="">All Cashiers</option>
+                        {% for c in cashiers %}
+                        <option value="{{ c }}" {% if filters.cashier == c %}selected{% endif %}>{{ c }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-filter me-2"></i>Apply
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabbed Summaries -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+            <ul class="nav nav-tabs card-header-tabs" id="summaryTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="day-tab" data-bs-toggle="tab" data-bs-target="#day" type="button" role="tab">Daily</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="week-tab" data-bs-toggle="tab" data-bs-target="#week" type="button" role="tab">Weekly</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="month-tab" data-bs-toggle="tab" data-bs-target="#month" type="button" role="tab">Monthly</button>
+                </li>
+            </ul>
+        </div>
+        <div class="card-body p-4">
+            <div class="tab-content" id="summaryTabsContent">
+                <!-- Daily -->
+                <div class="tab-pane fade show active" id="day" role="tabpanel">
+                    {% if day_totals %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th class="text-end">Amount (KSh)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+<!-- Daily -->
+{% for date, total in day_totals|dictsort(reverse=true) %}
+<tr>
+    <td>{{ date }}</td>
+    <td class="text-end fw-bold">{{ "{:,.2f}".format(total) }}</td>
+</tr>
+{% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-center text-muted py-4">No data for selected period.</p>
+                    {% endif %}
+                </div>
+                <!-- Weekly -->
+                <div class="tab-pane fade" id="week" role="tabpanel">
+                    {% if week_totals %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Week</th>
+                                    <th class="text-end">Amount (KSh)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+<!-- Weekly -->
+{% for week, total in week_totals|dictsort(reverse=true) %}
+<tr>
+    <td>{{ week }}</td>
+    <td class="text-end fw-bold">{{ "{:,.2f}".format(total) }}</td>
+</tr>
+{% endfor %}
+
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-center text-muted py-4">No data for selected period.</p>
+                    {% endif %}
+                </div>
+                <!-- Monthly -->
+                <div class="tab-pane fade" id="month" role="tabpanel">
+                    {% if month_totals %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Month</th>
+                                    <th class="text-end">Amount (KSh)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+<!-- Monthly -->
+{% for month, total in month_totals|dictsort(reverse=true) %}
+<tr>
+    <td>{{ month }}</td>
+    <td class="text-end fw-bold">{{ "{:,.2f}".format(total) }}</td>
+</tr>
+{% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-center text-muted py-4">No data for selected period.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Transactions -->
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+            <h5 class="fw-bold text-primary"><i class="fas fa-list me-2"></i>Transaction Details</h5>
+        </div>
+        <div class="card-body p-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle" id="transactionsTable">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>Transaction ID</th>
+                            <th>Patient</th>
+                            <th>Amount</th>
+                            <th>Method</th>
+                            <th>Cashier</th>
+                            <th>Receipt</th>
+                            <th>Services</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for t in transactions %}
+                        <tr>
+                            <td>{{ t.paid_at.strftime('%Y-%m-%d %H:%M') if t.paid_at else t.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td><span class="fw-semibold">#{{ t.id }}</span></td>
+                            <td>{{ t.patient.full_name if t.patient else 'N/A' }}</td>
+                            <td class="text-end fw-bold">KSh {{ "{:,.2f}".format(t.amount) }}</td>
+                            <td><span class="badge bg-secondary">{{ t.payment_method|capitalize }}</span></td>
+                            <td>{{ t.served_by or (t.staff_member.full_name if t.staff_member else '—') }}</td>
+                            <td>{{ t.receipt_number or '—' }}</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#servicesModal{{ t.id }}">
+                                    <i class="fas fa-eye"></i> View
+                                </button>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="8" class="text-center py-5 text-muted">No transactions found.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modals for services per transaction -->
+{% for t in transactions %}
+<div class="modal fade" id="servicesModal{{ t.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">Services in Transaction #{{ t.id }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p><strong>Patient:</strong> {{ t.patient.full_name if t.patient else 'N/A' }}</p>
+                <p><strong>Date:</strong> {{ t.paid_at.strftime('%Y-%m-%d %H:%M') if t.paid_at else t.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                <hr>
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Service</th>
+                                <th class="text-end">Price</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for svc in t.services %}
+                            <tr>
+                                <td>{{ svc.name }}</td>
+                                <td class="text-end">KSh {{ "{:,.2f}".format(svc.price) }}</td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="2" class="text-center">No services recorded.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<!-- DataTables for sorting -->
+<script>
+$(document).ready(function() {
+    $('#transactionsTable').DataTable({
+        order: [[0, 'desc']],
+        pageLength: 25,
+        lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "All"]],
+        columnDefs: [{ type: 'num', targets: [3] }]
+    });
+});
+</script>
+
+<style>
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .text-white-80 {
+        color: rgba(255,255,255,0.8);
+    }
+    .hover-lift {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hover-lift:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.75rem 1.5rem rgba(0,0,0,0.1) !important;
+    }
+    .nav-tabs .nav-link {
+        color: #495057;
+        font-weight: 500;
+    }
+    .nav-tabs .nav-link.active {
+        color: #667eea;
+        border-bottom: 2px solid #667eea;
+    }
+    .badge {
+        font-weight: 500;
+        padding: 0.5em 0.8em;
+    }
+</style>
+{% endblock %}

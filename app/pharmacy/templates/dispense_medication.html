@@ -1,91 +1,152 @@
-{% extends "base.html" %} {% block content %}
-<div class="container mx-auto px-4 py-8">
+{% extends "base.html" %}
 
-    <!-- Header with Animated Gradient -->
-    <div class="mb-8 text-center bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800  dark:bg-gray-900 dark:bg-gray-800 p-8 rounded-3xl shadow-2xl animate-gradient-x">
-        <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-2">Pharmacy Dispensing Hub</h1>
-        <p class="text-gray-600 dark:text-gray-300">Real-time medication management system</p>
+{% block title %}Pharmacy Dispensing Hub{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+<!-- Header with animated gradient (smaller) -->
+<div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 p-6 mb-6 shadow-lg">
+    <div class="absolute inset-0 bg-grid-white/[0.1] bg-grid"></div>
+    <div class="relative z-10">
+        <h1 class="text-2xl md:text-3xl font-bold text-white mb-1">Pharmacy Dispensing Hub</h1>
+        <p class="text-blue-100 text-base">Real-time medication management system</p>
     </div>
+</div>
 
-    <!-- Stats Panel -->
-    <div class="mb-6 flex flex-wrap justify-between items-center bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800  dark:bg-gray-900 dark:bg-gray-800 rounded-2xl shadow-xl p-6 border border-gray-100 dark:border-gray-700">
-        <div class="text-gray-700 dark:text-gray-300 font-semibold text-lg">
-            Total Patients in Queue: <span id="totalPatients">{{ pharmacy_queue|length }}</span>
-        </div>
-        <div class="text-gray-700 dark:text-gray-300 font-semibold text-lg">
-            Total Medications Pending: <span id="totalPendingMeds">
-                {% set total_meds = 0 %}
-                {% for visit in pharmacy_queue %}
-                    {% for consultation in visit.consultations %}
-                        {% for med in consultation.medications %}
-                            {% if not med.is_dispensed %}
-                                {% set total_meds = total_meds + 1 %}
-                            {% endif %}
-                        {% endfor %}
-                    {% endfor %}
-                {% endfor %}
-                {{ total_meds }}
-            </span>
-        </div>
-    </div>
-
-    <!-- Control Panel with Search + Filters -->
-    <div class="mb-6 bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800  dark:bg-gray-900 dark:bg-gray-800 rounded-2xl shadow-xl p-6 backdrop-blur-sm bg-opacity-50 border border-gray-100 dark:border-gray-700">
-        <div class="flex flex-col md:flex-row gap-4 items-center">
-            <div class="flex-1 relative w-full">
-                <input type="text" id="searchInput" placeholder="Search patients by name or patient number..." class="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white/50 dark:bg-gray-700/50 focus:ring-4 focus:ring-blue-300/30 focus:border-blue-400"
-                    oninput="filterTable()" />
-                <i class="fas fa-search absolute left-4 top-4 text-gray-500 dark:text-gray-400"></i>
+<!-- Stats Cards (smaller) -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <!-- Total Patients -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border-l-4 border-blue-500 hover:shadow transition-shadow">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 uppercase font-medium">Total Patients</p>
+                <p class="text-xl font-bold text-gray-800 dark:text-white mt-0.5">{{ pharmacy_queue|length }}</p>
             </div>
+            <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+                <i class="fas fa-users text-blue-600 dark:text-blue-400 text-lg"></i>
+            </div>
+        </div>
+    </div>
 
-            <!-- Filters Dropdown -->
-            <div class="relative w-full md:w-auto">
-                <button class="w-full md:w-auto bg-white/90 dark:bg-gray-700/90 px-4 py-2.5 rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2" onclick="toggleFilters()" aria-expanded="false" aria-controls="filterPanel" id="filterToggleBtn">
-            <i class="fas fa-sliders-h text-purple-500"></i>
-            <span class="md:hidden">Filters</span>
-            <span class="hidden md:inline">Filters</span>
-          </button>
-                <div id="filterPanel" class="absolute z-20 mt-2 w-64 p-4 bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800  dark:bg-gray-900 dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 hidden" aria-labelledby="filterToggleBtn">
-                    <label class="block mb-2 text-gray-700 dark:text-gray-300 font-semibold" for="filterPriority">Priority Level</label>
-                    <select id="filterPriority" class="bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800  dark:bg-gray-900 dark:bg-gray-800 w-full rounded-md border border-gray-300 dark:border-gray-600 p-2 mb-4" onchange="filterTable()">
-              <option value="">All</option>
-              <option value="High">High</option>
-              <option value="Normal">Normal</option>
-            </select>
+    <!-- Pending Medications -->
+    {% set total_meds = 0 %}
+    {% for visit in pharmacy_queue %}
+        {% for consultation in visit.consultations %}
+            {% for med in consultation.medications %}
+                {% if not med.is_dispensed %}
+                    {% set total_meds = total_meds + 1 %}
+                {% endif %}
+            {% endfor %}
+        {% endfor %}
+    {% endfor %}
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border-l-4 border-yellow-500 hover:shadow transition-shadow">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 uppercase font-medium">Pending Medications</p>
+                <p class="text-xl font-bold text-gray-800 dark:text-white mt-0.5">{{ total_meds }}</p>
+            </div>
+            <div class="w-10 h-10 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center">
+                <i class="fas fa-pills text-yellow-600 dark:text-yellow-400 text-lg"></i>
+            </div>
+        </div>
+    </div>
 
-                    <label class="block mb-2 text-gray-700 dark:text-gray-300 font-semibold" for="filterStatus">Medication Status</label>
-                    <select id="filterStatus" class="bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800  dark:bg-gray-900 dark:bg-gray-800 w-full rounded-md border border-gray-300 dark:border-gray-600 p-2" onchange="filterTable()">
-              <option value="">All</option>
-              <option value="Dispensed">Dispensed</option>
-              <option value="Pending">Pending</option>
-            </select>
+    <!-- Dispensed Today (example) -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border-l-4 border-green-500 hover:shadow transition-shadow">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 uppercase font-medium">Dispensed Today</p>
+                <p class="text-xl font-bold text-gray-800 dark:text-white mt-0.5">0</p>
+            </div>
+            <div class="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
+                <i class="fas fa-check-circle text-green-600 dark:text-green-400 text-lg"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Low Stock Alerts -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border-l-4 border-red-500 hover:shadow transition-shadow">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 uppercase font-medium">Low Stock Alerts</p>
+                <p class="text-xl font-bold text-gray-800 dark:text-white mt-0.5">0</p>
+            </div>
+            <div class="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
+                <i class="fas fa-exclamation-triangle text-red-600 dark:text-red-400 text-lg"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Search & Filter Bar (more compact) -->
+<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 mb-6">
+    <div class="flex flex-col md:flex-row gap-3 items-center">
+        <div class="relative flex-1 w-full">
+            <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm"></i>
+            <input type="text" id="searchInput" placeholder="Search by patient name or ID..." 
+                   class="w-full pl-10 pr-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white">
+        </div>
+        <div class="flex gap-2 w-full md:w-auto">
+            <button id="filterToggleBtn" onclick="toggleFilters()" 
+                    class="px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg text-gray-700 dark:text-gray-300 font-medium text-sm transition-colors flex items-center gap-1">
+                <i class="fas fa-filter text-xs"></i>
+                Filters
+            </button>
+            <button onclick="clearFilters()" 
+                    class="px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg text-gray-700 dark:text-gray-300 font-medium text-sm transition-colors">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Expandable filter panel (slimmer) -->
+    <div id="filterPanel" class="hidden mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div>
+                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Priority</label>
+                <select id="filterPriority" onchange="filterTable()" class="w-full p-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800">
+                    <option value="">All</option>
+                    <option value="High">High</option>
+                    <option value="Normal">Normal</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Dispense Status</label>
+                <select id="filterStatus" onchange="filterTable()" class="w-full p-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800">
+                    <option value="">All</option>
+                    <option value="Dispensed">Dispensed</option>
+                    <option value="Pending">Pending</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Date Range</label>
+                <div class="flex gap-2">
+                    <input type="date" id="filterDateFrom" class="w-full p-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800">
+                    <span class="self-center text-xs">—</span>
+                    <input type="date" id="filterDateTo" class="w-full p-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800">
                 </div>
             </div>
-
-            <button class="w-full md:w-auto bg-white/90 dark:bg-gray-700/90 px-4 py-2.5 rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2" data-tippy-content="Refresh queue" hx-get="{{ url_for('pharmacy_web.dispense_medication') }}"
-                hx-target="main" hx-swap="outerHTML">
-          <i class="fas fa-sync-alt text-blue-500"></i>
-          <span class="md:hidden">Refresh</span>
-        </button>
+        </div>
+        <div class="flex justify-end mt-3">
+            <button onclick="applyFilters()" class="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors">Apply</button>
         </div>
     </div>
-
+</div>
     <!-- Patients Table -->
-    <div class="bg-white/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800  dark:bg-gray-900 dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-gray-100 dark:border-gray-700">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full" id="patientsTable">
-                <thead class="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-gray-700 dark:to-gray-800">
+                <thead class="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
                     <tr>
-                        <th class="px-6 py-4 text-left text-blue-600 dark:text-blue-400 font-semibold">Patient</th>
-                        <th class="px-6 py-4 text-left text-blue-600 dark:text-blue-400 font-semibold">Visit Details</th>
-                        <th class="px-6 py-4 text-left text-blue-600 dark:text-blue-400 font-semibold">Medications</th>
-                        <th class="px-6 py-4 text-left text-blue-600 dark:text-blue-400 font-semibold">Status</th>
-                        <th class="px-6 py-4 text-left text-blue-600 dark:text-blue-400 font-semibold">Actions</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Patient</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Visit Details</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Medications</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
                     {% for visit in pharmacy_queue %}
-                    <!-- Calculate overall status for this visit -->
                     {% set all_medications = [] %}
                     {% set dispensed_count = 0 %}
                     {% for consultation in visit.consultations %}
@@ -98,44 +159,51 @@
                     {% endfor %}
                     {% set visit_status = 'Dispensed' if dispensed_count == all_medications|length and all_medications|length > 0 else 'Pending' %}
                     
-                    <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition-colors group" x-data="{ open: false }" 
-                        data-patient-name="{{ visit.patient.first_name|lower }} {{ visit.patient.last_name|lower }}" 
-                        data-patient-number="{{ visit.patient.reg_no|lower }}" 
-                        data-priority="Normal"
-                        data-status="{{ visit_status }}">
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors"
+                        data-patient-name="{{ visit.patient.first_name|lower }} {{ visit.patient.last_name|lower }}"
+                        data-patient-number="{{ visit.patient.reg_no|lower }}"
+                        data-priority="{% if visit.patient.priority_level == 'High' %}High{% else %}Normal{% endif %}"
+                        data-status="{{ visit_status }}"
+                        data-visit-date="{{ visit.visit_date.strftime('%Y-%m-%d') if visit.visit_date else '' }}">
+                        
                         <!-- Patient Column -->
-                        <td class="px-6 py-4 align-top">
-                            <div class="flex items-center space-x-4">
-                                <div class="relative shrink-0">
-                                    <div class="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center font-medium">
+                        <td class="px-6 py-4">
+                            <div class="flex items-center space-x-3">
+                                <div class="relative flex-shrink-0">
+                                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-semibold shadow-sm">
                                         {{ visit.patient.first_name[0] }}{{ visit.patient.last_name[0] }}
                                     </div>
                                     {% if visit.patient.priority_level == 'High' %}
-                                    <div class="absolute -right-1 -bottom-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white"></div>
+                                    <span class="absolute -top-1 -right-1 flex h-4 w-4">
+                                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                        <span class="relative inline-flex rounded-full h-4 w-4 bg-red-500 border-2 border-white dark:border-gray-800"></span>
+                                    </span>
                                     {% endif %}
                                 </div>
-                                <div class="min-w-0">
-                                    <div class="font-semibold text-gray-800 dark:text-white truncate">{{ visit.patient.first_name }} {{ visit.patient.last_name }}</div>
-                                    <div class="text-sm text-gray-600 dark:text-gray-300 truncate">{{ visit.patient.reg_no }}</div>
+                                <div>
+                                    <div class="font-medium text-gray-900 dark:text-white">{{ visit.patient.first_name }} {{ visit.patient.last_name }}</div>
+                                    <div class="text-sm text-gray-500 dark:text-gray-400">{{ visit.patient.reg_no }}</div>
                                 </div>
                             </div>
                         </td>
 
                         <!-- Visit Details -->
-                        <td class="px-6 py-4 align-top">
-                            <div class="space-y-1">
-                                <div class="text-gray-800 dark:text-white font-medium">
+                        <td class="px-6 py-4">
+                            <div class="text-sm">
+                                <div class="font-medium text-gray-800 dark:text-white">
                                     {% if visit.visit_date %}
                                         {{ visit.visit_date.strftime('%d %b %Y') }}
                                     {% else %}
-                                        No date
+                                        <span class="text-gray-400">No date</span>
                                     {% endif %}
                                 </div>
-                                <div class="text-sm text-gray-600 dark:text-gray-300">
+                                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                     {% if visit.visit_date %}
-                                        {{ visit.visit_date.strftime('%I:%M %p') }}<br>
+                                        {{ visit.visit_date.strftime('%I:%M %p') }}
                                     {% endif %}
-                                    <span class="tag bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300 px-2 py-1 rounded-md text-xs">
+                                </div>
+                                <div class="mt-2">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300">
                                         {{ visit.current_position|title if visit.current_position else 'Unknown' }}
                                     </span>
                                 </div>
@@ -143,18 +211,18 @@
                         </td>
 
                         <!-- Medications -->
-                        <td class="px-6 py-4 align-top">
-                            <div class="flex flex-col space-y-3">
+                        <td class="px-6 py-4">
+                            <div class="space-y-2 max-w-xs">
                                 {% for consultation in visit.consultations %}
                                     {% for med in consultation.medications %}
-                                    <div class="flex items-start space-x-3">
-                                        <i class="fas fa-pills text-blue-400 mt-1"></i>
-                                        <div class="min-w-0">
-                                            <div class="font-medium text-gray-800 dark:text-white truncate">
-                                                {{ med.service.name if med.service else 'Unknown Medication' }}
+                                    <div class="flex items-start space-x-2 bg-gray-50 dark:bg-gray-700/50 p-2 rounded-lg">
+                                        <i class="fas fa-capsules text-blue-400 mt-0.5 text-sm"></i>
+                                        <div class="flex-1 min-w-0">
+                                            <div class="text-sm font-medium text-gray-800 dark:text-white truncate">
+                                                {{ med.service.name if med.service else 'Unknown' }}
                                             </div>
-                                            <div class="text-sm text-gray-600 dark:text-gray-300">
-                                                {{ med.dose }} • {{ med.frequency }} • {{ med.duration }} days
+                                            <div class="text-xs text-gray-500 dark:text-gray-400">
+                                                {{ med.dose }} • {{ med.frequency }} • {{ med.duration }}d
                                             </div>
                                         </div>
                                     </div>
@@ -164,70 +232,57 @@
                         </td>
 
                         <!-- Status -->
-                        <td class="px-6 py-4 align-top">
-                            <div class="flex flex-col space-y-3">
+                        <td class="px-6 py-4">
+                            <div class="space-y-3">
                                 {% for consultation in visit.consultations %}
                                     {% for med in consultation.medications %}
-                                    <div class="flex items-center space-x-3">
-                                        <div class="relative w-full">
-                                            <div class="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                                                <div class="h-full {% if med.is_dispensed %}bg-green-500{% else %}bg-yellow-500{% endif %} transition-all duration-500"></div>
-                                            </div>
-                                            <div class="text-xs {% if med.is_dispensed %}text-green-600 dark:text-green-400{% else %}text-yellow-600 dark:text-yellow-400{% endif %} mt-1" id="status-{{ med.id }}">
-                                                {{ 'Dispensed' if med.is_dispensed else 'Pending' }}
-                                            </div>
-                                        </div>
+                                    <div class="flex items-center justify-between w-32">
+                                        <span class="text-xs text-gray-600 dark:text-gray-300 truncate mr-2">{{ med.service.name|truncate(12) }}</span>
+                                        {% if med.is_dispensed %}
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300">
+                                                <i class="fas fa-check mr-1"></i>Dispensed
+                                            </span>
+                                        {% else %}
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300">
+                                                <i class="fas fa-clock mr-1"></i>Pending
+                                            </span>
+                                        {% endif %}
                                     </div>
                                     {% endfor %}
                                 {% endfor %}
                             </div>
                         </td>
-<!-- Actions -->
-<td class="px-6 py-4 align-top">
-    <div class="flex flex-col space-y-3">
 
-        <!-- Medication dispense actions (per medication) -->
-        {% for consultation in visit.consultations %}
-            {% for med in consultation.medications %}
-                <div class="flex items-center gap-2">
-                    {% if not med.is_dispensed %}
-                        <button
-                            class="p-2 rounded-lg bg-green-100 hover:bg-green-200 dark:bg-green-900/50 dark:hover:bg-green-800 transition-colors dispense-btn"
-                            data-med-id="{{ med.id }}"
-                            data-status-id="status-{{ med.id }}"
-                            title="Dispense medication">
-                            <i class="fas fa-check-circle text-green-600 dark:text-green-400"></i>
-                        </button>
-                    {% else %}
-                        <span class="p-2 text-green-600 dark:text-green-400">
-                            <i class="fas fa-check-circle"></i>
-                        </span>
-                    {% endif %}
-                </div>
-            {% endfor %}
-        {% endfor %}
-
-        <!-- ONE prescription view action per patient/visit -->
-        <a
-            href="{{ url_for('pharmacy_web.view_prescription', visit_id=visit.id) }}"
-            class="inline-flex items-center justify-center gap-2 p-2 rounded-lg bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/50 dark:hover:bg-blue-800 transition-colors"
-            title="View full prescription">
-            <i class="fas fa-file-prescription text-blue-600 dark:text-blue-400"></i>
-            <span class="text-sm font-medium text-blue-700 dark:text-blue-300">
-                View Prescription
-            </span>
-        </a>
-
-    </div>
-</td>
-
+                        <!-- Actions -->
+                        <td class="px-6 py-4">
+                            <div class="flex flex-wrap gap-2">
+                                {% for consultation in visit.consultations %}
+                                    {% for med in consultation.medications %}
+                                        {% if not med.is_dispensed %}
+                                        <button class="dispense-btn p-2 rounded-lg bg-green-100 hover:bg-green-200 dark:bg-green-900/50 dark:hover:bg-green-800 text-green-700 dark:text-green-300 transition-colors"
+                                                data-med-id="{{ med.id }}"
+                                                data-status-id="status-{{ med.id }}"
+                                                data-tippy-content="Dispense {{ med.service.name }}">
+                                            <i class="fas fa-check-circle"></i>
+                                        </button>
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endfor %}
+                                <a href="{{ url_for('pharmacy_web.view_prescription', visit_id=visit.id) }}"
+                                   class="p-2 rounded-lg bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/50 dark:hover:bg-blue-800 text-blue-700 dark:text-blue-300 transition-colors"
+                                   data-tippy-content="View full prescription">
+                                    <i class="fas fa-file-prescription"></i>
+                                </a>
+                            </div>
+                        </td>
                     </tr>
                     {% else %}
                     <tr>
                         <td colspan="5" class="px-6 py-12 text-center">
                             <div class="text-gray-500 dark:text-gray-400">
-                                <i class="fas fa-check-double text-4xl mb-4"></i>
-                                <div class="text-xl">All medications dispensed</div>
+                                <i class="fas fa-check-circle text-5xl mb-4 text-green-400"></i>
+                                <p class="text-xl font-medium">All clear!</p>
+                                <p class="text-sm mt-1">No pending medications at the moment.</p>
                             </div>
                         </td>
                     </tr>
@@ -238,61 +293,20 @@
     </div>
 </div>
 
-<!-- Enhanced Styles -->
+<!-- Custom CSS -->
 <style>
-    .animate-gradient-x {
-        background-size: 300% 300%;
-        animation: gradient-x 8s ease infinite;
-    }
-    
-    @keyframes gradient-x {
-        0% {
-            background-position: 0% 50%
-        }
-        50% {
-            background-position: 100% 50%
-        }
-        100% {
-            background-position: 0% 50%
-        }
-    }
-    
-    .tag {
-        @apply inline-block px-2 py-1 rounded-md text-xs font-medium;
-    }
-    
-    table {
-        border-spacing: 0 0.75rem;
-        border-collapse: separate;
-    }
-    
-    th,
-    td {
-        @apply transition-colors duration-200;
-    }
-    
-    tr {
-        @apply bg-white dark: bg-gray-800;
-    }
-    
-    .htmx-indicator {
-        @apply opacity-0 transition-opacity duration-200;
-    }
-    
-    .htmx-request .htmx-indicator {
-        @apply opacity-100;
-    }
-    
-    .htmx-request.htmx-indicator {
-        @apply opacity-100;
+    .bg-grid {
+        background-image: linear-gradient(to right, rgba(255,255,255,0.1) 1px, transparent 1px),
+                          linear-gradient(to bottom, rgba(255,255,255,0.1) 1px, transparent 1px);
+        background-size: 30px 30px;
     }
 </style>
-<!-- In base.html head -->
+
+<!-- JavaScript -->
 <script src="https://unpkg.com/@popperjs/core@2"></script>
 <script src="https://unpkg.com/tippy.js@6"></script>
-<script src="https://unpkg.com/htmx.org"></script>
-<!-- Tippy Tooltips -->
 <script>
+    // Initialize tooltips
     document.addEventListener('DOMContentLoaded', function() {
         tippy('[data-tippy-content]', {
             theme: 'material',
@@ -301,148 +315,137 @@
             duration: [100, 200],
         });
     });
-</script>
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const searchInput = document.getElementById('searchInput');
-        const tableBody = document.querySelector('table tbody');
-        const rows = Array.from(tableBody.querySelectorAll('tr'));
 
-        // Create stats container and insert above the table
-        const statsContainer = document.createElement('div');
-        statsContainer.className = 'mb-4 text-gray-700 dark:text-gray-300 font-medium flex justify-between';
-
-        tableBody.parentNode.parentNode.insertBefore(statsContainer, tableBody.parentNode);
-
-        const totalPatientsSpan = statsContainer.querySelector('#totalPatients');
-        const visiblePatientsSpan = statsContainer.querySelector('#visiblePatients');
-
-        searchInput.addEventListener('input', () => {
-            const filter = searchInput.value.trim().toLowerCase();
-
-            let visibleCount = 0;
-            rows.forEach(row => {
-                const patientCell = row.querySelector('td:first-child');
-                if (!patientCell) return; // skip if no patient cell
-
-                const nameElem = patientCell.querySelector('.font-semibold');
-                const regNoElem = patientCell.querySelector('div.text-sm');
-
-                const name = nameElem ? nameElem.textContent.toLowerCase() : '';
-                const regNo = regNoElem ? regNoElem.textContent.toLowerCase() : '';
-
-                if (name.includes(filter) || regNo.includes(filter)) {
-                    row.style.display = '';
-                    visibleCount++;
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-
-
-            visiblePatientsSpan.textContent = visibleCount;
-
-            // Optional: If no rows visible, show a friendly message below the table
-            let noResultsRow = tableBody.querySelector('.no-results');
-            if (visibleCount === 0) {
-                if (!noResultsRow) {
-                    const tr = document.createElement('tr');
-                    tr.className = 'no-results';
-                    tr.innerHTML = `<td colspan="5" class="text-center py-6 text-gray-500 dark:text-gray-400">No patients found.</td>`;
-                    tableBody.appendChild(tr);
-                }
-            } else if (noResultsRow) {
-                noResultsRow.remove();
-            }
-        });
-    });
-</script>
-<script>
+    // Filter functions
     function filterTable() {
         const searchTerm = document.getElementById('searchInput').value.toLowerCase();
         const priorityFilter = document.getElementById('filterPriority').value;
         const statusFilter = document.getElementById('filterStatus').value;
+        const dateFrom = document.getElementById('filterDateFrom').value;
+        const dateTo = document.getElementById('filterDateTo').value;
+
         const table = document.getElementById('patientsTable');
         const rows = table.tBodies[0].rows;
 
+        let visibleCount = 0;
+
         for (let row of rows) {
-            // Get patient name and number for search filtering
             const patientName = row.dataset.patientName || "";
             const patientNumber = row.dataset.patientNumber || "";
             const priority = row.dataset.priority || "";
             const status = row.dataset.status || "";
+            const visitDate = row.dataset.visitDate || "";
 
-            // Check filters
+            // Search
             const matchesSearch = patientName.includes(searchTerm) || patientNumber.includes(searchTerm);
+
+            // Priority
             const matchesPriority = !priorityFilter || priority === priorityFilter;
+
+            // Status
             const matchesStatus = !statusFilter || status === statusFilter;
 
-            // Show or hide row based on all filter criteria
-            row.style.display = (matchesSearch && matchesPriority && matchesStatus) ? "" : "none";
+            // Date range
+            let matchesDate = true;
+            if (dateFrom && visitDate) {
+                matchesDate = matchesDate && (visitDate >= dateFrom);
+            }
+            if (dateTo && visitDate) {
+                matchesDate = matchesDate && (visitDate <= dateTo);
+            }
+
+            if (matchesSearch && matchesPriority && matchesStatus && matchesDate) {
+                row.style.display = "";
+                visibleCount++;
+            } else {
+                row.style.display = "none";
+            }
+        }
+
+        // Optional: show "no results" message
+        const tbody = table.tBodies[0];
+        let noResultsRow = tbody.querySelector('.no-results-row');
+        if (visibleCount === 0) {
+            if (!noResultsRow) {
+                const tr = document.createElement('tr');
+                tr.className = 'no-results-row';
+                tr.innerHTML = `<td colspan="5" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                                    <i class="fas fa-search text-4xl mb-3"></i>
+                                    <p>No patients found matching your criteria.</p>
+                                </td>`;
+                tbody.appendChild(tr);
+            }
+        } else if (noResultsRow) {
+            noResultsRow.remove();
         }
     }
 
     function toggleFilters() {
-        const filterPanel = document.getElementById('filterPanel');
-        const isHidden = filterPanel.classList.contains('hidden');
-        filterPanel.classList.toggle('hidden');
-        const btn = document.getElementById('filterToggleBtn');
-        btn.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
+        const panel = document.getElementById('filterPanel');
+        panel.classList.toggle('hidden');
     }
 
-    document.addEventListener('click', function(event) {
-        const filterPanel = document.getElementById('filterPanel');
-        const toggleBtn = document.getElementById('filterToggleBtn');
+    function clearFilters() {
+        document.getElementById('searchInput').value = '';
+        document.getElementById('filterPriority').value = '';
+        document.getElementById('filterStatus').value = '';
+        document.getElementById('filterDateFrom').value = '';
+        document.getElementById('filterDateTo').value = '';
+        filterTable();
+    }
 
-        // If the filter panel is open and the click is outside of the panel and button, close it
-        if (!filterPanel.classList.contains('hidden') &&
-            !filterPanel.contains(event.target) &&
-            !toggleBtn.contains(event.target)) {
-            filterPanel.classList.add('hidden');
-            toggleBtn.setAttribute('aria-expanded', 'false');
-        }
-    });
-</script>
+    function applyFilters() {
+        filterTable();
+        // Optionally close the filter panel
+        // document.getElementById('filterPanel').classList.add('hidden');
+    }
 
-<script>
+    // Attach search input
+    document.getElementById('searchInput').addEventListener('input', filterTable);
+
+    // Dispense button functionality
     document.querySelectorAll('.dispense-btn').forEach(button => {
         button.addEventListener('click', () => {
-            const medId = button.getAttribute('data-med-id');
-            const statusId = button.getAttribute('data-status-id');
+            const medId = button.dataset.medId;
+            const statusId = button.dataset.statusId;
 
             fetch(`/pharmacy/dispense/${medId}`, {
-                    method: 'POST',
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                })
-                .then(response => {
-                    if (!response.ok) throw new Error("Network response not ok.");
-                    return response.text();
-                })
-                .then(() => {
-                    // ✅ Show success alert
-                    showAlert('success', 'Medication dispensed successfully');
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Network error');
+                return response.text();
+            })
+            .then(() => {
+                // Update status cell
+                const statusElem = document.getElementById(statusId);
+                if (statusElem) {
+                    statusElem.innerHTML = `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300"><i class="fas fa-check mr-1"></i>Dispensed</span>`;
+                }
+                // Disable button and replace with check icon
+                const checkIcon = document.createElement('span');
+                checkIcon.className = "p-2 text-green-600 dark:text-green-400";
+                checkIcon.innerHTML = '<i class="fas fa-check-circle"></i>';
+                button.parentNode.replaceChild(checkIcon, button);
 
-                    // ✅ Update status text and color
-                    const statusElem = document.getElementById(statusId);
-                    if (statusElem) {
-                        statusElem.textContent = "Dispensed";
-                        statusElem.style.color = "#16a34a"; // Tailwind's green-600
-                    }
-
-                    // ✅ Disable the button and replace with check icon
-                    const checkIcon = document.createElement('span');
-                    checkIcon.className = "p-2 text-green-600 dark:text-green-400";
-                    checkIcon.innerHTML = '<i class="fas fa-check-circle"></i>';
-                    button.parentNode.replaceChild(checkIcon, button);
-                })
-                .catch(error => {
-                    console.error("Error dispensing medication:", error);
-                    showAlert('error', 'Failed to dispense medication');
-                });
+                // Optional: show success toast
+                showAlert('success', 'Medication dispensed');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showAlert('error', 'Failed to dispense');
+            });
         });
     });
-</script>
 
+    // Simple alert function (you can replace with a better toast)
+    function showAlert(type, message) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white ${type === 'success' ? 'bg-green-500' : 'bg-red-500'} z-50`;
+        alertDiv.textContent = message;
+        document.body.appendChild(alertDiv);
+        setTimeout(() => alertDiv.remove(), 3000);
+    }
+</script>
 {% endblock %}
