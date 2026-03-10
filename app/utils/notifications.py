@@ -194,11 +194,8 @@ class NotificationManager:
             if response.get('SMSMessageData', {}).get('Recipients'):
                 successful = [r for r in response['SMSMessageData']['Recipients'] if r.get('status') == 'Success']
                 logger.info(f"Successful recipients: {successful}")
-                if successful:
-                    return True
-                else:
-                    logger.error("No successful recipients. Response: %s", response)
-                    return False
+                return response
+
             else:
                 logger.error("No recipients processed. Response: %s", response)
                 return False

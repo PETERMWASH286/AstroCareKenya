@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}Campaign Report | AstroCare{% endblock %}
+
+{% block head %}
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-8 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header with back button -->
+        <div class="mb-6 flex items-center justify-between">
+            <div>
+                <a href="{{ url_for('comms_web_bp.email_campaigns') }}" class="inline-flex items-center text-indigo-600 hover:text-indigo-800">
+                    <i class="fas fa-arrow-left mr-2"></i> Back to Campaigns
+                </a>
+                <h1 class="text-2xl md:text-3xl font-bold text-gray-900 mt-2">Campaign Report</h1>
+            </div>
+            <span class="px-3 py-1 rounded-full text-sm font-medium
+                {% if campaign.status == 'sent' %}bg-green-100 text-green-800
+                {% elif campaign.status == 'scheduled' %}bg-amber-100 text-amber-800
+                {% elif campaign.status == 'draft' %}bg-gray-100 text-gray-800
+                {% else %}bg-blue-100 text-blue-800{% endif %}">
+                {{ campaign.status|capitalize }}
+            </span>
+        </div>
+
+        <!-- Campaign Summary Card -->
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden mb-8">
+            <div class="p-6 md:p-8">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">{{ campaign.subject }}</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div>
+                        <p class="text-sm text-gray-500">Created</p>
+                        <p class="text-lg font-medium">{{ campaign.created_at.strftime('%b %d, %Y at %H:%M') }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Sent Date</p>
+                        <p class="text-lg font-medium">{{ campaign.sent_at.strftime('%b %d, %Y at %H:%M') if campaign.sent_at else 'Not sent' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Recipient Type</p>
+                        <p class="text-lg font-medium">{{ campaign.recipient_type.replace('_', ' ').title() }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Total Recipients</p>
+                        <p class="text-lg font-medium">{{ campaign.recipient_ids|length if campaign.recipient_ids else 0 }}</p>
+                    </div>
+                </div>
+
+                <!-- Attachments -->
+                {% if campaign.attachments %}
+                <div class="mt-4">
+                    <p class="text-sm text-gray-500 mb-1">Attachments</p>
+                    <div class="flex flex-wrap gap-2">
+                        {% for attachment in campaign.attachments %}
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs bg-gray-100 text-gray-700">
+                            <i class="fas fa-paperclip mr-1"></i> {{ attachment.split('/')[-1] }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div class="bg-white rounded-xl shadow p-5">
+                <p class="text-sm text-gray-500">Total Sent</p>
+                <p class="text-2xl font-bold">{{ total }}</p>
+            </div>
+            <div class="bg-white rounded-xl shadow p-5">
+                <p class="text-sm text-gray-500">Successful</p>
+                <p class="text-2xl font-bold text-green-600">{{ sent }}</p>
+            </div>
+            <div class="bg-white rounded-xl shadow p-5">
+                <p class="text-sm text-gray-500">Failed</p>
+                <p class="text-2xl font-bold text-red-600">{{ failed }}</p>
+            </div>
+            <div class="bg-white rounded-xl shadow p-5">
+                <p class="text-sm text-gray-500">Open Rate</p>
+                <p class="text-2xl font-bold">{{ "%.1f"|format(opened/total*100 if total>0 else 0) }}%</p>
+            </div>
+        </div>
+
+        <!-- Logs Table -->
+        <div class="bg-white rounded-xl shadow overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-800">Delivery Logs</h2>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sent At</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Message</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for log in logs %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-900">{{ log.email }}</td>
+                            <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-600">{{ log.recipient_type }}</td>
+                            <td class="px-6 py-3 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                                    {% if log.status == 'sent' %}bg-green-100 text-green-800
+                                    {% elif log.status == 'failed' %}bg-red-100 text-red-800
+                                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                    {{ log.status }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-500">{{ log.sent_at.strftime('%Y-%m-%d %H:%M') if log.sent_at else '—' }}</td>
+                            <td class="px-6 py-3 text-sm text-gray-500">{{ log.status_message or '' }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="px-6 py-4 text-center text-gray-500">No logs yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

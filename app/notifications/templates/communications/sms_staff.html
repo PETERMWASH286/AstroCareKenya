@@ -2,361 +2,191 @@
 {% block title %}Staff SMS Dispatch - AstroCare Hub{% endblock %}
 
 {% block head %}
+<!-- Font Awesome for icons (optional but kept) -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<style>
-    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
-
-    .card {
-        transition: all 0.3s ease;
-        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
-        border-radius: 16px;
-        overflow: hidden;
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(10px);
-    }
-    
-    .card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.15);
-    }
-    
-    .priority-normal { border-left: 5px solid #3b82f6; }
-    .priority-high { border-left: 5px solid #f97316; }
-    .priority-urgent { border-left: 5px solid #ef4444; }
-    
-    .tab-btn {
-        transition: all 0.2s ease;
-        position: relative;
-        padding-bottom: 8px;
-    }
-    
-    .tab-btn.active::after {
-        content: '';
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        height: 3px;
-        background: #3b82f6;
-        border-radius: 3px;
-    }
-    
-    .template-card {
-        transition: all 0.3s ease;
-        cursor: pointer;
-        border-radius: 12px;
-        overflow: hidden;
-    }
-    
-    .template-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.1);
-    }
-    
-    .btn-primary {
-        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-        transition: all 0.3s ease;
-        letter-spacing: 0.5px;
-        font-weight: 500;
-    }
-    
-    .btn-primary:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 20px -5px rgba(59, 130, 246, 0.4);
-    }
-    
-    .btn-high {
-        background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
-    }
-    
-    .btn-urgent {
-        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-    }
-    
-    .animate-in {
-        animation: fadeInUp 0.5s ease-out forwards;
-    }
-    
-    @keyframes fadeInUp {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    
-    .delay-1 { animation-delay: 0.1s; }
-    .delay-2 { animation-delay: 0.2s; }
-    .delay-3 { animation-delay: 0.3s; }
-</style>
 {% endblock %}
 
 {% block content %}
-<div class="min-h-screen">
-    <div class="max-w-7xl mx-auto px-4 sm:px-3 lg:px-4">
-        <!-- Header Section -->
-        <div class="text-center mb-4 animate-in">
-            <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-blue-100 mb-4">
-                <i class="fas fa-mobile-alt text-blue-600 text-2xl"></i>
+<div class="min-h-screen bg-gray-50 py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 text-blue-600 mb-4">
+                <i class="fas fa-mobile-alt text-3xl"></i>
             </div>
-            <h1 class="text-3xl md:text-4xl font-bold text-gray-800">Staff SMS Dispatch</h1>
-            <p class="text-gray-600 mt-3 max-w-2xl mx-auto">
-                Send targeted messages to healthcare staff with priority notifications
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">Staff SMS Dispatch</h1>
+            <p class="text-gray-600 mt-2 max-w-2xl mx-auto">
+                Send targeted messages to healthcare staff quickly and efficiently
             </p>
         </div>
 
-        <!-- Main Content Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <!-- Recipients Panel -->
-            <div class="card animate-in delay-1">
-                <div class="p-6">
-                    <div class="flex items-center justify-between mb-6">
-                        <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+        <form method="POST" id="smsForm" class="space-y-6">
+            <!-- Main grid: recipients (1/3) + composer (2/3) -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Recipients Panel -->
+                <div class="bg-white rounded-2xl shadow-lg p-6 lg:col-span-1">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-xl font-semibold text-gray-800 flex items-center gap-2">
                             <i class="fas fa-users text-blue-500"></i>Recipients
                         </h2>
-                        <span class="text-xs bg-blue-100 text-blue-800 rounded-full px-3 py-1">
+                        <span class="text-sm bg-blue-100 text-blue-800 rounded-full px-3 py-1">
                             <span id="recipient-count">0</span> selected
                         </span>
                     </div>
-                    
-                    <!-- Tabs -->
-                    <div class="border-b border-gray-200 mb-5">
-                        <div class="flex space-x-6">
-                            <button class="tab-btn text-sm font-medium text-gray-500 hover:text-gray-800 active" data-tab="roles">
-                                Roles
-                            </button>
-                            <button class="tab-btn text-sm font-medium text-gray-500 hover:text-gray-800" data-tab="departments">
-                                Departments
-                            </button>
-                            <button class="tab-btn text-sm font-medium text-gray-500 hover:text-gray-800" data-tab="individuals">
-                                Individuals
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <!-- Recipient List -->
-                    <div class="space-y-3 max-h-[400px] overflow-y-auto pr-2 recipient-list" id="roles-list">
-                        <!-- Roles -->
-                        <div class="flex items-center p-3 rounded-lg hover:bg-blue-50 transition">
-                            <input type="checkbox" id="doctors" class="recipient-checkbox h-5 w-5 text-blue-600 rounded">
-                            <label for="doctors" class="ml-3 flex-grow text-gray-700">
-                                Doctors
-                                <span class="text-xs bg-gray-100 text-gray-600 rounded-full px-2 py-0.5 ml-2">24</span>
-                            </label>
-                        </div>
-                        <div class="flex items-center p-3 rounded-lg hover:bg-blue-50 transition">
-                            <input type="checkbox" id="nurses" class="recipient-checkbox h-5 w-5 text-blue-600 rounded">
-                            <label for="nurses" class="ml-3 flex-grow text-gray-700">
-                                Nurses
-                                <span class="text-xs bg-gray-100 text-gray-600 rounded-full px-2 py-0.5 ml-2">56</span>
-                            </label>
-                        </div>
-                        <div class="flex items-center p-3 rounded-lg hover:bg-blue-50 transition">
-                            <input type="checkbox" id="techs" class="recipient-checkbox h-5 w-5 text-blue-600 rounded">
-                            <label for="techs" class="ml-3 flex-grow text-gray-700">
-                                Technicians
-                                <span class="text-xs bg-gray-100 text-gray-600 rounded-full px-2 py-0.5 ml-2">18</span>
-                            </label>
-                        </div>
-                        <div class="flex items-center p-3 rounded-lg hover:bg-blue-50 transition">
-                            <input type="checkbox" id="admin" class="recipient-checkbox h-5 w-5 text-blue-600 rounded">
-                            <label for="admin" class="ml-3 flex-grow text-gray-700">
-                                Admin Staff
-                                <span class="text-xs bg-gray-100 text-gray-600 rounded-full px-2 py-0.5 ml-2">12</span>
-                            </label>
-                        </div>
-                    </div>
-                    
-                    <div class="recipient-list hidden" id="departments-list">
-                        <!-- Departments -->
-                        <div class="flex items-center p-3 rounded-lg hover:bg-blue-50 transition">
-                            <input type="checkbox" id="er" class="recipient-checkbox h-5 w-5 text-blue-600 rounded">
-                            <label for="er" class="ml-3 flex-grow text-gray-700">
-                                Emergency
-                                <span class="text-xs bg-gray-100 text-gray-600 rounded-full px-2 py-0.5 ml-2">22</span>
-                            </label>
-                        </div>
-                        <div class="flex items-center p-3 rounded-lg hover:bg-blue-50 transition">
-                            <input type="checkbox" id="surgery" class="recipient-checkbox h-5 w-5 text-blue-600 rounded">
-                            <label for="surgery" class="ml-3 flex-grow text-gray-700">
-                                Surgery
-                                <span class="text-xs bg-gray-100 text-gray-600 rounded-full px-2 py-0.5 ml-2">18</span>
-                            </label>
-                        </div>
-                        <div class="flex items-center p-3 rounded-lg hover:bg-blue-50 transition">
-                            <input type="checkbox" id="pediatrics" class="recipient-checkbox h-5 w-5 text-blue-600 rounded">
-                            <label for="pediatrics" class="ml-3 flex-grow text-gray-700">
-                                Pediatrics
-                                <span class="text-xs bg-gray-100 text-gray-600 rounded-full px-2 py-0.5 ml-2">14</span>
-                            </label>
-                        </div>
-                        <div class="flex items-center p-3 rounded-lg hover:bg-blue-50 transition">
-                            <input type="checkbox" id="cardio" class="recipient-checkbox h-5 w-5 text-blue-600 rounded">
-                            <label for="cardio" class="ml-3 flex-grow text-gray-700">
-                                Cardiology
-                                <span class="text-xs bg-gray-100 text-gray-600 rounded-full px-2 py-0.5 ml-2">9</span>
-                            </label>
-                        </div>
-                    </div>
-                    
-                    <div class="recipient-list hidden" id="individuals-list">
-                        <!-- Individuals -->
-                        <div class="flex items-center p-3 rounded-lg hover:bg-blue-50 transition">
-                            <input type="checkbox" id="dr_smith" class="recipient-checkbox h-5 w-5 text-blue-600 rounded">
-                            <label for="dr_smith" class="ml-3 flex-grow text-gray-700">
-                                Dr. Jane Smith
-                            </label>
-                        </div>
-                        <div class="flex items-center p-3 rounded-lg hover:bg-blue-50 transition">
-                            <input type="checkbox" id="dr_jones" class="recipient-checkbox h-5 w-5 text-blue-600 rounded">
-                            <label for="dr_jones" class="ml-3 flex-grow text-gray-700">
-                                Dr. Robert Jones
-                            </label>
-                        </div>
-                        <div class="flex items-center p-3 rounded-lg hover:bg-blue-50 transition">
-                            <input type="checkbox" id="nurse_wang" class="recipient-checkbox h-5 w-5 text-blue-600 rounded">
-                            <label for="nurse_wang" class="ml-3 flex-grow text-gray-700">
-                                Nurse Lisa Wang
-                            </label>
-                        </div>
-                        <div class="flex items-center p-3 rounded-lg hover:bg-blue-50 transition">
-                            <input type="checkbox" id="admin_lee" class="recipient-checkbox h-5 w-5 text-blue-600 rounded">
-                            <label for="admin_lee" class="ml-3 flex-grow text-gray-700">
-                                Admin Michael Lee
-                            </label>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
-            <!-- Message Composer -->
-            <div class="lg:col-span-2 space-y-8">
-                <!-- Priority Selector -->
-                <div class="card animate-in delay-2">
-                    <div class="p-6">
-                        <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                            <i class="fas fa-flag text-blue-500"></i>Priority Level
-                        </h2>
-                        
-                        <div class="grid grid-cols-3 gap-4">
-                            <button class="priority-btn py-4 rounded-xl bg-blue-50 text-blue-700 flex flex-col items-center justify-center transition-all hover:bg-blue-100 active" data-priority="normal">
-                                <i class="fas fa-info-circle text-2xl mb-2"></i>
-                                <span class="font-medium">Normal</span>
-                                <span class="text-xs mt-1 opacity-80">General notifications</span>
-                            </button>
-                            <button class="priority-btn py-4 rounded-xl bg-orange-50 text-orange-700 flex flex-col items-center justify-center transition-all hover:bg-orange-100" data-priority="high">
-                                <i class="fas fa-exclamation-circle text-2xl mb-2"></i>
-                                <span class="font-medium">High</span>
-                                <span class="text-xs mt-1 opacity-80">Important updates</span>
-                            </button>
-                            <button class="priority-btn py-4 rounded-xl bg-red-50 text-red-700 flex flex-col items-center justify-center transition-all hover:bg-red-100" data-priority="urgent">
-                                <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
-                                <span class="font-medium">Urgent</span>
-                                <span class="text-xs mt-1 opacity-80">Critical alerts</span>
-                            </button>
+                    <!-- Send to All Staff -->
+                    <div class="bg-blue-50 rounded-xl p-4 mb-4 flex items-center justify-between border border-blue-200">
+                        <div class="flex items-center">
+                            <input type="checkbox" id="send-to-all" name="send_to_all" value="true" class="h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                            <label for="send-to-all" class="ml-3 font-medium text-gray-800">
+                                <i class="fas fa-users mr-2 text-blue-500"></i>Send to All Staff
+                            </label>
+                        </div>
+                        <span class="text-sm bg-blue-200 text-blue-800 rounded-full px-2 py-1">{{ individuals|length }} total</span>
+                    </div>
+
+                    <!-- Tabs -->
+                    <div id="recipient-tabs">
+                        <div class="border-b border-gray-200 mb-4">
+                            <nav class="flex space-x-6" aria-label="Tabs">
+                                <button type="button" class="tab-btn text-sm font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent pb-2 px-1 transition active-tab" data-tab="roles">Roles</button>
+                                <button type="button" class="tab-btn text-sm font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent pb-2 px-1 transition" data-tab="departments">Departments</button>
+                                <button type="button" class="tab-btn text-sm font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent pb-2 px-1 transition" data-tab="individuals">Individuals</button>
+                            </nav>
+                        </div>
+
+                        <!-- Roles List -->
+                        <div class="space-y-2 max-h-[350px] overflow-y-auto pr-1 recipient-list" id="roles-list">
+                            {% for role in roles %}
+                            <div class="flex items-center p-2 rounded-lg hover:bg-gray-50 transition">
+                                <input type="checkbox" class="recipient-checkbox role-checkbox h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500" data-type="role" data-id="{{ role.id }}" id="role_{{ role.id }}">
+                                <label for="role_{{ role.id }}" class="ml-3 flex-grow text-gray-700 text-sm">
+                                    {{ role.name }}
+                                    <span class="text-xs bg-gray-100 text-gray-600 rounded-full px-2 py-0.5 ml-2">{{ role.count }}</span>
+                                </label>
+                            </div>
+                            {% else %}
+                            <p class="text-gray-500 text-center py-4">No roles found.</p>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Departments List -->
+                        <div class="hidden space-y-2 max-h-[350px] overflow-y-auto pr-1 recipient-list" id="departments-list">
+                            {% for dept in departments %}
+                            <div class="flex items-center p-2 rounded-lg hover:bg-gray-50 transition">
+                                <input type="checkbox" class="recipient-checkbox dept-checkbox h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500" data-type="department" data-id="{{ dept.id }}" id="dept_{{ dept.id }}">
+                                <label for="dept_{{ dept.id }}" class="ml-3 flex-grow text-gray-700 text-sm">
+                                    {{ dept.name }}
+                                    <span class="text-xs bg-gray-100 text-gray-600 rounded-full px-2 py-0.5 ml-2">{{ dept.count }}</span>
+                                </label>
+                            </div>
+                            {% else %}
+                            <p class="text-gray-500 text-center py-4">No departments found.</p>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Individuals List -->
+                        <div class="hidden space-y-2 max-h-[350px] overflow-y-auto pr-1 recipient-list" id="individuals-list">
+                            {% for user in individuals %}
+                            <div class="flex items-center p-2 rounded-lg hover:bg-gray-50 transition">
+                                <input type="checkbox" class="recipient-checkbox user-checkbox h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500" data-type="user" data-id="{{ user.id }}" id="user_{{ user.id }}">
+                                <label for="user_{{ user.id }}" class="ml-3 flex-grow text-gray-700">
+                                    <div class="text-sm font-medium">{{ user.name }}</div>
+                                    <div class="text-xs text-gray-500">{{ user.role }} • {{ user.department }}</div>
+                                </label>
+                            </div>
+                            {% else %}
+                            <p class="text-gray-500 text-center py-4">No active staff found.</p>
+                            {% endfor %}
                         </div>
                     </div>
+
+                    <!-- Hidden inputs for selections -->
+                    <input type="hidden" name="selected_roles" id="selected_roles_input" value="[]">
+                    <input type="hidden" name="selected_departments" id="selected_departments_input" value="[]">
+                    <input type="hidden" name="selected_users" id="selected_users_input" value="[]">
                 </div>
-                
-                <!-- Message Composer -->
-                <div class="card priority-normal animate-in delay-2">
-                    <div class="p-6">
-                        <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+
+                <!-- Message Composer (2/3 width) -->
+                <div class="lg:col-span-2 space-y-6">
+                    <!-- Message Card -->
+                    <div class="bg-white rounded-2xl shadow-lg p-6">
+                        <h2 class="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
                             <i class="fas fa-comment-alt text-blue-500"></i>Compose Message
                         </h2>
-                        
-                        <div class="mb-6">
-                            <textarea id="message" rows="6" class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" placeholder="Type your message here..."></textarea>
-                            <div class="flex justify-between mt-3 text-sm text-gray-500">
+
+                        <!-- Template Select Dropdown -->
+                        <div class="mb-4">
+                            <label for="template-select" class="block text-sm font-medium text-gray-700 mb-1">Choose a template (optional)</label>
+                            <select id="template-select" class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition bg-white">
+                                <option value="">-- Select a template --</option>
+                                {% for template in templates %}
+                                <option value="{{ template.content }}" data-priority="{{ template.priority|default('normal') }}">{{ template.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Message Textarea -->
+                        <div class="mb-4">
+                            <textarea id="message" name="message" rows="5" class="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" placeholder="Type your message here..."></textarea>
+                            <div class="flex justify-between mt-2 text-sm text-gray-500">
                                 <span>Characters: <span id="character-count">0</span>/160</span>
                                 <span>SMS Parts: <span id="message-count">1</span></span>
                             </div>
                         </div>
-                        
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                        <!-- Schedule (optional) -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Schedule Date (Optional)</label>
-                                <input type="date" class="w-full p-3 border border-gray-300 rounded-lg">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Schedule Date (optional)</label>
+                                <input type="date" name="schedule_date" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Schedule Time (Optional)</label>
-                                <input type="time" class="w-full p-3 border border-gray-300 rounded-lg">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Schedule Time (optional)</label>
+                                <input type="time" name="schedule_time" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
                             </div>
                         </div>
-                        
-                        <div class="mt-8 flex gap-3">
-                            <button class="btn-primary flex-1 py-3.5 text-white rounded-xl font-medium" id="send-btn">
-                                <i class="fas fa-paper-plane mr-2"></i> Send Now
+
+                        <!-- Action Buttons -->
+                        <div class="flex gap-3">
+                            <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-xl transition duration-200 shadow-md hover:shadow-lg flex items-center justify-center gap-2" id="send-btn">
+                                <i class="fas fa-paper-plane"></i> Send Now
                             </button>
-                            <button class="flex-1 py-3.5 text-gray-700 rounded-xl font-medium border border-gray-300 hover:bg-gray-50" id="save-btn">
-                                <i class="fas fa-save mr-2"></i> Save Draft
+                            <button type="button" class="flex-1 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium py-3 px-4 rounded-xl transition duration-200 flex items-center justify-center gap-2" id="save-btn">
+                                <i class="fas fa-save"></i> Save Draft
                             </button>
                         </div>
                     </div>
-                </div>
-            </div>
-            
-            <!-- Templates Panel -->
-            <div class="lg:col-span-3 lg:col-start-1">
-                <div class="card animate-in delay-3">
-                    <div class="p-6">
-                        <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                            <i class="fas fa-bolt text-yellow-500"></i>Message Templates
+
+                    <!-- Templates Cards (quick pick) -->
+                    <div class="bg-white rounded-2xl shadow-lg p-6">
+                        <h2 class="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                            <i class="fas fa-bolt text-yellow-500"></i>Quick Templates
                         </h2>
-                        
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <!-- Template 1 -->
-                            <div class="template-card bg-blue-50 border-l-4 border-blue-500" data-priority="normal" data-content="Reminder: Staff meeting tomorrow at 10 AM in Conference Room B. Attendance is mandatory for all shift staff.">
-                                <div class="p-4">
-                                    <div class="flex items-center gap-3 mb-3">
-                                        <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                                            <i class="fas fa-calendar-alt text-blue-600"></i>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="template-container">
+                            {% for template in templates %}
+                            <div class="template-card cursor-pointer border border-gray-200 rounded-xl overflow-hidden hover:shadow-md transition" data-content="{{ template.content }}">
+                                <div class="p-4 bg-white">
+                                    <div class="flex items-center gap-3 mb-2">
+                                        <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                                            <i class="fas {{ template.icon|default('fa-envelope') }}"></i>
                                         </div>
-                                        <h3 class="font-bold text-gray-800">Meeting Reminder</h3>
+                                        <h3 class="font-semibold text-gray-800">{{ template.name }}</h3>
                                     </div>
-                                    <p class="text-sm text-gray-600">General staff meeting announcement</p>
-                                    <div class="mt-4 flex items-center justify-between">
-                                        <span class="text-xs bg-blue-100 text-blue-800 rounded-full px-2 py-1">Normal Priority</span>
-                                        <button class="text-blue-600 hover:text-blue-800 text-sm font-medium">Use Template</button>
+                                    <p class="text-sm text-gray-600 line-clamp-2">{{ template.content }}</p>
+                                    <div class="mt-3 text-right">
+                                        <button type="button" class="text-blue-600 hover:text-blue-800 text-sm font-medium use-template-btn">Use</button>
                                     </div>
                                 </div>
                             </div>
-                            
-                            <!-- Template 2 -->
-                            <div class="template-card bg-orange-50 border-l-4 border-orange-500" data-priority="high" data-content="URGENT: System maintenance tonight from 11 PM to 1 AM. Save all work before downtime. EMR will be unavailable during this period.">
-                                <div class="p-4">
-                                    <div class="flex items-center gap-3 mb-3">
-                                        <div class="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
-                                            <i class="fas fa-server text-orange-600"></i>
-                                        </div>
-                                        <h3 class="font-bold text-gray-800">System Maintenance</h3>
-                                    </div>
-                                    <p class="text-sm text-gray-600">IT system downtime notification</p>
-                                    <div class="mt-4 flex items-center justify-between">
-                                        <span class="text-xs bg-orange-100 text-orange-800 rounded-full px-2 py-1">High Priority</span>
-                                        <button class="text-orange-600 hover:text-orange-800 text-sm font-medium">Use Template</button>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Template 3 -->
-                            <div class="template-card bg-red-50 border-l-4 border-red-500" data-priority="urgent" data-content="EMERGENCY: All available staff required in ER immediately. Code Blue activated. Report to ER stat.">
-                                <div class="p-4">
-                                    <div class="flex items-center gap-3 mb-3">
-                                        <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
-                                            <i class="fas fa-ambulance text-red-600"></i>
-                                        </div>
-                                        <h3 class="font-bold text-gray-800">Emergency Alert</h3>
-                                    </div>
-                                    <p class="text-sm text-gray-600">Critical situation response</p>
-                                    <div class="mt-4 flex items-center justify-between">
-                                        <span class="text-xs bg-red-100 text-red-800 rounded-full px-2 py-1">Urgent Priority</span>
-                                        <button class="text-red-600 hover:text-red-800 text-sm font-medium">Use Template</button>
-                                    </div>
-                                </div>
-                            </div>
+                            {% else %}
+                            <p class="text-gray-500 col-span-3 text-center py-4">No employee SMS templates found.</p>
+                            {% endfor %}
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </form>
     </div>
 </div>
 {% endblock %}
@@ -364,148 +194,159 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Tab switching
-    const tabs = document.querySelectorAll('[data-tab]');
+    // DOM elements
+    const tabs = document.querySelectorAll('.tab-btn');
     const recipientLists = document.querySelectorAll('.recipient-list');
-    
-    tabs.forEach(tab => {
-        tab.addEventListener('click', function() {
-            // Update active tab
-            tabs.forEach(t => t.classList.remove('active'));
-            this.classList.add('active');
-            
-            // Show corresponding list
-            const tabName = this.getAttribute('data-tab');
-            recipientLists.forEach(list => {
-                list.classList.add('hidden');
-                if (list.id === `${tabName}-list`) {
-                    list.classList.remove('hidden');
-                }
-            });
+    const recipientCheckboxes = document.querySelectorAll('.recipient-checkbox');
+    const recipientCountSpan = document.getElementById('recipient-count');
+    const sendToAllCheckbox = document.getElementById('send-to-all');
+    const recipientTabsDiv = document.getElementById('recipient-tabs');
+    const selectedRolesInput = document.getElementById('selected_roles_input');
+    const selectedDeptsInput = document.getElementById('selected_departments_input');
+    const selectedUsersInput = document.getElementById('selected_users_input');
+    const messageInput = document.getElementById('message');
+    const sendBtn = document.getElementById('send-btn');
+    const templateSelect = document.getElementById('template-select');
+    const templateContainer = document.getElementById('template-container');
+    const charCountSpan = document.getElementById('character-count');
+    const msgPartsSpan = document.getElementById('message-count');
+
+    // ========== TAB SWITCHING ==========
+    function activateTab(activeTab) {
+        tabs.forEach(t => {
+            t.classList.remove('border-blue-500', 'text-blue-600');
+            t.classList.add('border-transparent', 'text-gray-500');
         });
-    });
-    
-    // Priority selection
-    const priorityBtns = document.querySelectorAll('.priority-btn');
-    const composerCard = document.querySelector('.card.priority-normal');
-    
-    priorityBtns.forEach(btn => {
-        btn.addEventListener('click', function() {
-            // Update active button
-            priorityBtns.forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
-            
-            // Update composer card
-            const priority = this.getAttribute('data-priority');
-            composerCard.className = composerCard.className.replace(/\bpriority-\w+/g, '');
-            composerCard.classList.add(`priority-${priority}`);
-            
-            // Update send button
-            const sendBtn = document.getElementById('send-btn');
-            sendBtn.className = sendBtn.className.replace(/\bbtn-\w+/g, '') + ' btn-primary';
-            
-            if (priority === 'high') {
-                sendBtn.className = sendBtn.className.replace('btn-primary', 'btn-high');
-            } else if (priority === 'urgent') {
-                sendBtn.className = sendBtn.className.replace('btn-primary', 'btn-urgent');
+        activeTab.classList.add('border-blue-500', 'text-blue-600');
+        activeTab.classList.remove('border-transparent', 'text-gray-500');
+
+        const tabName = activeTab.getAttribute('data-tab');
+        recipientLists.forEach(list => {
+            list.classList.add('hidden');
+            if (list.id === `${tabName}-list`) {
+                list.classList.remove('hidden');
             }
         });
-    });
-    
-    // Template selection
-    const templateCards = document.querySelectorAll('.template-card');
-    const messageInput = document.getElementById('message');
-    
-    templateCards.forEach(card => {
-        card.querySelector('button').addEventListener('click', function() {
-            const content = card.getAttribute('data-content');
-            const priority = card.getAttribute('data-priority');
-            
-            // Update message content
-            messageInput.value = content;
-            updateCharacterCount();
-            
-            // Update priority
-            priorityBtns.forEach(btn => {
-                btn.classList.remove('active');
-                if (btn.getAttribute('data-priority') === priority) {
-                    btn.classList.add('active');
-                    composerCard.className = composerCard.className.replace(/\bpriority-\w+/g, '');
-                    composerCard.classList.add(`priority-${priority}`);
-                    
-                    // Update send button
-                    const sendBtn = document.getElementById('send-btn');
-                    sendBtn.className = sendBtn.className.replace(/\bbtn-\w+/g, '') + ' btn-primary';
-                    
-                    if (priority === 'high') {
-                        sendBtn.className = sendBtn.className.replace('btn-primary', 'btn-high');
-                    } else if (priority === 'urgent') {
-                        sendBtn.className = sendBtn.className.replace('btn-primary', 'btn-urgent');
-                    }
-                }
-            });
-            
-            // Visual feedback
-            card.style.transform = 'scale(1.02)';
-            card.style.boxShadow = '0 15px 30px -10px rgba(0, 0, 0, 0.15)';
-            setTimeout(() => {
-                card.style.transform = '';
-                card.style.boxShadow = '';
-            }, 300);
+    }
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', function(e) {
+            e.preventDefault();
+            activateTab(this);
         });
     });
-    
-    // Character counter
+
+    // Set first tab active by default
+    if (tabs.length > 0) activateTab(tabs[0]);
+
+    // ========== RECIPIENT COUNT & HIDDEN INPUTS ==========
+    function updateRecipients() {
+        const selectedRoles = [];
+        const selectedDepts = [];
+        const selectedUsers = [];
+
+        recipientCheckboxes.forEach(cb => {
+            if (cb.checked) {
+                const type = cb.getAttribute('data-type');
+                const id = cb.getAttribute('data-id');
+                if (type === 'role') selectedRoles.push(parseInt(id));
+                else if (type === 'department') selectedDepts.push(parseInt(id));
+                else if (type === 'user') selectedUsers.push(parseInt(id));
+            }
+        });
+
+        selectedRolesInput.value = JSON.stringify(selectedRoles);
+        selectedDeptsInput.value = JSON.stringify(selectedDepts);
+        selectedUsersInput.value = JSON.stringify(selectedUsers);
+
+        const totalSelected = selectedRoles.length + selectedDepts.length + selectedUsers.length;
+        recipientCountSpan.textContent = totalSelected;
+    }
+
+    recipientCheckboxes.forEach(cb => {
+        cb.addEventListener('change', updateRecipients);
+    });
+
+    // ========== SEND TO ALL STAFF ==========
+    sendToAllCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+            recipientCheckboxes.forEach(cb => {
+                cb.checked = false;
+                cb.disabled = true;
+            });
+            recipientTabsDiv.classList.add('opacity-50', 'pointer-events-none');
+            recipientCountSpan.textContent = '{{ individuals|length }}';
+            selectedRolesInput.value = '[]';
+            selectedDeptsInput.value = '[]';
+            selectedUsersInput.value = '[]';
+        } else {
+            recipientCheckboxes.forEach(cb => cb.disabled = false);
+            recipientTabsDiv.classList.remove('opacity-50', 'pointer-events-none');
+            updateRecipients();
+        }
+    });
+
+    // ========== CHARACTER COUNTER ==========
     function updateCharacterCount() {
         const message = messageInput.value;
         const charCount = message.length;
-        const smsCount = Math.ceil(charCount / 160);
-        
-        document.getElementById('character-count').textContent = charCount;
-        document.getElementById('message-count').textContent = smsCount;
+        const smsCount = Math.ceil(charCount / 160) || 1;
+        charCountSpan.textContent = charCount;
+        msgPartsSpan.textContent = smsCount;
     }
-    
     messageInput.addEventListener('input', updateCharacterCount);
-    
-    // Recipient counter
-    function updateRecipientCount() {
-        const checkboxes = document.querySelectorAll('.recipient-checkbox');
-        let count = 0;
-        
-        checkboxes.forEach(checkbox => {
-            if (checkbox.checked) count++;
-        });
-        
-        document.getElementById('recipient-count').textContent = count;
-    }
-    
-    const recipientCheckboxes = document.querySelectorAll('.recipient-checkbox');
-    recipientCheckboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', updateRecipientCount);
+
+    // ========== TEMPLATE SELECT DROPDOWN ==========
+    templateSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        if (selectedOption.value) {
+            messageInput.value = selectedOption.value;
+            updateCharacterCount();
+        }
     });
-    
-    // Send button
-    document.getElementById('send-btn').addEventListener('click', function() {
-        const btn = this;
-        const originalHtml = btn.innerHTML;
-        
-        // Show loading state
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Sending...';
-        btn.disabled = true;
-        
-        // Simulate sending
-        setTimeout(() => {
-            // Show success state
-            btn.innerHTML = '<i class="fas fa-check mr-2"></i> Sent Successfully!';
-            btn.classList.add('bg-green-600');
-            
-            // Reset after delay
-            setTimeout(() => {
-                btn.innerHTML = originalHtml;
-                btn.classList.remove('bg-green-600');
-                btn.disabled = false;
-            }, 2000);
-        }, 1500);
+
+    // ========== TEMPLATE CARDS (USE BUTTON) ==========
+    if (templateContainer) {
+        templateContainer.addEventListener('click', function(e) {
+            const useBtn = e.target.closest('.use-template-btn');
+            if (!useBtn) return;
+
+            const templateCard = useBtn.closest('.template-card');
+            if (!templateCard) return;
+
+            const content = templateCard.getAttribute('data-content');
+            messageInput.value = content;
+            updateCharacterCount();
+
+            // Optional: also set the dropdown to match
+            Array.from(templateSelect.options).forEach(opt => {
+                if (opt.value === content) {
+                    templateSelect.value = content;
+                }
+            });
+
+            // Visual feedback
+            templateCard.style.transform = 'scale(1.02)';
+            setTimeout(() => templateCard.style.transform = '', 200);
+        });
+    }
+
+    // ========== FORM SUBMIT VALIDATION ==========
+    document.getElementById('smsForm').addEventListener('submit', function(e) {
+        if (!sendToAllCheckbox.checked) {
+            const totalSelected = JSON.parse(selectedRolesInput.value).length +
+                                 JSON.parse(selectedDeptsInput.value).length +
+                                 JSON.parse(selectedUsersInput.value).length;
+            if (totalSelected === 0) {
+                e.preventDefault();
+                alert('Please select at least one recipient or check "Send to All Staff".');
+                return;
+            }
+        }
+
+        // Disable send button to prevent double submission
+        sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Sending...';
+        sendBtn.disabled = true;
     });
 });
 </script>

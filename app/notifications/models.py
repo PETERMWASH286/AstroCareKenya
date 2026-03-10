@@ -138,3 +138,78 @@ class PatientSMSLog(db.Model):
     
     def __repr__(self):
         return f'<PatientSMSLog {self.id} to {self.phone_number}>'
+    
+    
+    
+    
+class StaffSMSLog(db.Model):
+    __tablename__ = 'staff_sms_logs'
+    id = db.Column(db.Integer, primary_key=True)
+    broadcast_id = db.Column(db.Integer, db.ForeignKey('sms_broadcasts.id'), nullable=True)
+    staff_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    phone_number = db.Column(db.String(20), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    status = db.Column(db.String(20), default='sent')  # sent, delivered, failed
+    status_message = db.Column(db.String(255))
+    cost = db.Column(db.Numeric(10, 2))
+    provider_id = db.Column(db.String(100))
+    sent_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    delivered_at = db.Column(db.DateTime)
+
+    # Relationships
+    staff = db.relationship('User', backref='sms_logs')
+    broadcast = db.relationship('SMSBroadcast', backref='staff_logs')
+    
+    
+    
+class EmailBroadcast(db.Model):
+    __tablename__ = 'email_broadcasts'
+    id = db.Column(db.Integer, primary_key=True)
+    subject = db.Column(db.String(255), nullable=False)
+    content = db.Column(db.Text, nullable=False)          # HTML content
+    plain_text = db.Column(db.Text)                       # plain text fallback
+    recipient_type = db.Column(db.String(50), nullable=False)  # e.g., 'all_patients', 'staff', 'role', 'department', 'individuals'
+    recipient_ids = db.Column(db.JSON)                     # list of IDs (roles/departments/users)
+    scheduled_time = db.Column(db.DateTime(timezone=True), nullable=True)
+    status = db.Column(db.String(20), default='draft')    # draft, scheduled, processing, sent, failed
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    sent_at = db.Column(db.DateTime)
+    attachments = db.Column(db.JSON)                       # list of file paths or IDs
+
+    creator = db.relationship('User', backref='email_broadcasts')
+
+class EmailLog(db.Model):
+    __tablename__ = 'email_logs'
+    id = db.Column(db.Integer, primary_key=True)
+    broadcast_id = db.Column(db.Integer, db.ForeignKey('email_broadcasts.id'), nullable=True)
+    recipient_type = db.Column(db.String(20))              # 'patient' or 'staff'
+    recipient_id = db.Column(db.Integer, nullable=False)   # patient_id or user_id
+    email = db.Column(db.String(120), nullable=False)
+    subject = db.Column(db.String(255))
+    status = db.Column(db.String(20), default='sent')      # sent, delivered, failed, opened, clicked
+    status_message = db.Column(db.String(255))
+    sent_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    opened_at = db.Column(db.DateTime)                      # for future tracking
+    clicked_at = db.Column(db.DateTime)
+
+    broadcast = db.relationship('EmailBroadcast', backref='logs')
+    
+    
+    
+class PatientFeedback(db.Model):
+    __tablename__ = 'patient_feedback'
+    id = db.Column(db.Integer, primary_key=True)
+    patient_id = db.Column(db.Integer, db.ForeignKey('patients.id'), nullable=True)
+    source = db.Column(db.Enum('sms', 'email', 'survey', 'social_media', 'manual', name='feedback_source'), nullable=False)
+    sentiment = db.Column(db.Enum('positive', 'neutral', 'negative', name='feedback_sentiment'), nullable=True)
+    rating = db.Column(db.Integer)  # 1‑5
+    comment = db.Column(db.Text, nullable=False)
+    submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    attachment_path = db.Column(db.String(255))   # path to uploaded file (form, screenshot, etc.)
+    social_media_handle = db.Column(db.String(100))
+    is_anonymous = db.Column(db.Boolean, default=False)
+
+    patient = db.relationship('Patient', backref='feedbacks')
+    creator = db.relationship('User', foreign_keys=[created_by])

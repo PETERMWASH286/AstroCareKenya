@@ -1,49 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Feedback Management | AstroCare{% endblock %}
 
-{% block head %}
-<link href="https://unpkg.com/pattern.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<style>
-    .feedback-card {
-        transition: all 0.3s ease;
-        transform-style: preserve-3d;
-    }
-    .feedback-card:hover {
-        transform: translateY(-5px) rotateX(5deg);
-        box-shadow: 0 25px 50px -12px rgba(79, 70, 229, 0.25);
-    }
-    .sentiment-bubble {
-        animation: float 4s ease-in-out infinite;
-    }
-    .pattern-dots-sm {
-        background-color: #f0f9ff;
-    }
-    @keyframes float {
-        0% { transform: translateY(0px); }
-        50% { transform: translateY(-10px); }
-        100% { transform: translateY(0px); }
-    }
-    .feedback-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-        gap: 1.5rem;
-    }
-    .highlight-card {
-        background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(79, 70, 229, 0.1) 100%);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-    .pulse {
-        animation: pulse 2s infinite;
-    }
-    @keyframes pulse {
-        0% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.4); }
-        70% { box-shadow: 0 0 0 10px rgba(79, 70, 229, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); }
-    }
-</style>
-{% endblock %}
+
 
 {% block content %}
 <div class="min-h-screen bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50 py-8 px-4 sm:px-6">
@@ -64,82 +22,92 @@
                 </div>
                 <div>
                     <div class="text-gray-500 text-sm">Total Feedback</div>
-                    <div class="text-2xl font-bold text-indigo-600">1,248</div>
+                    <div class="text-2xl font-bold text-indigo-600">{{ total }}</div>
                 </div>
             </div>
+        </div>
+        <div class="mt-4">
+            <button onclick="openAddModal()" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+                <i class="fas fa-plus mr-2"></i> Add Feedback
+            </button>
         </div>
     </div>
 
     <div class="max-w-7xl mx-auto">
-        <!-- Stats and Filters -->
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
-            <!-- Stats Card 1 -->
-            <div class="bg-white rounded-xl shadow-sm p-6 flex items-center">
-                <div class="mr-4 text-green-500">
-                    <i class="fas fa-smile text-3xl"></i>
-                </div>
-                <div>
-                    <div class="text-gray-500 text-sm">Positive Feedback</div>
-                    <div class="text-2xl font-bold text-gray-900">846</div>
-                    <div class="text-green-500 text-sm flex items-center mt-1">
-                        <i class="fas fa-arrow-up mr-1"></i> 12% increase
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Stats Card 2 -->
-            <div class="bg-white rounded-xl shadow-sm p-6 flex items-center">
-                <div class="mr-4 text-yellow-500">
-                    <i class="fas fa-meh text-3xl"></i>
-                </div>
-                <div>
-                    <div class="text-gray-500 text-sm">Neutral Feedback</div>
-                    <div class="text-2xl font-bold text-gray-900">312</div>
-                    <div class="text-gray-500 text-sm mt-1">No change</div>
-                </div>
-            </div>
-            
-            <!-- Stats Card 3 -->
-            <div class="bg-white rounded-xl shadow-sm p-6 flex items-center">
-                <div class="mr-4 text-red-500">
-                    <i class="fas fa-frown text-3xl"></i>
-                </div>
-                <div>
-                    <div class="text-gray-500 text-sm">Negative Feedback</div>
-                    <div class="text-2xl font-bold text-gray-900">90</div>
-                    <div class="text-red-500 text-sm flex items-center mt-1">
-                        <i class="fas fa-arrow-down mr-1"></i> 5% decrease
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Filter Card -->
-            <div class="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
-                <h3 class="font-semibold mb-3">Filter Feedback</h3>
-                <div class="space-y-3">
-                    <select class="w-full bg-indigo-400/20 border border-indigo-300/30 rounded-lg px-3 py-2 text-white placeholder-indigo-200 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300">
-                        <option>All Sources</option>
-                        <option>SMS</option>
-                        <option>Email</option>
-                        <option>Patient Survey</option>
-                        <option>Phone Call</option>
-                    </select>
-                    
-                    <select class="w-full bg-indigo-400/20 border border-indigo-300/30 rounded-lg px-3 py-2 text-white placeholder-indigo-200 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300">
-                        <option>All Sentiments</option>
-                        <option>Positive</option>
-                        <option>Neutral</option>
-                        <option>Negative</option>
-                    </select>
-                    
-                    <input type="text" placeholder="Search feedback..." class="w-full bg-indigo-400/20 border border-indigo-300/30 rounded-lg px-3 py-2 text-white placeholder-indigo-200 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300">
-                    
-                    <button class="w-full bg-white text-indigo-600 font-medium py-2 rounded-lg hover:bg-indigo-50 transition">
-                        Apply Filters
-                    </button>
-                </div>
+<!-- Stats and Filters -->
+<div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
+    <!-- Stats Card 1 -->
+    <div class="bg-white rounded-xl shadow-sm p-4 flex items-center">
+        <div class="mr-3 text-green-500">
+            <i class="fas fa-smile text-2xl"></i>
+        </div>
+        <div>
+            <div class="text-gray-500 text-xs">Positive Feedback</div>
+            <div class="text-xl font-bold text-gray-900">{{ positive }}</div>
+            <div class="text-green-500 text-xs flex items-center mt-1">
+                <i class="fas fa-arrow-up mr-1"></i> 
+                {% if positive > 0 %} {{ ((positive / total) * 100)|round(1) }}% of total {% endif %}
             </div>
         </div>
+    </div>
+
+    <!-- Stats Card 2 -->
+    <div class="bg-white rounded-xl shadow-sm p-4 flex items-center">
+        <div class="mr-3 text-yellow-500">
+            <i class="fas fa-meh text-2xl"></i>
+        </div>
+        <div>
+            <div class="text-gray-500 text-xs">Neutral Feedback</div>
+            <div class="text-xl font-bold text-gray-900">{{ neutral }}</div>
+            <div class="text-gray-500 text-xs mt-1">{{ ((neutral / total) * 100)|round(1) if total else 0 }}% of total</div>
+        </div>
+    </div>
+
+    <!-- Stats Card 3 -->
+    <div class="bg-white rounded-xl shadow-sm p-4 flex items-center">
+        <div class="mr-3 text-red-500">
+            <i class="fas fa-frown text-2xl"></i>
+        </div>
+        <div>
+            <div class="text-gray-500 text-xs">Negative Feedback</div>
+            <div class="text-xl font-bold text-gray-900">{{ negative }}</div>
+            <div class="text-red-500 text-xs flex items-center mt-1">
+                <i class="fas fa-arrow-down mr-1"></i> {{ ((negative / total) * 100)|round(1) if total else 0 }}% of total
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Card -->
+    <div class="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
+        <h3 class="font-semibold mb-3">Filter Feedback</h3>
+        <form method="GET" action="{{ url_for('comms_web_bp.feedback_system') }}">
+            <div class="space-y-3">
+                <select name="source" class="w-full bg-indigo-400/20 border border-indigo-300/30 rounded-lg px-3 py-2 text-white placeholder-indigo-200 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300">
+                    <option value="">All Sources</option>
+                    <option value="sms" {% if source_filter == 'sms' %}selected{% endif %}>SMS</option>
+                    <option value="email" {% if source_filter == 'email' %}selected{% endif %}>Email</option>
+                    <option value="survey" {% if source_filter == 'survey' %}selected{% endif %}>Patient Survey</option>
+                    <option value="social_media" {% if source_filter == 'social_media' %}selected{% endif %}>Social Media</option>
+                    <option value="manual" {% if source_filter == 'manual' %}selected{% endif %}>Manual Entry</option>
+                </select>
+
+                <select name="sentiment" class="w-full bg-indigo-400/20 border border-indigo-300/30 rounded-lg px-3 py-2 text-white placeholder-indigo-200 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300">
+                    <option value="">All Sentiments</option>
+                    <option value="positive" {% if sentiment_filter == 'positive' %}selected{% endif %}>Positive</option>
+                    <option value="neutral" {% if sentiment_filter == 'neutral' %}selected{% endif %}>Neutral</option>
+                    <option value="negative" {% if sentiment_filter == 'negative' %}selected{% endif %}>Negative</option>
+                </select>
+
+                <input type="text" name="search" value="{{ search or '' }}" placeholder="Search feedback..." class="w-full bg-indigo-400/20 border border-indigo-300/30 rounded-lg px-3 py-2 text-white placeholder-indigo-200 focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300">
+
+                <button type="submit" class="w-full bg-white text-indigo-600 font-medium py-2 rounded-lg hover:bg-indigo-50 transition">
+                    Apply Filters
+                </button>
+                <a href="{{ url_for('comms_web_bp.feedback_system') }}" class="block text-center text-indigo-200 hover:text-white text-sm">Clear filters</a>
+            </div>
+        </form>
+    </div>
+</div>
 
         <!-- Charts and Highlights -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
@@ -149,61 +117,38 @@
                     <h3 class="font-semibold text-gray-900">Feedback Sentiment Over Time</h3>
                     <div class="flex space-x-2">
                         <button class="text-xs px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full">Last 7 Days</button>
-                        <button class="text-xs px-3 py-1 bg-gray-100 text-gray-700 rounded-full">Last 30 Days</button>
-                        <button class="text-xs px-3 py-1 bg-gray-100 text-gray-700 rounded-full">Last 90 Days</button>
+                        <!-- Add other periods later if needed -->
                     </div>
                 </div>
                 <div class="h-72">
                     <canvas id="sentimentChart"></canvas>
                 </div>
             </div>
-            
+
             <!-- Highlight Card -->
             <div class="highlight-card rounded-xl p-6 relative overflow-hidden">
                 <div class="absolute top-0 right-0 w-32 h-32 bg-indigo-400/10 rounded-full -mt-16 -mr-16"></div>
                 <div class="absolute bottom-0 left-0 w-48 h-48 bg-purple-400/10 rounded-full -mb-24 -ml-24"></div>
-                
+
                 <div class="relative z-10">
                     <h3 class="font-semibold text-gray-900 text-lg mb-4">Feedback Highlights</h3>
-                    
+
                     <div class="space-y-4">
+                        {% for highlight in highlights %}
                         <div class="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-white">
                             <div class="flex items-start">
-                                <div class="bg-green-100 text-green-800 rounded-full w-8 h-8 flex items-center justify-center mr-3 flex-shrink-0">
-                                    <i class="fas fa-thumbs-up text-sm"></i>
+                                <div class="{% if highlight.sentiment == 'positive' %}bg-green-100 text-green-800{% elif highlight.sentiment == 'negative' %}bg-red-100 text-red-800{% else %}bg-blue-100 text-blue-800{% endif %} rounded-full w-8 h-8 flex items-center justify-center mr-3 flex-shrink-0">
+                                    <i class="fas fa-{% if highlight.sentiment == 'positive' %}thumbs-up{% elif highlight.sentiment == 'negative' %}exclamation-circle{% else %}star{% endif %} text-sm"></i>
                                 </div>
                                 <div>
-                                    <div class="font-medium text-gray-900">Dr. Smith's bedside manner</div>
-                                    <div class="text-gray-600 text-sm">Mentioned in 42 positive feedbacks</div>
+                                    <div class="font-medium text-gray-900">{{ highlight.topic }}</div>
+                                    <div class="text-gray-600 text-sm">Mentioned in {{ highlight.count }} feedbacks</div>
                                 </div>
                             </div>
                         </div>
-                        
-                        <div class="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-white">
-                            <div class="flex items-start">
-                                <div class="bg-red-100 text-red-800 rounded-full w-8 h-8 flex items-center justify-center mr-3 flex-shrink-0">
-                                    <i class="fas fa-clock text-sm"></i>
-                                </div>
-                                <div>
-                                    <div class="font-medium text-gray-900">Waiting times</div>
-                                    <div class="text-gray-600 text-sm">Mentioned in 28 negative feedbacks</div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="bg-white/80 backdrop-blur-sm rounded-lg p-4 border border-white">
-                            <div class="flex items-start">
-                                <div class="bg-blue-100 text-blue-800 rounded-full w-8 h-8 flex items-center justify-center mr-3 flex-shrink-0">
-                                    <i class="fas fa-stethoscope text-sm"></i>
-                                </div>
-                                <div>
-                                    <div class="font-medium text-gray-900">Diagnostic accuracy</div>
-                                    <div class="text-gray-600 text-sm">Praised in 37 positive feedbacks</div>
-                                </div>
-                            </div>
-                        </div>
+                        {% endfor %}
                     </div>
-                    
+
                     <div class="mt-6 pt-4 border-t border-white/20">
                         <div class="flex items-center">
                             <div class="bg-indigo-500 rounded-full w-10 h-10 flex items-center justify-center mr-3">
@@ -232,163 +177,79 @@
                     </select>
                 </div>
             </div>
-            
+
             <div class="feedback-grid">
-                <!-- Feedback Card 1 -->
+                {% for fb in feedbacks %}
                 <div class="feedback-card bg-white rounded-xl shadow-sm p-6">
                     <div class="flex justify-between items-start mb-4">
                         <div>
-                            <div class="font-semibold text-gray-900">Sarah Johnson</div>
-                            <div class="text-sm text-gray-500">sarahj@example.com</div>
+                            <div class="font-semibold text-gray-900">
+                                {% if fb.is_anonymous %}
+                                    Anonymous
+                                {% elif fb.patient %}
+                                    {{ fb.patient.full_name }}
+                                {% else %}
+                                    Unknown
+                                {% endif %}
+                            </div>
+                            <div class="text-sm text-gray-500">
+                                {% if fb.source == 'sms' %}{{ fb.patient.phone if fb.patient else 'SMS' }}
+                                {% elif fb.source == 'email' %}{{ fb.patient.email if fb.patient else 'Email' }}
+                                {% elif fb.source == 'social_media' %}{{ fb.social_media_handle or 'Social' }}
+                                {% else %}{{ fb.source|capitalize }}{% endif %}
+                            </div>
                         </div>
-                        <div class="sentiment-bubble bg-green-100 text-green-800 rounded-full px-3 py-1 text-sm flex items-center">
-                            <i class="fas fa-smile mr-1"></i> Positive
+                        <div class="sentiment-bubble 
+                            {% if fb.sentiment == 'positive' %}bg-green-100 text-green-800
+                            {% elif fb.sentiment == 'neutral' %}bg-yellow-100 text-yellow-800
+                            {% else %}bg-red-100 text-red-800{% endif %} rounded-full px-3 py-1 text-sm flex items-center">
+                            <i class="fas fa-{% if fb.sentiment == 'positive' %}smile{% elif fb.sentiment == 'neutral' %}meh{% else %}frown{% endif %} mr-1"></i>
+                            {{ fb.sentiment|capitalize }}
                         </div>
                     </div>
-                    
+
                     <div class="flex items-center mb-4">
                         <div class="flex text-yellow-400 mr-2">
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
+                            {% for i in range(1,6) %}
+                                {% if i <= fb.rating %}
+                                    <i class="fas fa-star"></i>
+                                {% else %}
+                                    <i class="far fa-star"></i>
+                                {% endif %}
+                            {% endfor %}
                         </div>
-                        <div class="text-sm text-gray-500">via Email • Today</div>
+                        <div class="text-sm text-gray-500">via {{ fb.source|capitalize }} • {{ fb.submitted_at.strftime('%b %d, %Y') }}</div>
                     </div>
-                    
+
                     <div class="text-gray-700 mb-4">
-                        "Dr. Anderson was incredibly thorough and took the time to explain everything in detail. The staff was friendly and the clinic was very clean. Best experience I've had!"
+                        "{{ fb.comment }}"
                     </div>
-                    
+
                     <div class="flex justify-between items-center">
                         <div class="text-xs bg-blue-100 text-blue-800 rounded-full px-2 py-1">
-                            <i class="fas fa-tag mr-1"></i> Doctor Communication
+                            <i class="fas fa-tag mr-1"></i> 
+                            {% if fb.attachment_path %}
+                                <a href="{{ url_for('static', filename=fb.attachment_path.replace('app/static/', '')) }}" target="_blank" class="hover:underline">Attachment</a>
+                            {% else %}
+                                No attachment
+                            {% endif %}
                         </div>
                         <button class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">
                             <i class="fas fa-reply mr-1"></i> Respond
                         </button>
                     </div>
                 </div>
-                
-                <!-- Feedback Card 2 -->
-                <div class="feedback-card bg-white rounded-xl shadow-sm p-6">
-                    <div class="flex justify-between items-start mb-4">
-                        <div>
-                            <div class="font-semibold text-gray-900">Michael Chen</div>
-                            <div class="text-sm text-gray-500">+1 (555) 123-4567</div>
-                        </div>
-                        <div class="sentiment-bubble bg-red-100 text-red-800 rounded-full px-3 py-1 text-sm flex items-center">
-                            <i class="fas fa-frown mr-1"></i> Negative
-                        </div>
-                    </div>
-                    
-                    <div class="flex items-center mb-4">
-                        <div class="flex text-yellow-400 mr-2">
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="far fa-star"></i>
-                            <i class="far fa-star"></i>
-                            <i class="far fa-star"></i>
-                        </div>
-                        <div class="text-sm text-gray-500">via SMS • Yesterday</div>
-                    </div>
-                    
-                    <div class="text-gray-700 mb-4">
-                        "Waited 45 minutes past my appointment time. Receptionist seemed overwhelmed. Doctor was good but the wait was unacceptable for a scheduled appointment."
-                    </div>
-                    
-                    <div class="flex justify-between items-center">
-                        <div class="text-xs bg-orange-100 text-orange-800 rounded-full px-2 py-1">
-                            <i class="fas fa-tag mr-1"></i> Waiting Time
-                        </div>
-                        <button class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">
-                            <i class="fas fa-reply mr-1"></i> Respond
-                        </button>
-                    </div>
-                </div>
-                
-                <!-- Feedback Card 3 -->
-                <div class="feedback-card bg-white rounded-xl shadow-sm p-6">
-                    <div class="flex justify-between items-start mb-4">
-                        <div>
-                            <div class="font-semibold text-gray-900">Emma Rodriguez</div>
-                            <div class="text-sm text-gray-500">emma.rdz@example.com</div>
-                        </div>
-                        <div class="sentiment-bubble bg-green-100 text-green-800 rounded-full px-3 py-1 text-sm flex items-center">
-                            <i class="fas fa-smile mr-1"></i> Positive
-                        </div>
-                    </div>
-                    
-                    <div class="flex items-center mb-4">
-                        <div class="flex text-yellow-400 mr-2">
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star-half-alt"></i>
-                        </div>
-                        <div class="text-sm text-gray-500">via Survey • 2 days ago</div>
-                    </div>
-                    
-                    <div class="text-gray-700 mb-4">
-                        "The online appointment system is fantastic! Easy to use and saved me time. Nurse practitioner was very attentive and addressed all my concerns. Will definitely recommend."
-                    </div>
-                    
-                    <div class="flex justify-between items-center">
-                        <div class="text-xs bg-purple-100 text-purple-800 rounded-full px-2 py-1">
-                            <i class="fas fa-tag mr-1"></i> Online System
-                        </div>
-                        <button class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">
-                            <i class="fas fa-reply mr-1"></i> Respond
-                        </button>
-                    </div>
-                </div>
-                
-                <!-- Feedback Card 4 -->
-                <div class="feedback-card bg-white rounded-xl shadow-sm p-6">
-                    <div class="flex justify-between items-start mb-4">
-                        <div>
-                            <div class="font-semibold text-gray-900">Robert Kim</div>
-                            <div class="text-sm text-gray-500">+1 (555) 987-6543</div>
-                        </div>
-                        <div class="sentiment-bubble bg-yellow-100 text-yellow-800 rounded-full px-3 py-1 text-sm flex items-center">
-                            <i class="fas fa-meh mr-1"></i> Neutral
-                        </div>
-                    </div>
-                    
-                    <div class="flex items-center mb-4">
-                        <div class="flex text-yellow-400 mr-2">
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="far fa-star"></i>
-                            <i class="far fa-star"></i>
-                        </div>
-                        <div class="text-sm text-gray-500">via SMS • 3 days ago</div>
-                    </div>
-                    
-                    <div class="text-gray-700 mb-4">
-                        "The doctor was knowledgeable but seemed rushed. The diagnosis was accurate but I wish there was more discussion about treatment options. Facility was clean and modern."
-                    </div>
-                    
-                    <div class="flex justify-between items-center">
-                        <div class="text-xs bg-teal-100 text-teal-800 rounded-full px-2 py-1">
-                            <i class="fas fa-tag mr-1"></i> Treatment Options
-                        </div>
-                        <button class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">
-                            <i class="fas fa-reply mr-1"></i> Respond
-                        </button>
-                    </div>
-                </div>
+                {% else %}
+                <p class="col-span-full text-center text-gray-500 py-8">No feedback found.</p>
+                {% endfor %}
             </div>
         </div>
 
-        <!-- Response Rate Card -->
+        <!-- Response Rate Card (placeholder) -->
         <div class="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl shadow-lg p-8 mb-8 relative overflow-hidden">
             <div class="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mt-32 -mr-32"></div>
             <div class="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full -mb-24 -ml-24"></div>
-            
+
             <div class="relative z-10 text-white text-center max-w-3xl mx-auto">
                 <h3 class="text-2xl font-bold mb-4">Feedback Response Rate</h3>
                 <div class="text-5xl font-bold mb-6">87%</div>
@@ -406,20 +267,99 @@
         </div>
     </div>
 </div>
-{% endblock %}
 
-{% block scripts %}
+<!-- Modal for adding feedback -->
+<div id="addFeedbackModal" class="fixed inset-0 bg-gray-900/50 flex items-center justify-center hidden z-50">
+    <div class="bg-white rounded-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold">Add New Feedback</h2>
+                <button onclick="closeAddModal()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form method="POST" enctype="multipart/form-data">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Patient (optional)</label>
+                        <select name="patient_id" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="">-- Anonymous / Not associated --</option>
+                            {% for patient in patients %}
+                            <option value="{{ patient.id }}">{{ patient.full_name }} ({{ patient.phone or patient.email }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Source</label>
+                            <select name="source" required class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                <option value="sms">SMS</option>
+                                <option value="email">Email</option>
+                                <option value="survey">Survey</option>
+                                <option value="social_media">Social Media</option>
+                                <option value="manual">Manual Entry</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Sentiment</label>
+                            <select name="sentiment" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                <option value="">-- Not set --</option>
+                                <option value="positive">Positive</option>
+                                <option value="neutral">Neutral</option>
+                                <option value="negative">Negative</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Rating (1‑5)</label>
+                        <input type="number" name="rating" min="1" max="5" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Comment</label>
+                        <textarea name="comment" rows="4" required class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Attachment (form, screenshot, etc.)</label>
+                        <input type="file" name="attachment" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                        <p class="text-xs text-gray-500 mt-1">Allowed: pdf, doc, docx, jpg, png, txt</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Social Media Handle (if applicable)</label>
+                        <input type="text" name="social_handle" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+                    <div class="flex items-center">
+                        <input type="checkbox" name="is_anonymous" id="is_anonymous" class="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
+                        <label for="is_anonymous" class="ml-2 text-sm text-gray-700">Submit as anonymous (patient info not shown)</label>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end space-x-3">
+                    <button type="button" onclick="closeAddModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Save Feedback</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<link href="https://unpkg.com/pattern.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    // Initialize sentiment chart
+    function openAddModal() {
+        document.getElementById('addFeedbackModal').classList.remove('hidden');
+    }
+    function closeAddModal() {
+        document.getElementById('addFeedbackModal').classList.add('hidden');
+    }
+
+    // Initialize sentiment chart with dynamic data
     const ctx = document.getElementById('sentimentChart').getContext('2d');
     const sentimentChart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+            labels: {{ days|tojson }},
             datasets: [
                 {
                     label: 'Positive',
-                    data: [12, 19, 15, 17, 22, 18, 25],
+                    data: {{ pos_data|tojson }},
                     borderColor: '#10B981',
                     backgroundColor: 'rgba(16, 185, 129, 0.1)',
                     tension: 0.4,
@@ -427,7 +367,7 @@
                 },
                 {
                     label: 'Neutral',
-                    data: [5, 7, 8, 6, 9, 5, 7],
+                    data: {{ neu_data|tojson }},
                     borderColor: '#FBBF24',
                     backgroundColor: 'rgba(251, 191, 36, 0.1)',
                     tension: 0.4,
@@ -435,7 +375,7 @@
                 },
                 {
                     label: 'Negative',
-                    data: [2, 3, 1, 4, 2, 3, 1],
+                    data: {{ neg_data|tojson }},
                     borderColor: '#EF4444',
                     backgroundColor: 'rgba(239, 68, 68, 0.1)',
                     tension: 0.4,
@@ -447,33 +387,18 @@
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: {
-                    position: 'top',
-                }
+                legend: { position: 'top' }
             },
             scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: {
-                        color: 'rgba(0, 0, 0, 0.05)'
-                    }
-                },
-                x: {
-                    grid: {
-                        display: false
-                    }
-                }
+                y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } },
+                x: { grid: { display: false } }
             }
         }
     });
-    
-    // Make sentiment bubbles float at different rates
-    document.querySelectorAll('.sentiment-bubble').forEach((bubble, index) => {
-        bubble.style.animationDelay = `${index * 0.5}s`;
+
+    // Close modal when clicking outside
+    document.getElementById('addFeedbackModal').addEventListener('click', function(e) {
+        if (e.target === this) closeAddModal();
     });
-    
-    // Add pulse animation to response rate card
-    const responseCard = document.querySelector('.bg-gradient-to-r');
-    responseCard.classList.add('pulse');
 </script>
 {% endblock %}
