@@ -52,6 +52,8 @@ def create_initial_privileges(session):
         ('billing:create_invoice', 'Billing', 'Create a new invoice'),
         ('billing:process_payment', 'Billing', 'Process payments'),
         ('billing:transactions', 'Billing', 'View transaction history'),
+        ('billing_dashboard', 'Dashboard', 'Access Billing Dashboard'),
+
         ('pharmacy:dispense', 'Pharmacy', 'Dispense medication'),
         ('pharmacy:inventory', 'Pharmacy', 'Manage pharmacy inventory'),
         ('pharmacy:track_prescriptions', 'Pharmacy', 'Track prescriptions'),
@@ -80,6 +82,8 @@ def create_initial_privileges(session):
         ('hr:recruitment:settings', 'Human Resources', 'Configure recruitment settings'),
         # Keep the existing general recruitment privilege for backward compatibility
         ('hr:recruitment', 'Human Resources', 'Manage Recruitment'),
+                                    ('hr_dashboard', 'Dashboard', 'Access hr Dashboard'),
+
         ('inventory:dashboard', 'Inventory', 'View Inventory Dashboard'),
         ('inventory:manage_stock', 'Inventory', 'Manage Stock Levels'),
         ('inventory:stock_requests', 'Inventory', 'View & Respond to Stock Requests'),
@@ -145,6 +149,9 @@ def create_initial_privileges(session):
 ('finance:balance_sheet', 'Finance', 'View Balance Sheet'),
 ('finance:cashflow_statement', 'Finance', 'View Cash Flow Statement'),
 ('finance:payroll', 'Finance', 'Process and manage payroll'),
+
+                                    ('finance_dashboard', 'Dashboard', 'Access Finance Dashboard'),
+
         ('reports:clinical', 'Reports', 'Access Clinical Reports'),
         ('reports:financial', 'Reports', 'Access Financial Reports'),
         ('reports:analytics', 'Reports', 'Access Analytics Dashboard'),

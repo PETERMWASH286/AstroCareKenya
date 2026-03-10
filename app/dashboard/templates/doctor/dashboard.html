@@ -20,15 +20,25 @@
             </h1>
             <p class="mt-2 text-gray-600 dark:text-gray-300">Here’s your health care dashboard overview.</p>
         </div>
-        <div class="flex items-center space-x-4">
-            <button class="flex items-center space-x-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition" aria-label="Date filter">
+<div class="flex items-center space-x-4">
+
+    <!-- Date filter (keep as button if it triggers JS filter) -->
+    <button class="flex items-center space-x-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+            aria-label="Date filter">
         <i class="fas fa-calendar-alt text-indigo-600 dark:text-indigo-400"></i>
-<!-- Replace the static date with this dynamic version -->
-<span class="text-gray-700 dark:text-gray-300">{{ current_date }}</span>      </button>
-            <button class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition" aria-label="Add new appointment">
+        <span class="text-gray-700 dark:text-gray-300">{{ current_date }}</span>
+    </button>
+
+    <!-- New Appointment (link) -->
+    <a href="{{ url_for('appointments_web.schedule_new') }}"
+       class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition flex items-center"
+       aria-label="Add new appointment">
         <i class="fas fa-plus mr-2"></i> New Appointment
-      </button>
-        </div>
+    </a>
+
+
+
+</div>
     </header>
 
     <!-- Updated Stats Cards -->

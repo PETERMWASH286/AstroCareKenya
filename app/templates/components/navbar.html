@@ -3,81 +3,358 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
             <!-- Left Section - Logo -->
-            <div class="flex items-center">
-                {# At the top of your template: decide where to send the user #} {% set dashboard_url = url_for('dashboard_web.index') %} {% if current_user.has_privilege('doctor_dashboard') %} {% set dashboard_url = url_for('dashboard_web.doctor_dashboard') %} {% elif
-                current_user.has_privilege('nurse_dashboard') %} {% set dashboard_url = url_for('dashboard_web.nurse_dashboard') %} {% elif current_user.has_privilege('labtech_dashboard') %} {% set dashboard_url = url_for('dashboard_web.labtech_dashboard')
-                %} {% elif current_user.has_privilege('radiology_dashboard') %} {% set dashboard_url = url_for('dashboard_web.radiology_dashboard') %} {% elif current_user.has_privilege('pharmacy_dashboard') %} {% set dashboard_url = url_for('dashboard_web.pharmacy_dashboard')
-                %} {% elif current_user.has_privilege('registration_dashboard') %} {% set dashboard_url = url_for('dashboard_web.registration_dashboard') %} {% elif current_user.has_privilege('patient_dashboard') %} {% set dashboard_url = url_for('dashboard_web.patient_dashboard')
-                %} {% elif current_user.has_privilege('billing_dashboard') %} {% set dashboard_url = url_for('dashboard_web.billing_dashboard') %} {% elif current_user.is_administrator() %} {% set dashboard_url = url_for('dashboard_web.admin_overview')
-                %} {% endif %} {# Then render your animated logo #}
-                <a href="{{ dashboard_url }}" class="flex items-center space-x-2 group">
-                    <svg class="w-8 h-8 text-indigo-600 group-hover:rotate-12 transition-transform" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path
-                      d="M16 28C22.6274 28 28 22.6274 28 16C28 9.37258 22.6274 4 16 4C9.37258
-                         4 4 9.37258 4 16C4 22.6274 9.37258 28 16 28Z"
-                      fill="currentColor"
-                    />
-                    <path d="M20 12L16 8L12 12L16 16L20 12Z" fill="white"/>
-                    <path d="M22 18L18 22L14 18L18 14L22 18Z" fill="white"/>
-                  </svg>
-                    <span class="text-2xl font-bold
-                           bg-gradient-to-r from-indigo-600 to-purple-600
-                           bg-clip-text text-transparent">
-                    AstroCare
-                  </span>
-                </a>
+<div class="flex items-center">
+    {# At the top of your template: decide where to send the user #}
+    {% set dashboard_url = url_for('dashboard_web.index') %}
 
-            </div>
+    {% if current_user.has_privilege('doctor_dashboard') %}
+        {% set dashboard_url = url_for('dashboard_web.doctor_dashboard') %}
+    {% elif current_user.has_privilege('nurse_dashboard') %}
+        {% set dashboard_url = url_for('dashboard_web.nurse_dashboard') %}
+    {% elif current_user.has_privilege('labtech_dashboard') %}
+        {% set dashboard_url = url_for('dashboard_web.labtech_dashboard') %}
+    {% elif current_user.has_privilege('radiology_dashboard') %}
+        {% set dashboard_url = url_for('dashboard_web.radiology_dashboard') %}
+    {% elif current_user.has_privilege('pharmacy_dashboard') %}
+        {% set dashboard_url = url_for('dashboard_web.pharmacy_dashboard') %}
+    {% elif current_user.has_privilege('registration_dashboard') %}
+        {% set dashboard_url = url_for('dashboard_web.registration_dashboard') %}
+    {% elif current_user.has_privilege('billing_dashboard') %}
+        {% set dashboard_url = url_for('dashboard_web.billing_dashboard') %}
+    {% elif current_user.has_privilege('hr_dashboard') %}
+        {% set dashboard_url = url_for('dashboard_web.hr_dashboard') %}
+    {% elif current_user.has_privilege('finance_dashboard') %}
+        {% set dashboard_url = url_for('dashboard_web.finance_dashboard') %}
+    {% elif current_user.has_privilege('patient_dashboard') %}
+        {% set dashboard_url = url_for('dashboard_web.patient_dashboard') %}
+    {% elif current_user.is_administrator() %}
+        {% set dashboard_url = url_for('dashboard_web.admin_overview') %}
+    {% endif %}
+
+    {# Render the animated logo #}
+    <a href="{{ dashboard_url }}" class="flex items-center space-x-2 group">
+        <svg class="w-8 h-8 text-indigo-600 group-hover:rotate-12 transition-transform" viewBox="0 0 32 32" fill="none">
+            <path d="M16 28C22.6274 28 28 22.6274 28 16C28 9.37258 22.6274 4 16 4C9.37258 4 4 9.37258 4 16C4 22.6274 9.37258 28 16 28Z" fill="currentColor"/>
+            <path d="M20 12L16 8L12 12L16 16L20 12Z" fill="white"/>
+            <path d="M22 18L18 22L14 18L18 14L22 18Z" fill="white"/>
+        </svg>
+
+        <span class="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+            AstroCare
+        </span>
+    </a>
+</div>
             <!-- Center Section - Role-Based Quick Access -->
             <div class="hidden lg:flex items-center mx-auto">
                 <div class="flex space-x-1 bg-gray-100 dark:bg-gray-800/50 rounded-lg p-1">
-                    <!-- Quick actions for all roles -->
-                    <a href="" class="px-3 py-1.5 rounded-md text-sm font-medium flex items-center hover:bg-white dark:hover:bg-gray-700 transition-colors group"
-                       title="Patient Management">
-                        <i class="fas fa-user-injured mr-2 text-indigo-600 group-hover:text-indigo-700"></i>
-                        <span>Patients</span>
-                    </a>
+
                     
+<!-- Role-specific actions -->
+{% if current_user.has_privilege('doctor_dashboard') %}
+
+    <!-- My Appointments -->
+    <a href="{{ url_for('appointments_web.my_schedules') }}"
+       class="px-3 py-1.5 rounded-md text-sm font-medium flex items-center hover:bg-white dark:hover:bg-gray-700 transition-colors group"
+       title="My appointments">
+        <i class="fas fa-calendar-check mr-2 text-green-600 group-hover:text-green-700"></i>
+        <span>My Appointments</span>
+    </a>
+
+    <!-- General Consultation -->
+    <a href="{{ url_for('consultations_web.consultation_queue') }}"
+       class="px-3 py-1.5 rounded-md text-sm font-medium flex items-center hover:bg-white dark:hover:bg-gray-700 transition-colors group"
+       title="General consultation">
+        <i class="fas fa-user-md mr-2 text-blue-600 group-hover:text-blue-700"></i>
+        <span>General Consultation</span>
+    </a>
+
+    <!-- Special Consultation -->
+    <a href="{{ url_for('consultations_web.special_consultation') }}"
+       class="px-3 py-1.5 rounded-md text-sm font-medium flex items-center hover:bg-white dark:hover:bg-gray-700 transition-colors group"
+       title="Special consultation">
+        <i class="fas fa-stethoscope mr-2 text-purple-600 group-hover:text-purple-700"></i>
+        <span>Special Consultation</span>
+    </a>
+
+{% endif %}
+                     <!-- Role-specific actions for HR -->
+{% if current_user.has_privilege('hr_dashboard') %}
+
+    <!-- Staff Directory -->
+    <a href="{{ url_for('hr_web.staff_directory') }}"
+       class="px-3 py-1.5 rounded-md text-sm font-medium flex items-center hover:bg-white dark:hover:bg-gray-700 transition-colors group"
+       title="Staff Directory">
+        <i class="fas fa-list-ol mr-2 text-blue-600 group-hover:text-blue-700"></i>
+        <span>Staff Directory</span>
+    </a>
+
+    <!-- Attendance Tracking -->
+    <a href="{{ url_for('hr_web.attendance_tracking') }}"
+       class="px-3 py-1.5 rounded-md text-sm font-medium flex items-center hover:bg-white dark:hover:bg-gray-700 transition-colors group"
+       title="Attendance Tracking">
+        <i class="fas fa-user-clock mr-2 text-yellow-600 group-hover:text-yellow-700"></i>
+        <span>Attendance</span>
+    </a>
+
+    <!-- Payroll Management -->
+    <a href="{{ url_for('hr_web.employee_payroll') }}"
+       class="px-3 py-1.5 rounded-md text-sm font-medium flex items-center hover:bg-white dark:hover:bg-gray-700 transition-colors group"
+       title="Payroll Management">
+        <i class="fas fa-money-bill-wave mr-2 text-green-600 group-hover:text-green-700"></i>
+        <span>Payroll</span>
+    </a>
+
+    <!-- Recruitment Dashboard -->
+    <a href="{{ url_for('hr_web.recruitment_dashboard') }}"
+       class="px-3 py-1.5 rounded-md text-sm font-medium flex items-center hover:bg-white dark:hover:bg-gray-700 transition-colors group"
+       title="Recruitment Dashboard">
+        <i class="fas fa-user-graduate mr-2 text-purple-600 group-hover:text-purple-700"></i>
+        <span>Recruitment</span>
+    </a>
+
+{% endif %}
+
+{# Role-specific actions for Finance #}
+{% if current_user.has_privilege('finance_dashboard') %}
+
+    <!-- Financial Dashboard -->
+    <a href="{{ url_for('finance_web_bp.financial_dashboard') }}"
+       class="px-3 py-1.5 rounded-md text-sm font-medium flex items-center hover:bg-white dark:hover:bg-gray-700 transition-colors group"
+       title="Financial Dashboard">
+        <i class="fas fa-tachometer-alt mr-2 text-emerald-600 group-hover:text-emerald-700"></i>
+        <span>Dashboard</span>
+    </a>
+
+    <!-- Invoices -->
+    <a href="{{ url_for('finance_web_bp.invoices') }}"
+       class="px-3 py-1.5 rounded-md text-sm font-medium flex items-center hover:bg-white dark:hover:bg-gray-700 transition-colors group"
+       title="Invoices">
+        <i class="fas fa-file-invoice-dollar mr-2 text-blue-600 group-hover:text-blue-700"></i>
+        <span>Invoices</span>
+    </a>
+
+    <!-- Payments -->
+    <a href="{{ url_for('finance_web_bp.payments') }}"
+       class="px-3 py-1.5 rounded-md text-sm font-medium flex items-center hover:bg-white dark:hover:bg-gray-700 transition-colors group"
+       title="Payments">
+        <i class="fas fa-hand-holding-usd mr-2 text-green-600 group-hover:text-green-700"></i>
+        <span>Payments</span>
+    </a>
+
+    <!-- Reports -->
+    <a href="{{ url_for('finance_web_bp.sales_reports') }}"
+       class="px-3 py-1.5 rounded-md text-sm font-medium flex items-center hover:bg-white dark:hover:bg-gray-700 transition-colors group"
+       title="Reports">
+        <i class="fas fa-chart-line mr-2 text-purple-600 group-hover:text-purple-700"></i>
+        <span>Reports</span>
+    </a>
+
+{% endif %}
+
+<!-- Role-specific actions -->
+{% if current_user.has_privilege('nurse_dashboard') %}
+
+    <!-- Patient Records -->
+    <a href="{{ url_for('patients_web.view_patients') }}"
+       class="px-3 py-1.5 rounded-md text-sm font-medium flex items-center hover:bg-white dark:hover:bg-gray-700 transition-colors group"
+       title="View patient records">
+        <i class="fas fa-folder-open mr-2 text-blue-600 group-hover:text-blue-700"></i>
+        <span>Patient Records</span>
+    </a>
+
+    <!-- Appointments -->
+    <a href="{{ url_for('appointments_web.manage_schedule') }}"
+       class="px-3 py-1.5 rounded-md text-sm font-medium flex items-center hover:bg-white dark:hover:bg-gray-700 transition-colors group"
+       title="Manage appointments">
+        <i class="fas fa-calendar-check mr-2 text-green-600 group-hover:text-green-700"></i>
+        <span>Appointments</span>
+    </a>
+
+    <!-- Triage -->
+    <a href="{{ url_for('patients_web.triage') }}"
+       class="px-3 py-1.5 rounded-md text-sm font-medium flex items-center hover:bg-white dark:hover:bg-gray-700 transition-colors group"
+       title="Patient triage and vital signs">
+        <i class="fas fa-notes-medical mr-2 text-red-600 group-hover:text-red-700"></i>
+        <span>Triage</span>
+    </a>
+
+{% endif %}
                     <!-- Role-specific actions -->
-                    {% if current_user.has_privilege('doctor_dashboard') or current_user.has_privilege('nurse_dashboard') %}
-                    <a href="" class="px-3 py-1.5 rounded-md text-sm font-medium flex items-center hover:bg-white dark:hover:bg-gray-700 transition-colors group"
-                       title="Appointments">
-                        <i class="fas fa-calendar-check mr-2 text-green-600 group-hover:text-green-700"></i>
-                        <span>Appointments</span>
-                    </a>
+                    {% if current_user.has_privilege('registration_dashboard') or current_user.has_privilege('billing_dashboard') %}
+                    <!-- Registration Dashboard Quick Actions -->
+                    <div class="hidden lg:flex items-center mx-auto">
+                        <div class="flex space-x-1 bg-gray-100 dark:bg-gray-800/50 rounded-lg p-1">
+                            <!-- Register Patient -->
+                            <a href="{{ url_for('patients_web.register_patient') }}" class="px-3 py-1.5 rounded-md text-sm font-medium flex items-center hover:bg-white dark:hover:bg-gray-700 transition-colors group"
+                            title="Register new patient">
+                                <i class="fas fa-user-plus mr-2 text-indigo-600 group-hover:text-indigo-700"></i>
+                                <span>Register Patient</span>
+                            </a>
+                            
+                            <!-- Patient Records -->
+                            <a href="{{ url_for('patients_web.view_patients') }}" class="px-3 py-1.5 rounded-md text-sm font-medium flex items-center hover:bg-white dark:hover:bg-gray-700 transition-colors group"
+                            title="View patient records">
+                                <i class="fas fa-folder-open mr-2 text-blue-600 group-hover:text-blue-700"></i>
+                                <span>Patient Records</span>
+                            </a>
+                            
+                            <!-- Appointments -->
+                            <a href="{{ url_for('appointments_web.manage_schedule') }}" class="px-3 py-1.5 rounded-md text-sm font-medium flex items-center hover:bg-white dark:hover:bg-gray-700 transition-colors group"
+                            title="Manage appointments">
+                                <i class="fas fa-calendar-check mr-2 text-green-600 group-hover:text-green-700"></i>
+                                <span>Appointments</span>
+                            </a>
+                            
+                            <!-- Billing -->
+                            <a href="{{ url_for('billing_web.payment_processing') }}" class="px-3 py-1.5 rounded-md text-sm font-medium flex items-center hover:bg-white dark:hover:bg-gray-700 transition-colors group"
+                            title="Process payments">
+                                <i class="fas fa-file-invoice-dollar mr-2 text-amber-600 group-hover:text-amber-700"></i>
+                                <span>Billing</span>
+                            </a>
+                        </div>
+                    </div>
                     {% endif %}
+
+{% if current_user.has_privilege('labtech_dashboard') %}
+
+    <!-- Lab Tests -->
+    <a href="{{ url_for('lab_web.list_lab_tests') }}"
+       class="px-3 py-1.5 rounded-md text-sm font-medium flex items-center hover:bg-white dark:hover:bg-gray-700 transition-colors group"
+       title="View lab test requests">
+        <i class="fas fa-vial mr-2 text-red-600 group-hover:text-red-700"></i>
+        <span>Lab Tests</span>
+    </a>
+
+    <!-- Sample Management -->
+    <a href="{{ url_for('lab_web.manage_samples') }}"
+       class="px-3 py-1.5 rounded-md text-sm font-medium flex items-center hover:bg-white dark:hover:bg-gray-700 transition-colors group"
+       title="Manage lab samples">
+        <i class="fas fa-vials mr-2 text-indigo-600 group-hover:text-indigo-700"></i>
+        <span>Samples</span>
+    </a>
+
+    <!-- Test Results -->
+    <a href="{{ url_for('lab_web.generate_lab_reports') }}"
+       class="px-3 py-1.5 rounded-md text-sm font-medium flex items-center hover:bg-white dark:hover:bg-gray-700 transition-colors group"
+       title="Enter test results">
+        <i class="fas fa-microscope mr-2 text-green-600 group-hover:text-green-700"></i>
+        <span>Test Results</span>
+    </a>
+
+    <!-- Lab Reports -->
+    <a href="{{ url_for('lab_web.generate_lab_reports') }}"
+       class="px-3 py-1.5 rounded-md text-sm font-medium flex items-center hover:bg-white dark:hover:bg-gray-700 transition-colors group"
+       title="View lab reports">
+        <i class="fas fa-file-medical-alt mr-2 text-purple-600 group-hover:text-purple-700"></i>
+        <span>Lab Reports</span>
+    </a>
+
+{% endif %}
+{% if current_user.has_privilege('radiology_dashboard') %}
+
+    <!-- Imaging Requests -->
+    <a href="{{ url_for('radiology_web.list_imaging_requests') }}"
+       class="px-3 py-1.5 rounded-md text-sm font-medium flex items-center hover:bg-white dark:hover:bg-gray-700 transition-colors group"
+       title="View imaging requests">
+        <i class="fas fa-procedures mr-2 text-pink-600 group-hover:text-pink-700"></i>
+        <span>Imaging Requests</span>
+    </a>
+
+    <!-- View Scans -->
+    <a href="{{ url_for('radiology_web.list_completed_scans') }}"
+       class="px-3 py-1.5 rounded-md text-sm font-medium flex items-center hover:bg-white dark:hover:bg-gray-700 transition-colors group"
+       title="View completed scans">
+        <i class="fas fa-image mr-2 text-yellow-600 group-hover:text-yellow-700"></i>
+        <span>View Scans</span>
+    </a>
+
+    <!-- Radiology Reports -->
+    <a href="{{ url_for('radiology_web.list_radiology_reports') }}"
+       class="px-3 py-1.5 rounded-md text-sm font-medium flex items-center hover:bg-white dark:hover:bg-gray-700 transition-colors group"
+       title="Radiology reports">
+        <i class="fas fa-file-medical mr-2 text-red-600 group-hover:text-red-700"></i>
+        <span>Reports</span>
+    </a>
+
+    <!-- Equipment Maintenance -->
+    <a href="{{ url_for('radiology_web.equipment_maintenance') }}"
+       class="px-3 py-1.5 rounded-md text-sm font-medium flex items-center hover:bg-white dark:hover:bg-gray-700 transition-colors group"
+       title="Maintain radiology equipment">
+        <i class="fas fa-toolbox mr-2 text-cyan-600 group-hover:text-cyan-700"></i>
+        <span>Equipment</span>
+    </a>
+
+{% endif %}
+{% if current_user.has_privilege('pharmacy_dashboard') %}
+
+    <!-- Dispense Medication -->
+    <a href="{{ url_for('pharmacy_web.dispense_medication') }}"
+       class="px-3 py-1.5 rounded-md text-sm font-medium flex items-center hover:bg-white dark:hover:bg-gray-700 transition-colors group"
+       title="Dispense medication">
+        <i class="fas fa-prescription-bottle-alt mr-2 text-purple-600 group-hover:text-purple-700"></i>
+        <span>Dispense</span>
+    </a>
+
+    <!-- Prescription Tracking -->
+    <a href="{{ url_for('pharmacy_web.track_prescriptions') }}"
+       class="px-3 py-1.5 rounded-md text-sm font-medium flex items-center hover:bg-white dark:hover:bg-gray-700 transition-colors group"
+       title="Track prescriptions">
+        <i class="fas fa-clipboard-list mr-2 text-teal-600 group-hover:text-teal-700"></i>
+        <span>Prescriptions</span>
+    </a>
+
+    <!-- Inventory -->
+    <a href="{{ url_for('pharmacy_web.manage_inventory') }}"
+       class="px-3 py-1.5 rounded-md text-sm font-medium flex items-center hover:bg-white dark:hover:bg-gray-700 transition-colors group"
+       title="Pharmacy inventory">
+        <i class="fas fa-boxes mr-2 text-yellow-600 group-hover:text-yellow-700"></i>
+        <span>Inventory</span>
+    </a>
+
+    <!-- Dispense History -->
+    <a href="{{ url_for('pharmacy_web.dispense_history') }}"
+       class="px-3 py-1.5 rounded-md text-sm font-medium flex items-center hover:bg-white dark:hover:bg-gray-700 transition-colors group"
+       title="Dispense history">
+        <i class="fas fa-history mr-2 text-gray-600 group-hover:text-gray-700"></i>
+        <span>History</span>
+    </a>
+
+{% endif %}
                     
-                    {% if current_user.has_privilege('labtech_dashboard') or current_user.has_privilege('radiology_dashboard') %}
-                    <a href="" class="px-3 py-1.5 rounded-md text-sm font-medium flex items-center hover:bg-white dark:hover:bg-gray-700 transition-colors group"
-                       title="Lab Tests">
-                        <i class="fas fa-flask mr-2 text-blue-600 group-hover:text-blue-700"></i>
-                        <span>Lab</span>
-                    </a>
-                    {% endif %}
+
                     
-                    {% if current_user.has_privilege('pharmacy_dashboard') %}
-                    <a href="" class="px-3 py-1.5 rounded-md text-sm font-medium flex items-center hover:bg-white dark:hover:bg-gray-700 transition-colors group"
-                       title="Pharmacy">
-                        <i class="fas fa-pills mr-2 text-purple-600 group-hover:text-purple-700"></i>
-                        <span>Pharmacy</span>
-                    </a>
-                    {% endif %}
-                    
-                    {% if current_user.has_privilege('billing_dashboard') %}
-                    <a href="" class="px-3 py-1.5 rounded-md text-sm font-medium flex items-center hover:bg-white dark:hover:bg-gray-700 transition-colors group"
-                       title="Billing">
-                        <i class="fas fa-file-invoice-dollar mr-2 text-yellow-600 group-hover:text-yellow-700"></i>
-                        <span>Billing</span>
-                    </a>
-                    {% endif %}
-                    
-                    {% if current_user.is_administrator() %}
-                    <a href="" class="px-3 py-1.5 rounded-md text-sm font-medium flex items-center hover:bg-white dark:hover:bg-gray-700 transition-colors group"
-                       title="Administration">
-                        <i class="fas fa-cogs mr-2 text-red-600 group-hover:text-red-700"></i>
-                        <span>Admin</span>
-                    </a>
-                    {% endif %}
+{# Admin Quick Links - Only visible to administrators #}
+{% if current_user.is_administrator() %}
+<div class="flex flex-col sm:flex-row gap-2 mt-4">
+    <a href="{{ url_for('admin_web_bp.approve_lpo') }}"
+       class="px-3 py-1.5 rounded-md text-sm font-medium flex items-center hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors group"
+       title="Admin Dashboard">
+        <i class="fas fa-tachometer-alt mr-2 text-indigo-600 group-hover:text-indigo-700"></i>
+        <span>LPOs</span>
+    </a>
+
+    <a href="{{ url_for('admin_web_bp.manage_requisitions') }}"
+       class="px-3 py-1.5 rounded-md text-sm font-medium flex items-center hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors group"
+       title="Approve Requisitions">
+        <i class="fas fa-file-signature mr-2 text-emerald-600 group-hover:text-emerald-700"></i>
+        <span>Requisitions</span>
+    </a>
+
+    <a href="{{ url_for('admin_web_bp.approve_payrolls') }}"
+       class="px-3 py-1.5 rounded-md text-sm font-medium flex items-center hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors group"
+       title="Approve Payrolls">
+        <i class="fas fa-check-double mr-2 text-yellow-500 group-hover:text-yellow-600"></i>
+        <span>Payrolls</span>
+    </a>
+
+    <a href="{{ url_for('admin_web_bp.approve_payments') }}"
+       class="px-3 py-1.5 rounded-md text-sm font-medium flex items-center hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors group"
+       title="Approve Payments">
+        <i class="fas fa-chart-bar mr-2 text-purple-600 group-hover:text-purple-700"></i>
+        <span>Approve Payments</span>
+    </a>
+</div>
+{% endif %}
                 </div>
             </div>
             <!-- Right Section - User & Controls -->

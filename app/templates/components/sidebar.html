@@ -23,18 +23,45 @@
 
     <nav class="mt-4">
         <ul class="space-y-1">
-            <li> {# At the top of your template: decide where to send the user #} {% set dashboard_url = url_for('dashboard_web.index') %} {% if current_user.has_privilege('doctor_dashboard') %} {% set dashboard_url = url_for('dashboard_web.doctor_dashboard')
-                %} {% elif current_user.has_privilege('nurse_dashboard') %} {% set dashboard_url = url_for('dashboard_web.nurse_dashboard') %} {% elif current_user.has_privilege('labtech_dashboard') %} {% set dashboard_url = url_for('dashboard_web.labtech_dashboard')
-                %} {% elif current_user.has_privilege('radiology_dashboard') %} {% set dashboard_url = url_for('dashboard_web.radiology_dashboard') %} {% elif current_user.has_privilege('pharmacy_dashboard') %} {% set dashboard_url = url_for('dashboard_web.pharmacy_dashboard')
-                %} {% elif current_user.has_privilege('registration_dashboard') %} {% set dashboard_url = url_for('dashboard_web.registration_dashboard') %} {% elif current_user.has_privilege('patient_dashboard') %} {% set dashboard_url = url_for('dashboard_web.patient_dashboard')
-                %} {% elif current_user.has_privilege('billing_dashboard') %} {% set dashboard_url = url_for('dashboard_web.billing_dashboard') %} {% elif current_user.is_administrator() %} {% set dashboard_url = url_for('dashboard_web.admin_overview')
-                %} {% endif %} {# Then render your animated logo #}
-                <a href="{{ dashboard_url }}" class="flex items-center space-x-3 p-3 rounded-lg bg-blue-600 text-white shadow transition-all dark:bg-blue-800 dark:text-white">
-                    <i class="fas fa-home text-white"></i>
-                    <span class="font-semibold sidebar-text transition-opacity duration-300">Dashboard</span>
-                </a>
-            </li>
+<li>
+    {# At the top of your template: decide where to send the user #}
+    {% set dashboard_url = url_for('dashboard_web.index') %}
 
+    {% if current_user.has_privilege('doctor_dashboard') %}
+        {% set dashboard_url = url_for('dashboard_web.doctor_dashboard') %}
+    {% elif current_user.has_privilege('nurse_dashboard') %}
+        {% set dashboard_url = url_for('dashboard_web.nurse_dashboard') %}
+    {% elif current_user.has_privilege('labtech_dashboard') %}
+        {% set dashboard_url = url_for('dashboard_web.labtech_dashboard') %}
+    {% elif current_user.has_privilege('radiology_dashboard') %}
+        {% set dashboard_url = url_for('dashboard_web.radiology_dashboard') %}
+    {% elif current_user.has_privilege('pharmacy_dashboard') %}
+        {% set dashboard_url = url_for('dashboard_web.pharmacy_dashboard') %}
+    {% elif current_user.has_privilege('registration_dashboard') %}
+        {% set dashboard_url = url_for('dashboard_web.registration_dashboard') %}
+    {% elif current_user.has_privilege('billing_dashboard') %}
+        {% set dashboard_url = url_for('dashboard_web.billing_dashboard') %}
+
+    {# NEW HR DASHBOARD #}
+    {% elif current_user.has_privilege('hr_dashboard') %}
+        {% set dashboard_url = url_for('dashboard_web.hr_dashboard') %}
+
+    {# NEW FINANCE DASHBOARD #}
+    {% elif current_user.has_privilege('finance_dashboard') %}
+        {% set dashboard_url = url_for('dashboard_web.finance_dashboard') %}
+
+    {% elif current_user.has_privilege('patient_dashboard') %}
+        {% set dashboard_url = url_for('dashboard_web.patient_dashboard') %}
+    {% elif current_user.is_administrator() %}
+        {% set dashboard_url = url_for('dashboard_web.admin_overview') %}
+    {% endif %}
+
+    {# Then render your dashboard link #}
+    <a href="{{ dashboard_url }}" class="flex items-center space-x-3 p-3 rounded-lg bg-blue-600 text-white shadow transition-all dark:bg-blue-800 dark:text-white">
+        <i class="fas fa-home text-white"></i>
+        <span class="font-semibold sidebar-text transition-opacity duration-300">Dashboard</span>
+    </a>
+</li>
             {% if has_privilege('users:create') or has_privilege('users:list') or has_privilege('users:edit') %}
             <li class="dropdown-group">
                 <button class="dropdown-btn flex items-center justify-between w-full p-3 rounded-lg hover:bg-blue-100 transition-all dark:hover:bg-gray-700 dark:text-gray-200 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">

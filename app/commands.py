@@ -442,13 +442,16 @@ def seed_roles_for_tenant(session):
         'Lab Tech': (0, False),
         'Radiologist': (0, False),
         'Billing Officer': (0, False),
+
+        # NEW ROLES
+        'Finance Officer': (0, False),
+        'HR Manager': (0, False),
+
         'Admin': (0, False),
-        'Board Memember': (0, False),
-        'IT Specialist': (0, False), # ADDED: IT Role
-
-
+        'Board Member': (0, False),
+        'IT Specialist': (0, False),
     }
-    
+        
     created = 0
     updated = 0
     
@@ -485,7 +488,7 @@ def seed_departments_for_tenant(session):
         "Psychiatry", "Obstetrics & Gynecology", "Urology",
         "Gastroenterology", "Endocrinology", "Oncology",
         "Pulmonology", "Nephrology", "Rheumatology",
-        "Doctor", "Clinical Officer", "Receptionist", "Nursing", "Administrator", "Board Memember", "Information Technology",
+        "Doctor", "Clinical Officer", "Receptionist", "Nursing", "Administrator", "Board Memember", "Information Technology", "Finance",
     ]
     created = 0
     for name in departments:

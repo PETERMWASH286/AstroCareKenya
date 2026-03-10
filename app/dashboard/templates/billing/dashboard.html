@@ -1,219 +1,246 @@
-{% extends "base.html" %} {% block content %}
-<div class="min-h-screen p-6 bg-gray-100 dark:bg-gray-900">
-    <!-- Header -->
-    <header class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
-        <h1 class="text-3xl font-extrabold text-gray-900 dark:text-white mb-4 sm:mb-0">
-            Billing Dashboard
-        </h1>
-        <div class="flex space-x-3">
-            <button class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded shadow transition">
-        New Invoice
-      </button>
-            <button class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow transition">
-        Receive Payment
-      </button>
-        </div>
-    </header>
+{% extends "base.html" %}
+{% block title %}Billing Dashboard | AstroCare{% endblock %}
 
-    <!-- Summary Cards -->
-    <section class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-5 flex items-center space-x-4">
-            <div class="bg-indigo-100 text-indigo-700 p-3 rounded-full">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2v4a3 3 0 006 0v-4c0-1.105-1.343-2-3-2z" />
-          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6" />
-        </svg>
-            </div>
-            <div>
-                <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Total Billed Today</p>
-                <p class="text-2xl font-bold text-gray-900 dark:text-white">$25,480</p>
+{% block content %}
+<div class="min-h-screen bg-gray-100 dark:bg-gray-900 p-4 md:p-6">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header with greeting, date, and actions -->
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
+<div>
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ greeting }}, {{ current_user.full_name or current_user.username }}!</h1>
+    <p class="text-gray-600 dark:text-gray-400 mt-1">{{ today.strftime('%A, %B %d, %Y') }}</p>
+</div>
+            <div class="flex space-x-3 mt-4 sm:mt-0">
+<a href="{{ url_for('billing_web.create_invoice') }}"
+   class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg shadow-md transition hover:shadow-lg flex items-center text-sm">
+    <i class="fas fa-file-invoice mr-2"></i>New Invoice
+</a>
+
+<a href="{{ url_for('billing_web.payment_processing') }}"
+   class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow-md transition hover:shadow-lg flex items-center text-sm">
+    <i class="fas fa-hand-holding-usd mr-2"></i>Receive Payment
+</a>
             </div>
         </div>
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-5 flex items-center space-x-4">
-            <div class="bg-yellow-100 text-yellow-700 p-3 rounded-full">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m0 14v1m8-8h1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707" />
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v8m4-4H8" />
-        </svg>
-            </div>
-            <div>
-                <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Pending Payments</p>
-                <p class="text-2xl font-bold text-gray-900 dark:text-white">$8,320</p>
-            </div>
-        </div>
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-5 flex items-center space-x-4">
-            <div class="bg-green-100 text-green-700 p-3 rounded-full">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-        </svg>
-            </div>
-            <div>
-                <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Payments Received</p>
-                <p class="text-2xl font-bold text-gray-900 dark:text-white">$17,160</p>
-            </div>
-        </div>
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-5 flex items-center space-x-4">
-            <div class="bg-red-100 text-red-700 p-3 rounded-full">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01" />
-        </svg>
-            </div>
-            <div>
-                <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Refunds Issued</p>
-                <p class="text-2xl font-bold text-gray-900 dark:text-white">$1,150</p>
-            </div>
-        </div>
-    </section>
 
-    <!-- Main Content Grid -->
-    <section class="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        <!-- Left Panel: Recent Transactions -->
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 overflow-auto max-h-[600px]">
-            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Recent Transactions</h2>
-
-            <div class="mb-4 flex justify-between items-center">
-                <input type="text" placeholder="Search invoices..." class="w-full max-w-xs rounded border border-gray-300 dark:border-gray-700 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-900 dark:text-white" />
-                <button class="ml-3 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded shadow transition">
-          Filter
-        </button>
-            </div>
-
-            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead class="bg-gray-50 dark:bg-gray-700">
-                    <tr>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Invoice #</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Patient</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Date</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Amount</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Status</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer">
-                        <td class="px-4 py-3 text-gray-900 dark:text-white font-medium">INV-1001</td>
-                        <td class="px-4 py-3 text-gray-700 dark:text-gray-300">John Doe</td>
-                        <td class="px-4 py-3 text-gray-700 dark:text-gray-300">2025-05-27</td>
-                        <td class="px-4 py-3 font-semibold text-gray-900 dark:text-white">$320.00</td>
-                        <td class="px-4 py-3">
-                            <span class="inline-block px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">Paid</span>
-                        </td>
-                    </tr>
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer">
-                        <td class="px-4 py-3 text-gray-900 dark:text-white font-medium">INV-1002</td>
-                        <td class="px-4 py-3 text-gray-700 dark:text-gray-300">Jane Smith</td>
-                        <td class="px-4 py-3 text-gray-700 dark:text-gray-300">2025-05-26</td>
-                        <td class="px-4 py-3 font-semibold text-gray-900 dark:text-white">$450.00</td>
-                        <td class="px-4 py-3">
-                            <span class="inline-block px-3 py-1 rounded-full text-sm font-semibold bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300">Pending</span>
-                        </td>
-                    </tr>
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer">
-                        <td class="px-4 py-3 text-gray-900 dark:text-white font-medium">INV-1003</td>
-                        <td class="px-4 py-3 text-gray-700 dark:text-gray-300">Mary Johnson</td>
-                        <td class="px-4 py-3 text-gray-700 dark:text-gray-300">2025-05-25</td>
-                        <td class="px-4 py-3 font-semibold text-gray-900 dark:text-white">$275.00</td>
-                        <td class="px-4 py-3">
-                            <span class="inline-block px-3 py-1 rounded-full text-sm font-semibold bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">Overdue</span>
-                        </td>
-                    </tr>
-                    <!-- Add more rows dynamically from your backend -->
-                </tbody>
-            </table>
+        <!-- Quick Actions (small icon buttons) -->
+        <div class="flex flex-wrap gap-3 mb-6">
+            <a href="{{ url_for('patients_web.register_patient') }}" class="inline-flex items-center px-3 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition border border-gray-200 dark:border-gray-700 text-sm">
+                <i class="fas fa-user-plus text-indigo-600 mr-2"></i> New Patient
+            </a>
+            <a href="{{ url_for('appointments_web.manage_schedule') }}" class="inline-flex items-center px-3 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition border border-gray-200 dark:border-gray-700 text-sm">
+                <i class="fas fa-calendar-plus text-green-600 mr-2"></i> Appointment
+            </a>
+            <a href="" class="inline-flex items-center px-3 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition border border-gray-200 dark:border-gray-700 text-sm">
+                <i class="fas fa-file-invoice text-amber-600 mr-2"></i> Estimate
+            </a>
+            <a href="{{ url_for('billing_web.payment_processing') }}" class="inline-flex items-center px-3 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition border border-gray-200 dark:border-gray-700 text-sm">
+                <i class="fas fa-credit-card text-purple-600 mr-2"></i> Record Payment
+            </a>
+            <a href="{{ url_for('billing_web.billing_reports') }}" class="inline-flex items-center px-3 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition border border-gray-200 dark:border-gray-700 text-sm">
+                <i class="fas fa-chart-line text-rose-600 mr-2"></i> Reports
+            </a>
         </div>
 
-        <!-- Right Panel -->
-        <div class="xl:col-span-2 grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <!-- Outstanding Payments Bar Chart -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Outstanding Payments (Weekly)</h2>
-                <canvas id="outstandingPaymentsChart" class="w-full h-64"></canvas>
+        <!-- Summary Cards (smaller, with different colors) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div class="bg-gradient-to-br from-indigo-500 to-indigo-600 dark:from-indigo-700 dark:to-indigo-800 rounded-xl shadow-md p-4 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-indigo-100 text-xs font-medium">Total Billed Today</p>
+                        <p class="text-xl font-bold mt-1">KES {{ "{:,.0f}".format(total_billed_today) }}</p>
+                    </div>
+                    <div class="p-2 bg-white/20 rounded-lg">
+                        <i class="fas fa-file-invoice-dollar text-white text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-2 text-xs text-indigo-100 flex items-center">
+                    <i class="fas fa-arrow-up mr-1"></i> +8% vs yesterday
+                </div>
             </div>
 
-            <!-- Payment Methods Breakdown Pie Chart -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Payment Methods</h2>
-                <canvas id="paymentMethodsChart" class="w-full h-64"></canvas>
+            <div class="bg-gradient-to-br from-amber-500 to-amber-600 dark:from-amber-700 dark:to-amber-800 rounded-xl shadow-md p-4 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-amber-100 text-xs font-medium">Pending Payments</p>
+                        <p class="text-xl font-bold mt-1">KES {{ "{:,.0f}".format(pending_amount) }}</p>
+                    </div>
+                    <div class="p-2 bg-white/20 rounded-lg">
+                        <i class="fas fa-clock text-white text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-2 text-xs text-amber-100 flex items-center">
+                    <i class="fas fa-exclamation-triangle mr-1"></i> Awaiting completion
+                </div>
             </div>
 
-            <!-- Notifications Panel -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 col-span-full">
-                <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Notifications</h2>
-                <ul class="divide-y divide-gray-200 dark:divide-gray-700 max-h-48 overflow-y-auto">
-                    <li class="py-3 flex items-center space-x-3">
-                        <div class="bg-indigo-600 text-white p-2 rounded-full">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m4 4v-4m-3 8a9 9 0 11-9-9 9 9 0 019 9z" />
-              </svg>
-                        </div>
-                        <p class="text-gray-700 dark:text-gray-300">Invoice INV-1002 is pending payment for over 5 days.</p>
-                    </li>
-                    <li class="py-3 flex items-center space-x-3">
-                        <div class="bg-yellow-500 text-white p-2 rounded-full">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01" />
-              </svg>
-                        </div>
-                        <p class="text-gray-700 dark:text-gray-300">New payment method added for credit cards.</p>
-                    </li>
-                    <li class="py-3 flex items-center space-x-3">
-                        <div class="bg-red-600 text-white p-2 rounded-full">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-                        </div>
-                        <p class="text-gray-700 dark:text-gray-300">Invoice INV-1003 is overdue. Immediate action required.</p>
-                    </li>
-                    <!-- Add more notifications dynamically here -->
-                </ul>
+            <div class="bg-gradient-to-br from-emerald-500 to-emerald-600 dark:from-emerald-700 dark:to-emerald-800 rounded-xl shadow-md p-4 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-emerald-100 text-xs font-medium">Payments Received Today</p>
+                        <p class="text-xl font-bold mt-1">KES {{ "{:,.0f}".format(payments_received_today) }}</p>
+                    </div>
+                    <div class="p-2 bg-white/20 rounded-lg">
+                        <i class="fas fa-check-circle text-white text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-2 text-xs text-emerald-100 flex items-center">
+                    <i class="fas fa-check-circle mr-1"></i> Completed
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-br from-rose-500 to-rose-600 dark:from-rose-700 dark:to-rose-800 rounded-xl shadow-md p-4 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-rose-100 text-xs font-medium">Refunds Issued Today</p>
+                        <p class="text-xl font-bold mt-1">KES {{ "{:,.0f}".format(refunds_today) }}</p>
+                    </div>
+                    <div class="p-2 bg-white/20 rounded-lg">
+                        <i class="fas fa-undo-alt text-white text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-2 text-xs text-rose-100 flex items-center">
+                    <i class="fas fa-info-circle mr-1"></i> Processed
+                </div>
             </div>
         </div>
-    </section>
+
+        <!-- Main Content Grid -->
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+            <!-- Left Panel: Recent Transactions (made bigger) -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-6 overflow-auto max-h-[800px] xl:col-span-2">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white">Recent Transactions</h2>
+                    <a href="#" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">View all →</a>
+                </div>
+
+                <div class="mb-4 flex flex-col sm:flex-row gap-3">
+                    <input type="text" placeholder="Search invoices..." 
+                           class="w-full sm:max-w-xs rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-900 dark:text-white">
+                    <button class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg shadow transition flex items-center">
+                        <i class="fas fa-filter mr-2"></i>Filter
+                    </button>
+                </div>
+
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Invoice #</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Patient</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Date</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Amount</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                        {% for txn in recent_transactions %}
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer">
+                            <td class="px-4 py-3 text-gray-900 dark:text-white font-medium">#{{ txn.id }}</td>
+                            <td class="px-4 py-3 text-gray-700 dark:text-gray-300">{{ txn.patient.full_name if txn.patient else 'N/A' }}</td>
+                            <td class="px-4 py-3 text-gray-700 dark:text-gray-300">{{ txn.created_at.strftime('%Y-%m-%d') }}</td>
+                            <td class="px-4 py-3 font-semibold text-gray-900 dark:text-white">KES {{ "{:,.0f}".format(txn.amount) }}</td>
+                            <td class="px-4 py-3">
+                                <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold
+                                    {% if txn.status == 'completed' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300
+                                    {% elif txn.status == 'pending' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300
+                                    {% else %}bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300{% endif %}">
+                                    {{ txn.status|capitalize }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="px-4 py-3 text-center text-gray-500 dark:text-gray-400">No recent transactions</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Right Panel (1/3 width) -->
+            <div class="space-y-8">
+                <!-- Outstanding Payments Bar Chart -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-6">
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Outstanding (Weekly)</h2>
+                    <div class="relative h-48 w-full">
+                        <canvas id="outstandingChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Payment Methods Pie Chart -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-6">
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Payment Methods</h2>
+                    <div class="relative h-48 w-full">
+                        <canvas id="paymentChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Notifications Panel -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-6">
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Alerts</h2>
+                    <ul class="divide-y divide-gray-200 dark:divide-gray-700 max-h-48 overflow-y-auto">
+                        {% for note in notifications %}
+                        <li class="py-3 flex items-center space-x-3">
+                            <div class="{{ note.icon }} text-white p-2 rounded-full flex-shrink-0">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ note.icon_svg }}" />
+                                </svg>
+                            </div>
+                            <p class="text-gray-700 dark:text-gray-300 text-sm">{{ note.text }}</p>
+                        </li>
+                        {% else %}
+                        <li class="py-3 text-center text-gray-500 dark:text-gray-400">No new notifications</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
-<!-- Chart.js Scripts -->
+<!-- Chart.js (loaded at end) -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    // Outstanding Payments Bar Chart
-    const ctxOutstanding = document.getElementById('outstandingPaymentsChart').getContext('2d');
-    const outstandingPaymentsChart = new Chart(ctxOutstanding, {
-        type: 'bar',
-        data: {
-            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-            datasets: [{
-                label: 'Outstanding ($)',
-                data: [500, 700, 300, 900, 600, 400, 700],
-                backgroundColor: '#6366F1', // indigo-500
-            }]
-        },
-        options: {
-            responsive: true,
-            scales: {
-                y: {
-                    beginAtZero: true
-                }
+    document.addEventListener('DOMContentLoaded', function() {
+        // Outstanding Payments Bar Chart
+        const outstandingCtx = document.getElementById('outstandingChart').getContext('2d');
+        new Chart(outstandingCtx, {
+            type: 'bar',
+            data: {
+                labels: {{ weekly_labels|tojson }},
+                datasets: [{
+                    label: 'Outstanding (KES)',
+                    data: {{ weekly_data|tojson }},
+                    backgroundColor: '#6366F1',
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { y: { beginAtZero: true, ticks: { callback: value => 'KES ' + value.toLocaleString() } } },
+                plugins: { legend: { display: false } }
             }
-        }
-    });
+        });
 
-    // Payment Methods Pie Chart
-    const ctxPayment = document.getElementById('paymentMethodsChart').getContext('2d');
-    const paymentMethodsChart = new Chart(ctxPayment, {
-        type: 'pie',
-        data: {
-            labels: ['Credit Card', 'PayPal', 'Bank Transfer', 'Cash'],
-            datasets: [{
-                data: [45, 25, 20, 10],
-                backgroundColor: [
-                    '#6366F1', // Indigo
-                    '#FBBF24', // Yellow
-                    '#10B981', // Green
-                    '#EF4444' // Red
-                ],
-            }]
-        },
-        options: {
-            responsive: true,
-        }
+        // Payment Methods Pie Chart
+        const paymentCtx = document.getElementById('paymentChart').getContext('2d');
+        new Chart(paymentCtx, {
+            type: 'pie',
+            data: {
+                labels: {{ method_labels|tojson }},
+                datasets: [{
+                    data: {{ method_counts|tojson }},
+                    backgroundColor: ['#6366F1', '#FBBF24', '#10B981', '#EF4444', '#8B5CF6'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } }
+            }
+        });
     });
 </script>
 {% endblock %}

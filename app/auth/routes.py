@@ -169,20 +169,39 @@ def login():
 
 def redirect_after_login(user):
     """Redirect user to appropriate dashboard after login"""
+    
     if user.is_administrator():
         return redirect(url_for('dashboard_web.admin_overview'))
+
     elif user.has_privilege('doctor_dashboard'):
         return redirect(url_for('dashboard_web.doctor_dashboard'))
+
     elif user.has_privilege('nurse_dashboard'):
         return redirect(url_for('dashboard_web.nurse_dashboard'))
+
     elif user.has_privilege('labtech_dashboard'):
         return redirect(url_for('dashboard_web.labtech_dashboard'))
+
     elif user.has_privilege('radiology_dashboard'):
         return redirect(url_for('dashboard_web.radiology_dashboard'))
+
     elif user.has_privilege('pharmacy_dashboard'):
         return redirect(url_for('dashboard_web.pharmacy_dashboard'))
+
     elif user.has_privilege('registration_dashboard'):
         return redirect(url_for('dashboard_web.registration_dashboard'))
+
+    elif user.has_privilege('billing_dashboard'):
+        return redirect(url_for('dashboard_web.billing_dashboard'))
+
+    # NEW: HR DASHBOARD
+    elif user.has_privilege('hr_dashboard'):
+        return redirect(url_for('dashboard_web.hr_dashboard'))
+
+    # NEW: FINANCE DASHBOARD
+    elif user.has_privilege('finance_dashboard'):
+        return redirect(url_for('dashboard_web.finance_dashboard'))
+
     else:
         return redirect(url_for('dashboard_web.patient_dashboard'))
 
@@ -313,10 +332,6 @@ def allowed_file(filename):
 @auth_web_bp.route('/profile', methods=['GET', 'POST'])
 @login_required
 def profile():
-    # Get all departments and roles for dropdowns
-    departments = Department.query.order_by(Department.name).all()
-    roles = Role.query.order_by(Role.name).all()
-
     if request.method == 'POST':
         # Update profile information
         current_user.full_name = request.form.get('full_name', current_user.full_name)
@@ -335,27 +350,18 @@ def profile():
                 img.save(file_path)
                 
                 current_user.profile_image = url_for('static', filename='uploads/' + filename)
-        # Update department
-        new_dept_id = request.form.get('department_id')
-        if new_dept_id:
-            new_dept = Department.query.get(new_dept_id)
-            if new_dept:
-                current_user.department = new_dept
-
-        # Update role
-        new_role_id = request.form.get('role_id')
-        if new_role_id:
-            new_role = Role.query.get(new_role_id)
-            if new_role and new_role not in current_user.roles:
-                current_user.roles = [new_role]  # Replace all roles with new one
-
+        
         db.session.commit()
         flash('Profile updated successfully', 'success')
         return redirect(url_for('auth_web.profile'))
 
+    # Pass only the current user's department and roles (no full lists)
+    user_department = current_user.department
+    user_roles = list(current_user.roles)  # list of Role objects
+
     return render_template('profile.html',
-                           departments=departments,
-                           roles=roles)
+                           user_department=user_department,
+                           user_roles=user_roles)
 
 @auth_web_bp.route('/settings', methods=['GET', 'POST'])
 @login_required

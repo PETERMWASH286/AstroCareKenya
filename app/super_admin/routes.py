@@ -161,6 +161,8 @@ def create_hospital():
             ('billing:create_invoice', 'Billing', 'Create a new invoice'),
             ('billing:process_payment', 'Billing', 'Process payments'),
             ('billing:transactions', 'Billing', 'View transaction history'),
+                    ('billing_dashboard', 'Dashboard', 'Access Billing Dashboard'),
+
             ('pharmacy:dispense', 'Pharmacy', 'Dispense medication'),
             ('pharmacy:inventory', 'Pharmacy', 'Manage pharmacy inventory'),
             ('pharmacy:track_prescriptions', 'Pharmacy', 'Track prescriptions'),
@@ -207,6 +209,8 @@ def create_hospital():
         ('hr:recruitment:settings', 'Human Resources', 'Configure recruitment settings'),
         # Keep the existing general recruitment privilege for backward compatibility
         ('hr:recruitment', 'Human Resources', 'Manage Recruitment'),
+                            ('hr_dashboard', 'Dashboard', 'Access hr Dashboard'),
+
         ('inventory:dashboard', 'Inventory', 'View Inventory Dashboard'),
             ('inventory:manage_stock', 'Inventory', 'Manage Stock Levels'),
             ('inventory:stock_requests', 'Inventory', 'View & Respond to Stock Requests'),
@@ -270,6 +274,9 @@ def create_hospital():
 ('finance:balance_sheet', 'Finance', 'View Balance Sheet'),
 ('finance:cashflow_statement', 'Finance', 'View Cash Flow Statement'),
 ('finance:payroll', 'Finance', 'Process and manage payroll'),
+                                    ('finance_dashboard', 'Dashboard', 'Access Finance Dashboard'),
+
+
             ('reports:clinical', 'Reports', 'Access Clinical Reports'),
             ('reports:financial', 'Reports', 'Access Financial Reports'),
             ('reports:analytics', 'Reports', 'Access Analytics Dashboard'),
@@ -371,6 +378,9 @@ def create_hospital():
                 'Admin': (0, False),
                 'Board Memember': (0, False),
                 'IT Specialist': (0, False), # ADDED: IT Role
+                        # NEW ROLES
+        'Finance Officer': (0, False),
+        'HR Manager': (0, False),
             }
 
             # Create roles and assign privileges to Admin
@@ -419,7 +429,7 @@ def create_hospital():
         "Psychiatry", "Obstetrics & Gynecology", "Urology",
         "Gastroenterology", "Endocrinology", "Oncology",
         "Pulmonology", "Nephrology", "Rheumatology",
-        "Doctor", "Clinical Officer", "Receptionist", "Nursing", "Administrator", "Board Memember", "Information Technology",
+        "Doctor", "Clinical Officer", "Receptionist", "Nursing", "Administrator", "Board Memember", "Information Technology", "Finance",
             ]
             for d in dept_names:
                 if not session.query(Department).filter_by(name=d).first():

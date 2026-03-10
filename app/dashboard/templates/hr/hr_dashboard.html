@@ -1,0 +1,327 @@
+{% extends 'base.html' %}
+{% block title %}HR Dashboard | AstroCare{% endblock %}
+
+{% block head %}
+<!-- Chart.js for optional charts -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-100 dark:bg-gray-900 p-4 md:p-6">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header with greeting and quick actions -->
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ greeting }}, {{ current_user.full_name or current_user.username }}!</h1>
+                <p class="text-gray-600 dark:text-gray-400 mt-1">{{ today.strftime('%A, %B %d, %Y') }}</p>
+            </div>
+            <div class="flex flex-wrap gap-2 mt-4 sm:mt-0">
+                <a href="{{ url_for('hr_web.staff_directory') }}" class="inline-flex items-center px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition shadow-sm">
+                    <i class="fas fa-user-plus mr-2"></i>Add Biodata
+                </a>
+                <a href="{{ url_for('hr_web.salary_processing') }}" class="inline-flex items-center px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition shadow-sm">
+                    <i class="fas fa-money-bill-wave mr-2"></i>Process Payroll
+                </a>
+                <a href="{{ url_for('hr_web.recruitment_jobs') }}" class="inline-flex items-center px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg transition shadow-sm">
+                    <i class="fas fa-briefcase mr-2"></i>Post Job
+                </a>
+                <a href="#" class="inline-flex items-center px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition shadow-sm">
+                    <i class="fas fa-calendar-alt mr-2"></i>Manage Leave
+                </a>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <!-- Total Employees -->
+            <div class="bg-gradient-to-br from-blue-500 to-blue-600 dark:from-blue-700 dark:to-blue-800 rounded-xl shadow-md p-4 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-blue-100 text-xs font-medium">Total Employees</p>
+                        <p class="text-2xl font-bold mt-1">{{ total_employees }}</p>
+                    </div>
+                    <div class="p-2 bg-white/20 rounded-lg">
+                        <i class="fas fa-users text-white text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-2 text-xs text-blue-100 flex items-center">
+                    <i class="fas fa-user-check mr-1"></i> {{ active_employees }} active
+                </div>
+            </div>
+
+            <!-- Payroll This Month -->
+            <div class="bg-gradient-to-br from-green-500 to-green-600 dark:from-green-700 dark:to-green-800 rounded-xl shadow-md p-4 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-green-100 text-xs font-medium">Payroll ({{ today.strftime('%b') }})</p>
+                        <p class="text-2xl font-bold mt-1">KES {{ "{:,.0f}".format(payroll_net) }}</p>
+                    </div>
+                    <div class="p-2 bg-white/20 rounded-lg">
+                        <i class="fas fa-money-bill-wave text-white text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-2 text-xs text-green-100 flex items-center">
+                    <i class="fas fa-clock mr-1"></i> {{ payroll_status }}
+                </div>
+            </div>
+
+            <!-- Pending Leave -->
+            <div class="bg-gradient-to-br from-amber-500 to-amber-600 dark:from-amber-700 dark:to-amber-800 rounded-xl shadow-md p-4 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-amber-100 text-xs font-medium">Pending Leave</p>
+                        <p class="text-2xl font-bold mt-1">{{ pending_leave }}</p>
+                    </div>
+                    <div class="p-2 bg-white/20 rounded-lg">
+                        <i class="fas fa-calendar-times text-white text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-2 text-xs text-amber-100 flex items-center">
+                    <i class="fas fa-check-circle mr-1"></i> {{ approved_leave }} approved
+                </div>
+            </div>
+
+            <!-- Open Positions -->
+            <div class="bg-gradient-to-br from-purple-500 to-purple-600 dark:from-purple-700 dark:to-purple-800 rounded-xl shadow-md p-4 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-purple-100 text-xs font-medium">Open Positions</p>
+                        <p class="text-2xl font-bold mt-1">{{ open_positions }}</p>
+                    </div>
+                    <div class="p-2 bg-white/20 rounded-lg">
+                        <i class="fas fa-briefcase text-white text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-2 text-xs text-purple-100 flex items-center">
+                    <i class="fas fa-users mr-1"></i> {{ total_candidates }} candidates
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Left Column: Recent Activity & Pending Leave -->
+            <div class="space-y-6">
+                <!-- Recent Activity -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-5">
+                    <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-3 flex items-center">
+                        <i class="fas fa-history text-indigo-500 mr-2"></i> Recent Activity
+                    </h2>
+                    <ul class="divide-y divide-gray-200 dark:divide-gray-700">
+                        {% for act in recent_activity %}
+                        <li class="py-3 flex items-start space-x-3">
+                            <div class="flex-shrink-0 mt-1">
+                                {% if act.type == 'leave' %}
+                                    <i class="fas fa-calendar-alt text-green-500"></i>
+                                {% elif act.type == 'disciplinary' %}
+                                    <i class="fas fa-gavel text-red-500"></i>
+                                {% elif act.type == 'candidate' %}
+                                    <i class="fas fa-user-tie text-blue-500"></i>
+                                {% else %}
+                                    <i class="fas fa-bell text-gray-500"></i>
+                                {% endif %}
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm text-gray-800 dark:text-gray-200">{{ act.description }}</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ act.time.strftime('%H:%M %d-%m-%Y') if act.time else '' }}</p>
+                            </div>
+                        </li>
+                        {% else %}
+                        <li class="py-3 text-center text-gray-500 dark:text-gray-400">No recent activity</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <!-- Pending Leave Requests Table -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+                    <div class="p-5 border-b border-gray-200 dark:border-gray-700">
+                        <h2 class="text-lg font-bold text-gray-900 dark:text-white flex items-center">
+                            <i class="fas fa-clock text-amber-500 mr-2"></i> Pending Leave
+                        </h2>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                            <thead class="bg-gray-50 dark:bg-gray-700">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Employee</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Type</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Dates</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Days</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                                {% for lr in pending_leave_list %}
+                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                    <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">{{ lr.employee.full_name }}</td>
+                                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ lr.leave_type.name }}</td>
+                                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ lr.start_date.strftime('%d/%m') }} - {{ lr.end_date.strftime('%d/%m') }}</td>
+                                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ lr.days_requested }}</td>
+                                    <td class="px-4 py-3">
+                                        <a href="#" class="text-indigo-600 hover:text-indigo-800 text-xs font-medium">Review</a>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr><td colspan="5" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">No pending leave requests</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Middle & Right Columns (2/3 width) -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Recruitment & Disciplinary Overview -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Open Positions -->
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+                        <div class="p-5 border-b border-gray-200 dark:border-gray-700">
+                            <h2 class="text-lg font-bold text-gray-900 dark:text-white flex items-center">
+                                <i class="fas fa-briefcase text-green-500 mr-2"></i> Open Positions
+                            </h2>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                <thead class="bg-gray-50 dark:bg-gray-700">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Job Title</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Candidates</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Deadline</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                                    {% for jp in job_postings %}
+                                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                        <td class="px-4 py-3 text-sm text-gray-900 dark:text-white max-w-[150px] truncate" title="{{ jp.title }}">{{ jp.title }}</td>
+                                        <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ jp.candidate_count }}</td>
+                                        <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ jp.application_deadline.strftime('%d/%m/%Y') }}</td>
+                                    </tr>
+                                    {% else %}
+                                    <tr><td colspan="3" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">No open positions</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Upcoming Interviews -->
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+                        <div class="p-5 border-b border-gray-200 dark:border-gray-700">
+                            <h2 class="text-lg font-bold text-gray-900 dark:text-white flex items-center">
+                                <i class="fas fa-calendar-check text-purple-500 mr-2"></i> Upcoming Interviews
+                            </h2>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                <thead class="bg-gray-50 dark:bg-gray-700">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Candidate</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Position</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Time</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                                    {% for int in upcoming_interviews %}
+                                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                        <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">{{ int.candidate.full_name }}</td>
+                                        <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ int.candidate.job_posting.title }}</td>
+                                        <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ int.scheduled_date.strftime('%H:%M %d/%m') }}</td>
+                                    </tr>
+                                    {% else %}
+                                    <tr><td colspan="3" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">No upcoming interviews</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Disciplinary Cases -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+                    <div class="p-5 border-b border-gray-200 dark:border-gray-700">
+                        <h2 class="text-lg font-bold text-gray-900 dark:text-white flex items-center">
+                            <i class="fas fa-gavel text-red-500 mr-2"></i> Recent Disciplinary Cases
+                        </h2>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                            <thead class="bg-gray-50 dark:bg-gray-700">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Case #</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Employee</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Type</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Reported</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                                {% for case in recent_cases %}
+                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                    <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">{{ case.case_number }}</td>
+                                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ case.employee.full_name }}</td>
+                                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ case.case_type.name }}</td>
+                                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ case.date_reported.strftime('%d/%m/%Y') }}</td>
+                                    <td class="px-4 py-3">
+                                        <span class="px-2 py-1 text-xs rounded-full
+                                            {% if case.status.value == 'Open' %}bg-blue-100 text-blue-800
+                                            {% elif case.status.value == 'Under Investigation' %}bg-amber-100 text-amber-800
+                                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                            {{ case.status.value }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr><td colspan="5" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">No open cases</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Attendance Summary -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-5">
+                        <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-3 flex items-center">
+                            <i class="fas fa-clock text-teal-500 mr-2"></i> Today's Attendance
+                        </h2>
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ absent_today }}</p>
+                                <p class="text-sm text-gray-500">Absent</p>
+                            </div>
+                            <div>
+                                <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ on_leave_today }}</p>
+                                <p class="text-sm text-gray-500">On Leave</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-5">
+                        <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-3 flex items-center">
+                            <i class="fas fa-chart-pie text-blue-500 mr-2"></i> Quick Stats
+                        </h2>
+                        <div class="space-y-2">
+                            <div class="flex justify-between">
+                                <span class="text-sm text-gray-600 dark:text-gray-400">Open Cases</span>
+                                <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ open_cases }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-sm text-gray-600 dark:text-gray-400">Closed Cases</span>
+                                <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ closed_cases }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-sm text-gray-600 dark:text-gray-400">Interviews Today</span>
+                                <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ interviews_today }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-sm text-gray-600 dark:text-gray-400">New Hires (Month)</span>
+                                <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ new_hires_this_month }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

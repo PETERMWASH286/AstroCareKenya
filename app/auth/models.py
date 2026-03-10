@@ -184,21 +184,7 @@ class User(UserMixin, db.Model):
     
     def __init__(self, **kwargs):
         super(User, self).__init__(**kwargs)
-        # Assign default role if user is new and has no roles yet
-        # Use list(self.roles) to trigger loading the dynamic relationship
-        if not self.roles.count(): # Check if the dynamic query returns 0
-            default_role = Role.query.filter_by(default=True).first()
-            if default_role:
-                self.roles.append(default_role)
-                # db.session.add(self) # Add the user back to the session if roles were modified after creation
-                # db.session.commit() # Commit the role assignment if needed immediately
-
-
-    def __repr__(self):
-        # Improved representation for debugging
-        # Access roles carefully as it's a dynamic relationship
-        role_names = ", ".join([role.name for role in self.roles.all()]) if self.roles.count() > 0 else "None"
-        return f'<User {self.username} (ID: {self.id}, Roles: {role_names})>'
+        # Remove the automatic default role assignment
 
     @property
     def password(self):

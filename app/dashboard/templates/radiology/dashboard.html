@@ -1,0 +1,289 @@
+{% extends 'base.html' %}
+{% block title %}Radiology Dashboard | AstroCare{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-100 dark:bg-gray-900 p-4 md:p-6">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header with greeting and quick actions -->
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ greeting }}, {{ current_user.full_name or current_user.username }}!</h1>
+                <p class="text-gray-600 dark:text-gray-400 mt-1">{{ today.strftime('%A, %B %d, %Y') }}</p>
+            </div>
+            <div class="flex flex-wrap gap-2 mt-4 sm:mt-0">
+
+                <a href="{{ url_for('radiology_web.list_imaging_requests') }}" class="inline-flex items-center px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition shadow-sm">
+                    <i class="fas fa-edit mr-2"></i>Enter Results
+                </a>
+                <a href="{{ url_for('radiology_web.inventory_dashboard') }}" class="inline-flex items-center px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg transition shadow-sm">
+                    <i class="fas fa-boxes mr-2"></i>Inventory
+                </a>
+                <a href="{{ url_for('radiology_web.equipment_maintenance') }}" class="inline-flex items-center px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition shadow-sm">
+                    <i class="fas fa-tools mr-2"></i>Maintenance
+                </a>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <!-- Pending Exams -->
+            <div class="bg-gradient-to-br from-blue-500 to-blue-600 dark:from-blue-700 dark:to-blue-800 rounded-xl shadow-md p-4 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-blue-100 text-xs font-medium">Pending Exams</p>
+                        <p class="text-2xl font-bold mt-1">{{ pending_exams }}</p>
+                    </div>
+                    <div class="p-2 bg-white/20 rounded-lg">
+                        <i class="fas fa-clock text-white text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-2 text-xs text-blue-100 flex items-center">
+                    <i class="fas fa-hourglass-half mr-1"></i> Awaiting completion
+                </div>
+            </div>
+
+            <!-- Low Stock Items -->
+            <div class="bg-gradient-to-br from-red-500 to-red-600 dark:from-red-700 dark:to-red-800 rounded-xl shadow-md p-4 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-red-100 text-xs font-medium">Low Stock Items</p>
+                        <p class="text-2xl font-bold mt-1">{{ low_stock }}</p>
+                    </div>
+                    <div class="p-2 bg-white/20 rounded-lg">
+                        <i class="fas fa-exclamation-triangle text-white text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-2 text-xs text-red-100 flex items-center">
+                    <i class="fas fa-arrow-down mr-1"></i> Reorder soon
+                </div>
+            </div>
+
+            <!-- Maintenance Due -->
+            <div class="bg-gradient-to-br from-teal-500 to-teal-600 dark:from-teal-700 dark:to-teal-800 rounded-xl shadow-md p-4 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-teal-100 text-xs font-medium">Maintenance Due</p>
+                        <p class="text-2xl font-bold mt-1">{{ maintenance_due }}</p>
+                    </div>
+                    <div class="p-2 bg-white/20 rounded-lg">
+                        <i class="fas fa-tools text-white text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-2 text-xs text-teal-100 flex items-center">
+                    <i class="fas fa-calendar-alt mr-1"></i> Next 7 days
+                </div>
+            </div>
+
+            <!-- QC Failed -->
+            <div class="bg-gradient-to-br from-amber-500 to-amber-600 dark:from-amber-700 dark:to-amber-800 rounded-xl shadow-md p-4 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-amber-100 text-xs font-medium">QC Failures</p>
+                        <p class="text-2xl font-bold mt-1">{{ qc_failed }}</p>
+                    </div>
+                    <div class="p-2 bg-white/20 rounded-lg">
+                        <i class="fas fa-flask text-white text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-2 text-xs text-amber-100 flex items-center">
+                    <i class="fas fa-exclamation-circle mr-1"></i> Needs attention
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Left Column: Recent Activity & Pending Exams Table -->
+            <div class="space-y-6">
+                <!-- Recent Activity -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-5">
+                    <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-3 flex items-center">
+                        <i class="fas fa-history text-indigo-500 mr-2"></i> Recent Activity
+                    </h2>
+                    <ul class="divide-y divide-gray-200 dark:divide-gray-700">
+                        {% for act in recent_activity %}
+                        <li class="py-3 flex items-start space-x-3">
+                            <div class="flex-shrink-0 mt-1">
+                                {% if act.type == 'exam' %}
+                                    <i class="fas fa-x-ray text-green-500"></i>
+                                {% elif act.type == 'inventory' %}
+                                    <i class="fas fa-boxes text-blue-500"></i>
+                                {% elif act.type == 'maintenance' %}
+                                    <i class="fas fa-tools text-purple-500"></i>
+                                {% else %}
+                                    <i class="fas fa-bell text-gray-500"></i>
+                                {% endif %}
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm text-gray-800 dark:text-gray-200">{{ act.description }}</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ act.time.strftime('%H:%M') if act.time else '' }}</p>
+                            </div>
+                        </li>
+                        {% else %}
+                        <li class="py-3 text-center text-gray-500 dark:text-gray-400">No recent activity</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <!-- Pending Exams Table (improved container) -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+                    <div class="p-5 border-b border-gray-200 dark:border-gray-700">
+                        <h2 class="text-lg font-bold text-gray-900 dark:text-white flex items-center">
+                            <i class="fas fa-hourglass-half text-amber-500 mr-2"></i> Pending Exams
+                        </h2>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                            <thead class="bg-gray-50 dark:bg-gray-700">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Exam</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Patient</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Requested</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                {% for exam in pending_exams_list %}
+                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                    <td class="px-4 py-3 text-sm text-gray-900 dark:text-white max-w-[120px] truncate" title="{{ exam.service.name if exam.service else 'N/A' }}">
+                                        {{ exam.service.name if exam.service else 'N/A' }}
+                                    </td>
+                                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300 max-w-[150px] truncate" title="
+                                        {%- if exam.visit and exam.visit.patient -%}
+                                            {{ exam.visit.patient.full_name }}
+                                        {%- elif exam.consultation and exam.consultation.patient -%}
+                                            {{ exam.consultation.patient.full_name }}
+                                        {%- else -%}
+                                            Unknown
+                                        {%- endif -%}">
+                                        {% if exam.visit and exam.visit.patient %}
+                                            {{ exam.visit.patient.full_name }}
+                                        {% elif exam.consultation and exam.consultation.patient %}
+                                            {{ exam.consultation.patient.full_name }}
+                                        {% else %}
+                                            Unknown
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">{{ exam.requested_at.strftime('%H:%M') if exam.requested_at else '' }}</td>
+                                    <td class="px-4 py-3 text-sm whitespace-nowrap">
+                                        <a href="#" class="inline-flex items-center px-2.5 py-1 bg-indigo-50 text-indigo-700 text-xs font-medium rounded-lg hover:bg-indigo-100 transition">
+                                            Process
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="4" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">No pending exams</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column (2/3 width) -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Exam Volume Chart -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-5">
+                    <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-3 flex items-center">
+                        <i class="fas fa-chart-line text-green-500 mr-2"></i> Exams Completed Today
+                    </h2>
+                    <div class="relative h-48 w-full">
+                        <canvas id="examVolumeChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Low Stock & Upcoming Maintenance -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Low Stock Items Table -->
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-5">
+                        <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-3 flex items-center">
+                            <i class="fas fa-exclamation-circle text-red-500 mr-2"></i> Low Stock Alerts
+                        </h2>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                <thead class="bg-gray-50 dark:bg-gray-700">
+                                    <tr>
+                                        <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Item</th>
+                                        <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Qty</th>
+                                        <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Reorder</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                                    {% for item in low_stock_items %}
+                                    <tr>
+                                        <td class="px-3 py-2 text-sm text-gray-900 dark:text-white max-w-[120px] truncate" title="{{ item.item_name }}">{{ item.item_name }}</td>
+                                        <td class="px-3 py-2 text-sm text-gray-700 dark:text-gray-300">{{ item.quantity }} {{ item.unit }}</td>
+                                        <td class="px-3 py-2 text-sm text-red-600">{{ item.reorder_level or '-' }}</td>
+                                    </tr>
+                                    {% else %}
+                                    <tr><td colspan="3" class="px-3 py-4 text-center text-gray-500 dark:text-gray-400">No low stock items</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Upcoming Maintenance Table -->
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-5">
+                        <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-3 flex items-center">
+                            <i class="fas fa-calendar-alt text-teal-500 mr-2"></i> Upcoming Maintenance
+                        </h2>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                <thead class="bg-gray-50 dark:bg-gray-700">
+                                    <tr>
+                                        <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Equipment</th>
+                                        <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Next Date</th>
+                                        <th class="px-3 py-2 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Days Left</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                                    {% for eq in upcoming_maintenance %}
+                                    <tr>
+                                        <td class="px-3 py-2 text-sm text-gray-900 dark:text-white max-w-[120px] truncate" title="{{ eq.name }}">{{ eq.name }}</td>
+                                        <td class="px-3 py-2 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">{{ eq.next_maintenance_date.strftime('%Y-%m-%d') }}</td>
+                                        <td class="px-3 py-2 text-sm whitespace-nowrap {% if (eq.next_maintenance_date - today).days < 3 %}text-red-600 font-semibold{% else %}text-amber-600{% endif %}">
+                                            {{ (eq.next_maintenance_date - today).days }} days
+                                        </td>
+                                    </tr>
+                                    {% else %}
+                                    <tr><td colspan="3" class="px-3 py-4 text-center text-gray-500 dark:text-gray-400">No upcoming maintenance</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('examVolumeChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: {{ hourly_labels|tojson }},
+            datasets: [{
+                label: 'Exams Completed',
+                data: {{ hourly_counts|tojson }},
+                backgroundColor: '#6366F1',
+                borderRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+        }
+    });
+});
+</script>
+{% endblock %}

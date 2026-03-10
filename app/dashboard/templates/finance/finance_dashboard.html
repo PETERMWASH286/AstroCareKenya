@@ -1,0 +1,349 @@
+{% extends 'base.html' %}
+{% block title %}Finance Dashboard | AstroCare{% endblock %}
+
+
+
+{% block content %}
+<div class="min-h-screen bg-gray-100 dark:bg-gray-900 p-4 md:p-6">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header with greeting and quick actions -->
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ greeting }}, {{ current_user.full_name or current_user.username }}!</h1>
+                <p class="text-gray-600 dark:text-gray-400 mt-1">{{ today.strftime('%A, %B %d, %Y') }}</p>
+            </div>
+            <div class="flex flex-wrap gap-2 mt-4 sm:mt-0">
+                <a href="{{ url_for('finance_web_bp.invoices') }}" class="inline-flex items-center px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition shadow-sm">
+                    <i class="fas fa-file-invoice mr-2"></i>Invoice
+                </a>
+                <a href="#" class="inline-flex items-center px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition shadow-sm">
+                    <i class="fas fa-hand-holding-usd mr-2"></i>Record Payment
+                </a>
+                <a href="{{ url_for('finance_web_bp.sales_reports') }}" class="inline-flex items-center px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg transition shadow-sm">
+                    <i class="fas fa-chart-line mr-2"></i>Reports
+                </a>
+                <a href="{{ url_for('finance_web_bp.cash_management') }}" class="inline-flex items-center px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition shadow-sm">
+                    <i class="fas fa-exchange-alt mr-2"></i>Transfer
+                </a>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <!-- Daily Revenue -->
+            <div class="bg-gradient-to-br from-blue-500 to-blue-600 dark:from-blue-700 dark:to-blue-800 rounded-xl shadow-md p-4 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-blue-100 text-xs font-medium">Daily Revenue</p>
+                        <p class="text-2xl font-bold mt-1">KES {{ "{:,.0f}".format(daily_revenue) }}</p>
+                    </div>
+                    <div class="p-2 bg-white/20 rounded-lg">
+                        <i class="fas fa-money-bill-wave text-white text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-2 text-xs text-blue-100 flex items-center">
+                    <i class="fas fa-calendar-day mr-1"></i> {{ today.strftime('%b %d') }}
+                </div>
+            </div>
+
+            <!-- Pending Payments -->
+            <div class="bg-gradient-to-br from-amber-500 to-amber-600 dark:from-amber-700 dark:to-amber-800 rounded-xl shadow-md p-4 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-amber-100 text-xs font-medium">Pending Payments</p>
+                        <p class="text-2xl font-bold mt-1">KES {{ "{:,.0f}".format(pending_payments) }}</p>
+                    </div>
+                    <div class="p-2 bg-white/20 rounded-lg">
+                        <i class="fas fa-clock text-white text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-2 text-xs text-amber-100 flex items-center">
+                    <i class="fas fa-exclamation-circle mr-1"></i> Awaiting collection
+                </div>
+            </div>
+
+            <!-- Cash Balance -->
+            <div class="bg-gradient-to-br from-green-500 to-green-600 dark:from-green-700 dark:to-green-800 rounded-xl shadow-md p-4 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-green-100 text-xs font-medium">Cash Balance</p>
+                        <p class="text-2xl font-bold mt-1">KES {{ "{:,.0f}".format(cash_balance) }}</p>
+                    </div>
+                    <div class="p-2 bg-white/20 rounded-lg">
+                        <i class="fas fa-wallet text-white text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-2 text-xs text-green-100 flex items-center">
+                    <i class="fas fa-building mr-1"></i> {{ cash_accounts|length }} accounts
+                </div>
+            </div>
+
+            <!-- Bank Balance -->
+            <div class="bg-gradient-to-br from-purple-500 to-purple-600 dark:from-purple-700 dark:to-purple-800 rounded-xl shadow-md p-4 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-purple-100 text-xs font-medium">Bank Balance</p>
+                        <p class="text-2xl font-bold mt-1">KES {{ "{:,.0f}".format(bank_balance) }}</p>
+                    </div>
+                    <div class="p-2 bg-white/20 rounded-lg">
+                        <i class="fas fa-university text-white text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-2 text-xs text-purple-100 flex items-center">
+                    <i class="fas fa-piggy-bank mr-1"></i> {{ bank_accounts|length }} accounts
+                </div>
+            </div>
+        </div>
+
+        <!-- Second Row: Monthly Figures -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 dark:text-gray-400 text-xs font-medium">Monthly Revenue</p>
+                        <p class="text-xl font-bold text-gray-900 dark:text-white">KES {{ "{:,.0f}".format(monthly_revenue) }}</p>
+                    </div>
+                    <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                        <i class="fas fa-chart-line text-blue-600 dark:text-blue-400"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 dark:text-gray-400 text-xs font-medium">Monthly Expenses</p>
+                        <p class="text-xl font-bold text-gray-900 dark:text-white">KES {{ "{:,.0f}".format(monthly_expenses) }}</p>
+                    </div>
+                    <div class="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
+                        <i class="fas fa-shopping-cart text-red-600 dark:text-red-400"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 dark:text-gray-400 text-xs font-medium">Payroll Total</p>
+                        <p class="text-xl font-bold text-gray-900 dark:text-white">KES {{ "{:,.0f}".format(payroll_total) }}</p>
+                    </div>
+                    <div class="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                        <i class="fas fa-users text-purple-600 dark:text-purple-400"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 dark:text-gray-400 text-xs font-medium">Insurance Claims</p>
+                        <p class="text-xl font-bold text-gray-900 dark:text-white">{{ pending_claims }} pending / {{ approved_claims }} approved</p>
+                    </div>
+                    <div class="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-lg">
+                        <i class="fas fa-shield-alt text-teal-600 dark:text-teal-400"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Sales by Department (Pie Chart) -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-5">
+                <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-3 flex items-center">
+                    <i class="fas fa-chart-pie text-indigo-500 mr-2"></i> Sales by Department
+                </h2>
+                <div class="relative h-64 w-full">
+                    <canvas id="deptChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Payment Methods (Bar Chart) -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 p-5">
+                <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-3 flex items-center">
+                    <i class="fas fa-credit-card text-green-500 mr-2"></i> Payment Methods
+                </h2>
+                <div class="relative h-64 w-full">
+                    <canvas id="paymentChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tables: Recent Payments, Expenses, Accounts -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Recent Payments -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+                <div class="p-5 border-b border-gray-200 dark:border-gray-700">
+                    <h2 class="text-lg font-bold text-gray-900 dark:text-white flex items-center">
+                        <i class="fas fa-credit-card text-green-500 mr-2"></i> Recent Payments
+                    </h2>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead class="bg-gray-50 dark:bg-gray-700">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Invoice</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Amount</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Method</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Date</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                            {% for pay in recent_payments %}
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">#{{ pay.invoice_id }}</td>
+                                <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">KES {{ "{:,.0f}".format(pay.amount) }}</td>
+                                <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ pay.method }}</td>
+                                <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ pay.payment_date.strftime('%Y-%m-%d') }}</td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="4" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">No recent payments</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Recent Expenses -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+                <div class="p-5 border-b border-gray-200 dark:border-gray-700">
+                    <h2 class="text-lg font-bold text-gray-900 dark:text-white flex items-center">
+                        <i class="fas fa-receipt text-red-500 mr-2"></i> Recent Expenses
+                    </h2>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead class="bg-gray-50 dark:bg-gray-700">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Description</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Amount</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Category</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Date</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                            {% for exp in recent_expenses %}
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                <td class="px-4 py-3 text-sm text-gray-900 dark:text-white max-w-[150px] truncate" title="{{ exp.description }}">{{ exp.description[:30] }}...</td>
+                                <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">KES {{ "{:,.0f}".format(exp.amount) }}</td>
+                                <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ exp.category.name }}</td>
+                                <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ exp.payment_date.strftime('%Y-%m-%d') }}</td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="4" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">No recent expenses</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Accounts Tables (Cash & Bank) -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+            <!-- Cash Accounts -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+                <div class="p-5 border-b border-gray-200 dark:border-gray-700">
+                    <h2 class="text-lg font-bold text-gray-900 dark:text-white flex items-center">
+                        <i class="fas fa-wallet text-teal-500 mr-2"></i> Cash Accounts
+                    </h2>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead class="bg-gray-50 dark:bg-gray-700">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Name</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Balance</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Type</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                            {% for acc in cash_accounts %}
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">{{ acc.name }}</td>
+                                <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">KES {{ "{:,.0f}".format(acc.current_balance) }}</td>
+                                <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ acc.account_type }}</td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="3" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">No cash accounts</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Bank Accounts -->
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+                <div class="p-5 border-b border-gray-200 dark:border-gray-700">
+                    <h2 class="text-lg font-bold text-gray-900 dark:text-white flex items-center">
+                        <i class="fas fa-university text-blue-500 mr-2"></i> Bank Accounts
+                    </h2>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead class="bg-gray-50 dark:bg-gray-700">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Bank</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Account</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase">Balance</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                            {% for acc in bank_accounts %}
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">{{ acc.bank_name }}</td>
+                                <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ acc.account_number }}</td>
+                                <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">KES {{ "{:,.0f}".format(acc.current_balance) }}</td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="3" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">No bank accounts</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Department Sales Pie Chart
+    const deptCtx = document.getElementById('deptChart').getContext('2d');
+    new Chart(deptCtx, {
+        type: 'pie',
+        data: {
+            labels: {{ dept_labels|tojson }},
+            datasets: [{
+                data: {{ dept_data|tojson }},
+                backgroundColor: ['#6366F1', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom' } }
+        }
+    });
+
+    // Payment Methods Bar Chart
+    const paymentCtx = document.getElementById('paymentChart').getContext('2d');
+    new Chart(paymentCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ method_labels|tojson }},
+            datasets: [{
+                label: 'Transactions',
+                data: {{ method_counts|tojson }},
+                backgroundColor: '#10B981',
+                borderRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+        }
+    });
+});
+</script>
+{% endblock %}

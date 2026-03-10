@@ -1,0 +1,278 @@
+{% extends "base.html" %}
+{% block title %}Registration Dashboard | AstroCare{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .card-animate {
+        animation: fadeInUp 0.5s ease-out forwards;
+        opacity: 0;
+    }
+    .card:nth-child(1) { animation-delay: 0.1s; }
+    .card:nth-child(2) { animation-delay: 0.2s; }
+    .card:nth-child(3) { animation-delay: 0.3s; }
+    .card:nth-child(4) { animation-delay: 0.4s; }
+    .quick-link {
+        transition: all 0.2s ease;
+    }
+    .quick-link:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.3);
+    }
+    .stat-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    .stat-card-alt {
+        background: white;
+    }
+    .progress-bar {
+        height: 8px;
+        border-radius: 4px;
+        background: rgba(255,255,255,0.3);
+    }
+    .progress-fill {
+        height: 100%;
+        border-radius: 4px;
+        background: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-4 md:p-6">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header with greeting and date -->
+        <div class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center">
+            <div>
+                <h1 class="text-3xl md:text-4xl font-bold text-gray-800">{{ greeting }}, {{ current_user.full_name or current_user.username }}!</h1>
+                <p class="text-gray-600 mt-2">{{ today.strftime('%A, %B %d, %Y') }}</p>
+            </div>
+            <div class="mt-4 md:mt-0 flex items-center space-x-3">
+                <div class="bg-white px-4 py-2 rounded-lg shadow-sm flex items-center">
+                    <i class="fas fa-bell text-indigo-600 mr-2"></i>
+                    <span class="text-sm text-gray-600">3 notifications</span>
+                </div>
+                <div class="bg-white px-4 py-2 rounded-lg shadow-sm flex items-center">
+                    <i class="fas fa-calendar-check text-indigo-600 mr-2"></i>
+                    <span class="text-sm text-gray-600">5 appointments today</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Cards with gradient -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="card-animate bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl shadow-lg p-6 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-blue-100 text-sm font-medium">Patients Today</p>
+                        <h3 class="text-3xl font-bold mt-1">{{ patients_today }}</h3>
+                    </div>
+                    <div class="p-3 bg-white/20 rounded-lg">
+                        <i class="fas fa-user-plus text-white text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-4 flex items-center text-sm">
+                    <span class="bg-white/30 px-2 py-1 rounded-full text-xs mr-2">
+                        <i class="fas fa-arrow-up mr-1"></i> {{ "%.1f"|format(patient_change) }}%
+                    </span>
+                    <span>vs yesterday</span>
+                </div>
+            </div>
+
+            <div class="card-animate bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl shadow-lg p-6 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-amber-100 text-sm font-medium">Visits in Progress</p>
+                        <h3 class="text-3xl font-bold mt-1">{{ visits_in_progress }}</h3>
+                    </div>
+                    <div class="p-3 bg-white/20 rounded-lg">
+                        <i class="fas fa-procedures text-white text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-4 flex items-center text-sm">
+                    <i class="fas fa-clock mr-2"></i>
+                    <span>5 waiting</span>
+                </div>
+            </div>
+
+            <div class="card-animate bg-gradient-to-br from-red-500 to-pink-600 rounded-xl shadow-lg p-6 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-red-100 text-sm font-medium">Pending Payments</p>
+                        <h3 class="text-3xl font-bold mt-1">{{ pending_payments }}</h3>
+                    </div>
+                    <div class="p-3 bg-white/20 rounded-lg">
+                        <i class="fas fa-credit-card text-white text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-4 flex items-center text-sm">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    <span>Action required</span>
+                </div>
+            </div>
+
+            <div class="card-animate bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl shadow-lg p-6 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-green-100 text-sm font-medium">Revenue Today</p>
+                        <h3 class="text-3xl font-bold mt-1">KES {{ "{:,.0f}".format(revenue_today) }}</h3>
+                    </div>
+                    <div class="p-3 bg-white/20 rounded-lg">
+                        <i class="fas fa-coins text-white text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-4 flex items-center text-sm">
+                    <span class="bg-white/30 px-2 py-1 rounded-full text-xs mr-2">
+                        <i class="fas fa-arrow-up mr-1"></i> {{ "%.1f"|format(revenue_change) }}%
+                    </span>
+                    <span>vs yesterday</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Links (removed queue, added appointments) -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <a href="{{ url_for('patients_web.register_patient') }}" class="quick-link bg-white rounded-xl shadow-md p-4 text-center hover:bg-indigo-50 transition border border-gray-100">
+                <div class="w-12 h-12 mx-auto bg-indigo-100 rounded-full flex items-center justify-center mb-2">
+                    <i class="fas fa-user-plus text-indigo-600 text-xl"></i>
+                </div>
+                <span class="font-medium text-gray-800">Register Patient</span>
+            </a>
+            <a href="" class="quick-link bg-white rounded-xl shadow-md p-4 text-center hover:bg-indigo-50 transition border border-gray-100">
+                <div class="w-12 h-12 mx-auto bg-green-100 rounded-full flex items-center justify-center mb-2">
+                    <i class="fas fa-walking text-green-600 text-xl"></i>
+                </div>
+                <span class="font-medium text-gray-800">Start Visit</span>
+            </a>
+            <a href="{{ url_for('billing_web.payment_processing') }}" class="quick-link bg-white rounded-xl shadow-md p-4 text-center hover:bg-indigo-50 transition border border-gray-100">
+                <div class="w-12 h-12 mx-auto bg-amber-100 rounded-full flex items-center justify-center mb-2">
+                    <i class="fas fa-credit-card text-amber-600 text-xl"></i>
+                </div>
+                <span class="font-medium text-gray-800">Process Payment</span>
+            </a>
+            <a href="{{ url_for('appointments_web.manage_schedule') }}" class="quick-link bg-white rounded-xl shadow-md p-4 text-center hover:bg-indigo-50 transition border border-gray-100">
+                <div class="w-12 h-12 mx-auto bg-purple-100 rounded-full flex items-center justify-center mb-2">
+                    <i class="fas fa-calendar-alt text-purple-600 text-xl"></i>
+                </div>
+                <span class="font-medium text-gray-800">Appointments</span>
+            </a>
+        </div>
+
+        <!-- Two column layout: Left - Recent Activity, Right - Upcoming Appointments -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Recent Patients -->
+            <div class="bg-white rounded-xl shadow-md p-6 border border-gray-100">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold text-gray-800 flex items-center">
+                        <i class="fas fa-history text-indigo-500 mr-2"></i> Recent Registrations
+                    </h2>
+                    <a href="#" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">View all</a>
+                </div>
+                <div class="space-y-3">
+                    {% for patient in recent_patients %}
+                    <div class="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-600">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="ml-3">
+                                <p class="font-medium text-gray-800">{{ patient.full_name }}</p>
+                                <p class="text-xs text-gray-500">{{ patient.reg_no }} • {{ patient.phone }}</p>
+                            </div>
+                        </div>
+                        <span class="text-xs text-gray-400">{{ patient.created_at.strftime('%H:%M') }}</span>
+                    </div>
+                    {% else %}
+                    <p class="text-gray-500 text-center py-4">No recent patients.</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Pending Transactions -->
+            <div class="bg-white rounded-xl shadow-md p-6 border border-gray-100">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold text-gray-800 flex items-center">
+                        <i class="fas fa-hourglass-half text-amber-500 mr-2"></i> Pending Payments
+                    </h2>
+                    <a href="#" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">View all</a>
+                </div>
+                <div class="space-y-3">
+                    {% for txn in pending_transactions %}
+                    <div class="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center text-amber-600">
+                                <i class="fas fa-credit-card"></i>
+                            </div>
+                            <div class="ml-3">
+                                <p class="font-medium text-gray-800">{{ txn.patient.full_name if txn.patient else 'Unknown' }}</p>
+                                <p class="text-xs text-gray-500">KES {{ "{:,.0f}".format(txn.amount) }} • {{ txn.payment_method }}</p>
+                            </div>
+                        </div>
+                        <a href="{{ url_for('billing_web.payment_processing', transaction_id=txn.id) }}" class="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full hover:bg-indigo-200">
+                            Pay
+                        </a>
+                    </div>
+                    {% else %}
+                    <p class="text-gray-500 text-center py-4">No pending payments.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Third row: Appointments and Hourly Chart -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Upcoming Appointments -->
+            <div class="bg-white rounded-xl shadow-md p-6 border border-gray-100">
+                <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                    <i class="fas fa-calendar-check text-purple-500 mr-2"></i> Today's Appointments
+                </h2>
+                <div class="space-y-3">
+                    {% for appt in upcoming_appointments %}
+                    <div class="flex items-center p-3 hover:bg-gray-50 rounded-lg transition">
+                        <div class="w-2 h-12 bg-green-500 rounded-full mr-3"></div>
+                        <div>
+                            <p class="font-medium text-gray-800">{{ appt.patient_name }}</p>
+                            <p class="text-xs text-gray-500">{{ appt.time }} • {{ appt.doctor }}</p>
+                        </div>
+                    </div>
+                    {% else %}
+                    <p class="text-gray-500 text-center py-4">No appointments scheduled for today.</p>
+                    {% endfor %}
+                </div>
+                <div class="mt-4 text-center">
+                    <a href="{{ url_for('appointments_web.manage_schedule') }}" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">
+                        Manage appointments <i class="fas fa-arrow-right ml-1"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Hourly Registrations Chart (spanning 2 columns) -->
+            <div class="lg:col-span-2 bg-white rounded-xl shadow-md p-6 border border-gray-100">
+                <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                    <i class="fas fa-chart-line text-green-500 mr-2"></i> Hourly Registrations (Today)
+                </h2>
+                <div class="h-32 flex items-end space-x-1">
+                    {% for count in hourly_counts %}
+                        {% set max_count = hourly_counts|max %}
+                        {% set height = (count / max_count * 100) if max_count > 0 else 0 %}
+                        <div class="flex-1 flex flex-col items-center">
+                            <div class="w-full bg-green-500 rounded-t-md" style="height: {{ height }}px;"></div>
+                            <span class="text-xs text-gray-500 mt-1">{{ count }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+                <div class="flex justify-between mt-2 text-xs text-gray-500">
+                    {% for hour in hours %}
+                        <span>{{ hour }}:00</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

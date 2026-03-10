@@ -73,32 +73,26 @@
                 <div class="space-y-6">
                     <div class="bg-white/5 p-6 rounded-2xl border border-gray-100/30 dark:border-gray-700">
                         <label class="block text-sm font-medium mb-4 text-gray-700 dark:text-gray-300">Professional Details</label>
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-xs font-medium mb-2 text-gray-500 dark:text-gray-400">Department</label>
-                                <select name="department_id" disabled class="w-full bg-gray-50/50 dark:bg-gray-800 border-2 border-gray-200/30 dark:border-gray-700 rounded-xl px-4 py-3 text-gray-900 dark:text-gray-100 cursor-not-allowed opacity-70">
-                                    {% for dept in departments %}
-                                    <option value="{{ dept.id }}" {% if dept == current_user.department %}selected{% endif %}>
-                                        {{ dept.name }}
-                                    </option>
-                                    {% endfor %}
-                                </select>
-                                <p class="text-xs text-red-500 mt-1">Department changes are restricted. Please contact the administrator.</p>
-
-                            </div>
-                            <div>
-                                <label class="block text-xs font-medium mb-2 text-gray-500 dark:text-gray-400">Role</label>
-                                <select name="role_id" disabled class="w-full bg-gray-50/50 dark:bg-gray-800 border-2 border-gray-200/30 dark:border-gray-700 rounded-xl px-4 py-3 text-gray-900 dark:text-gray-100 cursor-not-allowed opacity-70">
-                                    {% for role in roles %}
-                                    <option value="{{ role.id }}" {% if role in current_user.roles %}selected{% endif %}>
-                                        {{ role.name }}
-                                    </option>
-                                    {% endfor %}
-                                </select>
-                                <p class="text-xs text-red-500 mt-1">Role changes are restricted. Please contact the administrator.</p>
-
-                            </div>
-                        </div>
+<div class="space-y-4">
+    <div>
+        <label class="block text-xs font-medium mb-2 text-gray-500 dark:text-gray-400">Department</label>
+        <div class="w-full bg-gray-50/50 dark:bg-gray-800 border-2 border-gray-200/30 dark:border-gray-700 rounded-xl px-4 py-3 text-gray-900 dark:text-gray-100">
+            {{ user_department.name if user_department else 'Not assigned' }}
+        </div>
+        <p class="text-xs text-red-500 mt-1">Department changes are restricted. Please contact the administrator.</p>
+    </div>
+    <div>
+        <label class="block text-xs font-medium mb-2 text-gray-500 dark:text-gray-400">Role(s)</label>
+        <div class="w-full bg-gray-50/50 dark:bg-gray-800 border-2 border-gray-200/30 dark:border-gray-700 rounded-xl px-4 py-3 text-gray-900 dark:text-gray-100">
+            {% for role in user_roles %}
+                {{ role.name }}{% if not loop.last %}, {% endif %}
+            {% else %}
+                No role assigned
+            {% endfor %}
+        </div>
+        <p class="text-xs text-red-500 mt-1">Role changes are restricted. Please contact the administrator.</p>
+    </div>
+</div>
                     </div>
                 </div>
             </div>
