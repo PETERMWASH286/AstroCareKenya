@@ -49,7 +49,7 @@ def index():
               current_app.logger.info("User is administrator. Rendering admin dashboard.")
               # Pass data specific to admin dashboard
               # stats = DashboardService.get_admin_stats() # Example
-              return render_template('admin/overview.html') #, stats=stats)
+              return redirect(url_for('dashboard_web.admin_overview'))
          elif current_user.can(Permission.CAN_RECORD_VITALS): # Example for Nurse/Doctor
               current_app.logger.info("User can record vitals. Rendering nurse/doctor dashboard placeholder.")
               # Pass data specific to nurse/doctor dashboard
@@ -66,7 +66,7 @@ def index():
 
          # Fallback if no specific role template is matched (e.g., render a generic dashboard)
          # For now, we'll just render the admin one as a placeholder if no specific logic matches
-         return render_template('admin/overview.html') # Default fallback
+         return redirect(url_for('dashboard_web.admin_overview'))
 
     else:
         # This else block should technically not be reached if @login_required works,
