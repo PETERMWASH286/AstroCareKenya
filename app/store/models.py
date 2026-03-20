@@ -1558,3 +1558,36 @@ class InventoryAuditLog(db.Model):
         
         db.session.add(log_entry)
         return log_entry
+    
+    
+    
+    
+    
+class InventoryConversation(db.Model):
+    __tablename__ = 'inventory_conversations'
+    __audit_trail__ = True
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    user = db.relationship('User', backref=db.backref('inventory_conversations', lazy='dynamic'))
+    messages = db.relationship('InventoryMessage', back_populates='conversation', order_by='InventoryMessage.created_at', cascade='all, delete-orphan')
+
+    __table_args__ = (
+        db.UniqueConstraint('user_id', name='unique_user_inventory_conversation'),
+    )
+
+
+class InventoryMessage(db.Model):
+    __tablename__ = 'inventory_messages'
+    __audit_trail__ = True
+
+    id = db.Column(db.Integer, primary_key=True)
+    conversation_id = db.Column(db.Integer, db.ForeignKey('inventory_conversations.id'), nullable=False)
+    role = db.Column(db.String(20), nullable=False)  # 'user' or 'assistant'
+    content = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    conversation = db.relationship('InventoryConversation', back_populates='messages')

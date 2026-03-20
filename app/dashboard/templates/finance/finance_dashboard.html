@@ -301,6 +301,373 @@
         </div>
     </div>
 </div>
+
+<button id="ai-assistant-button" class="fixed bottom-4 right-6 bg-green-600 text-white p-4 rounded-full shadow-lg hover:bg-green-700 transition-transform transform hover:scale-110 z-50">
+    <i class="fas fa-robot"></i>
+</button>
+
+<!-- AI Modal -->
+<div id="ai-modal" class="fixed inset-0 z-50 flex items-center justify-center p-3 hidden">
+    <div class="absolute inset-0 bg-gray-900 bg-opacity-75"></div>
+    
+    <div class="modal-content bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl shadow-2xl w-full max-w-4xl max-h-[92vh] min-h-[550px] flex flex-col overflow-hidden">
+        
+        <!-- Close button -->
+        <div class="absolute top-3 right-3">
+            <button id="close-ai-modal" class="text-gray-400 hover:text-white p-2">
+                <i class="fas fa-times text-sm"></i>
+            </button>
+        </div>
+        
+        <!-- Header (slightly bigger) -->
+        <div class="p-3 border-b border-gray-700 flex items-center">
+            <div class="w-9 h-9 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 flex items-center justify-center">
+                <i class="fas fa-robot text-white text-sm"></i>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-base font-semibold text-white">Finance AI Assistant</h3>
+                <p class="text-xs text-green-400 flex items-center">
+                    <span class="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
+                    Online
+                </p>
+            </div>
+
+        </div>
+        
+        <!-- Chat Container -->
+        <div id="chat-container" class="flex-1 p-4 overflow-y-auto scrollbar">
+            <div class="flex justify-center mb-4">
+                <div class="bg-gray-700 rounded-full px-4 py-1.5 text-xs text-gray-300" id="chat-date-label"></div>
+            </div>
+            <!-- Messages -->
+        </div>
+        
+        <!-- Footer (slightly bigger) -->
+        <div class="p-3 border-t border-gray-700">
+            <div class="flex items-center">
+                
+                <div class="flex space-x-2 mr-3">
+                    <button class="text-gray-400 hover:text-white p-2 rounded-full hover:bg-gray-700">
+                        <i class="fas fa-paperclip text-sm"></i>
+                    </button>
+                    <button class="text-gray-400 hover:text-white p-2 rounded-full hover:bg-gray-700">
+                        <i class="fas fa-microphone text-sm"></i>
+                    </button>
+                </div>
+                
+                <input type="text" 
+                       id="message-input" 
+                       placeholder="Ask about budgets, invoices..." 
+                       class="flex-1 bg-gray-700 text-white rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+                
+                <button id="send-button" class="ml-3 w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-full flex items-center justify-center">
+                    <i class="fas fa-paper-plane text-sm"></i>
+                </button>
+            </div>
+        </div>
+        
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+    const aiModal = document.getElementById('ai-modal');
+    const openAiButton = document.getElementById('ai-assistant-button');
+    const closeAiButton = document.getElementById('close-ai-modal');
+    const messageInput = document.getElementById('message-input');
+    const sendButton = document.getElementById('send-button');
+    const chatContainer = document.getElementById('chat-container');
+    const dateLabel = document.getElementById('chat-date-label');
+
+    // Set today's date dynamically
+    const today = new Date();
+    const options = { year: 'numeric', month: 'long', day: 'numeric' };
+    dateLabel.textContent = today.toLocaleDateString(undefined, options);
+
+    // ---------- Helper Functions ----------
+    function escapeHtml(unsafe) {
+        return unsafe.replace(/[&<>"']/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            if (m === '"') return '&quot;';
+            if (m === "'") return '&#039;';
+            return m;
+        });
+    }
+
+    function appendUserMessage(text) {
+        const div = document.createElement('div');
+        div.className = 'flex justify-end mb-4';
+        div.innerHTML = `
+            <div class="message-bubble bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl rounded-tr-none p-4 max-w-xl">
+                <div class="text-white text-base">${escapeHtml(text)}</div>
+                <div class="text-xs text-green-100 mt-2">Just now</div>
+            </div>
+        `;
+        chatContainer.appendChild(div);
+    }
+
+    // Render a message that may contain reasoning and answer
+    function renderAssistantMessage(text) {
+        const reasoningMatch = text.match(/^(.*?)(?:\n\s*##?\s*Reasoning:?\s*\n)(.*?)(?:\n\s*##?\s*Answer:?\s*\n)(.*)$/is);
+        if (reasoningMatch) {
+            const before = reasoningMatch[1];
+            const reasoning = reasoningMatch[2];
+            const answer = reasoningMatch[3];
+            return `
+                ${before ? marked.parse(before) : ''}
+                <details class="reasoning-details mb-3">
+                    <summary class="text-green-400 cursor-pointer hover:text-green-300 text-sm font-medium">
+                        <i class="fas fa-brain mr-1"></i> Show reasoning
+                    </summary>
+                    <div class="mt-2 p-3 bg-gray-800 rounded-lg text-gray-300 text-sm border-l-4 border-green-500">
+                        ${marked.parse(reasoning)}
+                    </div>
+                </details>
+                <div class="answer text-base">${marked.parse(answer)}</div>
+            `;
+        }
+        return marked.parse(text);
+    }
+
+    function scrollToBottom() {
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    // ---------- Open Modal ----------
+    openAiButton.addEventListener('click', async () => {
+        aiModal.classList.remove('hidden');
+        aiModal.querySelector('.modal-content').classList.add('scaleIn');
+        setTimeout(() => {
+            aiModal.querySelector('.bg-gray-900').classList.add('fadeIn');
+        }, 10);
+
+        // Load conversation history if not already loaded (optional)
+        if (!chatContainer.dataset.historyLoaded) {
+            await loadConversationHistory();
+            chatContainer.dataset.historyLoaded = 'true';
+        }
+        
+        // Add welcome message if chat is empty
+        if (chatContainer.children.length === 0) {
+            appendAssistantMessage("Hello! I'm your finance AI assistant. How can I help with budgets, forecasts, or financial analysis today?");
+            scrollToBottom();
+        }
+    });
+
+    // Fetch conversation history for the current user (adjust endpoint as needed)
+    async function loadConversationHistory() {
+        try {
+            // Assuming the backend stores conversation per user (e.g., using session)
+            const response = await fetch('/finance/ai-conversation');
+            if (response.ok) {
+                const messages = await response.json();
+                for (const msg of messages) {
+                    if (msg.role === 'user') {
+                        appendUserMessage(msg.content);
+                    } else {
+                        appendAssistantMessage(msg.content);
+                    }
+                }
+                scrollToBottom();
+            }
+        } catch (error) {
+            console.error('Failed to load conversation history:', error);
+        }
+    }
+
+    // ---------- Close Modal ----------
+    function closeModal() {
+        aiModal.querySelector('.modal-content').classList.remove('scaleIn');
+        aiModal.querySelector('.modal-content').classList.add('scaleOut');
+        aiModal.querySelector('.bg-gray-900').classList.remove('fadeIn');
+        aiModal.querySelector('.bg-gray-900').classList.add('fadeOut');
+
+        setTimeout(() => {
+            aiModal.classList.add('hidden');
+            aiModal.querySelector('.modal-content').classList.remove('scaleOut');
+            aiModal.querySelector('.bg-gray-900').classList.remove('fadeOut');
+        }, 300);
+    }
+
+    closeAiButton.addEventListener('click', closeModal);
+    aiModal.addEventListener('click', (event) => {
+        if (event.target === aiModal) {
+            closeModal();
+        }
+    });
+
+    // ---------- Send Message (Streaming) ----------
+    async function sendMessage() {
+        const message = messageInput.value.trim();
+        if (!message) return;
+
+        appendUserMessage(message);
+        messageInput.value = '';
+        scrollToBottom();
+
+        const assistantBubble = document.createElement('div');
+        assistantBubble.className = 'message-bubble bg-gray-700 rounded-2xl rounded-tl-none p-4 mb-4 max-w-xl';
+        assistantBubble.innerHTML = `
+            <div class="text-green-400 font-medium text-sm mb-2">Finance AI Assistant</div>
+            <div class="text-white markdown-body"></div>
+            <div class="streaming-loader flex items-center mt-3 text-green-400 text-sm">
+                <i class="fas fa-spinner fa-pulse mr-2"></i> Thinking...
+            </div>
+            <div class="text-xs text-gray-400 mt-2">Just now</div>
+        `;
+        chatContainer.appendChild(assistantBubble);
+        const contentDiv = assistantBubble.querySelector('.markdown-body');
+        const loaderDiv = assistantBubble.querySelector('.streaming-loader');
+        let fullResponse = '';
+
+        // Adjust URL to your backend endpoint (no patient/visit ID)
+        const url = `/finance/ai-assistant-stream?message=${encodeURIComponent(message)}`;
+        const eventSource = new EventSource(url);
+
+        eventSource.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (data.chunk) {
+                fullResponse += data.chunk;
+                contentDiv.innerHTML = renderAssistantMessage(fullResponse);
+                scrollToBottom();
+            }
+            if (data.done) {
+                eventSource.close();
+                loaderDiv.remove();
+            }
+            if (data.error) {
+                contentDiv.innerHTML = 'Error: ' + data.error;
+                eventSource.close();
+                loaderDiv.remove();
+            }
+        };
+
+        eventSource.onerror = () => {
+            contentDiv.innerHTML = 'Connection lost. Please try again.';
+            eventSource.close();
+            loaderDiv.remove();
+        };
+    }
+
+    function appendAssistantMessage(text) {
+        const div = document.createElement('div');
+        div.className = 'message-bubble bg-gray-700 rounded-2xl rounded-tl-none p-4 mb-4 max-w-xl';
+        const html = renderAssistantMessage(text);
+        div.innerHTML = `
+            <div class="text-green-400 font-medium text-sm mb-2">Finance AI Assistant</div>
+            <div class="text-white markdown-body">${html}</div>
+            <div class="text-xs text-gray-400 mt-2">Just now</div>
+        `;
+        chatContainer.appendChild(div);
+    }
+
+    // ---------- Event Listeners ----------
+    sendButton.addEventListener('click', sendMessage);
+    messageInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendMessage();
+    });
+
+    messageInput.addEventListener('focus', () => {
+        messageInput.classList.add('glow-border');
+    });
+    messageInput.addEventListener('blur', () => {
+        messageInput.classList.remove('glow-border');
+    });
+</script>
+
+<style>
+    /* Markdown and general styling (unchanged) */
+    .markdown-body {
+        font-size: 1rem;
+        line-height: 1.6;
+    }
+    .markdown-body ul, .markdown-body ol {
+        margin-left: 1.5rem;
+        margin-top: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+    .markdown-body strong {
+        color: #6ee7b7;
+    }
+    .markdown-body table {
+        border-collapse: collapse;
+        width: 100%;
+        margin: 0.75rem 0;
+        font-size: 0.95rem;
+    }
+    .markdown-body th, .markdown-body td {
+        border: 1px solid #4b5563;
+        padding: 0.6rem;
+        text-align: left;
+    }
+    .markdown-body th {
+        background-color: #374151;
+        color: #e5e7eb;
+    }
+    .message-bubble {
+        max-width: 85%;
+    }
+    @media (min-width: 768px) {
+        .message-bubble {
+            max-width: 75%;
+        }
+    }
+    .chat-container {
+        scroll-behavior: smooth;
+    }
+    .chat-container::-webkit-scrollbar {
+        width: 8px;
+    }
+    .chat-container::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.1);
+        border-radius: 10px;
+    }
+    .chat-container::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 10px;
+    }
+    .reasoning-details summary {
+        list-style: none;
+        display: flex;
+        align-items: center;
+        font-size: 0.9rem;
+    }
+    .reasoning-details summary::-webkit-details-marker {
+        display: none;
+    }
+    .reasoning-details[open] summary {
+        margin-bottom: 0.75rem;
+    }
+    .streaming-loader {
+        animation: fadeIn 0.3s;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    .glow-border {
+        box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.5);
+    }
+
+    /* Custom scrollbar */
+.scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.scrollbar::-webkit-scrollbar-thumb {
+    background: #4b5563; /* gray-600 */
+    border-radius: 10px;
+}
+
+.scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #6b7280; /* gray-500 */
+}
+</style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>

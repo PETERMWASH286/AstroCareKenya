@@ -665,3 +665,37 @@ class Radiology(db.Model):
     # Add this relationship
     verified_by_user = db.relationship('User', foreign_keys=[verified_by])
 
+
+
+class AIConversation(db.Model):
+    __tablename__ = 'ai_conversations'
+    __audit_trail__ = True
+
+    id = db.Column(db.Integer, primary_key=True)
+    patient_id = db.Column(db.Integer, db.ForeignKey('patients.id'), nullable=False)
+    doctor_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # the user/doctor
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    patient = db.relationship('Patient', backref=db.backref('ai_conversations', lazy='dynamic'))
+    doctor = db.relationship('User', backref=db.backref('ai_conversations', lazy='dynamic'))
+    messages = db.relationship('AIMessage', back_populates='conversation', order_by='AIMessage.created_at', cascade='all, delete-orphan')
+
+    __table_args__ = (
+        db.UniqueConstraint('patient_id', 'doctor_id', name='unique_patient_doctor_conversation'),
+    )
+
+
+class AIMessage(db.Model):
+    __tablename__ = 'ai_messages'
+    __audit_trail__ = True
+
+    id = db.Column(db.Integer, primary_key=True)
+    conversation_id = db.Column(db.Integer, db.ForeignKey('ai_conversations.id'), nullable=False)
+    role = db.Column(db.String(20), nullable=False)  # 'user' or 'assistant'
+    content = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationship
+    conversation = db.relationship('AIConversation', back_populates='messages')

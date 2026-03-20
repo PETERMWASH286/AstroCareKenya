@@ -15,7 +15,7 @@ from app.patients.models import Service
 from app.pharmacy.models import PharmacyInventory
 from app.radiology.models import RadiologyInventory
 from app.store.audit_log import log_inventory_action
-from app.store.models import LPO, ExternalOrder, InventoryAuditLog, PaymentRequest, PurchaseOrder, PurchaseOrderDelivery, Requisition, Stock, StockDetail, StockFlow, StockRequest, Supplier, SupplierAccount, SupplierInvoice, SupplierTransaction
+from app.store.models import LPO, ExternalOrder, InventoryAuditLog, InventoryConversation, InventoryMessage, PaymentRequest, PurchaseOrder, PurchaseOrderDelivery, Requisition, Stock, StockDetail, StockFlow, StockRequest, Supplier, SupplierAccount, SupplierInvoice, SupplierTransaction
 from app.utils.notifications import notification_manager
 
 from . import store_web_bp
@@ -2461,3 +2461,304 @@ def supplier_spend():
 
 
 
+
+
+import os
+import json
+import logging
+import time
+import requests
+from flask import request, jsonify, Response, stream_with_context
+from flask_login import login_required, current_user
+from datetime import datetime, timedelta
+from sqlalchemy import func
+
+
+
+def get_inventory_context():
+    """
+    Fetch comprehensive inventory data and return a formatted summary.
+    """
+    from datetime import datetime, timedelta
+    from sqlalchemy import func
+
+    today = datetime.today().date()
+    context_parts = []
+
+    # Helper to convert Decimal to float
+    def safe_float(value):
+        return float(value) if value is not None else 0.0
+
+    # ----- Stock Summary -----
+    all_stocks = Stock.query.filter_by(is_active=True).all()
+    total_items = len(all_stocks)
+    total_quantity = sum(s.quantity for s in all_stocks)
+    total_cost_value = sum(s.valuation_at_cost for s in all_stocks)
+    total_selling_value = sum(s.valuation_at_selling_price for s in all_stocks)
+
+    # Low stock items
+    low_stock = [s for s in all_stocks if s.quantity <= s.reorder_level]
+    low_stock_count = len(low_stock)
+    low_stock_list = "\n".join(
+        f"  - {s.name} (SKU: {s.sku}): {s.quantity} units, reorder level {s.reorder_level}"
+        for s in low_stock[:10]
+    )
+
+    # Expiring items (within 30 days)
+    expiring = [s for s in all_stocks if s.expiration_date and (s.expiration_date.date() - today).days <= 30]
+    expiring_count = len(expiring)
+    expiring_list = "\n".join(
+        f"  - {s.name} (SKU: {s.sku}): expires on {s.expiration_date.strftime('%Y-%m-%d')}"
+        for s in expiring[:10]
+    )
+
+    context_parts.append(f"## Inventory Summary (as of {today.isoformat()})\n")
+    context_parts.append(f"- **Total Items:** {total_items}\n")
+    context_parts.append(f"- **Total Quantity:** {total_quantity}\n")
+    context_parts.append(f"- **Total Cost Value:** KES {total_cost_value:,.2f}\n")
+    context_parts.append(f"- **Total Selling Value:** KES {total_selling_value:,.2f}\n")
+    context_parts.append(f"- **Low Stock Items:** {low_stock_count}\n")
+    if low_stock_list:
+        context_parts.append(f"\n**Low Stock Items:**\n{low_stock_list}\n")
+    context_parts.append(f"- **Items Expiring Soon:** {expiring_count}\n")
+    if expiring_list:
+        context_parts.append(f"\n**Expiring Items:**\n{expiring_list}\n")
+    context_parts.append("\n")
+
+    # ----- Department Stock Reports (Pharmacy, Lab, Radiology) -----
+    # Pharmacy
+    from app.pharmacy.models import PharmacyInventory
+    pharm_items = PharmacyInventory.query.all()
+    pharm_total_value = sum(i.quantity * safe_float(i.buying_price) for i in pharm_items)
+    pharm_low_stock = [i for i in pharm_items if i.quantity <= (i.reorder_level or 0)]
+    context_parts.append("### Pharmacy Stock\n")
+    context_parts.append(f"- **Total Value:** KES {pharm_total_value:,.2f}\n")
+    context_parts.append(f"- **Low Stock Items:** {len(pharm_low_stock)}\n")
+    if pharm_low_stock:
+        for i in pharm_low_stock[:5]:
+            context_parts.append(f"  - {i.item_name}: {i.quantity} units (reorder at {i.reorder_level})\n")
+    context_parts.append("\n")
+
+    # Laboratory
+    from app.lab.models import LabInventory
+    lab_items = LabInventory.query.all()
+    lab_total_value = sum(i.quantity * safe_float(i.buying_price) for i in lab_items)
+    lab_low_stock = [i for i in lab_items if i.quantity <= (i.reorder_level or 0)]
+    context_parts.append("### Laboratory Stock\n")
+    context_parts.append(f"- **Total Value:** KES {lab_total_value:,.2f}\n")
+    context_parts.append(f"- **Low Stock Items:** {len(lab_low_stock)}\n")
+    if lab_low_stock:
+        for i in lab_low_stock[:5]:
+            context_parts.append(f"  - {i.item_name}: {i.quantity} units (reorder at {i.reorder_level})\n")
+    context_parts.append("\n")
+
+    # Radiology
+    from app.radiology.models import RadiologyInventory
+    rad_items = RadiologyInventory.query.all()
+    rad_total_value = sum(i.quantity * safe_float(i.buying_price) for i in rad_items)
+    rad_low_stock = [i for i in rad_items if i.quantity <= (i.reorder_level or 0)]
+    context_parts.append("### Radiology Stock\n")
+    context_parts.append(f"- **Total Value:** KES {rad_total_value:,.2f}\n")
+    context_parts.append(f"- **Low Stock Items:** {len(rad_low_stock)}\n")
+    if rad_low_stock:
+        for i in rad_low_stock[:5]:
+            context_parts.append(f"  - {i.item_name}: {i.quantity} units (reorder at {i.reorder_level})\n")
+    context_parts.append("\n")
+
+    # ----- Purchase Orders Summary -----
+    pending_pos = PurchaseOrder.query.filter(PurchaseOrder.status.in_(['ordered', 'shipped', 'partially_delivered'])).all()
+    overdue_pos = [po for po in pending_pos if po.delivery_date and po.delivery_date.date() < today]
+    context_parts.append("### Purchase Orders\n")
+    context_parts.append(f"- **Pending Orders:** {len(pending_pos)}\n")
+    context_parts.append(f"- **Overdue Orders:** {len(overdue_pos)}\n")
+    if overdue_pos:
+        for po in overdue_pos[:5]:
+            supplier = po.supplier.name if po.supplier else "Unknown"
+            context_parts.append(f"  - PO {po.id}: {po.item_name} (Qty: {po.quantity}) from {supplier}, due {po.delivery_date.strftime('%Y-%m-%d')}\n")
+    context_parts.append("\n")
+
+    # ----- Stock Requests Summary -----
+    pending_requests = StockRequest.query.filter(
+        StockRequest.status.in_(['submitted', 'approved', 'processing'])
+    ).all()
+    high_priority = [r for r in pending_requests if r.priority == 'emergency']
+    context_parts.append("### Stock Requests\n")
+    context_parts.append(f"- **Pending Requests:** {len(pending_requests)}\n")
+    context_parts.append(f"- **Emergency Requests:** {len(high_priority)}\n")
+    if high_priority:
+        for r in high_priority[:5]:
+            context_parts.append(f"  - {r.stock.name} (SKU: {r.stock.sku}) from {r.department}, qty {r.quantity_requested}, priority {r.priority}\n")
+    context_parts.append("\n")
+
+    # ----- Supplier Performance (Top 5 by rating) -----
+    top_suppliers = Supplier.query.filter_by(is_active=True).order_by(Supplier.rating.desc()).limit(5).all()
+    context_parts.append("### Top Suppliers\n")
+    for sup in top_suppliers:
+        context_parts.append(f"- **{sup.name}** (Rating: {sup.rating}/5, Lead time: {sup.lead_time} days, Last order: {sup.last_order_date.strftime('%Y-%m-%d') if sup.last_order_date else 'Never'})\n")
+    context_parts.append("\n")
+
+    # ----- Inventory Turnover (optional, if COGS data available) -----
+    # Not included here – you can extend.
+
+    return "".join(context_parts)
+
+
+
+
+
+@store_web_bp.route('/ai-conversation')
+@login_required
+def get_ai_conversation():
+    """Return all AI assistant messages for the current user."""
+    conversation = InventoryConversation.query.filter_by(user_id=current_user.id).first()
+    if not conversation:
+        return jsonify([])
+
+    messages = []
+    for msg in InventoryMessage.query.filter_by(conversation_id=conversation.id).order_by(InventoryMessage.created_at.asc()):
+        messages.append({
+            'role': msg.role,
+            'content': msg.content,
+            'created_at': msg.created_at.isoformat()
+        })
+    return jsonify(messages)
+
+
+
+
+OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY')
+OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+MODEL = "nvidia/nemotron-3-nano-30b-a3b:free"  # or your preferred model
+
+
+@store_web_bp.route('/ai-assistant-stream')
+@login_required
+def ai_assistant_stream():
+    message = request.args.get('message', '')
+    if not message:
+        return jsonify({'error': 'No message'}), 400
+
+    # Get or create conversation for this user
+    conversation = InventoryConversation.query.filter_by(user_id=current_user.id).first()
+    if not conversation:
+        conversation = InventoryConversation(user_id=current_user.id)
+        db.session.add(conversation)
+        db.session.commit()
+
+    # Build system prompt with inventory context
+    context = get_inventory_context()
+    system_prompt = f"""You are a state‑of‑the‑art Inventory AI Assistant integrated into a hospital inventory management system. You have access to the following current inventory data:
+
+{context}
+
+**Your Role:**
+- Answer inventory‑related questions, provide insights, and help with stock management.
+- Suggest reorder levels, identify slow‑moving items, and recommend actions for low stock or expiring items.
+- Format your answers in clear Markdown.
+- **Include a separate reasoning section** before your final answer. Use the headings:
+  - `## Reasoning` for your step‑by‑step thought process.
+  - `## Answer` for your final response.
+- Be concise, data‑driven, and professional.
+- End every response with the disclaimer: *"These suggestions are generated by AI and are not a substitute for professional inventory management decisions. Always verify with physical stock and consult with inventory personnel."*
+
+**Capabilities:**
+- You can recommend reorder quantities.
+- You can highlight stock that is about to expire.
+- You can suggest actions to reduce stockouts.
+- You can provide insights on supplier performance.
+
+If you need more information to make a recommendation, ask clarifying questions.
+"""
+
+    # Build message list for AI – query messages directly
+    previous_messages = []
+    for msg in InventoryMessage.query.filter_by(conversation_id=conversation.id).order_by(InventoryMessage.created_at.asc()):
+        previous_messages.append({"role": msg.role, "content": msg.content})
+
+    messages_for_ai = [{"role": "system", "content": system_prompt}] + previous_messages
+    messages_for_ai.append({"role": "user", "content": message})
+
+    # Save user message
+    user_msg = InventoryMessage(conversation_id=conversation.id, role='user', content=message)
+    db.session.add(user_msg)
+    db.session.commit()
+
+    # Prepare OpenRouter streaming request
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "model": MODEL,
+        "messages": messages_for_ai,
+        "temperature": 0.7,
+        "max_tokens": 2000,
+        "stream": True
+    }
+
+    def generate():
+        full_response = ""
+        max_retries = 3
+        retry_delay = 2
+
+        for attempt in range(max_retries):
+            try:
+                response = requests.post(OPENROUTER_URL, json=payload, headers=headers, stream=True, timeout=60)
+                if response.status_code != 200:
+                    logging.error(f"OpenRouter error {response.status_code}: {response.text}")
+                    if response.status_code >= 500 and attempt < max_retries - 1:
+                        time.sleep(retry_delay)
+                        retry_delay *= 2
+                        continue
+                    else:
+                        yield f"data: {json.dumps({'error': f'API returned {response.status_code}'})}\n\n"
+                        return
+                break
+            except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
+                logging.error(f"Connection error attempt {attempt+1}: {e}")
+                if attempt < max_retries - 1:
+                    time.sleep(retry_delay)
+                    retry_delay *= 2
+                    continue
+                else:
+                    yield f"data: {json.dumps({'error': 'Network error connecting to AI service. Please try again later.'})}\n\n"
+                    return
+            except Exception as e:
+                logging.error(f"Unexpected error: {e}", exc_info=True)
+                yield f"data: {json.dumps({'error': str(e)})}\n\n"
+                return
+
+        # Process streaming response
+        try:
+            chunk_count = 0
+            for line in response.iter_lines():
+                if line:
+                    line = line.decode('utf-8')
+                    if line.startswith('data: '):
+                        data = line[6:]
+                        if data == '[DONE]':
+                            break
+                        try:
+                            chunk = json.loads(data)
+                            delta = chunk['choices'][0]['delta'].get('content', '')
+                            if delta:
+                                chunk_count += 1
+                                full_response += delta
+                                if chunk_count % 10 == 0:
+                                    logging.info(f"Chunk {chunk_count}, length {len(full_response)}")
+                                yield f"data: {json.dumps({'chunk': delta})}\n\n"
+                        except json.JSONDecodeError:
+                            continue
+            logging.info(f"Stream finished. Total chunks: {chunk_count}")
+            if full_response:
+                assistant_msg = InventoryMessage(conversation_id=conversation.id, role='assistant', content=full_response)
+                db.session.add(assistant_msg)
+                db.session.commit()
+            yield f"data: {json.dumps({'done': True})}\n\n"
+        except Exception as e:
+            logging.error(f"Streaming error: {e}", exc_info=True)
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+        finally:
+            db.session.close()
+
+    return Response(stream_with_context(generate()), mimetype='text/event-stream')

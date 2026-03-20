@@ -171,17 +171,18 @@
                         </div>
 
                         <div class="col-span-2 flex flex-col justify-center text-sm">
-                            {% if visit.vitals %} {% set vit = visit.vitals %}
-                            <div class="flex items-center text-gray-700 dark:text-gray-300 mb-1">
-                                <i class="fas fa-heartbeat text-red-500 w-4"></i>
-                                <span class="ml-2 font-medium">{{ vit.heart_rate or 'N/A' }} bpm</span>
-                            </div>
-                            <div class="flex items-center text-gray-700 dark:text-gray-300">
-                                <i class="fas fa-temperature-high text-orange-500 w-4"></i>
-                                <span class="ml-2 font-medium">{{ vit.temperature or 'N/A' }}°C</span>
-                            </div>
+                            {% if visit.vitals and visit.vitals|length > 0 %} 
+                                {% set vit = visit.vitals[0] %}
+                                <div class="flex items-center text-gray-700 dark:text-gray-300 mb-1">
+                                    <i class="fas fa-heartbeat text-red-500 w-4"></i>
+                                    <span class="ml-2">{{ vit.heart_rate or 'N/A' }} bpm</span>
+                                </div>
+                                <div class="flex items-center text-gray-700 dark:text-gray-300">
+                                    <i class="fas fa-temperature-high text-orange-500 w-4"></i>
+                                    <span class="ml-2">{{ vit.temperature or 'N/A' }}°C</span>
+                                </div>
                             {% else %}
-                            <span class="text-gray-500 dark:text-gray-400 italic">No vitals recorded</span>
+                                <span class="text-gray-500 dark:text-gray-400 italic">No vitals</span>
                             {% endif %}
                         </div>
 

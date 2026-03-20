@@ -158,7 +158,70 @@
             </div>
         </div>
     </div>
-
+<!-- AI Modal -->
+<div id="ai-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
+    <div class="absolute inset-0 bg-gray-900 bg-opacity-75 transition-opacity duration-300"></div>
+    
+    <div class="modal-content bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] min-h-[600px] flex flex-col overflow-hidden transform transition-all duration-300">
+        <!-- Close button -->
+        <div class="absolute top-4 right-4">
+            <button id="close-ai-modal" class="text-gray-400 hover:text-white transition-colors duration-200 rounded-full p-2">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <!-- Header - comfortable size -->
+        <div class="p-5 border-b border-gray-700 flex items-center">
+            <div class="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center">
+                <i class="fas fa-robot text-white text-2xl"></i>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-xl font-bold text-white">Clinical AI Assistant</h3>
+                <p class="text-sm text-blue-400 flex items-center">
+                    <span class="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                    Online
+                </p>
+            </div>
+            <div class="ml-auto flex space-x-2">
+                <button class="text-gray-400 hover:text-white p-2 rounded-full hover:bg-gray-700 transition-colors">
+                    <i class="fas fa-cog"></i>
+                </button>
+                <button class="text-gray-400 hover:text-white p-2 rounded-full hover:bg-gray-700 transition-colors">
+                    <i class="fas fa-history"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Chat Container -->
+        <div id="chat-container" class="chat-container flex-1 p-5 overflow-y-auto">
+            <div class="flex justify-center mb-4">
+                <div class="bg-gray-700 rounded-full px-5 py-2.5 text-base text-gray-300" id="chat-date-label"></div>
+            </div>
+            <!-- Messages will be inserted here -->
+        </div>
+        
+        <!-- Footer - comfortable size -->
+        <div class="p-5 border-t border-gray-700">
+            <div class="flex items-center">
+                <div class="flex space-x-2 mr-3">
+                    <button class="text-gray-400 hover:text-white p-2.5 rounded-full hover:bg-gray-700 transition-colors">
+                        <i class="fas fa-paperclip text-lg"></i>
+                    </button>
+                    <button class="text-gray-400 hover:text-white p-2.5 rounded-full hover:bg-gray-700 transition-colors">
+                        <i class="fas fa-microphone text-lg"></i>
+                    </button>
+                </div>
+                <input type="text" 
+                       id="message-input" 
+                       placeholder="Ask about this case..." 
+                       class="flex-1 bg-gray-700 text-white rounded-full px-5 py-3.5 text-base focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <button id="send-button" class="send-btn ml-3 w-14 h-14 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-full flex items-center justify-center hover:from-blue-600 hover:to-indigo-700 transition-all">
+                    <i class="fas fa-paper-plane text-lg"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
     <!-- Recent Activity Tables -->
     <div class="row g-4">
         <div class="col-lg-6">
@@ -233,7 +296,73 @@
         </div>
     </div>
 </div>
-
+<button id="ai-assistant-button" class="fixed bottom-20 right-6 bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 transition-transform transform hover:scale-110 z-50">
+  <i class="fas fa-robot"></i>
+</button>
+<!-- AI Modal -->
+<div id="ai-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
+    <div class="absolute inset-0 bg-gray-900 bg-opacity-75 transition-opacity duration-300"></div>
+    
+    <div class="modal-content bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] min-h-[600px] flex flex-col overflow-hidden transform transition-all duration-300">
+        <!-- Close button -->
+        <div class="absolute top-4 right-4">
+            <button id="close-ai-modal" class="text-gray-400 hover:text-white transition-colors duration-200 rounded-full p-2">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <!-- Header - comfortable size -->
+        <div class="p-5 border-b border-gray-700 flex items-center">
+            <div class="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center">
+                <i class="fas fa-robot text-white text-2xl"></i>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-xl font-bold text-white">Clinical AI Assistant</h3>
+                <p class="text-sm text-blue-400 flex items-center">
+                    <span class="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                    Online
+                </p>
+            </div>
+            <div class="ml-auto flex space-x-2">
+                <button class="text-gray-400 hover:text-white p-2 rounded-full hover:bg-gray-700 transition-colors">
+                    <i class="fas fa-cog"></i>
+                </button>
+                <button class="text-gray-400 hover:text-white p-2 rounded-full hover:bg-gray-700 transition-colors">
+                    <i class="fas fa-history"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Chat Container -->
+        <div id="chat-container" class="chat-container flex-1 p-5 overflow-y-auto">
+            <div class="flex justify-center mb-4">
+                <div class="bg-gray-700 rounded-full px-5 py-2.5 text-base text-gray-300" id="chat-date-label"></div>
+            </div>
+            <!-- Messages will be inserted here -->
+        </div>
+        
+        <!-- Footer - comfortable size -->
+        <div class="p-5 border-t border-gray-700">
+            <div class="flex items-center">
+                <div class="flex space-x-2 mr-3">
+                    <button class="text-gray-400 hover:text-white p-2.5 rounded-full hover:bg-gray-700 transition-colors">
+                        <i class="fas fa-paperclip text-lg"></i>
+                    </button>
+                    <button class="text-gray-400 hover:text-white p-2.5 rounded-full hover:bg-gray-700 transition-colors">
+                        <i class="fas fa-microphone text-lg"></i>
+                    </button>
+                </div>
+                <input type="text" 
+                       id="message-input" 
+                       placeholder="Ask about this case..." 
+                       class="flex-1 bg-gray-700 text-white rounded-full px-5 py-3.5 text-base focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <button id="send-button" class="send-btn ml-3 w-14 h-14 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-full flex items-center justify-center hover:from-blue-600 hover:to-indigo-700 transition-all">
+                    <i class="fas fa-paper-plane text-lg"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 <!-- Charts JS -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>

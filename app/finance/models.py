@@ -665,3 +665,35 @@ class BankStatementLine(db.Model):
     matched_transaction_id = db.Column(db.Integer, db.ForeignKey('bank_transactions.id'), nullable=True)
     matched_transaction = db.relationship('BankTransaction', foreign_keys=[matched_transaction_id])
     is_matched = db.Column(db.Boolean, default=False)
+    
+    
+    
+    
+class FinanceConversation(db.Model):
+    __tablename__ = 'finance_conversations'
+    __audit_trail__ = True
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    user = db.relationship('User', backref=db.backref('finance_conversations', lazy='dynamic'))
+    messages = db.relationship('FinanceMessage', back_populates='conversation', order_by='FinanceMessage.created_at', cascade='all, delete-orphan')
+
+    __table_args__ = (
+        db.UniqueConstraint('user_id', name='unique_user_finance_conversation'),
+    )
+
+
+class FinanceMessage(db.Model):
+    __tablename__ = 'finance_messages'
+    __audit_trail__ = True
+
+    id = db.Column(db.Integer, primary_key=True)
+    conversation_id = db.Column(db.Integer, db.ForeignKey('finance_conversations.id'), nullable=False)
+    role = db.Column(db.String(20), nullable=False)  # 'user' or 'assistant'
+    content = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    conversation = db.relationship('FinanceConversation', back_populates='messages')

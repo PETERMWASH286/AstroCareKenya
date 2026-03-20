@@ -1681,7 +1681,7 @@
 
         {% if has_privilege('admin:dashboard') %}
         <li>
-            <a href="{{ url_for('admin_web_bp.admin_dashboard') }}" 
+            <a href="{{ url_for('dashboard_web.index') }}" 
                class="flex items-center space-x-3 p-2 text-sm rounded-lg hover:bg-indigo-100 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 transition-all">
                 <i class="fas fa-tachometer-alt text-indigo-500"></i>
                 <span>Admin Dashboard</span>
@@ -1744,15 +1744,6 @@
 {% endif %}
 
 
-        {% if has_privilege('admin:reports_overview') %}
-        <li>
-            <a href="{{ url_for('admin_web_bp.admin_reports') }}" 
-               class="flex items-center space-x-3 p-2 text-sm rounded-lg hover:bg-indigo-100 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 transition-all">
-                <i class="fas fa-chart-bar text-purple-500"></i>
-                <span>Administrative Reports</span>
-            </a>
-        </li>
-        {% endif %}
 
         {% if has_privilege('admin:system_settings') %}
         <li>

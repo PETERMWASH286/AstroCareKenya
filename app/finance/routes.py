@@ -6,13 +6,14 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import smtplib
 import tempfile
+from time import time
 from flask import Blueprint, abort, flash, jsonify, redirect, render_template, request, session, url_for
 from flask_login import current_user, login_required
 from sqlalchemy import and_, extract, func
 
 from app.asset_management.models import Asset
 from app.auth.models import Role, User
-from app.finance.models import BankAccount, BankStatement, BankStatementLine, BankTransaction, CashAccount, CashTransaction, Expense, ExpenseCategory, Insurance, InsuranceClaim, InsuranceService, Invoice, InvoiceItem, Payment, PayrollPayment, SalesReport, SalesReportItem
+from app.finance.models import BankAccount, BankStatement, BankStatementLine, BankTransaction, CashAccount, CashTransaction, ClaimResponse, Expense, ExpenseCategory, FinanceConversation, FinanceMessage, Insurance, InsuranceClaim, InsuranceService, Invoice, InvoiceItem, Payment, PayrollPayment, SalesReport, SalesReportItem
 from sqlalchemy.exc import IntegrityError
 
 from app.hr.models import DeductionType, EmployeeDeductionAssignment, LoanRepayment, PaymentMethod, Payroll, PayrollLoan, Payslip, PayslipDeduction, PayslipEarning, StatutoryLiability
@@ -8247,3 +8248,584 @@ def balance_sheet():
         equity=equity,
         working_capital=working_capital
     )
+    
+    
+    
+    
+    
+    
+    
+    
+
+def get_detailed_financial_data(question):
+    """
+    Fetch detailed financial data based on keywords in the user's question.
+    Returns a formatted string with relevant sections.
+    """
+    from datetime import datetime, timedelta
+    from sqlalchemy import func
+
+    today = datetime.today().date()
+    start_of_month = today.replace(day=1)
+    start_of_quarter = today.replace(month=(today.month - 2) // 3 * 3 + 1, day=1)
+    start_of_year = today.replace(month=1, day=1)
+
+    q_lower = question.lower()
+    context_parts = []
+
+    # Helper to safely convert any numeric result to float
+    def safe_float(value):
+        return float(value) if value is not None else 0.0
+
+    # ----------------------------------------------------------------------
+    # 1. ALWAYS include the core summary (revenue, expenses, profit, cash)
+    # ----------------------------------------------------------------------
+    monthly_sales = safe_float(db.session.query(func.sum(SalesReport.total_amount)).filter(
+        SalesReport.sale_date >= start_of_month,
+        SalesReport.sale_date <= today
+    ).scalar())
+
+    monthly_expenses = safe_float(db.session.query(func.sum(Expense.amount + Expense.tax_amount)).filter(
+        Expense.expense_date >= start_of_month,
+        Expense.expense_date <= today,
+        Expense.status == 'paid'
+    ).scalar())
+
+    quarterly_sales = safe_float(db.session.query(func.sum(SalesReport.total_amount)).filter(
+        SalesReport.sale_date >= start_of_quarter,
+        SalesReport.sale_date <= today
+    ).scalar())
+
+    quarterly_expenses = safe_float(db.session.query(func.sum(Expense.amount + Expense.tax_amount)).filter(
+        Expense.expense_date >= start_of_quarter,
+        Expense.expense_date <= today,
+        Expense.status == 'paid'
+    ).scalar())
+
+    ytd_sales = safe_float(db.session.query(func.sum(SalesReport.total_amount)).filter(
+        SalesReport.sale_date >= start_of_year,
+        SalesReport.sale_date <= today
+    ).scalar())
+
+    ytd_expenses = safe_float(db.session.query(func.sum(Expense.amount + Expense.tax_amount)).filter(
+        Expense.expense_date >= start_of_year,
+        Expense.expense_date <= today,
+        Expense.status == 'paid'
+    ).scalar())
+
+    cash_total = safe_float(db.session.query(func.sum(CashAccount.current_balance)).scalar())
+    bank_total = safe_float(db.session.query(func.sum(BankAccount.current_balance)).scalar())
+
+    ar_total = safe_float(db.session.query(func.sum(Invoice.balance)).filter(
+        Invoice.status.in_(['pending', 'overdue', 'partially_paid'])
+    ).scalar())
+
+    ap_total = safe_float(db.session.query(func.sum(SupplierInvoice.balance_due)).filter(
+        SupplierInvoice.status.in_(['pending', 'overdue', 'partially_paid'])
+    ).scalar())
+
+    context_parts.append(f"## Financial Summary (as of {today.isoformat()})\n")
+    context_parts.append(f"### Monthly (from {start_of_month.strftime('%Y-%m-%d')} to {today})\n")
+    context_parts.append(f"- Revenue: KES {monthly_sales:,.2f}\n")
+    context_parts.append(f"- Expenses: KES {monthly_expenses:,.2f}\n")
+    context_parts.append(f"- Profit: KES {monthly_sales - monthly_expenses:,.2f}\n\n")
+    context_parts.append(f"### Quarterly (from {start_of_quarter.strftime('%Y-%m-%d')} to {today})\n")
+    context_parts.append(f"- Revenue: KES {quarterly_sales:,.2f}\n")
+    context_parts.append(f"- Expenses: KES {quarterly_expenses:,.2f}\n")
+    context_parts.append(f"- Profit: KES {quarterly_sales - quarterly_expenses:,.2f}\n\n")
+    context_parts.append(f"### Year‑to‑Date (from {start_of_year.strftime('%Y-%m-%d')} to {today})\n")
+    context_parts.append(f"- Revenue: KES {ytd_sales:,.2f}\n")
+    context_parts.append(f"- Expenses: KES {ytd_expenses:,.2f}\n")
+    context_parts.append(f"- Profit: KES {ytd_sales - ytd_expenses:,.2f}\n\n")
+    context_parts.append(f"### Balance\n")
+    context_parts.append(f"- Total Cash & Bank: KES {cash_total + bank_total:,.2f}\n")
+    context_parts.append(f"- Accounts Receivable: KES {ar_total:,.2f}\n")
+    context_parts.append(f"- Accounts Payable: KES {ap_total:,.2f}\n\n")
+
+    # ----------------------------------------------------------------------
+    # 2. Keyword‑based additional sections
+    # ----------------------------------------------------------------------
+
+    # --- Income Statement (detailed) ---
+    if any(kw in q_lower for kw in ['income statement', 'profit and loss', 'pnl', 'p&l']):
+        # Revenue by department
+        dept_rev = db.session.query(
+            SalesReportItem.department,
+            func.sum(SalesReportItem.total_price).label('total')
+        ).join(SalesReport).filter(
+            SalesReport.sale_date >= start_of_year
+        ).group_by(SalesReportItem.department).all()
+        # Expenses by category
+        expense_cat = db.session.query(
+            ExpenseCategory.name,
+            func.sum(Expense.amount + Expense.tax_amount).label('total')
+        ).join(Expense, Expense.category_id == ExpenseCategory.id).filter(
+            Expense.expense_date >= start_of_year,
+            Expense.status == 'paid'
+        ).group_by(ExpenseCategory.name).all()
+        context_parts.append("### Income Statement (Year‑to‑Date)\n")
+        context_parts.append("**Revenue:**\n")
+        for dept, total in dept_rev:
+            context_parts.append(f"- {dept}: KES {safe_float(total):,.2f}\n")
+        context_parts.append(f"\n**Total Revenue:** KES {ytd_sales:,.2f}\n\n")
+        context_parts.append("**Expenses:**\n")
+        for cat, total in expense_cat:
+            context_parts.append(f"- {cat}: KES {safe_float(total):,.2f}\n")
+        context_parts.append(f"\n**Total Expenses:** KES {ytd_expenses:,.2f}\n")
+        context_parts.append(f"**Net Profit:** KES {ytd_sales - ytd_expenses:,.2f}\n\n")
+
+    # --- Balance Sheet ---
+    if any(kw in q_lower for kw in ['balance sheet', 'statement of financial position']):
+        # Assets
+        cash = cash_total + bank_total
+        inventory = (
+            safe_float(db.session.query(func.sum(PharmacyInventory.buying_price * PharmacyInventory.quantity)).scalar())
+            + safe_float(db.session.query(func.sum(LabInventory.buying_price * LabInventory.quantity)).scalar())
+            + safe_float(db.session.query(func.sum(RadiologyInventory.buying_price * RadiologyInventory.quantity)).scalar())
+        )
+        fixed_assets = safe_float(db.session.query(func.sum(Asset.current_value)).filter(
+            Asset.purchase_date <= today
+        ).scalar())
+        total_assets = cash + ar_total + inventory + fixed_assets
+
+        # Liabilities
+        statutory = safe_float(db.session.query(func.sum(StatutoryLiability.amount)).filter(
+            StatutoryLiability.paid_at.is_(None)
+        ).scalar())
+        loans = 0.0  # placeholder
+        total_liabilities = ap_total + statutory + loans
+
+        equity = total_assets - total_liabilities
+
+        context_parts.append("### Balance Sheet\n")
+        context_parts.append("**Assets**\n")
+        context_parts.append(f"- Cash & Bank: KES {cash:,.2f}\n")
+        context_parts.append(f"- Accounts Receivable: KES {ar_total:,.2f}\n")
+        context_parts.append(f"- Inventory: KES {inventory:,.2f}\n")
+        context_parts.append(f"- Fixed Assets: KES {fixed_assets:,.2f}\n")
+        context_parts.append(f"**Total Assets:** KES {total_assets:,.2f}\n\n")
+        context_parts.append("**Liabilities**\n")
+        context_parts.append(f"- Accounts Payable: KES {ap_total:,.2f}\n")
+        context_parts.append(f"- Statutory Liabilities: KES {statutory:,.2f}\n")
+        context_parts.append(f"- Loans Payable: KES {loans:,.2f}\n")
+        context_parts.append(f"**Total Liabilities:** KES {total_liabilities:,.2f}\n\n")
+        context_parts.append(f"**Equity:** KES {equity:,.2f}\n\n")
+
+    # --- Cash Flow Statement ---
+    if any(kw in q_lower for kw in ['cash flow', 'statement of cash flows']):
+        # Operating cash flow (simplified)
+        op_inflows = ytd_sales
+        op_outflows = ytd_expenses
+        operating_cf = op_inflows - op_outflows
+
+        # Investing cash flow (capital expenses)
+        investing_outflows = safe_float(db.session.query(func.sum(Expense.amount + Expense.tax_amount)).filter(
+            Expense.expense_date >= start_of_year,
+            Expense.expense_type == 'capital',
+            Expense.status == 'paid'
+        ).scalar())
+
+        # Financing cash flow (e.g., loans, dividends – not tracked yet)
+        financing_cf = 0.0
+
+        net_cash_flow = operating_cf - investing_outflows + financing_cf
+        ending_cash = cash_total + bank_total
+        opening_cash = ending_cash - net_cash_flow
+
+        context_parts.append("### Cash Flow Statement (Year‑to‑Date)\n")
+        context_parts.append("**Operating Activities**\n")
+        context_parts.append(f"- Cash from Sales: KES {op_inflows:,.2f}\n")
+        context_parts.append(f"- Cash Paid for Expenses: KES {op_outflows:,.2f}\n")
+        context_parts.append(f"- Net Operating Cash Flow: KES {operating_cf:,.2f}\n\n")
+        context_parts.append("**Investing Activities**\n")
+        context_parts.append(f"- Purchase of Fixed Assets: KES {investing_outflows:,.2f}\n")
+        context_parts.append(f"- Net Investing Cash Flow: KES -{investing_outflows:,.2f}\n\n")
+        context_parts.append("**Financing Activities**\n")
+        context_parts.append(f"- Net Financing Cash Flow: KES {financing_cf:,.2f}\n\n")
+        context_parts.append(f"**Net Cash Flow:** KES {net_cash_flow:,.2f}\n")
+        context_parts.append(f"**Opening Cash Balance:** KES {opening_cash:,.2f}\n")
+        context_parts.append(f"**Closing Cash Balance:** KES {ending_cash:,.2f}\n\n")
+
+    # --- Trial Balance ---
+    if any(kw in q_lower for kw in ['trial balance']):
+        # Debit balances (assets, expenses)
+        # We need fixed_assets and inventory defined here – they are not always defined; we can recalc or use previously computed if in scope.
+        # For safety, recalc inside this block.
+        fixed_assets = safe_float(db.session.query(func.sum(Asset.current_value)).filter(
+            Asset.purchase_date <= today
+        ).scalar())
+        inventory = (
+            safe_float(db.session.query(func.sum(PharmacyInventory.buying_price * PharmacyInventory.quantity)).scalar())
+            + safe_float(db.session.query(func.sum(LabInventory.buying_price * LabInventory.quantity)).scalar())
+            + safe_float(db.session.query(func.sum(RadiologyInventory.buying_price * RadiologyInventory.quantity)).scalar())
+        )
+        debit_total = cash_total + bank_total + ar_total + inventory + fixed_assets + ytd_expenses
+        # Credit balances (liabilities, revenue, equity)
+        statutory = safe_float(db.session.query(func.sum(StatutoryLiability.amount)).filter(
+            StatutoryLiability.paid_at.is_(None)
+        ).scalar())
+        credit_total = ap_total + statutory + loans + ytd_sales
+        # Equity (balancing figure)
+        equity_balance = debit_total - credit_total
+        credit_total += equity_balance
+
+        context_parts.append("### Trial Balance\n")
+        context_parts.append(f"- **Total Debits:** KES {debit_total:,.2f}\n")
+        context_parts.append(f"- **Total Credits:** KES {credit_total:,.2f}\n")
+        if abs(debit_total - credit_total) < 0.01:
+            context_parts.append("✓ The trial balance is balanced.\n\n")
+        else:
+            context_parts.append("⚠️ The trial balance is **not** balanced. Investigate discrepancies.\n\n")
+
+    # --- General Ledger ---
+    if any(kw in q_lower for kw in ['general ledger', 'ledger']):
+        # Combine cash and bank account entries
+        ledger = []
+        # Cash accounts
+        for ca in CashAccount.query.filter_by(is_active=True):
+            entries = ca.get_ledger_entries()
+            for e in entries:
+                ledger.append({
+                    'date': e['date'],
+                    'account': f"Cash: {ca.name}",
+                    'debit': e['debit'],
+                    'credit': e['credit'],
+                    'balance': e['balance'],
+                    'description': e['description']
+                })
+        # Bank accounts
+        for ba in BankAccount.query.filter_by(is_active=True):
+            entries = ba.get_ledger_entries()
+            for e in entries:
+                ledger.append({
+                    'date': e['date'],
+                    'account': f"Bank: {ba.bank_name} - {ba.account_number}",
+                    'debit': e['debit'],
+                    'credit': e['credit'],
+                    'balance': e['balance'],
+                    'description': e['description']
+                })
+        # Sort by date
+        ledger.sort(key=lambda x: x['date'])
+        # Limit to last 50 entries for brevity
+        context_parts.append("### General Ledger (Last 50 entries)\n")
+        for entry in ledger[-50:]:
+            date_str = entry['date'].strftime('%Y-%m-%d') if entry['date'] else 'N/A'
+            context_parts.append(f"- {date_str} | {entry['account']} | {entry['description']} | Debit: {entry['debit']:,.2f} | Credit: {entry['credit']:,.2f} | Balance: {entry['balance']:,.2f}\n")
+        context_parts.append("\n")
+
+    # --- Stock Valuation Report ---
+    if any(kw in q_lower for kw in ['stock valuation', 'inventory valuation', 'stock report']):
+        # Main store stock
+        main_stock = db.session.query(Stock).filter_by(is_active=True).all()
+        main_value = sum(safe_float(s.quantity or 0) * safe_float(s.unit_price or 0) for s in main_stock)
+        # Pharmacy
+        pharm_items = db.session.query(PharmacyInventory).all()
+        pharm_value = sum(safe_float(i.quantity) * safe_float(i.buying_price) for i in pharm_items)
+        # Lab
+        lab_items = db.session.query(LabInventory).all()
+        lab_value = sum(safe_float(i.quantity) * safe_float(i.buying_price) for i in lab_items)
+        # Radiology
+        rad_items = db.session.query(RadiologyInventory).all()
+        rad_value = sum(safe_float(i.quantity) * safe_float(i.buying_price) for i in rad_items)
+
+        total_stock_value = main_value + pharm_value + lab_value + rad_value
+        context_parts.append("### Stock Valuation Report\n")
+        context_parts.append(f"- **Main Store:** KES {main_value:,.2f}\n")
+        context_parts.append(f"- **Pharmacy:** KES {pharm_value:,.2f}\n")
+        context_parts.append(f"- **Laboratory:** KES {lab_value:,.2f}\n")
+        context_parts.append(f"- **Radiology:** KES {rad_value:,.2f}\n")
+        context_parts.append(f"**Total Inventory Value:** KES {total_stock_value:,.2f}\n\n")
+
+    # --- Budget vs Actual ---
+    if any(kw in q_lower for kw in ['budget vs actual', 'budget variance']):
+        # Get budgeted amounts per category (from ExpenseCategory)
+        budget_cats = ExpenseCategory.query.filter(
+            ExpenseCategory.is_active == True,
+            ExpenseCategory.budget_allocation > 0
+        ).all()
+        actuals = {}
+        for cat in budget_cats:
+            actual = safe_float(db.session.query(func.sum(Expense.amount + Expense.tax_amount)).filter(
+                Expense.category_id == cat.id,
+                Expense.expense_date >= start_of_year,
+                Expense.status == 'paid'
+            ).scalar())
+            actuals[cat.name] = actual
+        context_parts.append("### Budget vs Actual (Year‑to‑Date)\n")
+        for cat in budget_cats:
+            budget = safe_float(cat.budget_allocation)
+            actual = actuals.get(cat.name, 0)
+            variance = budget - actual
+            var_pct = (variance / budget * 100) if budget else 0
+            context_parts.append(f"- **{cat.name}:** Budget KES {budget:,.2f}, Actual KES {actual:,.2f}, Variance KES {variance:,.2f} ({var_pct:+.1f}%)\n")
+        context_parts.append("\n")
+
+    # --- Departmental P&L ---
+    if any(kw in q_lower for kw in ['departmental p&l', 'profit by department', 'department performance']):
+        # Revenue by department (YTD)
+        dept_rev = db.session.query(
+            SalesReportItem.department,
+            func.sum(SalesReportItem.total_price).label('revenue')
+        ).join(SalesReport).filter(
+            SalesReport.sale_date >= start_of_year
+        ).group_by(SalesReportItem.department).all()
+        # Expenses by department (YTD)
+        dept_exp = db.session.query(
+            Department.name,
+            func.sum(Expense.amount + Expense.tax_amount).label('expense')
+        ).join(Expense, Expense.department_id == Department.id).filter(
+            Expense.expense_date >= start_of_year,
+            Expense.status == 'paid'
+        ).group_by(Department.name).all()
+        exp_dict = {dept: safe_float(expense) for dept, expense in dept_exp}
+        context_parts.append("### Departmental Profit & Loss (Year‑to‑Date)\n")
+        for dept, rev in dept_rev:
+            rev = safe_float(rev)
+            expense = exp_dict.get(dept, 0)
+            profit = rev - expense
+            context_parts.append(f"- **{dept}:** Revenue KES {rev:,.2f}, Expenses KES {expense:,.2f}, Profit KES {profit:,.2f}\n")
+        context_parts.append("\n")
+
+    # --- Insurance Claims Report ---
+    if any(kw in q_lower for kw in ['insurance claims', 'claims report']):
+        total_claims = InsuranceClaim.query.count()
+        approved = safe_float(db.session.query(func.sum(ClaimResponse.approved_amount)).scalar())
+        denied = safe_float(db.session.query(func.sum(ClaimResponse.denied_amount)).scalar())
+        pending = db.session.query(InsuranceClaim).filter(InsuranceClaim.response_received == False).count()
+        context_parts.append("### Insurance Claims Report\n")
+        context_parts.append(f"- **Total Claims Submitted:** {total_claims}\n")
+        context_parts.append(f"- **Total Approved Amount:** KES {approved:,.2f}\n")
+        context_parts.append(f"- **Total Denied Amount:** KES {denied:,.2f}\n")
+        context_parts.append(f"- **Pending Claims:** {pending}\n\n")
+
+    # --- Supplier Invoices Aging ---
+    if any(kw in q_lower for kw in ['supplier invoices', 'vendor aging', 'ap aging details']):
+        invoices = SupplierInvoice.query.filter(
+            SupplierInvoice.status.in_(['pending', 'overdue', 'partially_paid'])
+        ).order_by(SupplierInvoice.due_date).limit(20).all()
+        context_parts.append("### Supplier Invoices Aging (Top 20 by due date)\n")
+        for inv in invoices:
+            due = inv.due_date.date() if inv.due_date else inv.invoice_date.date() + timedelta(days=30)
+            days = (today - due).days
+            status = "Overdue" if days > 0 else "Current"
+            context_parts.append(f"- **{inv.supplier_account.supplier.name}** Invoice {inv.invoice_number}: KES {safe_float(inv.balance_due):,.2f} due {due.strftime('%Y-%m-%d')} ({status} {abs(days)} days)\n")
+        context_parts.append("\n")
+
+    # --- Daily / Monthly Trends (enhanced) ---
+    if any(kw in q_lower for kw in ['trend', 'daily', 'monthly', 'over time']):
+        month_start = today.replace(day=1)
+        monthly_rev = []
+        for i in range(11, -1, -1):
+            month = month_start - timedelta(days=30*i)
+            month_start_dt = month.replace(day=1)
+            if month_start_dt.month == 12:
+                month_end_dt = datetime(month_start_dt.year+1, 1, 1) - timedelta(seconds=1)
+            else:
+                month_end_dt = datetime(month_start_dt.year, month_start_dt.month+1, 1) - timedelta(seconds=1)
+            rev = safe_float(db.session.query(func.sum(SalesReport.total_amount)).filter(
+                SalesReport.sale_date >= month_start_dt,
+                SalesReport.sale_date <= month_end_dt
+            ).scalar())
+            monthly_rev.append((month_start_dt.strftime('%b %Y'), rev))
+        context_parts.append("### Monthly Revenue (Last 12 months)\n")
+        for label, rev in monthly_rev:
+            context_parts.append(f"- {label}: KES {rev:,.2f}\n")
+        context_parts.append("\n")
+
+    # --- Profit Margin ---
+    if any(kw in q_lower for kw in ['margin', 'profitability', 'ratio']):
+        profit_margin = ((ytd_sales - ytd_expenses) / ytd_sales * 100) if ytd_sales else 0
+        context_parts.append(f"### Profit Margin (YTD)\n")
+        context_parts.append(f"- Net Profit Margin: {profit_margin:.2f}%\n\n")
+
+    # --- Cash Runway ---
+    if any(kw in q_lower for kw in ['cash flow', 'liquidity', 'runway']):
+        monthly_outflow = monthly_expenses
+        cash_runway = (cash_total + bank_total) / monthly_outflow if monthly_outflow else 999
+        context_parts.append(f"### Cash Flow\n")
+        context_parts.append(f"- Average Monthly Outflow: KES {monthly_outflow:,.2f}\n")
+        context_parts.append(f"- Cash Runway (months): {cash_runway:.1f}\n\n")
+
+    return "".join(context_parts)
+
+
+
+
+
+
+from flask import request, jsonify, Response, stream_with_context
+import json
+import logging
+import requests
+
+# In‑memory conversation store (optional – we'll use DB)
+# Remove if you use database exclusively.
+
+OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY')
+OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+MODEL = "nvidia/nemotron-3-nano-30b-a3b:free"  # or your preferred model
+
+@finance_web_bp.route('/ai-assistant-stream')
+@login_required
+def ai_assistant_stream():
+    message = request.args.get('message', '')
+    if not message:
+        return jsonify({'error': 'No message'}), 400
+
+    # Get or create conversation for this user
+    conversation = FinanceConversation.query.filter_by(user_id=current_user.id).first()
+    if not conversation:
+        conversation = FinanceConversation(user_id=current_user.id)
+        db.session.add(conversation)
+        db.session.commit()
+
+    # Build system prompt with **detailed** financial context based on the user's question
+    detailed_context = get_detailed_financial_data(message)
+    system_prompt = f"""You are a state‑of‑the‑art Finance AI Assistant integrated into a hospital financial system. You have access to the following current financial data:
+
+{detailed_context}
+
+**Your Role:**
+- Answer financial questions, provide insights, and help with reporting.
+- Suggest ways to improve revenue, control expenses, or optimize cash flow.
+- Format your answers in clear Markdown.
+- **Include a separate reasoning section** before your final answer. Use the headings:
+  - `## Reasoning` for your step‑by‑step thought process.
+  - `## Answer` for your final response.
+- Be concise, data‑driven, and professional.
+- End every response with the disclaimer: *"These suggestions are generated by AI and are not a substitute for professional financial advice. Always verify with official records and consult with qualified finance personnel."*
+
+**Capabilities:**
+- You can recommend cost‑cutting measures.
+- You can highlight financial trends.
+- You can explain accounting concepts.
+- You can suggest ways to increase revenue (e.g., service bundles, insurance partnerships).
+
+If you need more information to make a recommendation, ask clarifying questions.
+"""
+
+    # Build message list for AI – query messages directly
+    previous_messages = []
+    for msg in FinanceMessage.query.filter_by(conversation_id=conversation.id).order_by(FinanceMessage.created_at.asc()):
+        previous_messages.append({"role": msg.role, "content": msg.content})
+
+    messages_for_ai = [{"role": "system", "content": system_prompt}] + previous_messages
+    messages_for_ai.append({"role": "user", "content": message})
+
+    # Save user message
+    user_msg = FinanceMessage(conversation_id=conversation.id, role='user', content=message)
+    db.session.add(user_msg)
+    db.session.commit()
+
+    # Prepare OpenRouter streaming request
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "model": MODEL,
+        "messages": messages_for_ai,
+        "temperature": 0.7,
+        "max_tokens": 2000,
+        "stream": True
+    }
+
+    def generate():
+        full_response = ""
+        max_retries = 3
+        retry_delay = 2  # seconds, doubled each retry
+
+        # Try to send request with retries
+        for attempt in range(max_retries):
+            try:
+                logging.info(f"Sending request to OpenRouter (attempt {attempt+1}/{max_retries})")
+                response = requests.post(OPENROUTER_URL, json=payload, headers=headers, stream=True, timeout=60)
+                if response.status_code != 200:
+                    logging.error(f"OpenRouter error status {response.status_code}: {response.text}")
+                    # If it's a server error (5xx) and we have retries left, wait and retry
+                    if response.status_code >= 500 and attempt < max_retries - 1:
+                        time.sleep(retry_delay)
+                        retry_delay *= 2
+                        continue
+                    else:
+                        yield f"data: {json.dumps({'error': f'API returned {response.status_code}'})}\n\n"
+                        return
+                # Success, break out of retry loop
+                break
+            except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
+                logging.error(f"Connection error (attempt {attempt+1}): {e}")
+                if attempt < max_retries - 1:
+                    time.sleep(retry_delay)
+                    retry_delay *= 2
+                    continue
+                else:
+                    yield f"data: {json.dumps({'error': 'Network error connecting to AI service. Please try again later.'})}\n\n"
+                    return
+            except Exception as e:
+                logging.error(f"Unexpected error: {e}", exc_info=True)
+                yield f"data: {json.dumps({'error': str(e)})}\n\n"
+                return
+
+        # Process streaming response
+        try:
+            chunk_count = 0
+            for line in response.iter_lines():
+                if line:
+                    line = line.decode('utf-8')
+                    if line.startswith('data: '):
+                        data = line[6:]
+                        if data == '[DONE]':
+                            logging.info("Received [DONE] marker, ending stream.")
+                            break
+                        try:
+                            chunk = json.loads(data)
+                            delta = chunk['choices'][0]['delta'].get('content', '')
+                            if delta:
+                                chunk_count += 1
+                                full_response += delta
+                                if chunk_count % 10 == 0:
+                                    logging.info(f"Received chunk {chunk_count}, current length: {len(full_response)}")
+                                yield f"data: {json.dumps({'chunk': delta})}\n\n"
+                        except json.JSONDecodeError as e:
+                            logging.warning(f"JSON decode error on line: {line[:100]}... Error: {e}")
+                            continue
+            logging.info(f"Stream finished. Total chunks: {chunk_count}, final response length: {len(full_response)}")
+
+            # Save assistant response to database
+            if full_response:
+                assistant_msg = FinanceMessage(conversation_id=conversation.id, role='assistant', content=full_response)
+                db.session.add(assistant_msg)
+                db.session.commit()
+                logging.info("Assistant response saved to database.")
+            else:
+                logging.warning("No content received from OpenRouter.")
+            yield f"data: {json.dumps({'done': True})}\n\n"
+        except Exception as e:
+            logging.error(f"Streaming processing error: {e}", exc_info=True)
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+        finally:
+            db.session.close()
+            logging.info("Database session closed.")
+
+    return Response(stream_with_context(generate()), mimetype='text/event-stream')
+
+
+
+
+@finance_web_bp.route('/ai-conversation')
+@login_required
+def get_ai_conversation():
+    """Return all AI assistant messages for the current user."""
+    conversation = FinanceConversation.query.filter_by(user_id=current_user.id).first()
+    if not conversation:
+        return jsonify([])
+
+    messages = []
+    for msg in FinanceMessage.query.filter_by(conversation_id=conversation.id).order_by(FinanceMessage.created_at.asc()):
+        messages.append({
+            'role': msg.role,
+            'content': msg.content,
+            'created_at': msg.created_at.isoformat()
+        })
+    return jsonify(messages)

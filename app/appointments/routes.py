@@ -14,6 +14,27 @@ from app.user_management.models import Department
 from . import appointments_web_bp
 
 
+def ensure_clinics():
+    """Create default clinic records if the table is empty."""
+    if Clinic.query.count() == 0:
+        default_clinics = [
+            {"name": "General Medicine", "description": "General outpatient consultations"},
+            {"name": "Pediatrics", "description": "Children's health services"},
+            {"name": "Obstetrics & Gynecology", "description": "Women's health and maternity"},
+            {"name": "Orthopedics", "description": "Bone and joint care"},
+            {"name": "Cardiology", "description": "Heart and cardiovascular care"},
+            {"name": "Dermatology", "description": "Skin conditions"},
+            {"name": "Ophthalmology", "description": "Eye care"},
+            {"name": "ENT", "description": "Ear, Nose, and Throat"},
+            {"name": "Dental", "description": "Oral health services"},
+            {"name": "Psychiatry", "description": "Mental health services"},
+        ]
+        for clinic_data in default_clinics:
+            clinic = Clinic(**clinic_data)
+            db.session.add(clinic)
+        db.session.commit()
+
+
 @appointments_web_bp.route('/appointments/new', methods=['GET', 'POST'])
 @login_required
 def schedule_new():
@@ -22,6 +43,9 @@ def schedule_new():
     GET:  Show a blank form (load clinics + doctors).
     POST: Process form submission and save to the database.
     """
+    # Ensure clinics exist
+    ensure_clinics()
+
     # 1) Load all clinics
     clinics = Clinic.query.order_by(Clinic.name).all()
 

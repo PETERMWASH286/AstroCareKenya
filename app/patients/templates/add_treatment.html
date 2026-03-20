@@ -750,19 +750,22 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
 </div>
 <div id="lab" class="tab-content hidden p-8">
-    <div>
-        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-            <i class="fas fa-flask text-orange-500 mr-2"></i>Lab Tests
-        </label>
-        <select name="lab_tests" multiple class="w-full" data-placeholder="Select lab tests...">
-            {% for service in lab_tests %}
-            <option value="{{ service.id }}"
+<div>
+    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+        <i class="fas fa-flask text-orange-500 mr-2"></i>Lab Tests
+    </label>
+    <select name="lab_tests" multiple
+            size="10"
+            class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+        {% for service in lab_tests %}
+        <option value="{{ service.id }}"
                 {% if service.id in existing_lab_tests|map(attribute='service_id') %}selected{% endif %}>
-                {{ service.name }} - Ksh {{ service.price|number_format }}
-            </option>
-            {% endfor %}
-        </select>
-    </div>
+            {{ service.name }} - Ksh {{ service.price|number_format }}
+        </option>
+        {% endfor %}
+    </select>
+    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Hold Ctrl (Windows/Linux) or Cmd (Mac) to select multiple tests.</p>
+</div>
 
     <div id="lab-results-display" class="mt-8">
         <h3 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-6 flex items-center">
@@ -997,19 +1000,22 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 </script>
 <div id="radiology" class="tab-content hidden p-8">
-    <div>
-        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-            <i class="fas fa-x-ray text-purple-500 mr-2"></i>Imaging Studies
-        </label>
-        <select name="imaging_studies" multiple class="w-full" data-placeholder="Select imaging studies...">
-            {% for service in imaging_services %}
-            <option value="{{ service.id }}"
+<div>
+    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+        <i class="fas fa-x-ray text-purple-500 mr-2"></i>Imaging Studies
+    </label>
+    <select name="imaging_studies" multiple
+            size="8"
+            class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+        {% for service in imaging_services %}
+        <option value="{{ service.id }}"
                 {% if service.id in existing_radiology|map(attribute='service_id') %}selected{% endif %}>
-                {{ service.name }} - Ksh {{ service.price|number_format }}
-            </option>
-            {% endfor %}
-        </select>
-    </div>
+            {{ service.name }} - Ksh {{ service.price|number_format }}
+        </option>
+        {% endfor %}
+    </select>
+    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Hold Ctrl (Windows/Linux) or Cmd (Mac) to select multiple studies.</p>
+</div>
 
     <!-- Radiology Results Section -->
     {% if existing_radiology %}
@@ -1218,207 +1224,358 @@ document.addEventListener('DOMContentLoaded', function() {
   <i class="fas fa-robot"></i>
 </button>
 
-    <!-- AI Modal -->
-    <div id="ai-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
-        <div class="absolute inset-0 bg-gray-900 bg-opacity-75 transition-opacity duration-300"></div>
+<!-- AI Modal -->
+<div id="ai-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
+    <div class="absolute inset-0 bg-gray-900 bg-opacity-75 transition-opacity duration-300"></div>
+    
+    <div class="modal-content bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] min-h-[600px] flex flex-col overflow-hidden transform transition-all duration-300">
+        <!-- Close button -->
+        <div class="absolute top-4 right-4">
+            <button id="close-ai-modal" class="text-gray-400 hover:text-white transition-colors duration-200 rounded-full p-2">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
         
-        <div class="modal-content bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all duration-300">
-            <div class="absolute top-4 right-4">
-                <button id="close-ai-modal" class="text-gray-400 hover:text-white transition-colors duration-200 rounded-full p-2">
-                    <i class="fas fa-times text-xl"></i>
+        <!-- Header - comfortable size -->
+        <div class="p-5 border-b border-gray-700 flex items-center">
+            <div class="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center">
+                <i class="fas fa-robot text-white text-2xl"></i>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-xl font-bold text-white">Clinical AI Assistant</h3>
+                <p class="text-sm text-blue-400 flex items-center">
+                    <span class="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                    Online
+                </p>
+            </div>
+            <div class="ml-auto flex space-x-2">
+                <button class="text-gray-400 hover:text-white p-2 rounded-full hover:bg-gray-700 transition-colors">
+                    <i class="fas fa-cog"></i>
+                </button>
+                <button class="text-gray-400 hover:text-white p-2 rounded-full hover:bg-gray-700 transition-colors">
+                    <i class="fas fa-history"></i>
                 </button>
             </div>
-            
-            <div class="p-5 border-b border-gray-700 flex items-center">
-                <div class="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center">
-                    <i class="fas fa-robot text-white text-xl"></i>
-                </div>
-                <div class="ml-3">
-                    <h3 class="text-lg font-bold text-white">Clinical AI Assistant</h3>
-                    <p class="text-xs text-blue-400 flex items-center">
-                        <span class="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
-                        Online
-                    </p>
-                </div>
-                <div class="ml-auto flex space-x-2">
-                    <button class="text-gray-400 hover:text-white p-2 rounded-full hover:bg-gray-700 transition-colors">
-                        <i class="fas fa-cog"></i>
-                    </button>
-                    <button class="text-gray-400 hover:text-white p-2 rounded-full hover:bg-gray-700 transition-colors">
-                        <i class="fas fa-history"></i>
-                    </button>
-                </div>
+        </div>
+        
+        <!-- Chat Container -->
+        <div id="chat-container" class="chat-container flex-1 p-5 overflow-y-auto">
+            <div class="flex justify-center mb-4">
+                <div class="bg-gray-700 rounded-full px-5 py-2.5 text-base text-gray-300" id="chat-date-label"></div>
             </div>
-            
-            <div id="chat-container" class="chat-container p-4 h-80 overflow-y-auto">
-                <div class="flex justify-center mb-4">
-                    <div class="bg-gray-700 rounded-full px-4 py-2 text-sm text-gray-300">
-                        Today, July 14, 2025
-                    </div>
-                </div>
-                
-                <div class="message-bubble bg-gray-700 rounded-2xl rounded-tl-none p-4 mb-4">
-                    <div class="text-blue-400 font-medium text-sm mb-1">Clinical AI Assistant</div>
-                    <div class="text-white">
-                        Hello! I'm your clinical AI assistant. How can I help with this case today?
-                    </div>
-                    <div class="text-xs text-gray-400 mt-2">2:45 PM</div>
-                </div>
-                
-                <div class="flex justify-end mb-4">
-                    <div class="message-bubble bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl rounded-tr-none p-4 max-w-xs">
-                        <div class="text-white">
-                            Can you summarize the patient's current condition?
-                        </div>
-                        <div class="text-xs text-blue-100 mt-2">2:46 PM</div>
-                    </div>
-                </div>
-                
-                <div class="message-bubble bg-gray-700 rounded-2xl rounded-tl-none p-4 mb-4">
-                    <div class="text-blue-400 font-medium text-sm mb-1">Clinical AI Assistant</div>
-                    <div class="text-white">
-                        Based on the records, the patient is a 45-year-old male presenting with elevated blood pressure (150/95 mmHg), mild tachycardia, and reported stress-related symptoms. No prior cardiac history noted.
-                    </div>
-                    <div class="text-xs text-gray-400 mt-2">2:47 PM</div>
-                </div>
-                
-                <div id="typing-indicator" class="typing-indicator flex items-center p-3 bg-gray-700 rounded-2xl rounded-tl-none w-24 mb-4 hidden">
-                    <span class="animate-bounce"></span>
-                    <span class="animate-bounce" style="animation-delay: 0.2s"></span>
-                    <span class="animate-bounce" style="animation-delay: 0.4s"></span>
-                </div>
-            </div>
-            
-            <div class="p-4 border-t border-gray-700">
-                <div class="flex items-center">
-                    <div class="flex space-x-2 mr-3">
-                        <button class="text-gray-400 hover:text-white p-2 rounded-full hover:bg-gray-700 transition-colors">
-                            <i class="fas fa-paperclip"></i>
-                        </button>
-                        <button class="text-gray-400 hover:text-white p-2 rounded-full hover:bg-gray-700 transition-colors">
-                            <i class="fas fa-microphone"></i>
-                        </button>
-                    </div>
-                    <input type="text" 
-                           id="message-input" 
-                           placeholder="Ask about this case..." 
-                           class="flex-1 bg-gray-700 text-white rounded-full px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <button id="send-button" class="send-btn ml-2 w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-full flex items-center justify-center hover:from-blue-600 hover:to-indigo-700 transition-all">
-                        <i class="fas fa-paper-plane"></i>
+            <!-- Messages will be inserted here -->
+        </div>
+        
+        <!-- Footer - comfortable size -->
+        <div class="p-5 border-t border-gray-700">
+            <div class="flex items-center">
+                <div class="flex space-x-2 mr-3">
+                    <button class="text-gray-400 hover:text-white p-2.5 rounded-full hover:bg-gray-700 transition-colors">
+                        <i class="fas fa-paperclip text-lg"></i>
+                    </button>
+                    <button class="text-gray-400 hover:text-white p-2.5 rounded-full hover:bg-gray-700 transition-colors">
+                        <i class="fas fa-microphone text-lg"></i>
                     </button>
                 </div>
+                <input type="text" 
+                       id="message-input" 
+                       placeholder="Ask about this case..." 
+                       class="flex-1 bg-gray-700 text-white rounded-full px-5 py-3.5 text-base focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <button id="send-button" class="send-btn ml-3 w-14 h-14 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-full flex items-center justify-center hover:from-blue-600 hover:to-indigo-700 transition-all">
+                    <i class="fas fa-paper-plane text-lg"></i>
+                </button>
             </div>
         </div>
     </div>
+</div>
 
-    <script>
-        const aiModal = document.getElementById('ai-modal');
-        const openAiButton = document.getElementById('ai-assistant-button');
-        const closeAiButton = document.getElementById('close-ai-modal');
-        const messageInput = document.getElementById('message-input');
-        const sendButton = document.getElementById('send-button');
-        const chatContainer = document.getElementById('chat-container');
-        const typingIndicator = document.getElementById('typing-indicator');
-        
-        // Open modal with animation
-        openAiButton.addEventListener('click', () => {
-            aiModal.classList.remove('hidden');
-            aiModal.querySelector('.modal-content').classList.add('scaleIn');
-            
-            // Add backdrop animation
-            setTimeout(() => {
-                aiModal.querySelector('.bg-gray-900').classList.add('fadeIn');
-            }, 10);
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+    // Get the visit ID from the template
+// Get the visit ID and patient ID from the template
+    const visitId = {{ visit.id }};
+    const patientId = {{ visit.patient.id }};
+    const aiModal = document.getElementById('ai-modal');
+    const openAiButton = document.getElementById('ai-assistant-button');
+    const closeAiButton = document.getElementById('close-ai-modal');
+    const messageInput = document.getElementById('message-input');
+    const sendButton = document.getElementById('send-button');
+    const chatContainer = document.getElementById('chat-container');
+    const dateLabel = document.getElementById('chat-date-label');
+    // Set today's date dynamically
+    const today = new Date();
+    const options = { year: 'numeric', month: 'long', day: 'numeric' };
+    dateLabel.textContent = today.toLocaleDateString(undefined, options);
+
+    // ---------- Helper Functions ----------
+    function escapeHtml(unsafe) {
+        return unsafe.replace(/[&<>"']/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            if (m === '"') return '&quot;';
+            if (m === "'") return '&#039;';
+            return m;
         });
-        
-        // Close modal with animation
-        function closeModal() {
-            aiModal.querySelector('.modal-content').classList.remove('scaleIn');
-            aiModal.querySelector('.modal-content').classList.add('scaleOut');
-            aiModal.querySelector('.bg-gray-900').classList.remove('fadeIn');
-            aiModal.querySelector('.bg-gray-900').classList.add('fadeOut');
-            
-            setTimeout(() => {
-                aiModal.classList.add('hidden');
-                aiModal.querySelector('.modal-content').classList.remove('scaleOut');
-                aiModal.querySelector('.bg-gray-900').classList.remove('fadeOut');
-            }, 300);
-        }
-        
-        closeAiButton.addEventListener('click', closeModal);
-        
-        // Close modal when clicking outside
-        aiModal.addEventListener('click', (event) => {
-            if (event.target === aiModal) {
-                closeModal();
-            }
-        });
-        
-        // Handle sending messages
-        function sendMessage() {
-            const message = messageInput.value.trim();
-            if (message) {
-                // Add user message to chat
-                const userMessage = document.createElement('div');
-                userMessage.className = 'flex justify-end mb-4';
-                userMessage.innerHTML = `
-                    <div class="message-bubble bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl rounded-tr-none p-4 max-w-xs">
-                        <div class="text-white">${message}</div>
-                        <div class="text-xs text-blue-100 mt-2">Just now</div>
+    }
+
+    function appendUserMessage(text) {
+        const div = document.createElement('div');
+        div.className = 'flex justify-end mb-4';
+        div.innerHTML = `
+            <div class="message-bubble bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl rounded-tr-none p-4 max-w-xl">
+                <div class="text-white text-base">${escapeHtml(text)}</div>
+                <div class="text-xs text-blue-100 mt-2">Just now</div>
+            </div>
+        `;
+        chatContainer.appendChild(div);
+    }
+
+    // Render a message that may contain reasoning and answer
+    function renderAssistantMessage(text) {
+        // Try to split reasoning and answer if the model outputs a "Reasoning:" section
+        const reasoningMatch = text.match(/^(.*?)(?:\n\s*##?\s*Reasoning:?\s*\n)(.*?)(?:\n\s*##?\s*Answer:?\s*\n)(.*)$/is);
+        if (reasoningMatch) {
+            const before = reasoningMatch[1];
+            const reasoning = reasoningMatch[2];
+            const answer = reasoningMatch[3];
+            return `
+                ${before ? marked.parse(before) : ''}
+                <details class="reasoning-details mb-3">
+                    <summary class="text-blue-400 cursor-pointer hover:text-blue-300 text-sm font-medium">
+                        <i class="fas fa-brain mr-1"></i> Show reasoning
+                    </summary>
+                    <div class="mt-2 p-3 bg-gray-800 rounded-lg text-gray-300 text-sm border-l-4 border-blue-500">
+                        ${marked.parse(reasoning)}
                     </div>
-                `;
-                chatContainer.appendChild(userMessage);
-                
-                // Clear input
-                messageInput.value = '';
-                
-                // Show typing indicator
-                typingIndicator.classList.remove('hidden');
-                
-                // Scroll to bottom
-                chatContainer.scrollTop = chatContainer.scrollHeight;
-                
-                // Simulate AI response after delay
-                setTimeout(() => {
-                    typingIndicator.classList.add('hidden');
-                    
-                    // Add AI response
-                    const aiMessage = document.createElement('div');
-                    aiMessage.className = 'message-bubble bg-gray-700 rounded-2xl rounded-tl-none p-4 mb-4';
-                    aiMessage.innerHTML = `
-                        <div class="text-blue-400 font-medium text-sm mb-1">Clinical AI Assistant</div>
-                        <div class="text-white">
-                            I've analyzed the patient's vitals and history. Based on current readings, I recommend monitoring blood pressure closely and considering lifestyle modifications. Would you like me to suggest a treatment plan?
-                        </div>
-                        <div class="text-xs text-gray-400 mt-2">Just now</div>
-                    `;
-                    chatContainer.appendChild(aiMessage);
-                    
-                    // Scroll to bottom again
-                    chatContainer.scrollTop = chatContainer.scrollHeight;
-                }, 2000);
+                </details>
+                <div class="answer text-base">${marked.parse(answer)}</div>
+            `;
+        }
+        // Fallback: just render as markdown
+        return marked.parse(text);
+    }
+
+    function scrollToBottom() {
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    // ---------- Open Modal ----------
+openAiButton.addEventListener('click', async () => {
+    aiModal.classList.remove('hidden');
+    aiModal.querySelector('.modal-content').classList.add('scaleIn');
+    setTimeout(() => {
+        aiModal.querySelector('.bg-gray-900').classList.add('fadeIn');
+    }, 10);
+
+    // Load conversation history if not already loaded
+    if (!chatContainer.dataset.historyLoaded) {
+        await loadConversationHistory();
+        chatContainer.dataset.historyLoaded = 'true';
+    }
+    
+    // If chat is empty after loading history (no messages at all), add welcome message
+    if (chatContainer.children.length === 0) {
+        appendAssistantMessage("Hello! I'm your clinical AI assistant. How can I help with this case today?");
+        scrollToBottom();
+    }
+});
+
+// New function to fetch and display history
+async function loadConversationHistory() {
+    try {
+        const response = await fetch(`/patients/ai-conversation/${patientId}`); // need patientId from template
+        const messages = await response.json();
+        for (const msg of messages) {
+            if (msg.role === 'user') {
+                appendUserMessage(msg.content);
+            } else {
+                appendAssistantMessage(msg.content);
             }
         }
-        
-        sendButton.addEventListener('click', sendMessage);
-        
-        messageInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                sendMessage();
+        scrollToBottom();
+    } catch (error) {
+        console.error('Failed to load conversation history:', error);
+    }
+}
+
+    // ---------- Close Modal ----------
+    function closeModal() {
+        aiModal.querySelector('.modal-content').classList.remove('scaleIn');
+        aiModal.querySelector('.modal-content').classList.add('scaleOut');
+        aiModal.querySelector('.bg-gray-900').classList.remove('fadeIn');
+        aiModal.querySelector('.bg-gray-900').classList.add('fadeOut');
+
+        setTimeout(() => {
+            aiModal.classList.add('hidden');
+            aiModal.querySelector('.modal-content').classList.remove('scaleOut');
+            aiModal.querySelector('.bg-gray-900').classList.remove('fadeOut');
+        }, 300);
+    }
+
+    closeAiButton.addEventListener('click', closeModal);
+    aiModal.addEventListener('click', (event) => {
+        if (event.target === aiModal) {
+            closeModal();
+        }
+    });
+
+    // ---------- Send Message (Streaming) ----------
+    async function sendMessage() {
+        const message = messageInput.value.trim();
+        if (!message) return;
+
+        // Display user message
+        appendUserMessage(message);
+        messageInput.value = '';
+        scrollToBottom();
+
+        // Create a new assistant message bubble with an embedded loading indicator
+        const assistantBubble = document.createElement('div');
+        assistantBubble.className = 'message-bubble bg-gray-700 rounded-2xl rounded-tl-none p-4 mb-4 max-w-xl';
+        assistantBubble.innerHTML = `
+            <div class="text-blue-400 font-medium text-sm mb-2">Clinical AI Assistant</div>
+            <div class="text-white markdown-body" id="streaming-content"></div>
+            <div class="streaming-loader flex items-center mt-3 text-blue-400 text-sm">
+                <i class="fas fa-spinner fa-pulse mr-2"></i> Thinking...
+            </div>
+            <div class="text-xs text-gray-400 mt-2">Just now</div>
+        `;
+        chatContainer.appendChild(assistantBubble);
+        const contentDiv = assistantBubble.querySelector('.markdown-body');
+        const loaderDiv = assistantBubble.querySelector('.streaming-loader');
+        let fullResponse = '';
+
+        const url = `/patients/ai-assistant-stream/${visitId}?message=${encodeURIComponent(message)}`;
+        const eventSource = new EventSource(url);
+
+        eventSource.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (data.chunk) {
+                fullResponse += data.chunk;
+                contentDiv.innerHTML = renderAssistantMessage(fullResponse);
+                scrollToBottom();
             }
-        });
-        
-        // Add glow effect on input focus
-        messageInput.addEventListener('focus', () => {
-            messageInput.classList.add('glow-border');
-        });
-        
-        messageInput.addEventListener('blur', () => {
-            messageInput.classList.remove('glow-border');
-        });
-    </script>
+            if (data.done) {
+                eventSource.close();
+                loaderDiv.remove(); // Remove the loader when done
+            }
+            if (data.error) {
+                contentDiv.innerHTML = 'Error: ' + data.error;
+                eventSource.close();
+                loaderDiv.remove();
+            }
+        };
 
+        eventSource.onerror = () => {
+            contentDiv.innerHTML = 'Connection lost. Please try again.';
+            eventSource.close();
+            loaderDiv.remove();
+        };
+    }
 
+    // Append a completed assistant message (used for welcome message)
+    function appendAssistantMessage(text) {
+        const div = document.createElement('div');
+        div.className = 'message-bubble bg-gray-700 rounded-2xl rounded-tl-none p-4 mb-4 max-w-xl';
+        const html = renderAssistantMessage(text);
+        div.innerHTML = `
+            <div class="text-blue-400 font-medium text-sm mb-2">Clinical AI Assistant</div>
+            <div class="text-white markdown-body">${html}</div>
+            <div class="text-xs text-gray-400 mt-2">Just now</div>
+        `;
+        chatContainer.appendChild(div);
+    }
+
+    // ---------- Event Listeners ----------
+    sendButton.addEventListener('click', sendMessage);
+    messageInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendMessage();
+    });
+
+    messageInput.addEventListener('focus', () => {
+        messageInput.classList.add('glow-border');
+    });
+    messageInput.addEventListener('blur', () => {
+        messageInput.classList.remove('glow-border');
+    });
+</script>
+
+<style>
+    /* Markdown and general styling */
+    .markdown-body {
+        font-size: 1rem;
+        line-height: 1.6;
+    }
+    .markdown-body ul, .markdown-body ol {
+        margin-left: 1.5rem;
+        margin-top: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+    .markdown-body strong {
+        color: #93c5fd;
+    }
+    .markdown-body table {
+        border-collapse: collapse;
+        width: 100%;
+        margin: 0.75rem 0;
+        font-size: 0.95rem;
+    }
+    .markdown-body th, .markdown-body td {
+        border: 1px solid #4b5563;
+        padding: 0.6rem;
+        text-align: left;
+    }
+    .markdown-body th {
+        background-color: #374151;
+        color: #e5e7eb;
+    }
+    .message-bubble {
+        max-width: 85%;
+    }
+    @media (min-width: 768px) {
+        .message-bubble {
+            max-width: 75%;
+        }
+    }
+    .chat-container {
+        scroll-behavior: smooth;
+    }
+    .chat-container::-webkit-scrollbar {
+        width: 8px;
+    }
+    .chat-container::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.1);
+        border-radius: 10px;
+    }
+    .chat-container::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 10px;
+    }
+    .reasoning-details summary {
+        list-style: none;
+        display: flex;
+        align-items: center;
+        font-size: 0.9rem;
+    }
+    .reasoning-details summary::-webkit-details-marker {
+        display: none;
+    }
+    .reasoning-details[open] summary {
+        margin-bottom: 0.75rem;
+    }
+    .streaming-loader {
+        animation: fadeIn 0.3s;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    /* Glow effect */
+    .glow-border {
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+    }
+</style>
 <div class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-2 flex justify-end space-x-2">
   <button type="button" onclick="document.getElementById('treatmentForm').reset()" class="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Reset</button>
   <button type="submit" form="treatmentForm" formaction="?draft=true" class="px-4 py-2 text-sm bg-gray-500 text-white rounded-lg font-semibold shadow-md hover:bg-gray-600 transition-all"><i class="fas fa-save mr-1"></i>Save to Draft</button>
@@ -1542,5 +1699,20 @@ document.addEventListener('DOMContentLoaded', function() {
   .choices__list--multiple .choices__item { background-color: #3B82F6; border-color: #2563EB; color: white; margin-bottom: 4px; }
   .dark .choices__list--dropdown { background-color: #1F2937; border-color: #374151; }
   .dark .choices__input { background-color: #1F2937; color: white; }
+
+
+
+  .markdown-body {
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+.markdown-body ul, .markdown-body ol {
+    margin-left: 1.5rem;
+    margin-top: 0.25rem;
+    margin-bottom: 0.5rem;
+}
+.markdown-body strong {
+    color: #93c5fd; /* light blue for bold text */
+}
 </style>
 {% endblock %}

@@ -1,5 +1,7 @@
 # app/patients/consultations.py
 import json
+import logging
+import os
 import re
 import threading
 import time
@@ -13,7 +15,7 @@ from sqlalchemy import exc, exists
 
 from app.finance.models import Insurance
 from app.lab.models import LabTestResult
-from .models import LabTest, Medication, Patient, Radiology, Service, ServiceDoctorAssignment, Visit, Consultation, Vitals
+from .models import AIConversation, AIMessage, LabTest, Medication, Patient, Radiology, Service, ServiceDoctorAssignment, Visit, Consultation, Vitals
 
 consultations_web_bp = Blueprint(
     'consultations_web', __name__,
@@ -2519,3 +2521,262 @@ def toggle_service_status(service_id):
     flash(f'Service "{service.name}" has been successfully {status_message}.', 'success')
     
     return redirect(url_for('consultations_web.manage_consultation_services'))
+
+
+
+import os
+import json
+import logging
+import requests
+from flask import request, jsonify, Response, stream_with_context
+
+from datetime import datetime
+
+# In-memory conversation store (use a database in production)
+conversation_history = {}
+
+OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY')
+OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+MODEL = "nvidia/nemotron-3-nano-30b-a3b:free"  # or your preferred model
+
+def get_patient_context(visit_id):
+    """Fetch comprehensive patient data and return a detailed descriptive context."""
+    visit = Visit.query.get(visit_id)
+    if not visit:
+        return None
+    patient = visit.patient
+
+    # Basic patient info
+    context = f"## Patient Profile\n"
+    context += f"- **Name:** {patient.full_name}\n"
+    context += f"- **Age:** {patient.age} years\n"
+    context += f"- **Gender:** {patient.gender}\n"
+    context += f"- **Phone:** {patient.phone}\n"
+    context += f"- **National ID:** {patient.national_id or 'N/A'}\n"
+    context += f"- **Insurance:** {patient.insurance_provider or 'None'} ({patient.insurance_number or ''})\n"
+
+    # Current Visit Vitals
+    vitals = visit.latest_vitals
+    if vitals:
+        context += f"\n## Current Visit Vitals (recorded at {vitals.recorded_at.strftime('%Y-%m-%d %H:%M')})\n"
+        context += f"- **Temperature:** {vitals.temperature}°C\n"
+        context += f"- **Heart Rate:** {vitals.heart_rate} bpm\n"
+        context += f"- **Blood Pressure:** {vitals.bp_systolic}/{vitals.bp_diastolic} mmHg\n"
+        context += f"- **SpO₂:** {vitals.spo2}%\n"
+        context += f"- **Respiratory Rate:** {vitals.resp_rate} breaths/min\n"
+        context += f"- **Pain Score:** {vitals.pain_score}/10\n"
+        if vitals.allergy_food or vitals.allergy_drugs:
+            context += f"- **Allergies:** Food: {vitals.allergy_food or 'None'}, Drugs: {vitals.allergy_drugs or 'None'}\n"
+        if vitals.chronic_conditions:
+            context += f"- **Chronic Conditions:** {vitals.chronic_conditions}\n"
+        if vitals.current_medications:
+            context += f"- **Current Medications:** {vitals.current_medications}\n"
+        if vitals.notes:
+            context += f"- **Triage Notes:** {vitals.notes}\n"
+
+    # Past Visits History
+    past_visits = Visit.query.filter_by(patient_id=patient.id).order_by(Visit.visit_date.desc()).all()
+    if past_visits:
+        context += f"\n## Past Visits History (Total: {len(past_visits)})\n"
+        for v in past_visits:
+            if v.id == visit_id:
+                continue  # skip current visit
+            context += f"\n### Visit on {v.visit_date.strftime('%Y-%m-%d')} (ID: {v.id})\n"
+            
+            # Consultation details
+            consult = v.latest_consultation
+            if consult:
+                context += f"- **Diagnosis:** {consult.diagnosis or 'N/A'}\n"
+                context += f"- **Treatment Plan:** {consult.treatment_plan or 'N/A'}\n"
+                if consult.notes:
+                    context += f"- **Clinical Notes:** {consult.notes}\n"
+            
+            # Medications prescribed
+            meds = Medication.query.filter_by(visit_id=v.id).all()
+            if meds:
+                context += "- **Prescribed Medications:**\n"
+                for m in meds:
+                    med_name = Service.query.get(m.service_id).name if m.service_id else 'Unknown'
+                    context += f"  - {med_name} {m.dose or ''} {m.frequency or ''} for {m.duration or ''} days (Qty: {m.quantity})\n"
+            
+            # Lab Tests ordered
+            labs = LabTest.query.filter_by(visit_id=v.id).all()
+            if labs:
+                context += "- **Lab Tests:**\n"
+                for l in labs:
+                    lab_name = Service.query.get(l.service_id).name if l.service_id else 'Unknown'
+                    status = l.status
+                    results = l.results_data or {}
+                    result_str = f"{results.get('findings', '')} {results.get('impression', '')}".strip() or l.results or 'Pending'
+                    context += f"  - {lab_name}: Status: {status}, Results: {result_str}\n"
+            
+            # Radiology orders
+            rads = Radiology.query.filter_by(visit_id=v.id).all()
+            if rads:
+                context += "- **Radiology:**\n"
+                for r in rads:
+                    rad_name = Service.query.get(r.service_id).name if r.service_id else 'Unknown'
+                    status = r.status
+                    results = r.results_data or {}
+                    result_str = f"{results.get('findings', '')} {results.get('impression', '')}".strip() or r.results or 'Pending'
+                    context += f"  - {rad_name}: Status: {status}, Results: {result_str}\n"
+    else:
+        context += "\n## Past Visits: None\n"
+
+    return context
+
+def call_ai_model(messages):
+    """Send messages to OpenRouter and return the assistant's reply."""
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "model": MODEL,
+        "messages": messages,
+        "temperature": 0.7,
+        "max_tokens": 2000
+    }
+    try:
+        response = requests.post(OPENROUTER_URL, json=payload, headers=headers, timeout=60)
+        response.raise_for_status()
+        data = response.json()
+        return data['choices'][0]['message']['content']
+    except Exception as e:
+        logging.error(f"AI model error: {e}")
+        return None
+
+@consultations_web_bp.route('/ai-assistant-stream/<int:visit_id>')
+@login_required
+def ai_assistant_stream(visit_id):
+    message = request.args.get('message', '')
+    if not message:
+        return jsonify({'error': 'No message'}), 400
+
+    visit = Visit.query.get(visit_id)
+    if not visit:
+        return jsonify({'error': 'Visit not found'}), 404
+
+    patient = visit.patient
+
+    # Get or create the conversation record for this patient and doctor
+    # Get or create the conversation record
+    conversation = AIConversation.query.filter_by(
+        patient_id=patient.id,
+        doctor_id=current_user.id
+    ).first()
+    if not conversation:
+        conversation = AIConversation(patient_id=patient.id, doctor_id=current_user.id)
+        db.session.add(conversation)
+        db.session.commit()
+    # Build the message list for the AI
+    # 1. System prompt (generated with current patient data)
+    context = get_patient_context(visit_id)
+    if not context:
+        return jsonify({'error': 'Could not retrieve patient data'}), 500
+
+    system_prompt = f"""You are a state-of-the-art Clinical AI Assistant integrated into an electronic medical record system. You have access to the comprehensive patient data below:
+
+{context}
+
+**Your Role:**
+- Provide clinical insights, assessments, and recommendations based on the available data.
+- Suggest relevant lab tests, medications, or radiology studies when appropriate, considering the patient's history, current presentation, and standard guidelines.
+- Always format your answers in clear Markdown.
+- **Include a separate reasoning section** before your final answer. Use the headings:
+  - `## Reasoning` for your step‑by‑step thought process.
+  - `## Answer` for your final clinical response.
+- Be concise, evidence-informed, and professional.
+- End every response with the disclaimer: *"These suggestions are generated by AI and are not a substitute for professional medical judgment. Always verify with clinical guidelines and your own expertise."*
+
+**Recommendation Capabilities:**
+- You can recommend specific lab tests (e.g., "CBC", "Lipid profile") with rationale.
+- You can suggest medications (e.g., "Amoxicillin 500mg TDS for 7 days") with dosage, frequency, and duration.
+- You can propose imaging studies (e.g., "Chest X-ray PA view") when indicated.
+
+If you need more information to make a recommendation, ask clarifying questions.
+"""
+
+    # 2. Previous messages from database (ordered by time)
+    previous_messages = []
+    for msg in AIMessage.query.filter_by(conversation_id=conversation.id).order_by(AIMessage.created_at.asc()):
+        previous_messages.append({"role": msg.role, "content": msg.content})
+
+    # 3. Current user message (will be saved later)
+    messages_for_ai = [{"role": "system", "content": system_prompt}] + previous_messages
+    messages_for_ai.append({"role": "user", "content": message})
+
+    # Save the user message to DB now
+    user_msg = AIMessage(conversation_id=conversation.id, role='user', content=message)
+    db.session.add(user_msg)
+    db.session.commit()  # commit so we have it even if streaming fails later
+
+    # Prepare OpenRouter streaming request
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "model": MODEL,
+        "messages": messages_for_ai,
+        "temperature": 0.7,
+        "max_tokens": 2000,
+        "stream": True
+    }
+
+    def generate():
+        full_response = ""
+        try:
+            response = requests.post(OPENROUTER_URL, json=payload, headers=headers, stream=True, timeout=60)
+            for line in response.iter_lines():
+                if line:
+                    line = line.decode('utf-8')
+                    if line.startswith('data: '):
+                        data = line[6:]
+                        if data == '[DONE]':
+                            break
+                        try:
+                            chunk = json.loads(data)
+                            delta = chunk['choices'][0]['delta'].get('content', '')
+                            if delta:
+                                full_response += delta
+                                yield f"data: {json.dumps({'chunk': delta})}\n\n"
+                        except json.JSONDecodeError:
+                            continue
+            # After stream ends, save full response to database
+            if full_response:
+                assistant_msg = AIMessage(conversation_id=conversation.id, role='assistant', content=full_response)
+                db.session.add(assistant_msg)
+                db.session.commit()
+            yield f"data: {json.dumps({'done': True})}\n\n"
+        except Exception as e:
+            logging.error(f"Streaming error: {e}")
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+        finally:
+            db.session.close()  # optional
+
+    return Response(stream_with_context(generate()), mimetype='text/event-stream')
+
+
+
+
+@consultations_web_bp.route('/ai-conversation/<int:patient_id>')
+@login_required
+def get_ai_conversation(patient_id):
+    """Return all AI assistant messages for this patient and the current doctor."""
+    patient = Patient.query.get_or_404(patient_id)
+    conversation = AIConversation.query.filter_by(
+        patient_id=patient.id,
+        doctor_id=current_user.id
+    ).first()
+    if not conversation:
+        return jsonify([])
+
+    messages = []
+    for msg in AIMessage.query.filter_by(conversation_id=conversation.id).order_by(AIMessage.created_at.asc()):
+        messages.append({
+            'role': msg.role,
+            'content': msg.content,
+            'created_at': msg.created_at.isoformat()
+        })
+    return jsonify(messages)
