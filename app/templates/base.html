@@ -177,19 +177,41 @@
         }
     </style>
 
-    <script>
-        // Remove loader when page is fully loaded
-        window.addEventListener('load', function() {
-            const loader = document.getElementById('global-loader');
-            if (loader) {
-                loader.style.opacity = '0';
-                setTimeout(() => loader.remove(), 500);
-            }
-        });
+<script>
+    // Record start time
+    const startTime = performance.now();
+    let loaderRemoved = false;
 
-        // Optional: Add smooth transition for dark mode switch
-        document.documentElement.style.transition = 'background-color 300ms ease';
-    </script>
+    function removeLoader() {
+        if (loaderRemoved) return;
+        const loader = document.getElementById('global-loader');
+        if (loader) {
+            loader.style.opacity = '0';
+            setTimeout(() => loader.remove(), 500);
+        }
+        loaderRemoved = true;
+    }
+
+    // Minimum display time (ms) to avoid a flash
+    const minDisplay = 500;
+
+    // Wait for the page to be fully loaded
+    window.addEventListener('load', () => {
+        const elapsed = performance.now() - startTime;
+        console.log(`Page loaded in ${elapsed.toFixed(2)} ms`);
+
+        // Calculate remaining time to meet minDisplay
+        const remaining = minDisplay - elapsed;
+        if (remaining > 0) {
+            setTimeout(removeLoader, remaining);
+        } else {
+            removeLoader();
+        }
+    });
+
+    // Optional: Add smooth transition for dark mode switch
+    document.documentElement.style.transition = 'background-color 300ms ease';
+</script>
     <!-- Toast Notification Container -->
     <div id="alert-container" class="fixed top-6 right-6 z-[9999] space-y-4 w-[90%] sm:w-96 max-w-full"></div>
     <script>

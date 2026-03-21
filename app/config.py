@@ -56,7 +56,10 @@ class Config:
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
     MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER', 'noreply@example.com')
     
-    
+    CACHE_TYPE = 'RedisCache' if os.getenv('REDIS_URL') else 'SimpleCache'
+    CACHE_REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+    CACHE_DEFAULT_TIMEOUT = 300  # 5 minutes
+    CACHE_KEY_PREFIX = 'hms_'   # to avoid collisions with other apps
     
     # Handle ADMINS as a list
     admins = os.environ.get('ADMINS', '')
@@ -128,7 +131,8 @@ class TestingConfig(Config):
 class ProductionConfig(Config):
     """Production configuration."""
     DEBUG = False
-    # Logging to email or external service like Sentry/Loguru
+    TESTING = False
+    ENV = 'production'    # Logging to email or external service like Sentry/Loguru
     # Ensure MAIL_SERVER, MAIL_PORT etc. are set via environment variables
     # Or configure external logging service directly
 

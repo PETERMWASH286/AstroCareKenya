@@ -6,6 +6,12 @@ import logging
 from logging.handlers import RotatingFileHandler
 from sqlalchemy import event
 
+from flask_caching import Cache
+from flask_moment import Moment # <--- ADD THIS IMPORT
+from flask_compress import Compress
+
+cache = Cache()
+
 # ADDED: Import redirect, url_for, g, current_user from flask_login, and current_app
 from flask import Flask, abort, json, render_template, jsonify, request, g, redirect, send_from_directory, url_for, current_app
 # from flask_debugtoolbar import DebugToolbarExtension
@@ -57,10 +63,7 @@ from app.commands import register_commands
 
 # ADDED: Import User model and Permission class
 from app.auth.models import User, Permission
-from flask_caching import Cache
-from flask_moment import Moment # <--- ADD THIS IMPORT
 
-cache = Cache()
 
 def datetimeformat(value, format='%d/%m/%Y'):
     if isinstance(value, datetime):
@@ -178,10 +181,16 @@ def create_app(config_name='default'):
 
 
 
-    app.config['CACHE_TYPE'] = 'SimpleCache'  # For development
-    app.config['CACHE_DEFAULT_TIMEOUT'] = 600  # 10 minutes
+    app.config['CACHE_TYPE'] = config[config_name].CACHE_TYPE
+    app.config['CACHE_REDIS_URL'] = config[config_name].CACHE_REDIS_URL
+    app.config['CACHE_DEFAULT_TIMEOUT'] = config[config_name].CACHE_DEFAULT_TIMEOUT
+    app.config['CACHE_KEY_PREFIX'] = config[config_name].CACHE_KEY_PREFIX
+    app.config['COMPRESS_MIMETYPES'] = ['text/html', 'text/css', 'application/json', 'application/javascript']
+    app.config['COMPRESS_LEVEL'] = 6  # 1 (fast) to 9 (best compression)
+    app.config['COMPRESS_MIN_SIZE'] = 500  # bytes
     cache.init_app(app)
-    app.cache = cache  # 🔑 Attach cache instance to app
+    app.cache = cache   # attach to app for easy access
+    Compress(app)
 
     init_extensions(app)
         # ===== Multi-tenancy Setup =====
@@ -306,7 +315,10 @@ def create_app(config_name='default'):
         return dict(current_user=current_user, g=g, Permission=Permission)
 
 
-
+    def make_cache_key(*args, **kwargs):
+        """Generate a cache key that includes tenant subdomain and request path."""
+        tenant = getattr(g, 'tenant_subdomain', None) or 'public'
+        return f"{tenant}:{request.path}"
 
 
 

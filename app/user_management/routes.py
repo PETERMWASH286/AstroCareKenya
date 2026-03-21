@@ -121,28 +121,26 @@ def handle_create_user():
 
 
 
-@user_management_web_bp.route('/create_user', methods=['GET'])
-@login_required # Ensure user is logged in to access current_user
-def create_user():
-    # Load all departments initially
-    all_departments = Department.query.order_by(Department.name).all()
-    
-    # Filter departments based on current user's department
-    departments_for_frontend = []
-    if current_user.department and current_user.department.name == 'Information Technology':
-        # If current user is from 'IT' department, exclude 'Administrator' department
-        for dept in all_departments:
-            if dept.name != 'Administrator':
-                departments_for_frontend.append(dept)
-    else:
-        # For any other user, show all departments
-        departments_for_frontend = all_departments
+from app import cache  # Import the global cache instance
 
-    # GET: render the form with filtered departments list
-    return render_template(
-        'create_user.html',
-        departments=departments_for_frontend
-    )
+
+# Cache this helper function using the global cache
+@cache.memoize(timeout=3600)   # 1 hour
+def get_departments_for_user(user_department_name):
+    """Fetch departments once per department type."""
+    all_departments = Department.query.order_by(Department.name).all()
+    if user_department_name == 'Information Technology':
+        # Exclude Administrator department for IT users
+        return [dept for dept in all_departments if dept.name != 'Administrator']
+    return all_departments
+
+@user_management_web_bp.route('/create_user', methods=['GET'])
+@login_required
+def create_user():
+    # Get the current user's department name (if any)
+    user_dept = current_user.department.name if current_user.department else None
+    departments = get_departments_for_user(user_dept)
+    return render_template('create_user.html', departments=departments)
 
 
 # — List all roles —
