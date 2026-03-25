@@ -537,9 +537,11 @@ def register_blueprints(app):
     app.register_blueprint(admin_web_bp, url_prefix='/super-admin')
     # NEW: Admin
     from app.super_admin.admin_routes import admin_web
+    from app.operations import operations_web_bp   # add at top with other imports
 
     app.register_blueprint(admin_web, url_prefix='/admin')
-    
+    app.register_blueprint(operations_web_bp, url_prefix='/operations')
+
     app.register_blueprint(asset_management_bp, url_prefix='/asset-management')
     app.register_blueprint(board_bp, url_prefix='/board')
 # Add this with other blueprint registrations

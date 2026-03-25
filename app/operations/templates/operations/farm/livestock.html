@@ -1,0 +1,615 @@
+{% extends "base.html" %}
+
+{% block title %}Livestock Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Header -->
+    <div class="bg-gradient-primary text-white p-4 rounded-4 mb-4 shadow-sm">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="display-6 fw-bold">Livestock Management</h1>
+                <p class="text-white-80">Track livestock, health records, and purchases</p>
+            </div>
+            <div>
+                <button class="btn btn-light rounded-pill" data-bs-toggle="modal" data-bs-target="#addLivestockModal">
+                    <i class="fas fa-plus-circle me-2"></i>Add Livestock
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-primary mb-1">Total Livestock</p>
+                            <h2 class="mb-0 fw-bold">{{ total_livestock }}</h2>
+                        </div>
+                        <div class="icon-circle bg-primary bg-opacity-10">
+                            <i class="fas fa-paw text-primary fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-success mb-1">Purchase Cost</p>
+                            <h2 class="mb-0 fw-bold">KES {{ "{:,.2f}".format(total_purchase_cost) }}</h2>
+                        </div>
+                        <div class="icon-circle bg-success bg-opacity-10">
+                            <i class="fas fa-shopping-cart text-success fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-info mb-1">Health Records</p>
+                            <h2 class="mb-0 fw-bold">{{ health_records_count }}</h2>
+                        </div>
+                        <div class="icon-circle bg-info bg-opacity-10">
+                            <i class="fas fa-notes-medical text-info fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-warning mb-1">Health Cost</p>
+                            <h2 class="mb-0 fw-bold">KES {{ "{:,.2f}".format(total_health_cost) }}</h2>
+                        </div>
+                        <div class="icon-circle bg-warning bg-opacity-10">
+                            <i class="fas fa-chart-line text-warning fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search & Filter -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+            <h6 class="text-uppercase fw-bold text-primary"><i class="fas fa-search me-2"></i>Search Livestock</h6>
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Search by name or breed</label>
+                    <input type="text" id="searchInput" class="form-control" placeholder="Type to filter...">
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button class="btn btn-secondary w-100" id="clearFilters">Clear</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Livestock Table -->
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+            <h6 class="text-uppercase fw-bold text-primary"><i class="fas fa-list me-2"></i>Livestock Inventory</h6>
+        </div>
+        <div class="card-body p-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle" id="livestockTable">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Name</th>
+                            <th>Breed</th>
+                            <th>Quantity</th>
+                            <th>Unit</th>
+                            <th>Purchase Date</th>
+                            <th>Purchase Cost (KES)</th>
+                            <th>Actions</th>
+                        </thead>
+                    <tbody>
+                        {% for l in livestock_list %}
+                        <tr data-name="{{ l.name|lower }}" data-breed="{{ l.breed|lower }}">
+                            <td class="fw-semibold">{{ l.name }}</td>
+                            <td>{{ l.breed or '—' }}</td>
+                            <td>{{ l.quantity }}</td>
+                            <td>{{ l.unit }}</td>
+                            <td>{{ l.purchase_date.strftime('%Y-%m-%d') if l.purchase_date else '—' }}</td>
+                            <td>KES {{ "{:,.2f}".format(l.purchase_cost) if l.purchase_cost else '0.00' }}</td>
+                            <td class="text-nowrap">
+                                <button class="btn btn-sm btn-outline-primary edit-livestock"
+                                        data-id="{{ l.id }}"
+                                        data-name="{{ l.name }}"
+                                        data-breed="{{ l.breed or '' }}"
+                                        data-quantity="{{ l.quantity }}"
+                                        data-unit="{{ l.unit }}"
+                                        data-purchase-date="{{ l.purchase_date.strftime('%Y-%m-%d') if l.purchase_date else '' }}"
+                                        data-purchase-cost="{{ l.purchase_cost }}"
+                                        data-notes="{{ l.notes or '' }}">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
+                                <button class="btn btn-sm btn-outline-success view-health"
+                                        data-id="{{ l.id }}"
+                                        data-name="{{ l.name }}">
+                                    <i class="fas fa-heartbeat"></i> Health
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary add-health"
+                                        data-id="{{ l.id }}"
+                                        data-name="{{ l.name }}">
+                                    <i class="fas fa-plus"></i> Add Record
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger delete-livestock"
+                                        data-id="{{ l.id }}"
+                                        data-name="{{ l.name }}">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center py-5 text-muted">No livestock records. Click "Add Livestock" to start.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Livestock Modal -->
+<div class="modal fade" id="addLivestockModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add New Livestock</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="add_livestock">
+                    <div class="mb-3">
+                        <label class="form-label">Name *</label>
+                        <input type="text" name="name" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Breed</label>
+                        <input type="text" name="breed" class="form-control">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Quantity</label>
+                            <input type="number" name="quantity" class="form-control" value="0">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Unit</label>
+                            <input type="text" name="unit" class="form-control" value="heads">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Purchase Date</label>
+                            <input type="date" name="purchase_date" class="form-control">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Purchase Cost (KES)</label>
+                            <input type="number" name="purchase_cost" step="0.01" class="form-control" value="0">
+                        </div>
+                    </div>
+                    <div class="row">
+    <div class="col-md-6 mb-3">
+        <label class="form-label">Petty Cash Account</label>
+        <select name="petty_cash_account_id" class="form-select">
+            <option value="">Select petty cash account (required if cost > 0)</option>
+            {% for pc in petty_cash_accounts %}
+            <option value="{{ pc.id }}">{{ pc.name }} (Balance: {{ "{:,.2f}".format(pc.current_balance) }})</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-6 mb-3">
+        <label class="form-label">Transaction Reference</label>
+        <input type="text" name="transaction_reference" class="form-control" placeholder="e.g., M-Pesa code, receipt no.">
+    </div>
+</div>
+                    <div class="mb-3">
+                        <label class="form-label">Notes</label>
+                        <textarea name="notes" class="form-control" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Livestock</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Livestock Modal -->
+<div class="modal fade" id="editLivestockModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Livestock</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="edit_livestock">
+                    <input type="hidden" name="livestock_id" id="editLivestockId">
+                    <div class="mb-3">
+                        <label class="form-label">Name *</label>
+                        <input type="text" name="name" id="editName" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Breed</label>
+                        <input type="text" name="breed" id="editBreed" class="form-control">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Quantity</label>
+                            <input type="number" name="quantity" id="editQuantity" class="form-control">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Unit</label>
+                            <input type="text" name="unit" id="editUnit" class="form-control">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Purchase Date</label>
+                            <input type="date" name="purchase_date" id="editPurchaseDate" class="form-control">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Purchase Cost (KES)</label>
+                            <input type="number" name="purchase_cost" id="editPurchaseCost" step="0.01" class="form-control">
+                        </div>
+                    </div>
+                    <div class="row">
+    <div class="col-md-6 mb-3">
+        <label class="form-label">Petty Cash Account</label>
+        <select name="petty_cash_account_id" class="form-select">
+            <option value="">Select petty cash account (required if cost > 0)</option>
+            {% for pc in petty_cash_accounts %}
+            <option value="{{ pc.id }}">{{ pc.name }} (Balance: {{ "{:,.2f}".format(pc.current_balance) }})</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-6 mb-3">
+        <label class="form-label">Transaction Reference</label>
+        <input type="text" name="transaction_reference" class="form-control" placeholder="e.g., M-Pesa code, receipt no.">
+    </div>
+</div>
+                    <div class="mb-3">
+                        <label class="form-label">Notes</label>
+                        <textarea name="notes" id="editNotes" class="form-control" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Livestock</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add Health Record Modal -->
+<div class="modal fade" id="addHealthModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Health Record</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="add_health_record">
+                    <input type="hidden" name="livestock_id" id="healthLivestockId">
+                    <div class="mb-3">
+                        <label class="form-label">Livestock</label>
+                        <p class="form-control-plaintext fw-bold" id="healthLivestockName"></p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Date *</label>
+                        <input type="date" name="date" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Type</label>
+                        <select name="type" class="form-select">
+                            <option value="">Select type</option>
+                            <option value="vaccination">Vaccination</option>
+                            <option value="treatment">Treatment</option>
+                            <option value="checkup">Checkup</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description *</label>
+                        <textarea name="description" class="form-control" rows="2" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Cost (KES)</label>
+                        <input type="number" name="cost" step="0.01" class="form-control" value="0">
+                    </div>
+                    <div class="row">
+    <div class="col-md-6 mb-3">
+        <label class="form-label">Petty Cash Account</label>
+        <select name="petty_cash_account_id" class="form-select">
+            <option value="">Select petty cash account (required if cost > 0)</option>
+            {% for pc in petty_cash_accounts %}
+            <option value="{{ pc.id }}">{{ pc.name }} (Balance: {{ "{:,.2f}".format(pc.current_balance) }})</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-6 mb-3">
+        <label class="form-label">Transaction Reference</label>
+        <input type="text" name="transaction_reference" class="form-control" placeholder="e.g., M-Pesa code, receipt no.">
+    </div>
+</div>
+                    <div class="mb-3">
+                        <label class="form-label">Performed By</label>
+                        <input type="text" name="performed_by" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Notes</label>
+                        <textarea name="notes" class="form-control" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Record</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Health Records Modal -->
+<div class="modal fade" id="healthModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Health Records</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="healthModalBody">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Livestock Modal -->
+<div class="modal fade" id="deleteLivestockModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title">Delete Livestock</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="delete_livestock">
+                    <input type="hidden" name="livestock_id" id="deleteLivestockId">
+                    <p>Are you sure you want to delete <span id="deleteLivestockName" class="fw-bold"></span>? This will also delete all associated health records.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Health Record Modal (dynamic) -->
+<div class="modal fade" id="deleteHealthModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title">Delete Health Record</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="delete_health_record">
+                    <input type="hidden" name="health_record_id" id="deleteHealthId">
+                    <p>Are you sure you want to delete this health record?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Search filter
+        const searchInput = document.getElementById('searchInput');
+        const clearBtn = document.getElementById('clearFilters');
+        const rows = document.querySelectorAll('#livestockTable tbody tr');
+
+        function filterTable() {
+            const term = searchInput.value.toLowerCase().trim();
+            rows.forEach(row => {
+                const name = row.getAttribute('data-name') || '';
+                const breed = row.getAttribute('data-breed') || '';
+                const match = name.includes(term) || breed.includes(term);
+                row.style.display = match ? '' : 'none';
+            });
+        }
+        searchInput.addEventListener('keyup', filterTable);
+        clearBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            filterTable();
+        });
+
+        // Edit livestock
+        const editBtns = document.querySelectorAll('.edit-livestock');
+        editBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.getElementById('editLivestockId').value = this.dataset.id;
+                document.getElementById('editName').value = this.dataset.name;
+                document.getElementById('editBreed').value = this.dataset.breed;
+                document.getElementById('editQuantity').value = this.dataset.quantity;
+                document.getElementById('editUnit').value = this.dataset.unit;
+                document.getElementById('editPurchaseDate').value = this.dataset.purchaseDate;
+                document.getElementById('editPurchaseCost').value = this.dataset.purchaseCost;
+                document.getElementById('editNotes').value = this.dataset.notes;
+                new bootstrap.Modal(document.getElementById('editLivestockModal')).show();
+            });
+        });
+
+        // Delete livestock
+        const deleteBtns = document.querySelectorAll('.delete-livestock');
+        deleteBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.getElementById('deleteLivestockId').value = this.dataset.id;
+                document.getElementById('deleteLivestockName').textContent = this.dataset.name;
+                new bootstrap.Modal(document.getElementById('deleteLivestockModal')).show();
+            });
+        });
+
+        // Add health record
+        const addHealthBtns = document.querySelectorAll('.add-health');
+        addHealthBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.getElementById('healthLivestockId').value = this.dataset.id;
+                document.getElementById('healthLivestockName').textContent = this.dataset.name;
+                // Reset form fields
+                document.querySelector('#addHealthModal input[name="date"]').value = '';
+                document.querySelector('#addHealthModal select[name="type"]').value = '';
+                document.querySelector('#addHealthModal textarea[name="description"]').value = '';
+                document.querySelector('#addHealthModal input[name="cost"]').value = 0;
+                document.querySelector('#addHealthModal input[name="performed_by"]').value = '';
+                document.querySelector('#addHealthModal textarea[name="notes"]').value = '';
+                new bootstrap.Modal(document.getElementById('addHealthModal')).show();
+            });
+        });
+
+        // View health records
+        const viewHealthBtns = document.querySelectorAll('.view-health');
+        const healthModal = new bootstrap.Modal(document.getElementById('healthModal'));
+        const healthModalBody = document.getElementById('healthModalBody');
+
+        viewHealthBtns.forEach(btn => {
+            btn.addEventListener('click', async function() {
+                const livestockId = this.dataset.id;
+                const livestockName = this.dataset.name;
+                document.querySelector('#healthModal .modal-title').textContent = `Health Records - ${livestockName}`;
+                healthModalBody.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+                healthModal.show();
+
+                try {
+                    const response = await fetch(`/operations/farm/livestock/health/${livestockId}`);
+                    const data = await response.json();
+                    if (data.health_records && data.health_records.length > 0) {
+                        let html = `
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Type</th>
+                                            <th>Description</th>
+                                            <th>Cost (KES)</th>
+                                            <th>Performed By</th>
+                                            <th>Notes</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                        `;
+                        for (let r of data.health_records) {
+                            html += `
+                                <tr>
+                                    <td>${r.date}</td>
+                                    <td>${r.type}</td>
+                                    <td>${r.description}</td>
+                                    <td>${r.cost.toFixed(2)}</td>
+                                    <td>${r.performed_by}</td>
+                                    <td>${r.notes}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-danger delete-health" data-id="${r.id}">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </button>
+                                    </td>
+                                </tr>
+                            `;
+                        }
+                        html += `</tbody></table></div>`;
+                        healthModalBody.innerHTML = html;
+
+                        // Attach delete handlers
+                        document.querySelectorAll('.delete-health').forEach(btn => {
+                            btn.addEventListener('click', function() {
+                                const recordId = this.dataset.id;
+                                document.getElementById('deleteHealthId').value = recordId;
+                                new bootstrap.Modal(document.getElementById('deleteHealthModal')).show();
+                            });
+                        });
+                    } else {
+                        healthModalBody.innerHTML = '<div class="text-center py-4 text-muted">No health records for this livestock.</div>';
+                    }
+                } catch (err) {
+                    healthModalBody.innerHTML = '<div class="text-center py-4 text-danger">Failed to load records. Please refresh the page.</div>';
+                }
+            });
+        });
+    });
+</script>
+
+<style>
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .text-white-80 {
+        color: rgba(255,255,255,0.8);
+    }
+    .icon-circle {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .hover-lift {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hover-lift:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.75rem 1.5rem rgba(0,0,0,0.1) !important;
+    }
+    .badge {
+        font-weight: 500;
+        font-size: 0.85rem;
+    }
+    .table > :not(caption) > * > * {
+        vertical-align: middle;
+    }
+</style>
+{% endblock %}

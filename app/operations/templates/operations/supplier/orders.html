@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+
+{% block title %}Supplier Orders{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Header -->
+    <div class="bg-gradient-primary text-white p-4 rounded-4 mb-4 shadow-sm">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="display-6 fw-bold">Supplier Orders</h1>
+                <p class="text-white-80">Track and manage purchase orders</p>
+            </div>
+            <div>
+                <a href="{{ url_for('operations_web_bp.supplier_orders') }}" class="btn btn-light rounded-pill">
+                    <i class="fas fa-sync-alt me-2"></i>Refresh
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-primary mb-1">Total Orders</p>
+                            <h2 class="mb-0 fw-bold">{{ total_orders }}</h2>
+                        </div>
+                        <div class="icon-circle bg-primary bg-opacity-10">
+                            <i class="fas fa-truck text-primary fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-success mb-1">Total Order Value</p>
+                            <h2 class="mb-0 fw-bold">KES {{ "{:,.2f}".format(total_value) }}</h2>
+                        </div>
+                        <div class="icon-circle bg-success bg-opacity-10">
+                            <i class="fas fa-chart-line text-success fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+            <h6 class="text-uppercase fw-bold text-primary"><i class="fas fa-filter me-2"></i>Filter Orders</h6>
+        </div>
+        <div class="card-body p-4">
+            <form method="GET" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">All</option>
+                        {% for s in statuses %}
+                        <option value="{{ s }}" {% if status_filter == s %}selected{% endif %}>{{ s|title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Supplier</label>
+                    <select name="supplier" class="form-select">
+                        <option value="">All</option>
+                        {% for s in suppliers %}
+                        <option value="{{ s.id }}" {% if supplier_filter == s.id|string %}selected{% endif %}>{{ s.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100"><i class="fas fa-search me-2"></i>Apply</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Orders Table -->
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+            <h6 class="text-uppercase fw-bold text-primary"><i class="fas fa-list me-2"></i>Purchase Orders</h6>
+        </div>
+        <div class="card-body p-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Order #</th>
+                            <th>Supplier</th>
+                            <th>Item</th>
+                            <th>Order Date</th>
+                            <th>Expected Delivery</th>
+                            <th>Quantity</th>
+                            <th>Unit Price (KES)</th>
+                            <th>Total (KES)</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </thead>
+                    <tbody>
+                        {% for order in orders %}
+                        <tr>
+                            <td class="fw-semibold">{{ order.order_number }}</td>
+                            <td>{{ order.supplier.name }}</td>
+                            <td>{{ order.request.item_name }}</td>
+                            <td>{{ order.order_date.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ order.expected_delivery.strftime('%Y-%m-%d') if order.expected_delivery else '—' }}</td>
+                            <td>{{ order.request.quantity }} {{ order.request.unit }}</td>
+<td>{{ "{:,.2f}".format(order.unit_price) if order.unit_price is not none else '0.00' }}</td>
+<td class="fw-bold">KES {{ "{:,.2f}".format(order.total_amount) if order.total_amount is not none else '0.00' }}</td>
+
+                            <td>
+                                <span class="badge bg-{{ 'success' if order.status == 'received' else 'warning' if order.status == 'ordered' else 'info' if order.status == 'partially_received' else 'danger' }}">
+                                    {{ order.status|title }}
+                                </span>
+                            </td>
+                            <td class="text-nowrap">
+                                {% if order.status != 'cancelled' %}
+                                <button class="btn btn-sm btn-outline-primary edit-order"
+                                        data-id="{{ order.id }}"
+                                        data-status="{{ order.status }}"
+                                        data-notes="{{ order.notes or '' }}">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
+                                {% if order.deliveries|length == 0 %}
+
+
+                                <button class="btn btn-sm btn-outline-danger cancel-order"
+                                        data-id="{{ order.id }}"
+                                        data-number="{{ order.order_number }}">
+                                    <i class="fas fa-ban"></i> Cancel
+                                </button>
+                                {% endif %}
+                                {% else %}
+                                <span class="text-muted">No actions</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="10" class="text-center py-5 text-muted">No orders found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                 </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Order Modal -->
+<div class="modal fade" id="editOrderModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Order</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="edit_order">
+                    <input type="hidden" name="order_id" id="editOrderId">
+                    <div class="mb-3">
+                        <label class="form-label">Status</label>
+                        <select name="status" id="editStatus" class="form-select">
+                            <option value="ordered">Ordered</option>
+                            <option value="partially_received">Partially Received</option>
+                            <option value="received">Received</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Notes</label>
+                        <textarea name="notes" id="editNotes" class="form-control" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Cancel Order Confirmation Modal -->
+<div class="modal fade" id="cancelOrderModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title">Cancel Order</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="cancel_order">
+                    <input type="hidden" name="order_id" id="cancelOrderId">
+                    <p>Are you sure you want to cancel order <span id="cancelOrderNumber" class="fw-bold"></span>?</p>
+                    <p class="text-danger">This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No, keep it</button>
+                    <button type="submit" class="btn btn-danger">Yes, cancel order</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Edit order modal
+        const editButtons = document.querySelectorAll('.edit-order');
+        const editModal = new bootstrap.Modal(document.getElementById('editOrderModal'));
+        editButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.getElementById('editOrderId').value = this.dataset.id;
+                document.getElementById('editStatus').value = this.dataset.status;
+                document.getElementById('editNotes').value = this.dataset.notes;
+                editModal.show();
+            });
+        });
+
+        // Cancel order modal
+        const cancelButtons = document.querySelectorAll('.cancel-order');
+        const cancelModal = new bootstrap.Modal(document.getElementById('cancelOrderModal'));
+        cancelButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.getElementById('cancelOrderId').value = this.dataset.id;
+                document.getElementById('cancelOrderNumber').textContent = this.dataset.number;
+                cancelModal.show();
+            });
+        });
+    });
+</script>
+
+<style>
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .text-white-80 {
+        color: rgba(255,255,255,0.8);
+    }
+    .icon-circle {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .hover-lift {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hover-lift:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.75rem 1.5rem rgba(0,0,0,0.1) !important;
+    }
+    .badge {
+        font-weight: 500;
+        font-size: 0.85rem;
+    }
+    .table > :not(caption) > * > * {
+        vertical-align: middle;
+    }
+</style>
+{% endblock %}

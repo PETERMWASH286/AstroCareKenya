@@ -574,7 +574,7 @@ class CashTransaction(db.Model):
     source_cash_account_id = db.Column(db.Integer, db.ForeignKey('cash_accounts.id'), nullable=True)
     dest_cash_account_id = db.Column(db.Integer, db.ForeignKey('cash_accounts.id'), nullable=True)
     dest_bank_account_id = db.Column(db.Integer, db.ForeignKey('bank_accounts.id'), nullable=True)
-
+    dest_petty_cash_account_id = db.Column(db.Integer, db.ForeignKey('petty_cash_accounts.id'), nullable=True)
     # Link to original M‑Pesa transaction (if deposit)
     source_transaction_id = db.Column(db.Integer, db.ForeignKey('transactions.id'), nullable=True)
     source_transaction = db.relationship('Transaction', foreign_keys=[source_transaction_id])
@@ -591,6 +591,7 @@ class CashTransaction(db.Model):
     external_reference = db.Column(db.String(100))  # e.g., M‑Pesa business payment receipt
 
     initiator = db.relationship('User', foreign_keys=[initiated_by])
+    dest_petty_cash = db.relationship('PettyCash', foreign_keys=[dest_petty_cash_account_id])
 
     def __repr__(self):
         return f'<CashTransaction {self.transaction_ref} type={self.transaction_type} amount={self.amount}>'
@@ -697,3 +698,103 @@ class FinanceMessage(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     conversation = db.relationship('FinanceConversation', back_populates='messages')
+    
+    
+    
+    
+class PettyCash(db.Model):
+    __tablename__ = 'petty_cash_accounts'
+    __audit_trail__ = True
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    account_type = db.Column(db.String(50), nullable=False)   # 'petty_cash', 'advance', 'float'
+    account_number = db.Column(db.String(50), unique=True)     # NEW: unique account number
+    current_balance = db.Column(db.Float, nullable=False, default=0.0)
+    currency = db.Column(db.String(10), default='KES')
+    is_active = db.Column(db.Boolean, default=True)
+    description = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    # Relationships
+    outgoing_transactions = db.relationship(
+        'PettyCashTransaction',
+        foreign_keys='PettyCashTransaction.source_petty_cash_account_id',
+        backref='source_account',
+        lazy='dynamic'
+    )
+    incoming_transactions = db.relationship(
+        'PettyCashTransaction',
+        foreign_keys='PettyCashTransaction.dest_petty_cash_account_id',
+        backref='dest_account',
+        lazy='dynamic'
+    )
+
+    def __repr__(self):
+        return f'<PettyCash {self.name} balance: {self.current_balance}>'
+
+
+    def get_ledger_entries(self):
+        """Return list of dicts with date, description, debit, credit, balance for this petty cash account."""
+        entries = []
+        for tx in self.incoming_transactions.order_by(PettyCashTransaction.completed_at).all():
+            entries.append({
+                'date': tx.completed_at or tx.initiated_at,
+                'description': tx.description,
+                'debit': tx.amount,
+                'credit': 0,
+                'ref': tx.transaction_ref,
+                'type': tx.transaction_type
+            })
+        for tx in self.outgoing_transactions.order_by(PettyCashTransaction.completed_at).all():
+            entries.append({
+                'date': tx.completed_at or tx.initiated_at,
+                'description': tx.description,
+                'debit': 0,
+                'credit': tx.amount,
+                'ref': tx.transaction_ref,
+                'type': tx.transaction_type
+            })
+        entries.sort(key=lambda x: x['date'])
+        balance = 0
+        for e in entries:
+            balance += e['debit'] - e['credit']
+            e['balance'] = balance
+        return entries
+
+class PettyCashTransaction(db.Model):
+    __tablename__ = 'petty_cash_transactions'
+    __audit_trail__ = True
+
+    id = db.Column(db.Integer, primary_key=True)
+    transaction_ref = db.Column(db.String(100), unique=True, nullable=False)
+    transaction_type = db.Column(db.String(20), nullable=False)  # 'deposit', 'withdrawal', 'transfer_in', 'transfer_out'
+    amount = db.Column(db.Float, nullable=False)
+    description = db.Column(db.Text)
+
+    source_petty_cash_account_id = db.Column(db.Integer, db.ForeignKey('petty_cash_accounts.id'), nullable=True)
+    dest_petty_cash_account_id = db.Column(db.Integer, db.ForeignKey('petty_cash_accounts.id'), nullable=True)
+    source_cash_account_id = db.Column(db.Integer, db.ForeignKey('cash_accounts.id'), nullable=True)  # when transfer from cash account
+
+    batch_number = db.Column(db.String(50), nullable=True)
+    batch_date = db.Column(db.Date, nullable=True)
+
+    status = db.Column(db.String(20), default='completed')  # 'pending', 'completed', 'failed'
+    initiated_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    initiated_at = db.Column(db.DateTime, default=datetime.utcnow)
+    completed_at = db.Column(db.DateTime)
+
+    external_reference = db.Column(db.String(100))  # e.g., receipt number
+
+    initiator = db.relationship('User', foreign_keys=[initiated_by])
+
+    def __repr__(self):
+        return f'<PettyCashTransaction {self.transaction_ref} type={self.transaction_type} amount={self.amount}>'
+
+    def generate_ref(self):
+        """Generate a unique reference number."""
+        import random
+        import string
+        date_str = datetime.utcnow().strftime('%Y%m%d')
+        rand_part = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+        return f"PETTY-{self.transaction_type.upper()}-{date_str}-{rand_part}"

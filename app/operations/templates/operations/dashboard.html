@@ -1,0 +1,451 @@
+{% extends "base.html" %}
+
+{% block title %}Operations Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Header -->
+    <div class="bg-gradient-primary text-white p-4 rounded-4 mb-4 shadow-sm">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="display-6 fw-bold">Operations Dashboard</h1>
+                <p class="text-white-80">Welcome back, {{ current_user.full_name }}!</p>
+            </div>
+            <div>
+                <a href="#" class="btn btn-light rounded-pill" data-bs-toggle="modal" data-bs-target="#refreshModal">
+                    <i class="fas fa-sync-alt me-2"></i>Refresh
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-primary mb-1">Pending Procurements</p>
+                            <h2 class="mb-0 fw-bold">{{ pending_proc_requests }}</h2>
+                        </div>
+                        <div class="icon-circle bg-primary bg-opacity-10">
+                            <i class="fas fa-clipboard-list text-primary fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-warning mb-1">Pending Cash Requests</p>
+                            <h2 class="mb-0 fw-bold">{{ pending_petty_requests }}</h2>
+                        </div>
+                        <div class="icon-circle bg-warning bg-opacity-10">
+                            <i class="fas fa-hand-holding-usd text-warning fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-success mb-1">Petty Cash Balance</p>
+                            <h2 class="mb-0 fw-bold">KES {{ "{:,.2f}".format(total_petty_balance) }}</h2>
+                        </div>
+                        <div class="icon-circle bg-success bg-opacity-10">
+                            <i class="fas fa-wallet text-success fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-danger mb-1">Low Stock Items</p>
+                            <h2 class="mb-0 fw-bold">{{ total_low_stock }}</h2>
+                        </div>
+                        <div class="icon-circle bg-danger bg-opacity-10">
+                            <i class="fas fa-exclamation-triangle text-danger fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Revenue/Expense Summary -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 hover-lift">
+                <div class="card-body p-4 text-center">
+                    <h6 class="text-uppercase text-muted mb-2">Revenue (30 days)</h6>
+                    <h2 class="text-success fw-bold">KES {{ "{:,.2f}".format(recent_revenue) }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 hover-lift">
+                <div class="card-body p-4 text-center">
+                    <h6 class="text-uppercase text-muted mb-2">Expenses (30 days)</h6>
+                    <h2 class="text-danger fw-bold">KES {{ "{:,.2f}".format(recent_expenses) }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 hover-lift">
+                <div class="card-body p-4 text-center">
+                    <h6 class="text-uppercase text-muted mb-2">Net Profit</h6>
+                    <h2 class="text-{{ 'success' if profit >= 0 else 'danger' }} fw-bold">
+                        KES {{ "{:,.2f}".format(profit) }}
+                    </h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart Row -->
+    <div class="row g-4 mb-5">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h6 class="text-uppercase fw-bold text-primary"><i class="fas fa-chart-line me-2"></i>Revenue vs Expense Trend</h6>
+                </div>
+                <div class="card-body p-4">
+                    <canvas id="revenueExpenseChart" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Two‑column layout for alerts and recent activities -->
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <!-- Low Stock Alerts -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h6 class="text-uppercase fw-bold text-danger"><i class="fas fa-exclamation-triangle me-2"></i>Low Stock Alerts</h6>
+                </div>
+                <div class="card-body p-4">
+                    {% if low_stock_items %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Department</th>
+                                    <th>Item</th>
+                                    <th>Current Qty</th>
+                                    <th>Reorder Level</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in low_stock_items %}
+                                <tr>
+                                    <td><span class="badge bg-secondary">{{ item.department }}</span></td>
+                                    <td>{{ item.name }}</td>
+                                    <td class="text-danger fw-bold">{{ item.quantity }}</td>
+                                    <td>{{ item.reorder }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center">All stock levels are healthy.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Recent Procurement Requests -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h6 class="text-uppercase fw-bold text-primary"><i class="fas fa-clipboard-list me-2"></i>Recent Procurement Requests</h6>
+                </div>
+                <div class="card-body p-4">
+                    {% if recent_proc_requests %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Department</th>
+                                    <th>Quantity</th>
+                                    <th>Priority</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for req in recent_proc_requests %}
+                                <tr>
+                                    <td>{{ req.item_name }}</td>
+                                    <td>{{ req.department|title }}</td>
+                                    <td>{{ req.quantity }} {{ req.unit }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'danger' if req.priority == 'high' else 'warning' if req.priority == 'medium' else 'secondary' }}">
+                                            {{ req.priority|title }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ 'warning' if req.status == 'pending' else 'success' }}">
+                                            {{ req.status|title }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="text-end">
+                        <a href="{{ url_for('operations_web_bp.procurement_requests') }}" class="btn btn-sm btn-link">View all</a>
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center">No recent procurement requests.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Recent Petty Cash Transactions -->
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h6 class="text-uppercase fw-bold text-info"><i class="fas fa-exchange-alt me-2"></i>Recent Petty Cash Transactions</h6>
+                </div>
+                <div class="card-body p-4">
+                    {% if recent_petty_txs %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                    <th>Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for tx in recent_petty_txs %}
+                                <tr>
+                                    <td>{{ tx.completed_at.strftime('%Y-%m-%d') if tx.completed_at else tx.initiated_at.strftime('%Y-%m-%d') }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if tx.transaction_type == 'deposit' else 'danger' if tx.transaction_type == 'withdrawal' else 'secondary' }}">
+                                            {{ tx.transaction_type|title }}
+                                        </span>
+                                    </td>
+                                    <td>{{ tx.description }}</td>
+                                    <td class="fw-bold text-{{ 'success' if tx.transaction_type == 'deposit' else 'danger' }}">KES {{ "{:,.2f}".format(tx.amount) }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="text-end">
+                        <a href="{{ url_for('operations_web_bp.petty_cash_transactions') }}" class="btn btn-sm btn-link">View all</a>
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center">No recent transactions.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <!-- Recent Harvests -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h6 class="text-uppercase fw-bold text-success"><i class="fas fa-apple-alt me-2"></i>Recent Harvests</h6>
+                </div>
+                <div class="card-body p-4">
+                    {% if recent_harvests %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Crop</th>
+                                    <th>Quantity</th>
+                                    <th>Unit</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for h in recent_harvests %}
+                                <tr>
+                                    <td>{{ h.harvest_date.strftime('%Y-%m-%d') }}</td>
+                                    <td>{{ h.crop.name }}</td>
+                                    <td>{{ h.quantity }}</td>
+                                    <td>{{ h.unit }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="text-end">
+                        <a href="{{ url_for('operations_web_bp.farm_harvest') }}" class="btn btn-sm btn-link">View all</a>
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center">No recent harvest records.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Recent Fleet Maintenance -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h6 class="text-uppercase fw-bold text-purple"><i class="fas fa-wrench me-2"></i>Recent Maintenance</h6>
+                </div>
+                <div class="card-body p-4">
+                    {% if recent_maintenance %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Vehicle</th>
+                                    <th>Type</th>
+                                    <th>Cost</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for m in recent_maintenance %}
+                                <tr>
+                                    <td>{{ m.maintenance_date.strftime('%Y-%m-%d') }}</td>
+                                    <td>{{ m.vehicle.registration if m.vehicle else 'N/A' }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if m.type == 'routine' else 'warning' if m.type == 'repair' else 'danger' }}">
+                                            {{ m.type|title }}
+                                        </span>
+                                    </td>
+                                    <td>KES {{ "{:,.2f}".format(m.cost) }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="text-end">
+                        <a href="{{ url_for('operations_web_bp.fleet_maintenance') }}" class="btn btn-sm btn-link">View all</a>
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center">No recent maintenance records.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Quick Links -->
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h6 class="text-uppercase fw-bold text-primary"><i class="fas fa-link me-2"></i>Quick Actions</h6>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <a href="{{ url_for('operations_web_bp.procurement_requests_approve') }}" class="btn btn-outline-primary w-100 text-start py-3">
+                                <i class="fas fa-check-circle me-2"></i> Approve Requests
+                            </a>
+                        </div>
+                        <div class="col-md-6">
+                            <a href="{{ url_for('operations_web_bp.petty_cash_requests') }}" class="btn btn-outline-warning w-100 text-start py-3">
+                                <i class="fas fa-hand-holding-usd me-2"></i> Review Cash Requests
+                            </a>
+                        </div>
+                        <div class="col-md-6">
+                            <a href="{{ url_for('operations_web_bp.store_inventory') }}" class="btn btn-outline-info w-100 text-start py-3">
+                                <i class="fas fa-boxes me-2"></i> Update Store Stock
+                            </a>
+                        </div>
+                        <div class="col-md-6">
+                            <a href="{{ url_for('operations_web_bp.fleet_vehicles') }}" class="btn btn-outline-purple w-100 text-start py-3">
+                                <i class="fas fa-car me-2"></i> Manage Fleet
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('revenueExpenseChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: {{ monthly_labels|tojson }},
+                datasets: [
+                    {
+                        label: 'Revenue',
+                        data: {{ monthly_revenue|tojson }},
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    },
+                    {
+                        label: 'Expenses',
+                        data: {{ monthly_expense|tojson }},
+                        borderColor: '#ef4444',
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { position: 'top' }
+                }
+            }
+        });
+    });
+</script>
+
+<style>
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .text-white-80 {
+        color: rgba(255,255,255,0.8);
+    }
+    .icon-circle {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .hover-lift {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hover-lift:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.75rem 1.5rem rgba(0,0,0,0.1) !important;
+    }
+    .badge {
+        font-weight: 500;
+        font-size: 0.85rem;
+    }
+    .table > :not(caption) > * > * {
+        vertical-align: middle;
+    }
+    .btn-outline-purple {
+        color: #8b5cf6;
+        border-color: #8b5cf6;
+    }
+    .btn-outline-purple:hover {
+        background-color: #8b5cf6;
+        border-color: #8b5cf6;
+        color: white;
+    }
+</style>
+{% endblock %}

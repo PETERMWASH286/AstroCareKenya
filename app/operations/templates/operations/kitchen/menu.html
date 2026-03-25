@@ -1,0 +1,603 @@
+{% extends "base.html" %}
+
+{% block title %}Kitchen Menu Planning{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Header -->
+    <div class="bg-gradient-primary text-white p-4 rounded-4 mb-4 shadow-sm">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="display-6 fw-bold">Kitchen Menu</h1>
+                <p class="text-white-80">Manage recipes and weekly meal plans</p>
+            </div>
+            <div>
+                <button class="btn btn-light rounded-pill" id="newMenuBtn">
+                    <i class="fas fa-plus-circle me-2"></i>New Recipe
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Weekly Planner -->
+    <div class="card border-0 shadow-sm rounded-4 mb-5">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <h6 class="text-uppercase fw-bold text-primary"><i class="fas fa-calendar-alt me-2"></i>Weekly Meal Plan</h6>
+                <div>
+                    <a href="{{ url_for('operations_web_bp.kitchen_menu', week_offset=prev_week) }}" class="btn btn-sm btn-outline-secondary me-2">
+                        <i class="fas fa-chevron-left"></i> Previous
+                    </a>
+                    <a href="{{ url_for('operations_web_bp.kitchen_menu', week_offset=next_week) }}" class="btn btn-sm btn-outline-secondary">
+                        Next <i class="fas fa-chevron-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-4">
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Day</th>
+                            <th>Breakfast</th>
+                            <th>Lunch</th>
+                            <th>Dinner</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in plan_data %}
+                        <tr>
+                            <td class="fw-semibold align-middle">
+                                {{ row.weekday }}<br>
+                                <small class="text-muted">{{ row.date.strftime('%Y-%m-%d') }}</small>
+                            </td>
+                            <td>
+                                {% if row.breakfast %}
+                                    <div class="meal-plan-card p-2 bg-light rounded mb-1">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <strong>{{ row.breakfast.menu.name if row.breakfast.menu else 'Manual' }}</strong><br>
+                                                <small>
+                                                    {% if row.breakfast.menu %}
+                                                        Cost: KES {{ "%.2f"|format(row.breakfast.total_cost) }}
+                                                    {% else %}
+                                                        {{ row.breakfast.manual_ingredients|truncate(50) or 'No menu' }}
+                                                    {% endif %}
+                                                </small>
+                                            </div>
+                                            <div>
+                                                <button class="btn btn-sm btn-link text-primary edit-plan"
+                                                        data-plan-id="{{ row.breakfast.id }}"
+                                                        data-date="{{ row.date.strftime('%Y-%m-%d') }}"
+                                                        data-meal-type="breakfast"
+                                                        data-menu-id="{{ row.breakfast.menu_id or '' }}"
+                                                        data-servings="{{ row.breakfast.servings }}"
+                                                        data-manual-ingredients="{{ row.breakfast.manual_ingredients or '[]' }}"
+                                                        data-estimated-cost="{{ row.breakfast.estimated_cost or '' }}"
+                                                        data-notes="{{ row.breakfast.notes or '' }}">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-link text-danger delete-plan"
+                                                        data-plan-id="{{ row.breakfast.id }}"
+                                                        data-date="{{ row.date.strftime('%Y-%m-%d') }}"
+                                                        data-meal-type="breakfast">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    <button class="btn btn-sm btn-outline-primary w-100 add-plan"
+                                            data-date="{{ row.date.strftime('%Y-%m-%d') }}"
+                                            data-meal-type="breakfast">
+                                        <i class="fas fa-plus"></i> Add
+                                    </button>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if row.lunch %}
+                                    <div class="meal-plan-card p-2 bg-light rounded mb-1">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <strong>{{ row.lunch.menu.name if row.lunch.menu else 'Manual' }}</strong><br>
+                                                <small>
+                                                    {% if row.lunch.menu %}
+                                                        Cost: KES {{ "%.2f"|format(row.lunch.total_cost) }}
+                                                    {% else %}
+                                                        {{ row.lunch.manual_ingredients|truncate(50) or 'No menu' }}
+                                                    {% endif %}
+                                                </small>
+                                            </div>
+                                            <div>
+                                                <button class="btn btn-sm btn-link text-primary edit-plan"
+                                                        data-plan-id="{{ row.lunch.id }}"
+                                                        data-date="{{ row.date.strftime('%Y-%m-%d') }}"
+                                                        data-meal-type="lunch"
+                                                        data-menu-id="{{ row.lunch.menu_id or '' }}"
+                                                        data-servings="{{ row.lunch.servings }}"
+                                                        data-manual-ingredients="{{ row.lunch.manual_ingredients or '[]' }}"
+                                                        data-estimated-cost="{{ row.lunch.estimated_cost or '' }}"
+                                                        data-notes="{{ row.lunch.notes or '' }}">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-link text-danger delete-plan"
+                                                        data-plan-id="{{ row.lunch.id }}"
+                                                        data-date="{{ row.date.strftime('%Y-%m-%d') }}"
+                                                        data-meal-type="lunch">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    <button class="btn btn-sm btn-outline-primary w-100 add-plan"
+                                            data-date="{{ row.date.strftime('%Y-%m-%d') }}"
+                                            data-meal-type="lunch">
+                                        <i class="fas fa-plus"></i> Add
+                                    </button>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if row.dinner %}
+                                    <div class="meal-plan-card p-2 bg-light rounded mb-1">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <strong>{{ row.dinner.menu.name if row.dinner.menu else 'Manual' }}</strong><br>
+                                                <small>
+                                                    {% if row.dinner.menu %}
+                                                        Cost: KES {{ "%.2f"|format(row.dinner.total_cost) }}
+                                                    {% else %}
+                                                        {{ row.dinner.manual_ingredients|truncate(50) or 'No menu' }}
+                                                    {% endif %}
+                                                </small>
+                                            </div>
+                                            <div>
+                                                <button class="btn btn-sm btn-link text-primary edit-plan"
+                                                        data-plan-id="{{ row.dinner.id }}"
+                                                        data-date="{{ row.date.strftime('%Y-%m-%d') }}"
+                                                        data-meal-type="dinner"
+                                                        data-menu-id="{{ row.dinner.menu_id or '' }}"
+                                                        data-servings="{{ row.dinner.servings }}"
+                                                        data-manual-ingredients="{{ row.dinner.manual_ingredients or '[]' }}"
+                                                        data-estimated-cost="{{ row.dinner.estimated_cost or '' }}"
+                                                        data-notes="{{ row.dinner.notes or '' }}">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-link text-danger delete-plan"
+                                                        data-plan-id="{{ row.dinner.id }}"
+                                                        data-date="{{ row.date.strftime('%Y-%m-%d') }}"
+                                                        data-meal-type="dinner">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    <button class="btn btn-sm btn-outline-primary w-100 add-plan"
+                                            data-date="{{ row.date.strftime('%Y-%m-%d') }}"
+                                            data-meal-type="dinner">
+                                        <i class="fas fa-plus"></i> Add
+                                    </button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recipe Library -->
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+            <h6 class="text-uppercase fw-bold text-primary"><i class="fas fa-utensils me-2"></i>Recipe Library</h6>
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-4">
+                {% for menu in menus %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card border-0 shadow-sm rounded-4 hover-lift h-100">
+                        <div class="card-header bg-transparent border-0 pt-4 px-4">
+                            <div class="d-flex justify-content-between">
+                                <h5 class="card-title fw-bold text-primary mb-0">{{ menu.name }}</h5>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-link text-muted" data-bs-toggle="dropdown">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li>
+                                            <button class="dropdown-item edit-menu"
+                                                    data-id="{{ menu.id }}"
+                                                    data-name="{{ menu.name }}"
+                                                    data-description="{{ menu.description or '' }}"
+                                                    data-preparation="{{ menu.preparation_time or '' }}"
+                                                    data-servings="{{ menu.servings }}"
+                                                    data-image="{{ menu.image_url or '' }}">
+                                                <i class="fas fa-edit me-2"></i>Edit
+                                            </button>
+                                        </li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <button class="dropdown-item text-danger delete-menu"
+                                                    data-id="{{ menu.id }}"
+                                                    data-name="{{ menu.name }}">
+                                                <i class="fas fa-trash me-2"></i>Delete
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body p-4">
+                            {% if menu.image_url %}
+                            <img src="{{ menu.image_url }}" class="img-fluid rounded-3 mb-3" alt="{{ menu.name }}" style="max-height: 150px; width: 100%; object-fit: cover;">
+                            {% endif %}
+                            <p class="text-muted small">{{ menu.description or 'No description.' }}</p>
+                            <div class="d-flex flex-wrap gap-2 mb-3">
+                                {% if menu.preparation_time %}
+                                <span class="badge bg-secondary"><i class="fas fa-clock me-1"></i> {{ menu.preparation_time }} min</span>
+                                {% endif %}
+                                <span class="badge bg-info"><i class="fas fa-utensils me-1"></i> {{ menu.servings }} servings</span>
+                                <span class="badge bg-success"><i class="fas fa-chart-line me-1"></i> KES {{ "%.2f"|format(menu.cost_per_serving) }}/serving</span>
+                            </div>
+                            <hr>
+                            <h6 class="mb-2">Ingredients:</h6>
+                            <ul class="list-unstyled small">
+                                {% for item in menu.items %}
+                                <li class="mb-1">
+                                    <i class="fas fa-caret-right text-primary me-1"></i>
+                                    {{ item.quantity }} {{ item.item.unit }} {{ item.item.name }}
+                                    {% if item.notes %}<span class="text-muted">({{ item.notes }})</span>{% endif %}
+                                </li>
+                                {% else %}
+                                <li class="text-muted">No ingredients added.</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="col-12">
+                    <div class="alert alert-info text-center py-5">
+                        <i class="fas fa-utensils fa-3x mb-3 d-block"></i>
+                        No recipes yet. Click "New Recipe" to start.
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Add/Edit Meal Plan -->
+<div class="modal fade" id="planModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" id="planForm">
+                <div class="modal-header">
+                    <h5 class="modal-title">Meal Plan</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="save_plan">
+                    <input type="hidden" name="plan_id" id="planId">
+                    <div class="mb-3">
+                        <label class="form-label">Date</label>
+                        <input type="date" name="date" id="planDate" class="form-control" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Meal Type</label>
+                        <input type="text" name="meal_type" id="planMealType" class="form-control" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Menu (optional)</label>
+                        <select name="menu_id" id="planMenuId" class="form-select">
+                            <option value="">-- None (manual only) --</option>
+                            {% for menu in menus %}
+                            <option value="{{ menu.id }}">{{ menu.name }} (KES {{ "%.2f"|format(menu.cost_per_serving) }}/serving)</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Servings</label>
+                        <input type="number" name="servings" id="planServings" class="form-control" value="1" step="1">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Manual Ingredients (JSON format)</label>
+                        <textarea name="manual_ingredients" id="planManualIngredients" class="form-control" rows="3"
+                                  placeholder='[{"name": "Tomatoes", "quantity": 2, "unit": "kg", "cost": 150}]'></textarea>
+                        <small class="text-muted">Enter a list of ingredients with name, quantity, unit, and cost.</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Estimated Cost (override)</label>
+                        <input type="number" name="estimated_cost" id="planEstimatedCost" class="form-control" step="0.01" placeholder="Leave empty to auto‑calculate">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Notes</label>
+                        <textarea name="notes" id="planNotes" class="form-control" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Plan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Add/Edit Recipe (unchanged) -->
+<div class="modal fade" id="menuModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="POST" id="menuForm">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="menuModalTitle">Add New Menu</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="action" id="menuAction" value="add_menu">
+                    <input type="hidden" name="menu_id" id="menuId">
+
+                    <div class="mb-3">
+                        <label class="form-label">Menu Name *</label>
+                        <input type="text" name="name" id="menuName" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea name="description" id="menuDescription" class="form-control" rows="2"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Preparation Time (minutes)</label>
+                            <input type="number" name="preparation_time" id="menuPreparation" class="form-control">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Servings (per recipe)</label>
+                            <input type="number" name="servings" id="menuServings" class="form-control" value="1" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Image URL (optional)</label>
+                        <input type="url" name="image_url" id="menuImage" class="form-control">
+                    </div>
+
+                    <hr>
+                    <h6 class="mb-3">Ingredients</h6>
+                    <div id="ingredientsContainer">
+                        <div class="ingredient-row row g-2 mb-2">
+                            <div class="col-md-5">
+                                <select name="item_id[]" class="form-select ingredient-select">
+                                    <option value="">Select ingredient</option>
+                                    {% for inv in inventory_items %}
+                                    <option value="{{ inv.id }}">{{ inv.name }} ({{ inv.unit }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <input type="number" name="quantity[]" class="form-control quantity" step="0.01" placeholder="Quantity">
+                            </div>
+                            <div class="col-md-3">
+                                <input type="text" name="item_notes[]" class="form-control" placeholder="Notes (e.g., fresh)">
+                            </div>
+                            <div class="col-md-1">
+                                <button type="button" class="btn btn-danger btn-sm remove-ingredient"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="addIngredient">
+                        <i class="fas fa-plus me-1"></i>Add ingredient
+                    </button>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Menu</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Plan Modal (hidden, used by JavaScript) -->
+<div class="modal fade" id="deletePlanModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title">Remove Meal Plan</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="delete_plan">
+                    <input type="hidden" name="plan_id" id="deletePlanId">
+                    <p>Are you sure you want to remove this meal plan?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Remove</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // ---------- Recipe Library Modals ----------
+        const menuModal = new bootstrap.Modal(document.getElementById('menuModal'));
+        const modalTitle = document.getElementById('menuModalTitle');
+        const menuForm = document.getElementById('menuForm');
+        const container = document.getElementById('ingredientsContainer');
+        const addBtn = document.getElementById('addIngredient');
+
+        function addIngredientRow(selectedId = '', qty = '', notes = '') {
+            const row = document.createElement('div');
+            row.className = 'ingredient-row row g-2 mb-2';
+            row.innerHTML = `
+                <div class="col-md-5">
+                    <select name="item_id[]" class="form-select ingredient-select">
+                        <option value="">Select ingredient</option>
+                        {% for inv in inventory_items %}
+                        <option value="{{ inv.id }}" ${selectedId == {{ inv.id }} ? 'selected' : ''}>
+                            {{ inv.name }} ({{ inv.unit }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <input type="number" name="quantity[]" class="form-control quantity" step="0.01" value="${qty}" placeholder="Quantity">
+                </div>
+                <div class="col-md-3">
+                    <input type="text" name="item_notes[]" class="form-control" value="${notes}" placeholder="Notes">
+                </div>
+                <div class="col-md-1">
+                    <button type="button" class="btn btn-danger btn-sm remove-ingredient"><i class="fas fa-trash"></i></button>
+                </div>
+            `;
+            container.appendChild(row);
+            row.querySelector('.remove-ingredient').addEventListener('click', () => row.remove());
+        }
+
+        addBtn.addEventListener('click', () => addIngredientRow());
+
+        // New Recipe button
+        const newMenuBtn = document.getElementById('newMenuBtn');
+        newMenuBtn.addEventListener('click', () => {
+            menuForm.reset();
+            document.getElementById('menuAction').value = 'add_menu';
+            document.getElementById('menuId').value = '';
+            container.innerHTML = '';
+            addIngredientRow();
+            modalTitle.textContent = 'Add New Menu';
+            menuModal.show();
+        });
+
+        // Edit Recipe
+        const editMenuBtns = document.querySelectorAll('.edit-menu');
+        editMenuBtns.forEach(btn => {
+            btn.addEventListener('click', async function() {
+                const menuId = this.dataset.id;
+                const response = await fetch(`/operations/kitchen/menu/items/${menuId}`);
+                const data = await response.json();
+
+                document.getElementById('menuAction').value = 'edit_menu';
+                document.getElementById('menuId').value = menuId;
+                document.getElementById('menuName').value = this.dataset.name;
+                document.getElementById('menuDescription').value = this.dataset.description;
+                document.getElementById('menuPreparation').value = this.dataset.preparation;
+                document.getElementById('menuServings').value = this.dataset.servings;
+                document.getElementById('menuImage').value = this.dataset.image;
+
+                container.innerHTML = '';
+                if (data.items && data.items.length) {
+                    data.items.forEach(item => {
+                        addIngredientRow(item.inventory_id, item.quantity, item.notes);
+                    });
+                } else {
+                    addIngredientRow();
+                }
+                modalTitle.textContent = 'Edit Menu';
+                menuModal.show();
+            });
+        });
+
+        document.getElementById('menuModal').addEventListener('hidden.bs.modal', function() {
+            menuForm.reset();
+            document.getElementById('menuAction').value = 'add_menu';
+            document.getElementById('menuId').value = '';
+            container.innerHTML = '';
+            addIngredientRow();
+            modalTitle.textContent = 'Add New Menu';
+        });
+
+        // Delete Recipe
+        const deleteMenuBtns = document.querySelectorAll('.delete-menu');
+        deleteMenuBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                if (confirm(`Delete "${this.dataset.name}"?`)) {
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.style.display = 'none';
+                    form.innerHTML = `
+                        <input type="hidden" name="action" value="delete_menu">
+                        <input type="hidden" name="menu_id" value="${this.dataset.id}">
+                    `;
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            });
+        });
+
+        // ---------- Meal Plan Modals ----------
+        const planModal = new bootstrap.Modal(document.getElementById('planModal'));
+        const deletePlanModal = new bootstrap.Modal(document.getElementById('deletePlanModal'));
+        const planForm = document.getElementById('planForm');
+
+        // Add Plan
+        document.querySelectorAll('.add-plan').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.getElementById('planId').value = '';
+                document.getElementById('planDate').value = btn.dataset.date;
+                document.getElementById('planMealType').value = btn.dataset.mealType;
+                document.getElementById('planMenuId').value = '';
+                document.getElementById('planServings').value = 1;
+                document.getElementById('planManualIngredients').value = '[]';
+                document.getElementById('planEstimatedCost').value = '';
+                document.getElementById('planNotes').value = '';
+                planModal.show();
+            });
+        });
+
+        // Edit Plan
+        document.querySelectorAll('.edit-plan').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.getElementById('planId').value = btn.dataset.planId;
+                document.getElementById('planDate').value = btn.dataset.date;
+                document.getElementById('planMealType').value = btn.dataset.mealType;
+                document.getElementById('planMenuId').value = btn.dataset.menuId;
+                document.getElementById('planServings').value = btn.dataset.servings;
+                document.getElementById('planManualIngredients').value = btn.dataset.manualIngredients;
+                document.getElementById('planEstimatedCost').value = btn.dataset.estimatedCost;
+                document.getElementById('planNotes').value = btn.dataset.notes;
+                planModal.show();
+            });
+        });
+
+        // Delete Plan
+        document.querySelectorAll('.delete-plan').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.getElementById('deletePlanId').value = btn.dataset.planId;
+                deletePlanModal.show();
+            });
+        });
+    });
+</script>
+
+<!-- Additional CSS for cards and icons -->
+<style>
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .text-white-80 {
+        color: rgba(255,255,255,0.8);
+    }
+    .hover-lift {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hover-lift:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.75rem 1.5rem rgba(0,0,0,0.1) !important;
+    }
+    .ingredient-row {
+        align-items: center;
+    }
+    .remove-ingredient {
+        line-height: 1;
+    }
+    .meal-plan-card {
+        border-left: 4px solid #10b981;
+    }
+</style>
+{% endblock %}

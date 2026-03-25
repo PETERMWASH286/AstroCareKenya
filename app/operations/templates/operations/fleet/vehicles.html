@@ -1,0 +1,488 @@
+{% extends "base.html" %}
+
+{% block title %}Vehicle Registry{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Header -->
+    <div class="bg-gradient-primary text-white p-4 rounded-4 mb-4 shadow-sm">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="display-6 fw-bold">Vehicle Registry</h1>
+                <p class="text-white-80">Manage all vehicles in the fleet</p>
+            </div>
+            <div>
+                <button class="btn btn-light rounded-pill" data-bs-toggle="modal" data-bs-target="#addVehicleModal">
+                    <i class="fas fa-plus-circle me-2"></i>Add Vehicle
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-primary mb-1">Total Vehicles</p>
+                            <h2 class="mb-0 fw-bold">{{ total_vehicles }}</h2>
+                        </div>
+                        <div class="icon-circle bg-primary bg-opacity-10">
+                            <i class="fas fa-truck text-primary fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-success mb-1">Active</p>
+                            <h2 class="mb-0 fw-bold">{{ active_vehicles }}</h2>
+                        </div>
+                        <div class="icon-circle bg-success bg-opacity-10">
+                            <i class="fas fa-check-circle text-success fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-warning mb-1">Under Maintenance</p>
+                            <h2 class="mb-0 fw-bold">{{ maintenance_vehicles }}</h2>
+                        </div>
+                        <div class="icon-circle bg-warning bg-opacity-10">
+                            <i class="fas fa-wrench text-warning fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-secondary mb-1">Retired</p>
+                            <h2 class="mb-0 fw-bold">{{ retired_vehicles }}</h2>
+                        </div>
+                        <div class="icon-circle bg-secondary bg-opacity-10">
+                            <i class="fas fa-ban text-secondary fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter & Search -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+            <h6 class="text-uppercase fw-bold text-primary"><i class="fas fa-filter me-2"></i>Search & Filter</h6>
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Search</label>
+                    <input type="text" id="searchInput" class="form-control" placeholder="Registration, make, model...">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Status</label>
+                    <select id="statusFilter" class="form-select">
+                        <option value="">All</option>
+                        <option value="active">Active</option>
+                        <option value="maintenance">Maintenance</option>
+                        <option value="retired">Retired</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Fuel Type</label>
+                    <select id="fuelFilter" class="form-select">
+                        <option value="">All</option>
+                        <option value="petrol">Petrol</option>
+                        <option value="diesel">Diesel</option>
+                        <option value="electric">Electric</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button class="btn btn-secondary w-100" id="clearFilters">Clear</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vehicles Table -->
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+            <h6 class="text-uppercase fw-bold text-primary"><i class="fas fa-list me-2"></i>Vehicles</h6>
+        </div>
+        <div class="card-body p-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle" id="vehiclesTable">
+                    <thead class="bg-light">
+                         
+                            <th>Registration</th>
+                            <th>Make / Model</th>
+                            <th>Year</th>
+                            <th>Fuel Type</th>
+                            <th>Odometer (km)</th>
+                            <th>Status</th>
+                            <th>Insurance Expiry</th>
+                            <th>Actions</th>
+                         
+                    </thead>
+                    <tbody>
+                        {% for v in vehicles %}
+                        <tr data-registration="{{ v.registration|lower }}" data-status="{{ v.status }}" data-fuel="{{ v.fuel_type or '' }}">
+                            <td class="fw-semibold">{{ v.registration }}</td>
+                            <td>{{ v.make }} {{ v.model }}</td>
+                            <td>{{ v.year }}</td>
+                            <td><span class="badge bg-secondary">{{ v.fuel_type|title if v.fuel_type else '—' }}</span></td>
+                            <td>{{ "{:,.0f}".format(v.current_odometer) }}</td>
+                            <td>
+                                {% if v.status == 'active' %}
+                                <span class="badge bg-success">Active</span>
+                                {% elif v.status == 'maintenance' %}
+                                <span class="badge bg-warning">Maintenance</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Retired</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ v.insurance_expiry.strftime('%Y-%m-%d') if v.insurance_expiry else '—' }}</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary edit-vehicle"
+                                        data-id="{{ v.id }}"
+                                        data-registration="{{ v.registration }}"
+                                        data-make="{{ v.make }}"
+                                        data-model="{{ v.model }}"
+                                        data-year="{{ v.year }}"
+                                        data-capacity="{{ v.capacity or '' }}"
+                                        data-status="{{ v.status }}"
+                                        data-insurance="{{ v.insurance_expiry.strftime('%Y-%m-%d') if v.insurance_expiry else '' }}"
+                                        data-last-service="{{ v.last_service_date.strftime('%Y-%m-%d') if v.last_service_date else '' }}"
+                                        data-next-service="{{ v.next_service_km or '' }}"
+                                        data-odometer="{{ v.current_odometer }}"
+                                        data-fuel="{{ v.fuel_type or '' }}"
+                                        data-notes="{{ v.notes or '' }}">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger delete-vehicle"
+                                        data-id="{{ v.id }}"
+                                        data-registration="{{ v.registration }}">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
+                            </td>
+                         
+                        {% else %}
+                         
+                            <td colspan="8" class="text-center py-5 text-muted">No vehicles found. Click "Add Vehicle" to register one. <td>
+                         
+                        {% endfor %}
+                    </tbody>
+                 
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Vehicle Modal -->
+<div class="modal fade" id="addVehicleModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Vehicle</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="add">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Registration *</label>
+                            <input type="text" name="registration" class="form-control" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Make *</label>
+                            <input type="text" name="make" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Model *</label>
+                            <input type="text" name="model" class="form-control" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Year *</label>
+                            <input type="number" name="year" class="form-control" min="1900" max="2030" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Capacity</label>
+                            <input type="text" name="capacity" class="form-control" placeholder="e.g., 5 passengers">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Fuel Type</label>
+                            <select name="fuel_type" class="form-select">
+                                <option value="">Select</option>
+                                <option value="petrol">Petrol</option>
+                                <option value="diesel">Diesel</option>
+                                <option value="electric">Electric</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Current Odometer (km)</label>
+                            <input type="number" name="current_odometer" class="form-control" value="0">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Status</label>
+                            <select name="status" class="form-select">
+                                <option value="active">Active</option>
+                                <option value="maintenance">Under Maintenance</option>
+                                <option value="retired">Retired</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Insurance Expiry</label>
+                            <input type="date" name="insurance_expiry" class="form-control">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Last Service Date</label>
+                            <input type="date" name="last_service_date" class="form-control">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Next Service (km)</label>
+                            <input type="number" name="next_service_km" class="form-control">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Notes</label>
+                            <textarea name="notes" class="form-control" rows="2"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Vehicle</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Vehicle Modal -->
+<div class="modal fade" id="editVehicleModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Vehicle</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="edit">
+                    <input type="hidden" name="vehicle_id" id="editVehicleId">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Registration *</label>
+                            <input type="text" name="registration" id="editReg" class="form-control" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Make *</label>
+                            <input type="text" name="make" id="editMake" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Model *</label>
+                            <input type="text" name="model" id="editModel" class="form-control" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Year *</label>
+                            <input type="number" name="year" id="editYear" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Capacity</label>
+                            <input type="text" name="capacity" id="editCapacity" class="form-control">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Fuel Type</label>
+                            <select name="fuel_type" id="editFuel" class="form-select">
+                                <option value="">Select</option>
+                                <option value="petrol">Petrol</option>
+                                <option value="diesel">Diesel</option>
+                                <option value="electric">Electric</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Current Odometer (km)</label>
+                            <input type="number" name="current_odometer" id="editOdometer" class="form-control">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Status</label>
+                            <select name="status" id="editStatus" class="form-select">
+                                <option value="active">Active</option>
+                                <option value="maintenance">Under Maintenance</option>
+                                <option value="retired">Retired</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Insurance Expiry</label>
+                            <input type="date" name="insurance_expiry" id="editInsurance" class="form-control">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Last Service Date</label>
+                            <input type="date" name="last_service_date" id="editLastService" class="form-control">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Next Service (km)</label>
+                            <input type="number" name="next_service_km" id="editNextService" class="form-control">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Notes</label>
+                            <textarea name="notes" id="editNotes" class="form-control" rows="2"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Vehicle</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title">Delete Vehicle</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="vehicle_id" id="deleteVehicleId">
+                    <p>Are you sure you want to delete vehicle <span id="deleteVehicleReg" class="fw-bold"></span>? This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Filter logic
+        const searchInput = document.getElementById('searchInput');
+        const statusFilter = document.getElementById('statusFilter');
+        const fuelFilter = document.getElementById('fuelFilter');
+        const clearBtn = document.getElementById('clearFilters');
+        const rows = document.querySelectorAll('#vehiclesTable tbody tr');
+
+        function filterTable() {
+            const search = searchInput.value.toLowerCase();
+            const status = statusFilter.value;
+            const fuel = fuelFilter.value;
+            rows.forEach(row => {
+                const reg = row.dataset.registration || '';
+                const rowStatus = row.dataset.status || '';
+                const rowFuel = row.dataset.fuel || '';
+                const matchSearch = reg.includes(search) || row.innerText.toLowerCase().includes(search);
+                const matchStatus = !status || rowStatus === status;
+                const matchFuel = !fuel || rowFuel === fuel;
+                row.style.display = (matchSearch && matchStatus && matchFuel) ? '' : 'none';
+            });
+        }
+
+        searchInput.addEventListener('keyup', filterTable);
+        statusFilter.addEventListener('change', filterTable);
+        fuelFilter.addEventListener('change', filterTable);
+        clearBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            statusFilter.value = '';
+            fuelFilter.value = '';
+            filterTable();
+        });
+
+        // Edit button
+        const editBtns = document.querySelectorAll('.edit-vehicle');
+        editBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const data = btn.dataset;
+                document.getElementById('editVehicleId').value = data.id;
+                document.getElementById('editReg').value = data.registration;
+                document.getElementById('editMake').value = data.make;
+                document.getElementById('editModel').value = data.model;
+                document.getElementById('editYear').value = data.year;
+                document.getElementById('editCapacity').value = data.capacity;
+                document.getElementById('editStatus').value = data.status;
+                document.getElementById('editInsurance').value = data.insurance;
+                document.getElementById('editLastService').value = data.lastService;
+                document.getElementById('editNextService').value = data.nextService;
+                document.getElementById('editOdometer').value = data.odometer;
+                document.getElementById('editFuel').value = data.fuel;
+                document.getElementById('editNotes').value = data.notes;
+                new bootstrap.Modal(document.getElementById('editVehicleModal')).show();
+            });
+        });
+
+        // Delete button
+        const deleteBtns = document.querySelectorAll('.delete-vehicle');
+        deleteBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.getElementById('deleteVehicleId').value = btn.dataset.id;
+                document.getElementById('deleteVehicleReg').textContent = btn.dataset.registration;
+                new bootstrap.Modal(document.getElementById('deleteModal')).show();
+            });
+        });
+    });
+</script>
+
+<style>
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .icon-circle {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .hover-lift {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hover-lift:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.75rem 1.5rem rgba(0,0,0,0.1) !important;
+    }
+</style>
+{% endblock %}

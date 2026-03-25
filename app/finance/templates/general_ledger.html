@@ -9,14 +9,14 @@
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center">
             <div>
                 <h1 class="display-6 fw-bold">General Ledger</h1>
-                <p class="text-white-80 mb-0">All cash and bank accounts – click to view detailed ledger</p>
+                <p class="text-white-80 mb-0">All cash, bank, and petty cash accounts – click to view detailed ledger</p>
             </div>
         </div>
     </div>
 
-    <!-- Summary Cards -->
+    <!-- Summary Cards (updated to include petty cash) -->
     <div class="row g-4 mb-5">
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
                 <div class="card-body p-4">
                     <div class="d-flex align-items-center">
@@ -31,7 +31,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
                 <div class="card-body p-4">
                     <div class="d-flex align-items-center">
@@ -46,7 +46,22 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-warning mb-1">Petty Cash Accounts</p>
+                            <h2 class="mb-0 fw-bold">{{ accounts|selectattr('type', 'equalto', 'petty_cash')|list|length }}</h2>
+                        </div>
+                        <div class="icon-circle bg-warning bg-opacity-10">
+                            <i class="fas fa-coins text-warning fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
             <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
                 <div class="card-body p-4">
                     <div class="d-flex align-items-center">
@@ -55,7 +70,7 @@
                             <h2 class="mb-0 fw-bold">KES {{ "{:,.2f}".format(accounts|sum(attribute='balance')) }}</h2>
                         </div>
                         <div class="icon-circle bg-info bg-opacity-10">
-                            <i class="fas fa-coins text-info fa-2x"></i>
+                            <i class="fas fa-chart-line text-info fa-2x"></i>
                         </div>
                     </div>
                 </div>
@@ -88,7 +103,11 @@
                     <tbody>
                         {% for acc in accounts %}
                         <tr>
-                            <td><span class="badge bg-{{ 'info' if acc.type=='cash' else 'primary' }} px-3 py-2">{{ acc.type|title }}</span></td>
+                            <td>
+                                <span class="badge bg-{{ 'info' if acc.type=='cash' else 'primary' if acc.type=='bank' else 'warning' }} px-3 py-2">
+                                    {{ acc.type|title|replace('_', ' ') }}
+                                </span>
+                            </td>
                             <td class="fw-semibold">{{ acc.name }}</td>
                             <td>{{ acc.account_number or 'N/A' }}</td>
                             <td class="text-end fw-bold">{{ "{:,.2f}".format(acc.balance) }}</td>
@@ -97,8 +116,13 @@
                                 <a href="{{ url_for('finance_web_bp.cash_account_ledger', account_id=acc.id) }}" class="btn btn-sm btn-outline-info rounded-pill px-3">
                                     <i class="fas fa-book me-1"></i> Ledger
                                 </a>
-                                {% else %}
+                                {% elif acc.type == 'bank' %}
                                 <a href="{{ url_for('finance_web_bp.bank_account_ledger', account_id=acc.id) }}" class="btn btn-sm btn-outline-info rounded-pill px-3">
+                                    <i class="fas fa-book me-1"></i> Ledger
+                                </a>
+                                {% else %}
+                                <!-- For petty cash, you'll need a separate ledger endpoint -->
+                                <a href="{{ url_for('finance_web_bp.petty_cash_account_ledger', account_id=acc.id) }}" class="btn btn-sm btn-outline-info rounded-pill px-3">
                                     <i class="fas fa-book me-1"></i> Ledger
                                 </a>
                                 {% endif %}

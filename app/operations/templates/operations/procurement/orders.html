@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+
+{% block title %}Purchase Orders{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Header -->
+    <div class="bg-gradient-primary text-white p-4 rounded-4 mb-4 shadow-sm">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+            <div>
+                <h1 class="display-6 fw-bold">Purchase Orders</h1>
+                <p class="text-white-80 mb-0">Manage and track all purchase orders automatically generated from approved requests</p>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-primary mb-1">Total Orders</p>
+                            <h2 class="mb-0 fw-bold">{{ orders|length }}</h2>
+                        </div>
+                        <div class="icon-circle bg-primary bg-opacity-10">
+                            <i class="fas fa-truck text-primary fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-warning mb-1">Pending Delivery</p>
+                            <h2 class="mb-0 fw-bold">{{ orders|selectattr('status', 'in', ['ordered', 'shipped', 'partially_received'])|list|length }}</h2>
+                        </div>
+                        <div class="icon-circle bg-warning bg-opacity-10">
+                            <i class="fas fa-clock text-warning fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-success mb-1">Completed</p>
+                            <h2 class="mb-0 fw-bold">{{ orders|selectattr('status', 'equalto', 'received')|list|length }}</h2>
+                        </div>
+                        <div class="icon-circle bg-success bg-opacity-10">
+                            <i class="fas fa-check-circle text-success fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-info mb-1">Total Value</p>
+                            <h2 class="mb-0 fw-bold">KES {{ "{:,.2f}".format(orders|sum(attribute='total_amount')) }}</h2>
+                        </div>
+                        <div class="icon-circle bg-info bg-opacity-10">
+                            <i class="fas fa-chart-line text-info fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<!-- Filters Card -->
+<div class="card border-0 shadow-sm rounded-4 mb-4">
+    <div class="card-header bg-transparent border-0 pt-4 px-4">
+        <h6 class="text-uppercase fw-bold text-primary"><i class="fas fa-filter me-2"></i>Filters</h6>
+    </div>
+    <div class="card-body p-4">
+        <form method="GET" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Status</label>
+                <select name="status" class="form-select">
+                    <option value="">All</option>
+                    {% for status in statuses %}
+                    <option value="{{ status }}" {% if selected_status == status %}selected{% endif %}>{{ status|replace('_', ' ')|title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Supplier</label>
+                <select name="supplier" class="form-select">
+                    <option value="">All</option>
+                    {% for sup in suppliers %}
+                    <option value="{{ sup.id }}" {% if selected_supplier == sup.id %}selected{% endif %}>{{ sup.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Department</label>
+                <select name="department" class="form-select">
+                    <option value="">All</option>
+                    {% for dept in departments %}
+                    <option value="{{ dept }}" {% if selected_department == dept %}selected{% endif %}>{{ dept|title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Search</label>
+                <input type="text" name="search" class="form-control" placeholder="Order #, item, supplier..." value="{{ search or '' }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">From Date</label>
+                <input type="date" name="start_date" class="form-control" value="{{ start_date or '' }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">To Date</label>
+                <input type="date" name="end_date" class="form-control" value="{{ end_date or '' }}">
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100"><i class="fas fa-search me-2"></i>Apply</button>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <a href="{{ url_for('operations_web_bp.procurement_orders') }}" class="btn btn-secondary w-100"><i class="fas fa-times me-2"></i>Clear</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Orders Table -->
+<div class="card border-0 shadow-sm rounded-4">
+    <div class="card-header bg-transparent border-0 pt-4 px-4">
+        <h6 class="text-uppercase fw-bold text-primary"><i class="fas fa-list me-2"></i>Purchase Orders</h6>
+    </div>
+    <div class="card-body p-4">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle" id="ordersTable">
+                <thead class="bg-light">
+                    <tr>
+                        <th>Order #</th>
+                        <th>Order Date</th>
+                        <th>Supplier</th>
+                        <th>Item</th>
+                        <th>Quantity</th>
+                        <th>Unit Price</th>
+                        <th>Total</th>
+                        <th>Requestor</th>
+                        <th>Department</th>
+                        <th>Priority</th>
+                        <th>Approved By</th>
+                        <th>Expected Delivery</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orders %}
+                    <tr>
+                        <td class="fw-semibold">{{ order.order_number }}</td>
+                        <td>{{ order.order_date.strftime('%Y-%m-%d') }}</td>
+                        <td>{{ order.supplier.name }}</td>
+                        <td>{{ order.request.item_name }}</td>
+                        <td>{{ order.request.quantity }} {{ order.request.unit }}</td>
+                        <td>
+                            KES {{ "{:,.2f}".format(order.unit_price) if order.unit_price else '—' }}
+                        </td>
+                        <td class="fw-bold">KES {{ "{:,.2f}".format(order.total_amount) }}</td>
+                        <td>{{ order.request.requester.full_name }}</td>
+                        <td>
+                            <span class="badge bg-{{ 'info' if order.request.department == 'kitchen' else 'success' if order.request.department == 'store' else 'warning' if order.request.department == 'farm' else 'secondary' }}">
+                                {{ order.request.department|title }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge bg-{{ 'danger' if order.request.priority == 'critical' else 'warning' if order.request.priority == 'high' else 'info' if order.request.priority == 'medium' else 'secondary' }}">
+                                {{ order.request.priority|title }}
+                            </span>
+                        </td>
+                        <td>{{ order.request.approver.full_name if order.request.approver else '—' }}</td>
+                        <td>{{ order.expected_delivery.strftime('%Y-%m-%d') if order.expected_delivery else '—' }}</td>
+                        <td>
+                            <span class="badge bg-{{ 'secondary' if order.status == 'ordered' else 'info' if order.status == 'shipped' else 'warning' if order.status == 'partially_received' else 'success' if order.status == 'received' else 'danger' }}">
+                                {{ order.status|replace('_', ' ')|title }}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="{{ url_for('operations_web_bp.procurement_receiving', order_id=order.id) }}" class="btn btn-sm btn-outline-primary" title="Receive">
+                                <i class="fas fa-warehouse"></i> Receive
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="14" class="text-center py-5 text-muted">No purchase orders found. Approve a request to create one.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</div>
+
+<script>
+    // Optional: client-side search (already handled by server)
+    // Could also add table sorting via DataTables if desired.
+</script>
+
+<style>
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .text-white-80 {
+        color: rgba(255,255,255,0.8);
+    }
+    .icon-circle {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .hover-lift {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hover-lift:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.75rem 1.5rem rgba(0,0,0,0.1) !important;
+    }
+    .badge {
+        font-weight: 500;
+        font-size: 0.85rem;
+    }
+</style>
+{% endblock %}

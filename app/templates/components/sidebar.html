@@ -1370,7 +1370,7 @@
         {% endif %}
 
 {# Procurement & Payables Subgroup #}
-{% if has_privilege('finance:manage_orders') or has_privilege('finance:approve_lpo') or has_privilege('finance:supplier_accounts') or has_privilege('finance:approve_payments') or has_privilege('finance:doctor_accounts') %}
+{% if has_privilege('finance:manage_orders') or has_privilege('finance:approve_lpo') or has_privilege('finance:supplier_accounts') or has_privilege('finance:approve_payments') or has_privilege('finance:doctor_accounts') or has_privilege('finance:approve_petty_cash') %}
 <li class="dropdown-subgroup">
     <button class="dropdown-sub-btn flex items-center justify-between w-full p-2 text-sm rounded-lg hover:bg-emerald-200 transition-all dark:hover:bg-gray-600 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-400">
         <div class="flex items-center space-x-3">
@@ -1425,6 +1425,13 @@
             </a>
         </li>
         {% endif %}
+        <li>
+            <a href="{{ url_for('finance_web_bp.petty_cash_requests') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                <i class="fas fa-wallet text-orange-500"></i>
+                <span class="sidebar-text transition-opacity duration-300">Approve Petty Cash</span>
+                <span class="px-1.5 py-0.5 bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-200 text-xs rounded-full">New</span>
+            </a>
+        </li>
     </ul>
 </li>
 {% endif %}
@@ -1795,7 +1802,422 @@
                     {% endif %}
                 </ul>
             </li>
-            {% endif %} {# Board Module Section #} {% if has_privilege('board:dashboard') or has_privilege('board:financials') or has_privilege('board:strategy') or has_privilege('board:resources') %}
+            {% endif %}
+            
+            {# Operations Management #}
+{% if has_privilege('operations:dashboard') or has_privilege('operations:kitchen') or has_privilege('operations:store') or has_privilege('operations:supplier') or has_privilege('operations:account') or has_privilege('operations:farm') or has_privilege('operations:fleet') or has_privilege('operations:reports') %}
+<li class="dropdown-group">
+    <button class="dropdown-btn flex items-center justify-between w-full p-3 rounded-lg hover:bg-emerald-100 transition-all dark:hover:bg-gray-700 dark:text-gray-200 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        <div class="flex items-center space-x-3">
+            <i class="fas fa-cogs text-emerald-600 dark:text-emerald-400"></i>
+            <span class="sidebar-text transition-opacity duration-300">Operations Module</span>
+        </div>
+        <i class="fas fa-chevron-down text-xs transition-transform duration-200 text-gray-400 dark:text-gray-500 sidebar-text"></i>
+    </button>
+    <ul class="dropdown-content ml-6 pl-3 border-l-2 border-emerald-300 dark:border-emerald-700 space-y-1 mt-1">
+
+        {# Dashboard #}
+        {% if has_privilege('operations:dashboard') %}
+        <li>
+            <a href="{{ url_for('operations_web_bp.dashboard') }}" class="flex items-center space-x-3 p-2 text-sm rounded-lg hover:bg-emerald-200 transition-all dark:hover:bg-gray-600 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                <i class="fas fa-tachometer-alt text-blue-500"></i>
+                <span class="sidebar-text transition-opacity duration-300">Operations Dashboard</span>
+            </a>
+        </li>
+        {% endif %}
+
+        {# Account Management Subgroup (Petty Cash) #}
+        {% if has_privilege('operations:account') %}
+        <li class="dropdown-subgroup">
+            <button class="dropdown-sub-btn flex items-center justify-between w-full p-2 text-sm rounded-lg hover:bg-emerald-200 transition-all dark:hover:bg-gray-600 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-wallet text-teal-600 dark:text-teal-400"></i>
+                    <span class="sidebar-text transition-opacity duration-300">Account Management</span>
+                </div>
+                <i class="fas fa-chevron-down text-xs transition-transform duration-200 text-gray-400 dark:text-gray-500"></i>
+            </button>
+            <ul class="dropdown-subcontent ml-4 pl-3 border-l-2 border-emerald-400 dark:border-emerald-600 space-y-1 mt-1">
+                <li>
+                    <a href="{{ url_for('operations_web_bp.petty_cash_balance') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                        <i class="fas fa-coins text-teal-500"></i>
+                        <span class="sidebar-text transition-opacity duration-300">Petty Cash Balance</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('operations_web_bp.petty_cash_transactions') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                        <i class="fas fa-exchange-alt text-teal-500"></i>
+                        <span class="sidebar-text transition-opacity duration-300">Transactions</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('operations_web_bp.petty_cash_requests') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                        <i class="fas fa-hand-holding-usd text-teal-500"></i>
+                        <span class="sidebar-text transition-opacity duration-300">Cash Requests</span>
+                    </a>
+                </li>
+            </ul>
+        </li>
+        {% endif %}
+
+{# Kitchen Management Subgroup #}
+{% if has_privilege('operations:kitchen') %}
+<li class="dropdown-subgroup">
+    <button class="dropdown-sub-btn flex items-center justify-between w-full p-2 text-sm rounded-lg hover:bg-emerald-200 transition-all dark:hover:bg-gray-600 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+        <div class="flex items-center space-x-3">
+            <i class="fas fa-utensils text-amber-600 dark:text-amber-400"></i>
+            <span class="sidebar-text transition-opacity duration-300">Kitchen Management</span>
+        </div>
+        <i class="fas fa-chevron-down text-xs transition-transform duration-200 text-gray-400 dark:text-gray-500"></i>
+    </button>
+    <ul class="dropdown-subcontent ml-4 pl-3 border-l-2 border-emerald-400 dark:border-emerald-600 space-y-1 mt-1">
+        <li>
+            <a href="{{ url_for('operations_web_bp.kitchen_inventory') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                <i class="fas fa-boxes text-amber-500"></i>
+                <span class="sidebar-text transition-opacity duration-300">Inventory</span>
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('operations_web_bp.kitchen_budgeting') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                <i class="fas fa-chart-line text-amber-500"></i>
+                <span class="sidebar-text transition-opacity duration-300">Budgeting</span>
+            </a>
+        </li>
+
+        <li>
+            <a href="{{ url_for('operations_web_bp.kitchen_menu') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                <i class="fas fa-utensil-spoon text-amber-500"></i>
+                <span class="sidebar-text transition-opacity duration-300">Menu Planning</span>
+            </a>
+        </li>
+                <li>
+            <a href="{{ url_for('operations_web_bp.kitchen_reports') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                <i class="fas fa-chart-bar text-amber-500"></i>
+                <span class="sidebar-text transition-opacity duration-300">Reports</span>
+            </a>
+        </li>
+    </ul>
+</li>
+{% endif %}
+{# Store Management Subgroup #}
+{% if has_privilege('operations:store') %}
+<li class="dropdown-subgroup">
+    <button class="dropdown-sub-btn flex items-center justify-between w-full p-2 text-sm rounded-lg hover:bg-emerald-200 transition-all dark:hover:bg-gray-600 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+        <div class="flex items-center space-x-3">
+            <i class="fas fa-store text-blue-600 dark:text-blue-400"></i>
+            <span class="sidebar-text transition-opacity duration-300">Store Management</span>
+        </div>
+        <i class="fas fa-chevron-down text-xs transition-transform duration-200 text-gray-400 dark:text-gray-500"></i>
+    </button>
+    <ul class="dropdown-subcontent ml-4 pl-3 border-l-2 border-emerald-400 dark:border-emerald-600 space-y-1 mt-1">
+        <li>
+            <a href="{{ url_for('operations_web_bp.store_inventory') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                <i class="fas fa-boxes text-blue-500"></i>
+                <span class="sidebar-text transition-opacity duration-300">Inventory</span>
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('operations_web_bp.store_items_management') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                <i class="fas fa-tags text-blue-500"></i>
+                <span class="sidebar-text transition-opacity duration-300">Items Management</span>
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('operations_web_bp.store_maintenance') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                <i class="fas fa-tools text-blue-500"></i>
+                <span class="sidebar-text transition-opacity duration-300">Maintenance</span>
+            </a>
+        </li>
+        <li>
+    <a href="{{ url_for('operations_web_bp.store_reports') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+        <i class="fas fa-chart-line text-blue-500"></i>
+        <span class="sidebar-text transition-opacity duration-300">Reports</span>
+    </a>
+</li>
+    </ul>
+</li>
+{% endif %}
+
+        {# Supplier Management Subgroup #}
+        {% if has_privilege('operations:supplier') %}
+        <li class="dropdown-subgroup">
+            <button class="dropdown-sub-btn flex items-center justify-between w-full p-2 text-sm rounded-lg hover:bg-emerald-200 transition-all dark:hover:bg-gray-600 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-truck text-indigo-600 dark:text-indigo-400"></i>
+                    <span class="sidebar-text transition-opacity duration-300">Supplier Management</span>
+                </div>
+                <i class="fas fa-chevron-down text-xs transition-transform duration-200 text-gray-400 dark:text-gray-500"></i>
+            </button>
+            <ul class="dropdown-subcontent ml-4 pl-3 border-l-2 border-emerald-400 dark:border-emerald-600 space-y-1 mt-1">
+                <li>
+                    <a href="{{ url_for('operations_web_bp.supplier_list') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                        <i class="fas fa-address-card text-indigo-500"></i>
+                        <span class="sidebar-text transition-opacity duration-300">Suppliers Directory</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('operations_web_bp.supplier_orders') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                        <i class="fas fa-clipboard-list text-indigo-500"></i>
+                        <span class="sidebar-text transition-opacity duration-300">Supplier Orders</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('operations_web_bp.supplier_payments') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                        <i class="fas fa-money-bill-wave text-indigo-500"></i>
+                        <span class="sidebar-text transition-opacity duration-300">Supplier Payments</span>
+                    </a>
+                </li>
+            </ul>
+        </li>
+        {% endif %}
+
+
+        {# Farm Management Subgroup #}
+        {% if has_privilege('operations:farm') %}
+        <li class="dropdown-subgroup">
+            <button class="dropdown-sub-btn flex items-center justify-between w-full p-2 text-sm rounded-lg hover:bg-emerald-200 transition-all dark:hover:bg-gray-600 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-tractor text-green-600 dark:text-green-400"></i>
+                    <span class="sidebar-text transition-opacity duration-300">Farm Management</span>
+                </div>
+                <i class="fas fa-chevron-down text-xs transition-transform duration-200 text-gray-400 dark:text-gray-500"></i>
+            </button>
+            <ul class="dropdown-subcontent ml-4 pl-3 border-l-2 border-emerald-400 dark:border-emerald-600 space-y-1 mt-1">
+                                <li>
+                    <a href="{{ url_for('operations_web_bp.farm_inventory') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                        <i class="fas fa-boxes text-green-500"></i>
+                        <span class="sidebar-text transition-opacity duration-300">Inventory</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('operations_web_bp.farm_livestock') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                        <i class="fas fa-piggy-bank text-green-500"></i>
+                        <span class="sidebar-text transition-opacity duration-300">Livestock</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('operations_web_bp.farm_crops') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                        <i class="fas fa-seedling text-green-500"></i>
+                        <span class="sidebar-text transition-opacity duration-300">Crops</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('operations_web_bp.farm_harvest') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                        <i class="fas fa-apple-alt text-green-500"></i>
+                        <span class="sidebar-text transition-opacity duration-300">Harvest Records</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('operations_web_bp.farm_inputs') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                        <i class="fas fa-boxes text-green-500"></i>
+                        <span class="sidebar-text transition-opacity duration-300">Inputs & Supplies</span>
+                    </a>
+                </li>
+
+                <!-- New links -->
+
+
+                <li>
+                    <a href="{{ url_for('operations_web_bp.farm_revenue') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                        <i class="fas fa-money-bill-wave text-green-500"></i>
+                        <span class="sidebar-text transition-opacity duration-300">Revenue</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('operations_web_bp.farm_expenses') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                        <i class="fas fa-money-check-alt text-green-500"></i>
+                        <span class="sidebar-text transition-opacity duration-300">Add Expense</span>
+                    </a>
+                </li>
+                                <li>
+                    <a href="{{ url_for('operations_web_bp.farm_reports') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                        <i class="fas fa-chart-line text-green-500"></i>
+                        <span class="sidebar-text transition-opacity duration-300">Reports</span>
+                    </a>
+                </li>
+            </ul>
+        </li>
+        {% endif %}
+
+{# Fleet Management Subgroup #}
+{% if has_privilege('operations:fleet') %}
+<li class="dropdown-subgroup">
+    <button class="dropdown-sub-btn flex items-center justify-between w-full p-2 text-sm rounded-lg hover:bg-emerald-200 transition-all dark:hover:bg-gray-600 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+        <div class="flex items-center space-x-3">
+            <i class="fas fa-truck text-purple-600 dark:text-purple-400"></i>
+            <span class="sidebar-text transition-opacity duration-300">Fleet Management</span>
+        </div>
+        <i class="fas fa-chevron-down text-xs transition-transform duration-200 text-gray-400 dark:text-gray-500"></i>
+    </button>
+    <ul class="dropdown-subcontent ml-4 pl-3 border-l-2 border-emerald-400 dark:border-emerald-600 space-y-1 mt-1">
+        <li>
+            <a href="{{ url_for('operations_web_bp.fleet_inventory') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                <i class="fas fa-boxes text-purple-500"></i>
+                <span class="sidebar-text transition-opacity duration-300">Fleet Inventory</span>
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('operations_web_bp.fleet_vehicles') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                <i class="fas fa-car text-purple-500"></i>
+                <span class="sidebar-text transition-opacity duration-300">Vehicle Registry</span>
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('operations_web_bp.fleet_maintenance') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                <i class="fas fa-wrench text-purple-500"></i>
+                <span class="sidebar-text transition-opacity duration-300">Maintenance</span>
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('operations_web_bp.fleet_fuel') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                <i class="fas fa-gas-pump text-purple-500"></i>
+                <span class="sidebar-text transition-opacity duration-300">Fuel Management</span>
+            </a>
+        </li>
+        <li>
+            <a href="{{ url_for('operations_web_bp.fleet_trips') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                <i class="fas fa-route text-purple-500"></i>
+                <span class="sidebar-text transition-opacity duration-300">Trip Logs</span>
+            </a>
+        </li>
+        <li>
+    <a href="{{ url_for('operations_web_bp.fleet_reports') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+        <i class="fas fa-chart-line text-purple-500"></i>
+        <span class="sidebar-text transition-opacity duration-300">Reports</span>
+    </a>
+</li>
+    </ul>
+</li>
+{% endif %}
+
+{# Procurement & Inventory Subgroup #}
+{% if has_privilege('operations:procurement') %}
+<li class="dropdown-subgroup">
+    
+    <button class="dropdown-sub-btn flex items-center justify-between w-full p-2 text-sm rounded-lg 
+                   hover:bg-emerald-200 transition-all 
+                   dark:hover:bg-gray-600 dark:text-gray-300 text-gray-700 
+                   focus:outline-none focus:ring-2 focus:ring-emerald-400">
+        
+        <div class="flex items-center space-x-3">
+            <i class="fas fa-shopping-cart text-emerald-600 dark:text-emerald-400"></i>
+            <span class="sidebar-text transition-opacity duration-300">Procurement & Inventory</span>
+        </div>
+
+        <i class="fas fa-chevron-down text-xs transition-transform duration-200 text-gray-400 dark:text-gray-500"></i>
+    </button>
+
+    <ul class="dropdown-subcontent ml-4 pl-3 border-l-2 border-emerald-400 dark:border-emerald-600 space-y-1 mt-1">
+
+        {% if has_privilege('procurement:requests:view') %}
+        <li>
+            <a href="{{ url_for('operations_web_bp.procurement_requests') }}"
+               class="flex items-center space-x-3 p-2 text-xs rounded-lg 
+                      hover:bg-emerald-300 transition-all 
+                      dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 
+                      focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                <i class="fas fa-file-alt text-blue-500"></i>
+                <span class="sidebar-text transition-opacity duration-300">Requests</span>
+            </a>
+        </li>
+        {% endif %}
+
+        {% if has_privilege('procurement:requests:approve') %}
+        <li>
+            <a href="{{ url_for('operations_web_bp.procurement_requests_approve') }}"
+               class="flex items-center space-x-3 p-2 text-xs rounded-lg 
+                      hover:bg-emerald-300 transition-all 
+                      dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 
+                      focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                <i class="fas fa-check-circle text-green-500"></i>
+                <span class="sidebar-text transition-opacity duration-300">Approve Requests</span>
+            </a>
+        </li>
+        {% endif %}
+
+        {% if has_privilege('procurement:orders:view') %}
+        <li>
+            <a href="{{ url_for('operations_web_bp.procurement_orders') }}"
+               class="flex items-center space-x-3 p-2 text-xs rounded-lg 
+                      hover:bg-emerald-300 transition-all 
+                      dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 
+                      focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                <i class="fas fa-truck text-purple-500"></i>
+                <span class="sidebar-text transition-opacity duration-300">Purchase Orders</span>
+            </a>
+        </li>
+        {% endif %}
+
+        {% if has_privilege('procurement:receiving:view') %}
+        <li>
+            <a href="{{ url_for('operations_web_bp.procurement_receiving') }}"
+               class="flex items-center space-x-3 p-2 text-xs rounded-lg 
+                      hover:bg-emerald-300 transition-all 
+                      dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 
+                      focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                <i class="fas fa-warehouse text-orange-500"></i>
+                <span class="sidebar-text transition-opacity duration-300">Receiving</span>
+            </a>
+        </li>
+        {% endif %}
+
+    </ul>
+</li>
+{% endif %}
+
+        {# Operations Reports #}
+        {% if has_privilege('operations:reports') %}
+        <li class="dropdown-subgroup">
+            <button class="dropdown-sub-btn flex items-center justify-between w-full p-2 text-sm rounded-lg hover:bg-emerald-200 transition-all dark:hover:bg-gray-600 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-chart-bar text-cyan-600 dark:text-cyan-400"></i>
+                    <span class="sidebar-text transition-opacity duration-300">Operations Reports</span>
+                </div>
+                <i class="fas fa-chevron-down text-xs transition-transform duration-200 text-gray-400 dark:text-gray-500"></i>
+            </button>
+            <ul class="dropdown-subcontent ml-4 pl-3 border-l-2 border-emerald-400 dark:border-emerald-600 space-y-1 mt-1">
+                <li>
+                    <a href="{{ url_for('operations_web_bp.kitchen_reports') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                        <i class="fas fa-chart-line text-amber-500"></i>
+                        <span class="sidebar-text transition-opacity duration-300">Kitchen Reports</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('operations_web_bp.store_reports') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                        <i class="fas fa-chart-line text-blue-500"></i>
+                        <span class="sidebar-text transition-opacity duration-300">Store Reports</span>
+                    </a>
+                </li>
+
+                                <li>
+                    <a href="{{ url_for('operations_web_bp.farm_reports') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                        <i class="fas fa-chart-line text-green-500"></i>
+                        <span class="sidebar-text transition-opacity duration-300">Farm Reports</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('operations_web_bp.fleet_reports') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                        <i class="fas fa-chart-line text-purple-500"></i>
+                        <span class="sidebar-text transition-opacity duration-300">Fleet Reports</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('operations_web_bp.account_reports') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-emerald-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+                        <i class="fas fa-chart-line text-teal-500"></i>
+                        <span class="sidebar-text transition-opacity duration-300">Account Reports</span>
+                    </a>
+                </li>
+
+            </ul>
+        </li>
+        {% endif %}
+
+    </ul>
+</li>
+{% endif %}
+            
+            
+            
+            {# Board Module Section #} {% if has_privilege('board:dashboard') or has_privilege('board:financials') or has_privilege('board:strategy') or has_privilege('board:resources') %}
             <li class="dropdown-group">
                 <button class="dropdown-btn flex items-center justify-between w-full p-3 rounded-lg hover:bg-blue-100 transition-all dark:hover:bg-gray-700 dark:text-gray-200 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <div class="flex items-center space-x-3">
@@ -1846,7 +2268,11 @@
                     {% endif %}
                 </ul>
             </li>
-            {% endif %}{# Communication Department Section #}
+            {% endif %}
+            
+            
+            
+            {# Communication Department Section #}
 {% if has_privilege('comms:dashboard') or has_privilege('comms:sms_patients') or has_privilege('comms:sms_staff') 
     or has_privilege('comms:email_bulk') or has_privilege('comms:templates') or has_privilege('comms:reminders') 
     or has_privilege('comms:notifications') or has_privilege('comms:analytics') %}
@@ -2133,7 +2559,7 @@
 }
 
 .dropdown-subcontent.active {
-    max-height: 16rem; /* 64px = 16rem */
+    max-height: 10rem; /* 64px = 16rem */
     opacity: 1;
     overflow-y: auto;
 }

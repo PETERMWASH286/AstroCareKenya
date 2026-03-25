@@ -1,0 +1,410 @@
+{% extends "base.html" %}
+
+{% block title %}Kitchen Reports{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Header -->
+    <div class="bg-gradient-primary text-white p-4 rounded-4 mb-4 shadow-sm">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+            <div>
+                <h1 class="display-6 fw-bold">Kitchen Reports</h1>
+                <p class="text-white-80 mb-0">Comprehensive analysis of inventory, usage, costs, and budgets</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+            <h6 class="text-uppercase fw-bold text-primary"><i class="fas fa-filter me-2"></i>Filters</h6>
+        </div>
+        <div class="card-body p-4">
+            <form method="GET" class="row g-3">
+                <div class="col-md-2">
+                    <label class="form-label">Period Type</label>
+                    <select name="period" class="form-select">
+                        <option value="month" {% if period == 'month' %}selected{% endif %}>Month</option>
+                        <option value="year" {% if period == 'year' %}selected{% endif %}>Year</option>
+                        <option value="custom" {% if period == 'custom' %}selected{% endif %}>Custom</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Year</label>
+                    <select name="year" class="form-select">
+                        {% for y in range(2020, 2030) %}
+                        <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Month</label>
+                    <select name="month" class="form-select">
+                        {% for m in range(1,13) %}
+                        <option value="{{ m }}" {% if m == month %}selected{% endif %}>{{ month_names[m-1] }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2" id="startDateGroup">
+                    <label class="form-label">Start Date</label>
+                    <input type="date" name="start_date" class="form-control" value="{{ start_date or '' }}">
+                </div>
+                <div class="col-md-2" id="endDateGroup">
+                    <label class="form-label">End Date</label>
+                    <input type="date" name="end_date" class="form-control" value="{{ end_date or '' }}">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100"><i class="fas fa-search me-2"></i>Apply</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-primary mb-1">Total Items</p>
+                            <h2 class="mb-0 fw-bold">{{ total_items }}</h2>
+                        </div>
+                        <div class="icon-circle bg-primary bg-opacity-10">
+                            <i class="fas fa-boxes text-primary fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-info mb-1">Total Quantity</p>
+                            <h2 class="mb-0 fw-bold">{{ total_quantity|round|int }}</h2>
+                        </div>
+                        <div class="icon-circle bg-info bg-opacity-10">
+                            <i class="fas fa-weight text-info fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-warning mb-1">Low Stock Items</p>
+                            <h2 class="mb-0 fw-bold">{{ low_stock_count }}</h2>
+                        </div>
+                        <div class="icon-circle bg-warning bg-opacity-10">
+                            <i class="fas fa-exclamation-triangle text-warning fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-success mb-1">Total Spent</p>
+                            <h2 class="mb-0 fw-bold">KES {{ "{:,.2f}".format(total_cost) }}</h2>
+                        </div>
+                        <div class="icon-circle bg-success bg-opacity-10">
+                            <i class="fas fa-chart-line text-success fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <ul class="nav nav-tabs mb-4" id="reportTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="usage-tab" data-bs-toggle="tab" data-bs-target="#usage" type="button" role="tab">
+                <i class="fas fa-utensils me-2"></i>Usage
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="cost-tab" data-bs-toggle="tab" data-bs-target="#cost" type="button" role="tab">
+                <i class="fas fa-chart-line me-2"></i>Cost Analysis
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="inventory-tab" data-bs-toggle="tab" data-bs-target="#inventory" type="button" role="tab">
+                <i class="fas fa-boxes me-2"></i>Inventory
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="budget-tab" data-bs-toggle="tab" data-bs-target="#budget" type="button" role="tab">
+                <i class="fas fa-chart-pie me-2"></i>Budget vs Actual
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+        <!-- Usage Tab -->
+        <div class="tab-pane fade show active" id="usage" role="tabpanel">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm rounded-4 mb-4">
+                        <div class="card-header bg-transparent border-0 pt-4 px-4">
+                            <h6 class="text-uppercase fw-bold text-primary">Top 10 Consumed Items</h6>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr><th>Item</th><th>Quantity Used</th><th>Unit</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for item in top_consumed %}
+                                        <tr>
+                                            <td>{{ item.name }}</td>
+                                            <td>{{ "{:,.2f}".format(item.total_used) }}</td>
+                                            <td>{{ item.unit }}</td>
+                                        </tr>
+                                        {% else %}
+                                        <tr><td colspan="3" class="text-center text-muted">No usage data</td></tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm rounded-4 mb-4">
+                        <div class="card-header bg-transparent border-0 pt-4 px-4">
+                            <h6 class="text-uppercase fw-bold text-primary">Usage Trend (Last 12 Months)</h6>
+                        </div>
+                        <div class="card-body p-4">
+                            <canvas id="usageTrendChart" style="height: 300px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cost Analysis Tab -->
+        <div class="tab-pane fade" id="cost" role="tabpanel">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm rounded-4 mb-4">
+                        <div class="card-header bg-transparent border-0 pt-4 px-4">
+                            <h6 class="text-uppercase fw-bold text-primary">Spending by Category</h6>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead><tr><th>Category</th><th>Amount Spent (KES)</th></tr></thead>
+                                    <tbody>
+                                        {% for cat, amount in cost_by_category.items() %}
+                                        <tr>
+                                            <td>{{ cat }}</td>
+                                            <td>{{ "{:,.2f}".format(amount) }}</td>
+                                        </tr>
+                                        {% else %}
+                                        <tr><td colspan="2" class="text-center text-muted">No cost data</td></tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm rounded-4 mb-4">
+                        <div class="card-header bg-transparent border-0 pt-4 px-4">
+                            <h6 class="text-uppercase fw-bold text-primary">Category Spending (Chart)</h6>
+                        </div>
+                        <div class="card-body p-4">
+                            <canvas id="costCategoryChart" style="height: 300px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Inventory Tab -->
+        <div class="tab-pane fade" id="inventory" role="tabpanel">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h6 class="text-uppercase fw-bold text-primary">Low Stock Items</h6>
+                </div>
+                <div class="card-body p-4">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr><th>Item</th><th>Current Quantity</th><th>Unit</th><th>Reorder Level</th><th>Status</th></tr>
+                            </thead>
+                            <tbody>
+                                {% for item in low_stock_items %}
+                                <tr>
+                                    <td>{{ item.name }}</td>
+                                    <td class="text-danger fw-bold">{{ "{:,.2f}".format(item.quantity) }}</td>
+                                    <td>{{ item.unit }}</td>
+                                    <td>{{ item.reorder_level }}</td>
+                                    <td><span class="badge bg-danger">Low Stock</span></td>
+                                </tr>
+                                {% else %}
+                                <tr><td colspan="5" class="text-center text-muted">No low stock items</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Budget vs Actual Tab -->
+        <div class="tab-pane fade" id="budget" role="tabpanel">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h6 class="text-uppercase fw-bold text-primary">Budget vs Actual Spending</h6>
+                </div>
+                <div class="card-body p-4">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Category</th>
+                                    <th>Budget (KES)</th>
+                                    <th>Actual (KES)</th>
+                                    <th>Variance (KES)</th>
+                                    <th>Variance (%)</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for b in budget_vs_actual %}
+                                <tr>
+                                    <td>{{ b.category }}</td>
+                                    <td>{{ "{:,.2f}".format(b.budget) }}</td>
+                                    <td>{{ "{:,.2f}".format(b.actual) }}</td>
+                                    <td class="{% if b.variance < 0 %}text-danger{% else %}text-success{% endif %}">
+                                        {{ "{:,.2f}".format(b.variance) }}
+                                    </td>
+                                    <td class="{% if b.variance_pct < 0 %}text-danger{% else %}text-success{% endif %}">
+                                        {{ "{:,.1f}".format(b.variance_pct) }}%
+                                    </td>
+                                    <td>
+                                        {% if b.variance < 0 %}
+                                        <span class="badge bg-danger">Overspent</span>
+                                        {% else %}
+                                        <span class="badge bg-success">Under budget</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr><td colspan="6" class="text-center text-muted">No budget data available</td></tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr class="fw-bold">
+                                    <td>Total</td>
+                                    <td>{{ "{:,.2f}".format(budget_vs_actual|sum(attribute='budget')) }}</td>
+                                    <td>{{ "{:,.2f}".format(budget_vs_actual|sum(attribute='actual')) }}</td>
+                                    <td class="{% if budget_vs_actual|sum(attribute='variance') < 0 %}text-danger{% else %}text-success{% endif %}">
+                                        {{ "{:,.2f}".format(budget_vs_actual|sum(attribute='variance')) }}
+                                    </td>
+                                    <td></td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Usage Trend Chart
+        const ctxTrend = document.getElementById('usageTrendChart').getContext('2d');
+        new Chart(ctxTrend, {
+            type: 'line',
+            data: {
+                labels: {{ months|tojson }},
+                datasets: [{
+                    label: 'Total Usage (units)',
+                    data: {{ usage_trend|tojson }},
+                    borderColor: 'rgba(102,126,234,1)',
+                    backgroundColor: 'rgba(102,126,234,0.1)',
+                    fill: true
+                }]
+            }
+        });
+
+        // Cost Category Pie Chart
+        const ctxCost = document.getElementById('costCategoryChart').getContext('2d');
+        new Chart(ctxCost, {
+            type: 'pie',
+            data: {
+                labels: {{ cost_by_category.keys()|list|tojson }},
+                datasets: [{
+                    data: {{ cost_by_category.values()|list|tojson }},
+                    backgroundColor: [
+                        '#667eea', '#764ba2', '#f6ad55', '#f687b3', '#48bb78',
+                        '#4299e1', '#ed8936', '#9f7aea', '#f56565', '#38b2ac'
+                    ]
+                }]
+            }
+        });
+    });
+</script>
+
+<!-- Custom JavaScript to toggle date fields based on period -->
+<script>
+    function toggleDateFields() {
+        const period = document.querySelector('select[name="period"]').value;
+        const startGroup = document.getElementById('startDateGroup');
+        const endGroup = document.getElementById('endDateGroup');
+        if (period === 'custom') {
+            startGroup.style.display = 'block';
+            endGroup.style.display = 'block';
+        } else {
+            startGroup.style.display = 'none';
+            endGroup.style.display = 'none';
+        }
+    }
+    toggleDateFields();
+    document.querySelector('select[name="period"]').addEventListener('change', toggleDateFields);
+</script>
+
+<style>
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .text-white-80 {
+        color: rgba(255,255,255,0.8);
+    }
+    .icon-circle {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .hover-lift {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hover-lift:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.75rem 1.5rem rgba(0,0,0,0.1) !important;
+    }
+    .table > :not(caption) > * > * {
+        vertical-align: middle;
+    }
+</style>
+{% endblock %}

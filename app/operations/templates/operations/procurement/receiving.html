@@ -1,0 +1,430 @@
+{% extends "base.html" %}
+
+{% block title %}Receive Goods{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Header -->
+    <div class="bg-gradient-primary text-white p-4 rounded-4 mb-4 shadow-sm">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+            <div>
+                <h1 class="display-6 fw-bold">Receive Goods</h1>
+                <p class="text-white-80 mb-0">Record incoming deliveries and update inventory</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-primary mb-1">Pending Orders</p>
+                            <h2 class="mb-0 fw-bold">{{ orders|length }}</h2>
+                        </div>
+                        <div class="icon-circle bg-primary bg-opacity-10">
+                            <i class="fas fa-truck text-primary fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-warning mb-1">Total Items Pending</p>
+                            <h2 class="mb-0 fw-bold">{{ orders|sum(attribute='remaining_quantity')|round|int }}</h2>
+                        </div>
+                        <div class="icon-circle bg-warning bg-opacity-10">
+                            <i class="fas fa-boxes text-warning fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+<div class="col-md-3">
+    <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+        <div class="card-body p-4">
+            <div class="d-flex align-items-center">
+                <div class="flex-grow-1">
+                    <p class="text-uppercase small fw-bold text-success mb-1">Today's Receipts</p>
+                    <h2 class="mb-0 fw-bold">{{ today_receipts_count }}</h2>
+                </div>
+                <div class="icon-circle bg-success bg-opacity-10">
+                    <i class="fas fa-check-circle text-success fa-2x"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-info mb-1">Total Received (All)</p>
+                            <h2 class="mb-0 fw-bold">{{ recent_receipts|sum(attribute='quantity_received')|round|int }}</h2>
+                        </div>
+                        <div class="icon-circle bg-info bg-opacity-10">
+                            <i class="fas fa-chart-line text-info fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+            <h6 class="text-uppercase fw-bold text-primary"><i class="fas fa-filter me-2"></i>Filters</h6>
+        </div>
+        <div class="card-body p-4">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">All</option>
+                        {% for status in statuses %}
+                        <option value="{{ status }}" {% if selected_status == status %}selected{% endif %}>{{ status|replace('_', ' ')|title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Supplier</label>
+                    <select name="supplier" class="form-select">
+                        <option value="">All</option>
+                        {% for sup in suppliers %}
+                        <option value="{{ sup.id }}" {% if selected_supplier == sup.id %}selected{% endif %}>{{ sup.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Department</label>
+                    <select name="department" class="form-select">
+                        <option value="">All</option>
+                        {% for dept in departments %}
+                        <option value="{{ dept }}" {% if selected_department == dept %}selected{% endif %}>{{ dept|title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Search</label>
+                    <input type="text" name="search" class="form-control" placeholder="Order #, item, supplier..." value="{{ search or '' }}">
+                </div>
+                <div class="col-md-12 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-search me-2"></i>Apply</button>
+                    <a href="{{ url_for('operations_web_bp.procurement_receiving') }}" class="btn btn-secondary"><i class="fas fa-times me-2"></i>Clear</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Orders Table (Enhanced) -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+            <h6 class="text-uppercase fw-bold text-primary"><i class="fas fa-list me-2"></i>Pending Deliveries</h6>
+        </div>
+        <div class="card-body p-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle" id="ordersTable">
+                    <thead class="bg-light">
+                        的人
+                            <th>Order #</th>
+                            <th>Order Date</th>
+                            <th>Supplier</th>
+                            <th>Item</th>
+                            <th>Ordered</th>
+                            <th>Received</th>
+                            <th>Remaining</th>
+                            <th>Unit Price</th>
+                            <th>Total Value</th>
+                            <th>Department</th>
+                            <th>Requester</th>
+                            <th>Expected Delivery</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in orders %}
+                        的人
+                            <td class="fw-semibold">{{ order.order_number }}</td>
+                            <td>{{ order.order_date.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ order.supplier.name }}</td>
+                            <td>{{ order.request.item_name }}</td>
+                            <td>{{ order.request.quantity }} {{ order.request.unit }}</td>
+                            <td>{{ order.request.quantity - order.remaining_quantity }} {{ order.request.unit }}</td>
+                            <td class="fw-bold">{{ order.remaining_quantity }} {{ order.request.unit }}</td>
+                            <td>KES {{ "{:,.2f}".format(order.unit_price) if order.unit_price else '—' }}</td>
+                            <td class="fw-bold">KES {{ "{:,.2f}".format(order.total_amount) }}</td>
+                            <td>
+                                <span class="badge bg-{{ 'info' if order.request.department == 'kitchen' else 'success' if order.request.department == 'store' else 'warning' if order.request.department == 'farm' else 'secondary' }}">
+                                    {{ order.request.department|title }}
+                                </span>
+                            </td>
+                            <td>{{ order.request.requester.full_name }}</td>
+                            <td>{{ order.expected_delivery.strftime('%Y-%m-%d') if order.expected_delivery else '—' }}</td>
+                            <td>
+                                <span class="badge bg-{{ 'warning' if order.status == 'partially_received' else 'secondary' }}">
+                                    {{ order.status|replace('_', ' ')|title }}
+                                </span>
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-success receive-btn"
+                                        data-order-id="{{ order.id }}"
+                                        data-order-number="{{ order.order_number }}"
+                                        data-item="{{ order.request.item_name }}"
+                                        data-quantity="{{ order.request.quantity }}"
+                                        data-remaining="{{ order.remaining_quantity }}"
+                                        data-unit="{{ order.request.unit }}"
+                                        data-unit-price="{{ order.unit_price }}"
+                                        data-total="{{ order.total_amount }}"
+                                        data-department="{{ order.request.department|title }}"
+                                        data-requester="{{ order.request.requester.full_name }}"
+                                        data-supplier="{{ order.supplier.name }}">
+                                    <i class="fas fa-warehouse"></i> Receive
+                                </button>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="14" class="text-center py-5 text-muted">No pending deliveries.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Receipts Table (Enhanced) -->
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+            <h6 class="text-uppercase fw-bold text-primary"><i class="fas fa-history me-2"></i>Recent Receipts</h6>
+        </div>
+        <div class="card-body p-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>Order #</th>
+                            <th>Item</th>
+                            <th>Quantity</th>
+                            <th>Unit Price</th>
+                            <th>Total</th>
+                            <th>Batch</th>
+                            <th>Expiry</th>
+                            <th>Condition</th>
+                            <th>Received By</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for receipt in recent_receipts %}
+                        <tr>
+                            <td>{{ receipt.received_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td><a href="{{ url_for('operations_web_bp.procurement_orders') }}?search={{ receipt.order.order_number }}">{{ receipt.order.order_number }}</a></td>
+                            <td>{{ receipt.order.request.item_name }}</td>
+                            <td>{{ receipt.quantity_received }} {{ receipt.order.request.unit }}</td>
+                            <td>KES {{ "{:,.2f}".format(receipt.order.unit_price) if receipt.order.unit_price else '—' }}</td>
+                            <td class="fw-bold">KES {{ "{:,.2f}".format(receipt.quantity_received * (receipt.order.unit_price or 0)) }}</td>
+                            <td>{{ receipt.batch_number or '—' }}</td>
+                            <td>{{ receipt.expiration_date.strftime('%Y-%m-%d') if receipt.expiration_date else '—' }}</td>
+                            <td><span class="badge bg-{{ 'success' if receipt.condition == 'good' else 'danger' }}">{{ receipt.condition|title }}</span></td>
+                            <td>{{ receipt.receiver.full_name if receipt.receiver else '—' }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="10" class="text-center py-5 text-muted">No receipts yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Receive Modal (Enhanced) -->
+<div class="modal fade" id="receiveModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="POST">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title"><i class="fas fa-warehouse me-2"></i>Receive Goods</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="order_id" id="receiveOrderId">
+                    
+                    <!-- Order Details -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Order Number</label>
+                            <p class="form-control-plaintext" id="receiveOrderNumber"></p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Supplier</label>
+                            <p class="form-control-plaintext" id="receiveSupplier"></p>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Item</label>
+                            <p class="form-control-plaintext" id="receiveItem"></p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Unit Price</label>
+                            <p class="form-control-plaintext" id="receiveUnitPrice"></p>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Total Order Value</label>
+                            <p class="form-control-plaintext" id="receiveTotalValue"></p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Department / Requester</label>
+                            <p class="form-control-plaintext" id="receiveDepartmentRequester"></p>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Ordered Quantity</label>
+                            <p class="form-control-plaintext" id="receiveOrderedQty"></p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Remaining to Receive</label>
+                            <p class="form-control-plaintext fw-bold text-primary" id="receiveRemaining"></p>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <!-- Info Alert -->
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>What happens next?</strong><br>
+                        Upon receiving these goods:
+                        <ul class="mt-2 mb-0">
+                            <li>✅ Department inventory will be updated automatically</li>
+                            <li>💰 A supplier invoice will be created for the received quantity</li>
+                            <li>📊 The supplier's account will be credited (accounts payable increased)</li>
+                            <li>📝 The purchase order status will be updated</li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Receipt Details -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Quantity Received *</label>
+                            <input type="number" name="quantity_received" id="receiveQuantity" step="0.01" min="0.01" class="form-control" required>
+                            <small class="text-muted" id="receiveMaxHint"></small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Batch Number</label>
+                            <input type="text" name="batch_number" class="form-control">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Expiration Date</label>
+                            <input type="date" name="expiration_date" class="form-control">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Condition</label>
+                            <select name="condition" class="form-select">
+                                <option value="good">Good</option>
+                                <option value="damaged">Damaged</option>
+                                <option value="partial_damage">Partial Damage</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Notes</label>
+                        <textarea name="notes" class="form-control" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Confirm Receipt</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const receiveModal = document.getElementById('receiveModal');
+        if (receiveModal) {
+            const buttons = document.querySelectorAll('.receive-btn');
+            buttons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const orderId = this.dataset.orderId;
+                    const orderNumber = this.dataset.orderNumber;
+                    const item = this.dataset.item;
+                    const orderedQty = parseFloat(this.dataset.quantity);
+                    const remaining = parseFloat(this.dataset.remaining);
+                    const unit = this.dataset.unit;
+                    const unitPrice = parseFloat(this.dataset.unitPrice) || 0;
+                    const totalValue = parseFloat(this.dataset.total) || 0;
+                    const department = this.dataset.department;
+                    const requester = this.dataset.requester;
+                    const supplier = this.dataset.supplier;
+
+                    document.getElementById('receiveOrderId').value = orderId;
+                    document.getElementById('receiveOrderNumber').textContent = orderNumber;
+                    document.getElementById('receiveSupplier').textContent = supplier;
+                    document.getElementById('receiveItem').textContent = `${item} (${unit})`;
+                    document.getElementById('receiveUnitPrice').textContent = `KES ${unitPrice.toFixed(2)}`;
+                    document.getElementById('receiveTotalValue').textContent = `KES ${totalValue.toFixed(2)}`;
+                    document.getElementById('receiveDepartmentRequester').textContent = `${department} - ${requester}`;
+                    document.getElementById('receiveOrderedQty').textContent = `${orderedQty} ${unit}`;
+                    document.getElementById('receiveRemaining').textContent = `${remaining} ${unit}`;
+                    
+                    const quantityInput = document.getElementById('receiveQuantity');
+                    quantityInput.max = remaining;
+                    quantityInput.value = remaining;
+                    document.getElementById('receiveMaxHint').textContent = `Max: ${remaining} ${unit}`;
+                    
+                    new bootstrap.Modal(receiveModal).show();
+                });
+            });
+        }
+    });
+</script>
+
+<style>
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .text-white-80 {
+        color: rgba(255,255,255,0.8);
+    }
+    .icon-circle {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .hover-lift {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hover-lift:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.75rem 1.5rem rgba(0,0,0,0.1) !important;
+    }
+    .badge {
+        font-weight: 500;
+        font-size: 0.85rem;
+    }
+</style>
+{% endblock %}

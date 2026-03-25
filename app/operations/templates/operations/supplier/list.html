@@ -1,0 +1,274 @@
+{% extends "base.html" %}
+
+{% block title %}Suppliers Directory{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Header with gradient -->
+    <div class="bg-gradient-primary text-white p-4 rounded-4 mb-4 shadow-sm">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+            <div>
+                <h1 class="display-6 fw-bold">Suppliers Directory</h1>
+                <p class="text-white-80 mb-0">Manage your trusted suppliers and partners</p>
+            </div>
+            <div class="mt-3 mt-md-0">
+                <button class="btn btn-light rounded-pill" data-bs-toggle="modal" data-bs-target="#addSupplierModal">
+                    <i class="fas fa-plus-circle me-2"></i>New Supplier
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-primary mb-1">Total Suppliers</p>
+                            <h2 class="mb-0 fw-bold">{{ suppliers|length }}</h2>
+                        </div>
+                        <div class="icon-circle bg-primary bg-opacity-10">
+                            <i class="fas fa-truck text-primary fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-success mb-1">Active</p>
+                            <h2 class="mb-0 fw-bold">{{ suppliers|length }}</h2>
+                        </div>
+                        <div class="icon-circle bg-success bg-opacity-10">
+                            <i class="fas fa-check-circle text-success fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-warning mb-1">Categories</p>
+                            <h2 class="mb-0 fw-bold">{{ suppliers|map(attribute='category')|select('!=', None)|unique|list|length }}</h2>
+                        </div>
+                        <div class="icon-circle bg-warning bg-opacity-10">
+                            <i class="fas fa-tags text-warning fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Suppliers Table -->
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <h6 class="text-uppercase fw-bold text-primary"><i class="fas fa-list me-2"></i>Supplier Directory</h6>
+                <div class="col-md-3">
+                    <input type="text" id="supplierSearch" class="form-control form-control-sm" placeholder="Search suppliers...">
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle" id="suppliersTable">
+                    <thead class="bg-light">
+                         
+                            <th>Name</th>
+                            <th>Contact Person</th>
+                            <th>Phone</th>
+                            <th>Email</th>
+                            <th>Category</th>
+                            <th>Rating</th>
+                            <th>Lead Time</th>
+                            <th>Actions</th>
+                         
+                    </thead>
+                    <tbody>
+                        {% for sup in suppliers %}
+                         
+                            <td class="fw-semibold">{{ sup.name }}</td>
+                            <td>{{ sup.contact_person or '—' }}</td>
+                            <td>{{ sup.phone or '—' }}</td>
+                            <td>{{ sup.email or '—' }}</td>
+                            <td><span class="badge bg-info">{{ sup.category or 'General' }}</span></td>
+                            <td>
+                                {% if sup.rating %}
+                                    <div class="rating">
+                                        {% for i in range(sup.rating|int) %}★{% endfor %}
+                                        {% for i in range(5 - sup.rating|int) %}☆{% endfor %}
+                                    </div>
+                                {% else %}—{% endif %}
+                            </td>
+                            <td>{{ sup.lead_time_days or '—' }} days</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary edit-supplier" data-id="{{ sup.id }}">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger delete-supplier" data-id="{{ sup.id }}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                         
+                        {% else %}
+                         
+                            <td colspan="8" class="text-center py-5 text-muted">No suppliers found. Click "New Supplier" to add one.</td>
+                         
+                        {% endfor %}
+                    </tbody>
+                 
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Supplier Modal -->
+<div class="modal fade" id="addSupplierModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('operations_web_bp.supplier_add') }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add New Supplier</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Supplier Name *</label>
+                        <input type="text" name="name" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Contact Person</label>
+                        <input type="text" name="contact_person" class="form-control">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Phone</label>
+                            <input type="text" name="phone" class="form-control">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" name="email" class="form-control">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Address</label>
+                        <textarea name="address" class="form-control" rows="2"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Category</label>
+                            <input type="text" name="category" class="form-control">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Rating (1-5)</label>
+                            <select name="rating" class="form-select">
+                                <option value="5">5 ★</option>
+                                <option value="4">4 ★</option>
+                                <option value="3" selected>3 ★</option>
+                                <option value="2">2 ★</option>
+                                <option value="1">1 ★</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Lead Time (days)</label>
+                            <input type="number" name="lead_time_days" class="form-control" value="7">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Payment Terms</label>
+                            <input type="text" name="payment_terms" class="form-control" placeholder="e.g., Net 30">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Supplier</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Supplier Modal (similar structure, can be implemented via AJAX or separate page) -->
+<!-- For simplicity, we'll omit full edit modal; you can add one later -->
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Search filter
+        const searchInput = document.getElementById('supplierSearch');
+        if (searchInput) {
+            searchInput.addEventListener('keyup', function() {
+                const filter = this.value.toLowerCase();
+                const rows = document.querySelectorAll('#suppliersTable tbody tr');
+                rows.forEach(row => {
+                    const text = row.textContent.toLowerCase();
+                    row.style.display = text.includes(filter) ? '' : 'none';
+                });
+            });
+        }
+
+        // Edit button placeholder (redirect to edit page or modal)
+        const editBtns = document.querySelectorAll('.edit-supplier');
+        editBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const id = this.dataset.id;
+                window.location.href = `/operations/supplier/edit/${id}`;
+            });
+        });
+
+        // Delete button with confirmation
+        const deleteBtns = document.querySelectorAll('.delete-supplier');
+        deleteBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                if (confirm('Are you sure you want to deactivate this supplier?')) {
+                    const id = this.dataset.id;
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = `/operations/supplier/delete/${id}`;
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            });
+        });
+    });
+</script>
+
+<style>
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .text-white-80 {
+        color: rgba(255,255,255,0.8);
+    }
+    .icon-circle {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .hover-lift {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hover-lift:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.75rem 1.5rem rgba(0,0,0,0.1) !important;
+    }
+    .rating {
+        color: #fbbf24;
+        font-size: 0.9rem;
+        letter-spacing: 2px;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,383 @@
+{% extends "base.html" %}
+
+{% block title %}Fleet Reports{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Header -->
+    <div class="bg-gradient-primary text-white p-4 rounded-4 mb-4 shadow-sm">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+            <div>
+                <h1 class="display-6 fw-bold">Fleet Reports</h1>
+                <p class="text-white-80 mb-0">Comprehensive analysis of fleet operations</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+            <h6 class="text-uppercase fw-bold text-primary"><i class="fas fa-filter me-2"></i>Filters</h6>
+        </div>
+        <div class="card-body p-4">
+            <form method="GET" class="row g-3">
+                <div class="col-md-2">
+                    <label class="form-label">Period Type</label>
+                    <select name="period" class="form-select">
+                        <option value="month" {% if period == 'month' %}selected{% endif %}>Month</option>
+                        <option value="year" {% if period == 'year' %}selected{% endif %}>Year</option>
+                        <option value="custom" {% if period == 'custom' %}selected{% endif %}>Custom</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Year</label>
+                    <select name="year" class="form-select">
+                        {% for y in range(2020, 2030) %}
+                        <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Month</label>
+                    <select name="month" class="form-select">
+                        {% for m in range(1,13) %}
+                        <option value="{{ m }}" {% if m == month %}selected{% endif %}>{{ month_names[m-1] }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Vehicle</label>
+                    <select name="vehicle_id" class="form-select">
+                        <option value="">All Vehicles</option>
+                        {% for v in vehicles %}
+                        <option value="{{ v.id }}" {% if vehicle_id == v.id %}selected{% endif %}>{{ v.registration }} ({{ v.make }} {{ v.model }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2" id="startDateGroup">
+                    <label class="form-label">Start Date</label>
+                    <input type="date" name="start_date" class="form-control" value="{{ start_date or '' }}">
+                </div>
+                <div class="col-md-2" id="endDateGroup">
+                    <label class="form-label">End Date</label>
+                    <input type="date" name="end_date" class="form-control" value="{{ end_date or '' }}">
+                </div>
+                <div class="col-md-12 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-search me-2"></i>Apply</button>
+                    <a href="{{ url_for('operations_web_bp.fleet_reports') }}" class="btn btn-secondary"><i class="fas fa-times me-2"></i>Clear</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-primary mb-1">Total Vehicles</p>
+                            <h2 class="mb-0 fw-bold">{{ total_vehicles }}</h2>
+                            <small class="text-muted">{{ active_vehicles }} active, {{ under_maintenance }} maintenance</small>
+                        </div>
+                        <div class="icon-circle bg-primary bg-opacity-10">
+                            <i class="fas fa-truck text-primary fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-success mb-1">Total Trips</p>
+                            <h2 class="mb-0 fw-bold">{{ total_trips }}</h2>
+                            <small class="text-muted">{{ "{:,.0f}".format(total_distance) }} km total</small>
+                        </div>
+                        <div class="icon-circle bg-success bg-opacity-10">
+                            <i class="fas fa-route text-success fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-warning mb-1">Fuel Consumption</p>
+                            <h2 class="mb-0 fw-bold">{{ "{:,.2f}".format(total_liters) }} L</h2>
+                            <small class="text-muted">KES {{ "{:,.2f}".format(total_fuel_cost) }} spent</small>
+                        </div>
+                        <div class="icon-circle bg-warning bg-opacity-10">
+                            <i class="fas fa-gas-pump text-warning fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-danger mb-1">Maintenance Cost</p>
+                            <h2 class="mb-0 fw-bold">KES {{ "{:,.2f}".format(maintenance_total) }}</h2>
+                            <small class="text-muted">Total maintenance expenses</small>
+                        </div>
+                        <div class="icon-circle bg-danger bg-opacity-10">
+                            <i class="fas fa-wrench text-danger fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <ul class="nav nav-tabs mb-4" id="reportTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="fuel-tab" data-bs-toggle="tab" data-bs-target="#fuel" type="button" role="tab">
+                <i class="fas fa-gas-pump me-2"></i>Fuel
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="maintenance-tab" data-bs-toggle="tab" data-bs-target="#maintenance" type="button" role="tab">
+                <i class="fas fa-wrench me-2"></i>Maintenance
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="trips-tab" data-bs-toggle="tab" data-bs-target="#trips" type="button" role="tab">
+                <i class="fas fa-route me-2"></i>Trips
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="trends-tab" data-bs-toggle="tab" data-bs-target="#trends" type="button" role="tab">
+                <i class="fas fa-chart-line me-2"></i>Trends
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+        <!-- Fuel Tab -->
+        <div class="tab-pane fade show active" id="fuel" role="tabpanel">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm rounded-4 mb-4">
+                        <div class="card-header bg-transparent border-0 pt-4 px-4">
+                            <h6 class="text-uppercase fw-bold text-primary">Top Fuel Consumers</h6>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        的人<th>Vehicle</th><th>Liters</th><th>Cost (KES)</th> </thead>
+                                    <tbody>
+                                        {% for v in fuel_by_vehicle %}
+                                        <tr><td>{{ v.registration }}</td><td>{{ "{:,.2f}".format(v.liters) }}</td><td>{{ "{:,.2f}".format(v.cost) }}</td></tr>
+                                        {% else %}
+                                        <tr><td colspan="3" class="text-center text-muted">No fuel data</td></tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm rounded-4 mb-4">
+                        <div class="card-header bg-transparent border-0 pt-4 px-4">
+                            <h6 class="text-uppercase fw-bold text-primary">Fuel Summary</h6>
+                        </div>
+                        <div class="card-body p-4">
+                            <canvas id="fuelPieChart" style="height: 300px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Maintenance Tab -->
+        <div class="tab-pane fade" id="maintenance" role="tabpanel">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm rounded-4 mb-4">
+                        <div class="card-header bg-transparent border-0 pt-4 px-4">
+                            <h6 class="text-uppercase fw-bold text-primary">Maintenance Cost by Type</h6>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        的人<th>Type</th><th>Total Cost (KES)</th> </thead>
+                                    <tbody>
+                                        {% for item in maintenance_by_type %}
+                                        <tr><td>{{ item.type|title }}</td><td>{{ "{:,.2f}".format(item.total) }}</td></tr>
+                                        {% else %}
+                                        <tr><td colspan="2" class="text-center text-muted">No maintenance data</td></tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm rounded-4 mb-4">
+                        <div class="card-header bg-transparent border-0 pt-4 px-4">
+                            <h6 class="text-uppercase fw-bold text-primary">Top Maintenance Costs by Vehicle</h6>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        的人<th>Vehicle</th><th>Total Cost (KES)</th> </thead>
+                                    <tbody>
+                                        {% for v in maintenance_by_vehicle %}
+                                        <tr><td>{{ v.registration }}</td><td>{{ "{:,.2f}".format(v.total) }}</td></tr>
+                                        {% else %}
+                                        <tr><td colspan="2" class="text-center text-muted">No maintenance data</td></tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Trips Tab -->
+        <div class="tab-pane fade" id="trips" role="tabpanel">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm rounded-4 mb-4">
+                        <div class="card-header bg-transparent border-0 pt-4 px-4">
+                            <h6 class="text-uppercase fw-bold text-primary">Trips by Vehicle</h6>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        的人<th>Vehicle</th><th>Trips</th><th>Distance (km)</th> </thead>
+                                    <tbody>
+                                        {% for v in trips_by_vehicle %}
+                                        <tr><td>{{ v.registration }}</td><td>{{ v.trip_count }}</td><td>{{ "{:,.0f}".format(v.total_distance) }}</td></tr>
+                                        {% else %}
+                                        <tr><td colspan="3" class="text-center text-muted">No trip data</td></tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm rounded-4 mb-4">
+                        <div class="card-header bg-transparent border-0 pt-4 px-4">
+                            <h6 class="text-uppercase fw-bold text-primary">Summary Statistics</h6>
+                        </div>
+                        <div class="card-body p-4">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item d-flex justify-content-between"><span>Total Trips:</span><strong>{{ total_trips }}</strong></li>
+                                <li class="list-group-item d-flex justify-content-between"><span>Total Distance:</span><strong>{{ "{:,.0f}".format(total_distance) }} km</strong></li>
+                                <li class="list-group-item d-flex justify-content-between"><span>Average Distance per Trip:</span><strong>{{ "{:,.0f}".format(avg_distance_per_trip) }} km</strong></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Trends Tab -->
+        <div class="tab-pane fade" id="trends" role="tabpanel">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body p-4">
+                    <canvas id="trendChart" style="height: 400px;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Fuel pie chart
+        const fuelCtx = document.getElementById('fuelPieChart').getContext('2d');
+        const fuelLabels = {{ fuel_by_vehicle|map(attribute='registration')|list|tojson }};
+        const fuelData = {{ fuel_by_vehicle|map(attribute='liters')|list|tojson }};
+        if (fuelLabels.length > 0) {
+            new Chart(fuelCtx, {
+                type: 'pie',
+                data: { labels: fuelLabels, datasets: [{ data: fuelData, backgroundColor: ['#667eea', '#764ba2', '#f6ad55', '#f687b3', '#48bb78'] }] }
+            });
+        }
+
+        // Trends line chart
+        const trendCtx = document.getElementById('trendChart').getContext('2d');
+        const months = {{ months|tojson }};
+        const maintenanceTrend = {{ maintenance_trend|tojson }};
+        const fuelTrend = {{ fuel_trend|tojson }};
+        const tripsTrend = {{ trips_trend|tojson }};
+        new Chart(trendCtx, {
+            type: 'line',
+            data: {
+                labels: months,
+                datasets: [
+                    { label: 'Maintenance Cost (KES)', data: maintenanceTrend, borderColor: '#f56565', fill: false },
+                    { label: 'Fuel Cost (KES)', data: fuelTrend, borderColor: '#f6ad55', fill: false },
+                    { label: 'Number of Trips', data: tripsTrend, borderColor: '#48bb78', fill: false }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: true }
+        });
+    });
+</script>
+
+<!-- Custom JS to toggle date fields -->
+<script>
+    function toggleDateFields() {
+        const period = document.querySelector('select[name="period"]').value;
+        const startGroup = document.getElementById('startDateGroup');
+        const endGroup = document.getElementById('endDateGroup');
+        if (period === 'custom') {
+            startGroup.style.display = 'block';
+            endGroup.style.display = 'block';
+        } else {
+            startGroup.style.display = 'none';
+            endGroup.style.display = 'none';
+        }
+    }
+    toggleDateFields();
+    document.querySelector('select[name="period"]').addEventListener('change', toggleDateFields);
+</script>
+
+<style>
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .text-white-80 {
+        color: rgba(255,255,255,0.8);
+    }
+    .icon-circle {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .hover-lift {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hover-lift:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.75rem 1.5rem rgba(0,0,0,0.1) !important;
+    }
+</style>
+{% endblock %}

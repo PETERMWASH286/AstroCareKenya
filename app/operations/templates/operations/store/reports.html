@@ -1,0 +1,341 @@
+{% extends "base.html" %}
+
+{% block title %}Store Reports{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Header -->
+    <div class="bg-gradient-primary text-white p-4 rounded-4 mb-4 shadow-sm">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="display-6 fw-bold">Store Reports</h1>
+                <p class="text-white-80">Inventory, maintenance, and assignment analytics</p>
+            </div>
+            <div>
+                <a href="{{ url_for('operations_web_bp.store_inventory') }}" class="btn btn-light rounded-pill">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Store
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-primary mb-1">Total Items</p>
+                            <h2 class="mb-0 fw-bold">{{ total_items }}</h2>
+                            <small>Total quantity: {{ total_quantity }}</small>
+                        </div>
+                        <div class="icon-circle bg-primary bg-opacity-10">
+                            <i class="fas fa-boxes text-primary fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-success mb-1">Active Assignments</p>
+                            <h2 class="mb-0 fw-bold">{{ active_assignments_count }}</h2>
+                            <small>Overdue: {{ overdue_assignments|length }}</small>
+                        </div>
+                        <div class="icon-circle bg-success bg-opacity-10">
+                            <i class="fas fa-hand-holding text-success fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-warning mb-1">Maintenance Cost</p>
+                            <h2 class="mb-0 fw-bold">KES {{ "{:,.2f}".format(total_maintenance_cost) }}</h2>
+                            <small>Total spent</small>
+                        </div>
+                        <div class="icon-circle bg-warning bg-opacity-10">
+                            <i class="fas fa-tools text-warning fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-info mb-1">Tags</p>
+                            <h2 class="mb-0 fw-bold">{{ tags_by_status.available + tags_by_status.assigned + tags_by_status.other }}</h2>
+                            <small>Available: {{ tags_by_status.available }} | Assigned: {{ tags_by_status.assigned }}</small>
+                        </div>
+                        <div class="icon-circle bg-info bg-opacity-10">
+                            <i class="fas fa-tags text-info fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row g-4 mb-5">
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h6 class="text-uppercase fw-bold text-primary"><i class="fas fa-chart-line me-2"></i>Maintenance Cost (Last 12 Months)</h6>
+                </div>
+                <div class="card-body p-4">
+                    <canvas id="maintenanceChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h6 class="text-uppercase fw-bold text-primary"><i class="fas fa-chart-pie me-2"></i>Inventory by Category</h6>
+                </div>
+                <div class="card-body p-4">
+                    <canvas id="categoryChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tables Row -->
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h6 class="text-uppercase fw-bold text-primary"><i class="fas fa-exclamation-triangle me-2"></i>Low Stock Items</h6>
+                </div>
+                <div class="card-body p-4">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Quantity</th>
+                                    <th>Unit</th>
+                                    <th>Reorder Level</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in low_stock_items %}
+                                <tr>
+                                    <td class="fw-semibold">{{ item.name }}</td>
+                                    <td class="fw-bold text-{% if item.quantity <= 0 %}danger{% elif item.quantity <= item.reorder_level %}warning{% else %}success{% endif %}">
+                                        {{ item.quantity }}
+                                    </td>
+                                    <td>{{ item.unit }}</td>
+                                    <td>{{ item.reorder_level }}</td>
+                                    <td>
+                                        {% if item.quantity <= 0 %}
+                                        <span class="badge bg-danger">Out of Stock</span>
+                                        {% elif item.quantity <= item.reorder_level %}
+                                        <span class="badge bg-warning text-dark">Low Stock</span>
+                                        {% else %}
+                                        <span class="badge bg-success">OK</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted">All items are well stocked.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h6 class="text-uppercase fw-bold text-primary"><i class="fas fa-chart-bar me-2"></i>Maintenance by Type</h6>
+                </div>
+                <div class="card-body p-4">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Count</th>
+                                    <th>Total Cost (KES)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for mt in maintenance_by_type %}
+                                <tr>
+                                    <td class="fw-semibold">{{ mt.type|title }}</td>
+                                    <td>{{ mt.count }}</td>
+                                    <td>KES {{ "{:,.2f}".format(mt.total_cost) }}</td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted">No maintenance records.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h6 class="text-uppercase fw-bold text-primary"><i class="fas fa-clock me-2"></i>Recent Maintenance</h6>
+                </div>
+                <div class="card-body p-4">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Item</th>
+                                    <th>Type</th>
+                                    <th>Cost</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for m in recent_maintenance %}
+                                <tr>
+                                    <td>{{ m.maintenance_date.strftime('%Y-%m-%d') }}</td>
+                                    <td>{{ m.item.name }}</td>
+                                    <td><span class="badge bg-{{ 'success' if m.type == 'routine' else 'warning' if m.type == 'repair' else 'danger' }}">{{ m.type|title }}</span></td>
+                                    <td>KES {{ "{:,.2f}".format(m.cost) }}</td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted">No maintenance records.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h6 class="text-uppercase fw-bold text-primary"><i class="fas fa-user-check me-2"></i>Recent Assignments</h6>
+                </div>
+                <div class="card-body p-4">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>Tag</th>
+                                    <th>Item</th>
+                                    <th>Assigned To</th>
+                                    <th>Assigned At</th>
+                                    <th>Due Back</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for a in recent_assignments %}
+                                <tr>
+                                    <td>{{ a.tag.tag_number }}</td>
+                                    <td>{{ a.tag.item.name }}</td>
+                                    <td>{{ a.assignee.full_name }}</td>
+                                    <td>{{ a.assigned_at.strftime('%Y-%m-%d') }}</td>
+                                    <td>{{ a.due_back.strftime('%Y-%m-%d') if a.due_back else '—' }}</td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted">No assignments yet.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Maintenance cost chart
+        const ctx1 = document.getElementById('maintenanceChart').getContext('2d');
+        new Chart(ctx1, {
+            type: 'line',
+            data: {
+                labels: {{ monthly_labels|tojson }},
+                datasets: [{
+                    label: 'Maintenance Cost (KES)',
+                    data: {{ monthly_values|tojson }},
+                    borderColor: '#667eea',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { position: 'top' }
+                }
+            }
+        });
+
+        // Category pie chart
+        const ctx2 = document.getElementById('categoryChart').getContext('2d');
+        new Chart(ctx2, {
+            type: 'pie',
+            data: {
+                labels: {{ categories_labels|tojson }},
+                datasets: [{
+                    data: {{ categories_counts|tojson }},
+                    backgroundColor: ['#667eea', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#ec489a']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { position: 'right' }
+                }
+            }
+        });
+    });
+</script>
+
+<style>
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .text-white-80 {
+        color: rgba(255,255,255,0.8);
+    }
+    .icon-circle {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .hover-lift {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hover-lift:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.75rem 1.5rem rgba(0,0,0,0.1) !important;
+    }
+</style>
+{% endblock %}

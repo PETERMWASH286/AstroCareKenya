@@ -1,0 +1,374 @@
+{% extends "base.html" %}
+
+{% block title %}Harvest Records{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Header -->
+    <div class="bg-gradient-primary text-white p-4 rounded-4 mb-4 shadow-sm">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="display-6 fw-bold">Harvest Records</h1>
+                <p class="text-white-80">Manage crop harvests and link to inventory</p>
+            </div>
+            <div>
+                <button class="btn btn-light rounded-pill" data-bs-toggle="modal" data-bs-target="#addHarvestModal">
+                    <i class="fas fa-plus-circle me-2"></i>Add Harvest
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-primary mb-1">Total Harvests</p>
+                            <h2 class="mb-0 fw-bold">{{ total_harvests }}</h2>
+                        </div>
+                        <div class="icon-circle bg-primary bg-opacity-10">
+                            <i class="fas fa-apple-alt text-primary fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-success mb-1">Total Quantity</p>
+                            <h2 class="mb-0 fw-bold">{{ "{:,.2f}".format(total_quantity) }}</h2>
+                        </div>
+                        <div class="icon-circle bg-success bg-opacity-10">
+                            <i class="fas fa-weight text-success fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-info mb-1">Total Value</p>
+                            <h2 class="mb-0 fw-bold">KES {{ "{:,.2f}".format(total_value) }}</h2>
+                        </div>
+                        <div class="icon-circle bg-info bg-opacity-10">
+                            <i class="fas fa-chart-line text-info fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-warning mb-1">Last 30 Days</p>
+                            <h2 class="mb-0 fw-bold">{{ recent_count }}</h2>
+                        </div>
+                        <div class="icon-circle bg-warning bg-opacity-10">
+                            <i class="fas fa-calendar-week text-warning fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+            <h6 class="text-uppercase fw-bold text-primary"><i class="fas fa-filter me-2"></i>Filter Harvests</h6>
+        </div>
+        <div class="card-body p-4">
+            <form method="GET" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Crop</label>
+                    <select name="crop" class="form-select">
+                        <option value="">All Crops</option>
+                        {% for crop in crops %}
+                        <option value="{{ crop.id }}" {% if crop_filter == crop.id %}selected{% endif %}>{{ crop.name }} ({{ crop.variety or '' }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">From Date</label>
+                    <input type="date" name="start_date" class="form-control" value="{{ start_date or '' }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">To Date</label>
+                    <input type="date" name="end_date" class="form-control" value="{{ end_date or '' }}">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100"><i class="fas fa-search me-2"></i>Apply</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Harvest Table -->
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+            <h6 class="text-uppercase fw-bold text-primary"><i class="fas fa-list me-2"></i>Harvest Records</h6>
+        </div>
+        <div class="card-body p-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle" id="harvestTable">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>Crop</th>
+                            <th>Variety</th>
+                            <th>Quantity</th>
+                            <th>Unit</th>
+                            <th>Inventory Link</th>
+                            <th>Notes</th>
+                            <th>Actions</th>
+                        </thead>
+                    <tbody>
+                        {% for h in harvests %}
+                         <tr>
+                             <td>{{ h.harvest_date.strftime('%Y-%m-%d') }}</td>
+                             <td class="fw-semibold">{{ h.crop.name }}</td>
+                             <td>{{ h.crop.variety or '—' }}</td>
+                             <td>{{ "{:,.2f}".format(h.quantity) }}</td>
+                             <td>{{ h.unit }}</td>
+                             <td>
+                                 {% if h.inventory_entry %}
+                                 <span class="badge bg-success">Linked: {{ h.inventory_entry.name }}</span>
+                                 {% else %}
+                                 <span class="badge bg-secondary">Not linked</span>
+                                 {% endif %}
+                             </td>
+                             <td>{{ h.notes or '—' }}</td>
+                             <td class="text-nowrap">
+                                 <button class="btn btn-sm btn-outline-primary edit-harvest"
+                                         data-id="{{ h.id }}"
+                                         data-crop="{{ h.crop_id }}"
+                                         data-date="{{ h.harvest_date.strftime('%Y-%m-%d') }}"
+                                         data-quantity="{{ h.quantity }}"
+                                         data-unit="{{ h.unit }}"
+                                         data-notes="{{ h.notes or '' }}"
+                                         data-inventory="{{ h.inventory_entry_id or '' }}">
+                                     <i class="fas fa-edit"></i> Edit
+                                 </button>
+                                 <button class="btn btn-sm btn-outline-danger delete-harvest"
+                                         data-id="{{ h.id }}">
+                                     <i class="fas fa-trash"></i> Delete
+                                 </button>
+                             </td>
+                         </tr>
+                        {% else %}
+                         <tr>
+                             <td colspan="8" class="text-center py-5 text-muted">No harvest records found.</td>
+                         </tr>
+                        {% endfor %}
+                    </tbody>
+                 </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Harvest Modal -->
+<div class="modal fade" id="addHarvestModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Harvest Record</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="add_harvest">
+                    <div class="mb-3">
+                        <label class="form-label">Crop *</label>
+                        <select name="crop_id" class="form-select" required>
+                            <option value="">Select crop</option>
+                            {% for crop in crops %}
+                            <option value="{{ crop.id }}">{{ crop.name }} ({{ crop.variety or 'no variety' }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Harvest Date *</label>
+                        <input type="date" name="harvest_date" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Quantity *</label>
+                        <input type="number" name="quantity" step="0.01" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Unit</label>
+                        <input type="text" name="unit" class="form-control" value="kg">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Link to Inventory (optional)</label>
+                        <select name="inventory_entry_id" class="form-select">
+                            <option value="">— None —</option>
+                            {% for inv in harvest_inventory %}
+                            <option value="{{ inv.id }}">{{ inv.name }} ({{ inv.unit }})</option>
+                            {% endfor %}
+                        </select>
+                        <small class="text-muted">Select an inventory item to automatically add the harvested quantity.</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Notes</label>
+                        <textarea name="notes" class="form-control" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Harvest</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Harvest Modal -->
+<div class="modal fade" id="editHarvestModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Harvest Record</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="edit_harvest">
+                    <input type="hidden" name="harvest_id" id="editHarvestId">
+                    <div class="mb-3">
+                        <label class="form-label">Crop *</label>
+                        <select name="crop_id" id="editCrop" class="form-select" required>
+                            <option value="">Select crop</option>
+                            {% for crop in crops %}
+                            <option value="{{ crop.id }}">{{ crop.name }} ({{ crop.variety or 'no variety' }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Harvest Date *</label>
+                        <input type="date" name="harvest_date" id="editDate" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Quantity *</label>
+                        <input type="number" name="quantity" id="editQuantity" step="0.01" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Unit</label>
+                        <input type="text" name="unit" id="editUnit" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Link to Inventory (optional)</label>
+                        <select name="inventory_entry_id" id="editInventory" class="form-select">
+                            <option value="">— None —</option>
+                            {% for inv in harvest_inventory %}
+                            <option value="{{ inv.id }}">{{ inv.name }} ({{ inv.unit }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Notes</label>
+                        <textarea name="notes" id="editNotes" class="form-control" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Harvest</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteHarvestModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title">Delete Harvest Record</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="delete_harvest">
+                    <input type="hidden" name="harvest_id" id="deleteHarvestId">
+                    <p>Are you sure you want to delete this harvest record? This will also reverse any linked inventory updates.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Edit harvest
+        const editBtns = document.querySelectorAll('.edit-harvest');
+        editBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.getElementById('editHarvestId').value = this.dataset.id;
+                document.getElementById('editCrop').value = this.dataset.crop;
+                document.getElementById('editDate').value = this.dataset.date;
+                document.getElementById('editQuantity').value = this.dataset.quantity;
+                document.getElementById('editUnit').value = this.dataset.unit;
+                document.getElementById('editNotes').value = this.dataset.notes;
+                document.getElementById('editInventory').value = this.dataset.inventory;
+                new bootstrap.Modal(document.getElementById('editHarvestModal')).show();
+            });
+        });
+
+        // Delete harvest
+        const deleteBtns = document.querySelectorAll('.delete-harvest');
+        deleteBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.getElementById('deleteHarvestId').value = this.dataset.id;
+                new bootstrap.Modal(document.getElementById('deleteHarvestModal')).show();
+            });
+        });
+    });
+</script>
+
+<style>
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .text-white-80 {
+        color: rgba(255,255,255,0.8);
+    }
+    .icon-circle {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .hover-lift {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hover-lift:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.75rem 1.5rem rgba(0,0,0,0.1) !important;
+    }
+    .badge {
+        font-weight: 500;
+        font-size: 0.85rem;
+    }
+    .table > :not(caption) > * > * {
+        vertical-align: middle;
+    }
+</style>
+{% endblock %}

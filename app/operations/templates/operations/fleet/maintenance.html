@@ -1,0 +1,423 @@
+{% extends "base.html" %}
+
+{% block title %}Fleet Maintenance{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Header -->
+    <div class="bg-gradient-primary text-white p-4 rounded-4 mb-4 shadow-sm">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="display-6 fw-bold">Fleet Maintenance</h1>
+                <p class="text-white-80">Manage vehicle maintenance records</p>
+            </div>
+            <div>
+                <button class="btn btn-light rounded-pill" data-bs-toggle="modal" data-bs-target="#addMaintenanceModal">
+                    <i class="fas fa-plus-circle me-2"></i>Add Record
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-primary mb-1">Total Records</p>
+                            <h2 class="mb-0 fw-bold">{{ total_records }}</h2>
+                        </div>
+                        <div class="icon-circle bg-primary bg-opacity-10">
+                            <i class="fas fa-wrench text-primary fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-success mb-1">Total Cost</p>
+                            <h2 class="mb-0 fw-bold">KES {{ "{:,.2f}".format(total_cost) }}</h2>
+                        </div>
+                        <div class="icon-circle bg-success bg-opacity-10">
+                            <i class="fas fa-chart-line text-success fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-info mb-1">Last 30 Days</p>
+                            <h2 class="mb-0 fw-bold">{{ recent_count }}</h2>
+                        </div>
+                        <div class="icon-circle bg-info bg-opacity-10">
+                            <i class="fas fa-calendar-week text-info fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+            <h6 class="text-uppercase fw-bold text-primary"><i class="fas fa-filter me-2"></i>Filters</h6>
+        </div>
+        <div class="card-body p-4">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Vehicle</label>
+                    <select name="vehicle" class="form-select">
+                        <option value="">All Vehicles</option>
+                        {% for v in vehicles %}
+                        <option value="{{ v.id }}" {% if vehicle_filter == v.id %}selected{% endif %}>{{ v.registration }} ({{ v.make }} {{ v.model }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Type</label>
+                    <select name="type" class="form-select">
+                        <option value="">All</option>
+                        <option value="routine" {% if type_filter == 'routine' %}selected{% endif %}>Routine</option>
+                        <option value="repair" {% if type_filter == 'repair' %}selected{% endif %}>Repair</option>
+                        <option value="emergency" {% if type_filter == 'emergency' %}selected{% endif %}>Emergency</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">From Date</label>
+                    <input type="date" name="start_date" class="form-control" value="{{ start_date or '' }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">To Date</label>
+                    <input type="date" name="end_date" class="form-control" value="{{ end_date or '' }}">
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100"><i class="fas fa-search me-2"></i>Apply</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Maintenance Table -->
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+            <h6 class="text-uppercase fw-bold text-primary"><i class="fas fa-list me-2"></i>Maintenance Records</h6>
+        </div>
+        <div class="card-body p-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>Vehicle</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                            <th>Cost (KES)</th>
+                            <th>Performed By</th>
+                            <th>Odometer</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in records %}
+                        <tr>
+                            <td>{{ r.maintenance_date.strftime('%Y-%m-%d') }}</td>
+                            <td class="fw-semibold">{{ r.vehicle.registration }} ({{ r.vehicle.make }} {{ r.vehicle.model }})</td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if r.type == 'routine' else 'warning' if r.type == 'repair' else 'danger' }}">
+                                    {{ r.type|title }}
+                                </span>
+                            </td>
+                            <td>{{ r.description }}</td>
+                            <td class="fw-bold">{{ "{:,.2f}".format(r.cost) }}</td>
+                            <td>{{ r.performed_by or '—' }}</td>
+                            <td>{{ r.odometer or '—' }} km</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary edit-record"
+                                        data-id="{{ r.id }}"
+                                        data-vehicle="{{ r.vehicle_id }}"
+                                        data-date="{{ r.maintenance_date.strftime('%Y-%m-%d') }}"
+                                        data-type="{{ r.type }}"
+                                        data-description="{{ r.description }}"
+                                        data-cost="{{ r.cost }}"
+                                        data-performed="{{ r.performed_by or '' }}"
+                                        data-odometer="{{ r.odometer or '' }}"
+                                        data-notes="{{ r.notes or '' }}"
+                                        data-transaction-ref="{{ r.transaction_reference or '' }}"
+                                        data-petty-cash="{{ r.petty_cash_account_id or '' }}">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger delete-record" data-id="{{ r.id }}">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="8" class="text-center py-5 text-muted">No maintenance records found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Record Modal -->
+<div class="modal fade" id="addMaintenanceModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Maintenance Record</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="add">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Vehicle *</label>
+                            <select name="vehicle_id" class="form-select" required>
+                                <option value="">Select vehicle</option>
+                                {% for v in vehicles %}
+                                <option value="{{ v.id }}">{{ v.registration }} ({{ v.make }} {{ v.model }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Maintenance Date *</label>
+                            <input type="date" name="maintenance_date" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Type *</label>
+                            <select name="type" class="form-select" required>
+                                <option value="routine">Routine</option>
+                                <option value="repair">Repair</option>
+                                <option value="emergency">Emergency</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Performed By</label>
+                            <input type="text" name="performed_by" class="form-control">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description *</label>
+                        <textarea name="description" class="form-control" rows="2" required></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Cost (KES)</label>
+                            <input type="number" name="cost" step="0.01" class="form-control" value="0">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Transaction Reference</label>
+                            <input type="text" name="transaction_reference" class="form-control" placeholder="e.g., M-Pesa code, cheque number">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Odometer (km)</label>
+                            <input type="number" name="odometer" class="form-control">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Petty Cash Account</label>
+                            <select name="petty_cash_account_id" class="form-select">
+                                <option value="">Select petty cash account (optional)</option>
+                                {% for pc in petty_cash_accounts %}
+                                <option value="{{ pc.id }}">{{ pc.name }} (Balance: {{ "{:,.2f}".format(pc.current_balance) }})</option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">Required if cost > 0</div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Notes</label>
+                        <textarea name="notes" class="form-control" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Record</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Record Modal -->
+<div class="modal fade" id="editMaintenanceModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Maintenance Record</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="edit">
+                    <input type="hidden" name="record_id" id="editRecordId">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Vehicle *</label>
+                            <select name="vehicle_id" id="editVehicleId" class="form-select" required>
+                                <option value="">Select vehicle</option>
+                                {% for v in vehicles %}
+                                <option value="{{ v.id }}">{{ v.registration }} ({{ v.make }} {{ v.model }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Maintenance Date *</label>
+                            <input type="date" name="maintenance_date" id="editDate" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Type *</label>
+                            <select name="type" id="editType" class="form-select" required>
+                                <option value="routine">Routine</option>
+                                <option value="repair">Repair</option>
+                                <option value="emergency">Emergency</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Performed By</label>
+                            <input type="text" name="performed_by" id="editPerformed" class="form-control">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description *</label>
+                        <textarea name="description" id="editDescription" class="form-control" rows="2" required></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Cost (KES)</label>
+                            <input type="number" name="cost" id="editCost" step="0.01" class="form-control">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Transaction Reference</label>
+                            <input type="text" name="transaction_reference" id="editTransactionRef" class="form-control" placeholder="e.g., M-Pesa code, cheque number">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Odometer (km)</label>
+                            <input type="number" name="odometer" id="editOdometer" class="form-control">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Petty Cash Account</label>
+                            <select name="petty_cash_account_id" id="editPettyCash" class="form-select">
+                                <option value="">Select petty cash account</option>
+                                {% for pc in petty_cash_accounts %}
+                                <option value="{{ pc.id }}">{{ pc.name }} (Balance: {{ "{:,.2f}".format(pc.current_balance) }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Notes</label>
+                        <textarea name="notes" id="editNotes" class="form-control" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Record</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title">Delete Record</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="record_id" id="deleteRecordId">
+                    <p>Are you sure you want to delete this maintenance record? This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Edit modal: populate fields
+        const editBtns = document.querySelectorAll('.edit-record');
+        editBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.getElementById('editRecordId').value = this.dataset.id;
+                document.getElementById('editVehicleId').value = this.dataset.vehicle;
+                document.getElementById('editDate').value = this.dataset.date;
+                document.getElementById('editType').value = this.dataset.type;
+                document.getElementById('editDescription').value = this.dataset.description;
+                document.getElementById('editCost').value = this.dataset.cost;
+                document.getElementById('editPerformed').value = this.dataset.performed;
+                document.getElementById('editOdometer').value = this.dataset.odometer;
+                document.getElementById('editNotes').value = this.dataset.notes;
+                document.getElementById('editTransactionRef').value = this.dataset.transactionRef || '';
+                document.getElementById('editPettyCash').value = this.dataset.pettyCash || '';
+                new bootstrap.Modal(document.getElementById('editMaintenanceModal')).show();
+            });
+        });
+
+        // Delete modal
+        const deleteBtns = document.querySelectorAll('.delete-record');
+        deleteBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.getElementById('deleteRecordId').value = this.dataset.id;
+                new bootstrap.Modal(document.getElementById('deleteModal')).show();
+            });
+        });
+    });
+</script>
+
+<style>
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .text-white-80 {
+        color: rgba(255,255,255,0.8);
+    }
+    .icon-circle {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .hover-lift {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hover-lift:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.75rem 1.5rem rgba(0,0,0,0.1) !important;
+    }
+</style>
+{% endblock %}

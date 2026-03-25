@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+
+{% block title %}Petty Cash Balance{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Header -->
+    <div class="bg-gradient-primary text-white p-4 rounded-4 mb-4 shadow-sm">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+            <div>
+                <h1 class="display-6 fw-bold">Petty Cash Management</h1>
+                <p class="text-white-80 mb-0">View balances, account details, and recent transactions</p>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-primary mb-1">Total Petty Cash</p>
+                            <h2 class="mb-0 fw-bold">KES {{ "{:,.2f}".format(total_balance) }}</h2>
+                        </div>
+                        <div class="icon-circle bg-primary bg-opacity-10">
+                            <i class="fas fa-coins text-primary fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-success mb-1">Active Accounts</p>
+                            <h2 class="mb-0 fw-bold">{{ accounts|length }}</h2>
+                        </div>
+                        <div class="icon-circle bg-success bg-opacity-10">
+                            <i class="fas fa-address-card text-success fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-warning mb-1">Recent Transactions</p>
+                            <h2 class="mb-0 fw-bold">{{ recent_transactions|length }}</h2>
+                        </div>
+                        <div class="icon-circle bg-warning bg-opacity-10">
+                            <i class="fas fa-history text-warning fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Petty Cash Accounts Table -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <h6 class="text-uppercase fw-bold text-primary"><i class="fas fa-list me-2"></i>Petty Cash Accounts</h6>
+                <div class="col-md-4">
+                    <input type="text" id="accountSearch" class="form-control form-control-sm" placeholder="Search accounts...">
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle" id="accountsTable">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Account Name</th>
+                            <th>Account Number</th>
+                            <th>Type</th>
+                            <th class="text-end">Balance (KES)</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for acc in accounts %}
+                        <tr>
+                            <td class="fw-semibold">{{ acc.name }}</td>
+                            <td>{{ acc.account_number or 'N/A' }}</td>
+                            <td><span class="badge bg-{{ 'info' if acc.account_type == 'petty_cash' else 'secondary' }}">{{ acc.account_type|title }}</span></td>
+                            <td class="text-end fw-bold">{{ "{:,.2f}".format(acc.current_balance) }}</td>
+                            <td>{{ acc.description or '' }}</td>
+
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="6" class="text-center py-5 text-muted">No petty cash accounts found.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Transactions (All Accounts) -->
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+            <h6 class="text-uppercase fw-bold text-primary"><i class="fas fa-history me-2"></i>Recent Transactions</h6>
+        </div>
+        <div class="card-body p-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle" id="transactionsTable">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>Reference</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                            <th>Amount (KES)</th>
+                            <th>Account</th>
+                            <th>Batch</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for tx in recent_transactions %}
+                        {% set account = tx.dest_account if tx.dest_account else tx.source_account %}
+                        <tr>
+                            <td>{{ tx.completed_at.strftime('%Y-%m-%d %H:%M') if tx.completed_at else tx.initiated_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td><code>{{ tx.transaction_ref }}</code></td>
+                            <td><span class="badge bg-{{ 'success' if tx.transaction_type in ('deposit','transfer_in') else 'danger' }}">{{ tx.transaction_type|replace('_',' ')|title }}</span></td>
+                            <td>{{ tx.description }}</td>
+                            <td class="text-end fw-bold">{{ "{:,.2f}".format(tx.amount) }}</td>
+                            <td>{{ account.name if account else '—' }}</td>
+                            <td>{{ tx.batch_number or '—' }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="7" class="text-center py-5 text-muted">No transactions yet.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript for client-side search and DataTable -->
+<script>
+$(document).ready(function() {
+    // Search filter for accounts table
+    $('#accountSearch').on('keyup', function() {
+        var value = $(this).val().toLowerCase();
+        $('#accountsTable tbody tr').filter(function() {
+            $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+        });
+    });
+
+    // Initialize DataTable for transactions (optional)
+    $('#transactionsTable').DataTable({
+        order: [[0, 'desc']],
+        pageLength: 25,
+        lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+        language: {
+            search: "Filter:",
+            searchPlaceholder: "Search transactions..."
+        }
+    });
+});
+</script>
+
+<!-- Custom CSS (inline or in a separate file) -->
+<style>
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .text-white-80 {
+        color: rgba(255,255,255,0.8);
+    }
+    .icon-circle {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .hover-lift {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hover-lift:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.75rem 1.5rem rgba(0,0,0,0.1) !important;
+    }
+    .badge {
+        font-weight: 500;
+        font-size: 0.85rem;
+    }
+</style>
+{% endblock %}

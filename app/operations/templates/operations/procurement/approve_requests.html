@@ -1,0 +1,371 @@
+{% extends "base.html" %}
+
+{% block title %}Approve Procurement Requests{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Header -->
+    <div class="bg-gradient-primary text-white p-4 rounded-4 mb-4 shadow-sm">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+            <div>
+                <h1 class="display-6 fw-bold">Approve Procurement Requests</h1>
+                <p class="text-white-80 mb-0">Review and approve/reject pending requests</p>
+            </div>
+            <div class="mt-3 mt-md-0">
+                <a href="{{ url_for('operations_web_bp.procurement_requests') }}" class="btn btn-light rounded-pill">
+                    <i class="fas fa-arrow-left me-2"></i>Back to My Requests
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-primary mb-1">Total Pending</p>
+                            <h2 class="mb-0 fw-bold">{{ pending_requests|length }}</h2>
+                        </div>
+                        <div class="icon-circle bg-primary bg-opacity-10">
+                            <i class="fas fa-clock text-primary fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-warning mb-1">High Priority</p>
+                            <h2 class="mb-0 fw-bold">{{ pending_requests|selectattr('priority', 'equalto', 'high')|list|length + pending_requests|selectattr('priority', 'equalto', 'critical')|list|length }}</h2>
+                        </div>
+                        <div class="icon-circle bg-warning bg-opacity-10">
+                            <i class="fas fa-exclamation-triangle text-warning fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-info mb-1">Departments</p>
+                            <h2 class="mb-0 fw-bold">{{ pending_requests|map(attribute='department')|unique|list|length }}</h2>
+                        </div>
+                        <div class="icon-circle bg-info bg-opacity-10">
+                            <i class="fas fa-building text-info fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pending Requests Table -->
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <h6 class="text-uppercase fw-bold text-primary"><i class="fas fa-list me-2"></i>Pending Requests</h6>
+                <div class="col-md-3">
+                    <input type="text" id="requestSearch" class="form-control form-control-sm" placeholder="Search requests...">
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle" id="requestsTable">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Date</th>
+                            <th>Requester</th>
+                            <th>Department</th>
+                            <th>Item</th>
+                            <th>Quantity</th>
+                            <th>Priority</th>
+                            <th>Reason</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for req in pending_requests %}
+                        <tr>
+                            <td class="fw-semibold">#{{ req.id }}</td>
+                            <td>{{ req.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>{{ req.requester.full_name }}</td>
+                            <td>
+                                <span class="badge bg-{{ 'info' if req.department == 'kitchen' else 'success' if req.department == 'store' else 'warning' if req.department == 'farm' else 'secondary' }}">
+                                    {{ req.department|title }}
+                                </span>
+                            </td>
+                            <td>{{ req.item_name }}</td>
+                            <td>{{ "{:,.2f}".format(req.quantity) }} {{ req.unit }}</td>
+                            <td>
+                                <span class="badge bg-{{ 'danger' if req.priority == 'critical' else 'warning' if req.priority == 'high' else 'info' if req.priority == 'medium' else 'secondary' }}">
+                                    {{ req.priority|title }}
+                                </span>
+                            </td>
+                            <td style="max-width: 250px;">
+                                <div class="text-truncate" data-bs-toggle="tooltip" title="{{ req.reason }}">
+                                    {{ req.reason[:60] }}{% if req.reason|length > 60 %}...{% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-success rounded-pill approve-btn" 
+                                        data-id="{{ req.id }}"
+                                        data-requester="{{ req.requester.full_name }}"
+                                        data-item="{{ req.item_name }}"
+                                        data-amount="{{ "{:,.2f}".format(req.quantity) }} {{ req.unit }}"
+                                        data-reason="{{ req.reason }}">
+                                    <i class="fas fa-check me-1"></i>Approve
+                                </button>
+                                <button class="btn btn-sm btn-danger rounded-pill reject-btn" 
+                                        data-id="{{ req.id }}"
+                                        data-requester="{{ req.requester.full_name }}"
+                                        data-item="{{ req.item_name }}"
+                                        data-amount="{{ "{:,.2f}".format(req.quantity) }} {{ req.unit }}"
+                                        data-reason="{{ req.reason }}">
+                                    <i class="fas fa-times me-1"></i>Reject
+                                </button>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="9" class="text-center py-5 text-muted">No pending requests.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Approve Modal (with supplier, unit price, expected delivery) -->
+<div class="modal fade" id="approveModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title">Approve Request & Create Order</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="approve">
+                    <input type="hidden" name="request_id" id="approveRequestId">
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>Upon approval, a purchase order will be created automatically and sent to the supplier.
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Requester</label>
+                                <p class="form-control-plaintext" id="approveRequester"></p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Item</label>
+                                <p class="form-control-plaintext" id="approveItem"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Quantity</label>
+                                <p class="form-control-plaintext" id="approveAmount"></p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Reason</label>
+                                <p class="form-control-plaintext" id="approveReason"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="mb-3">
+                        <label class="form-label">Supplier *</label>
+                        <select name="supplier_id" class="form-select" required>
+                            <option value="">Select supplier</option>
+                            {% for sup in suppliers %}
+                            <option value="{{ sup.id }}">{{ sup.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Unit Price (KES) *</label>
+                            <input type="number" name="unit_price" step="0.01" min="0.01" class="form-control" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Expected Delivery Date *</label>
+                            <input type="date" name="expected_delivery" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Approval Notes (optional)</label>
+                        <textarea name="approval_notes" class="form-control" rows="2" placeholder="Add any remarks..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Approve & Create Order</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Reject Modal (unchanged) -->
+<div class="modal fade" id="rejectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title">Reject Request</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="reject">
+                    <input type="hidden" name="request_id" id="rejectRequestId">
+                    <div class="mb-3">
+                        <label class="form-label">Requester</label>
+                        <p class="form-control-plaintext" id="rejectRequester"></p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Item</label>
+                        <p class="form-control-plaintext" id="rejectItem"></p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Quantity</label>
+                        <p class="form-control-plaintext" id="rejectAmount"></p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Reason</label>
+                        <p class="form-control-plaintext" id="rejectReason"></p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Rejection Reason (required)</label>
+                        <textarea name="rejection_reason" class="form-control" rows="2" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Reject</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Search filter
+        const searchInput = document.getElementById('requestSearch');
+        if (searchInput) {
+            searchInput.addEventListener('keyup', function() {
+                const filter = this.value.toLowerCase();
+                const rows = document.querySelectorAll('#requestsTable tbody tr');
+                rows.forEach(row => {
+                    const text = row.textContent.toLowerCase();
+                    row.style.display = text.includes(filter) ? '' : 'none';
+                });
+            });
+        }
+
+        // Approve button handler
+        const approveBtns = document.querySelectorAll('.approve-btn');
+        approveBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const id = this.dataset.id;
+                const requester = this.dataset.requester;
+                const item = this.dataset.item;
+                const amount = this.dataset.amount;
+                const reason = this.dataset.reason;
+                document.getElementById('approveRequestId').value = id;
+                document.getElementById('approveRequester').textContent = requester;
+                document.getElementById('approveItem').textContent = item;
+                document.getElementById('approveAmount').textContent = amount;
+                document.getElementById('approveReason').textContent = reason;
+                const modal = new bootstrap.Modal(document.getElementById('approveModal'));
+                modal.show();
+            });
+        });
+
+        // Reject button handler
+        const rejectBtns = document.querySelectorAll('.reject-btn');
+        rejectBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const id = this.dataset.id;
+                const requester = this.dataset.requester;
+                const item = this.dataset.item;
+                const amount = this.dataset.amount;
+                const reason = this.dataset.reason;
+                document.getElementById('rejectRequestId').value = id;
+                document.getElementById('rejectRequester').textContent = requester;
+                document.getElementById('rejectItem').textContent = item;
+                document.getElementById('rejectAmount').textContent = amount;
+                document.getElementById('rejectReason').textContent = reason;
+                const modal = new bootstrap.Modal(document.getElementById('rejectModal'));
+                modal.show();
+            });
+        });
+
+        // Tooltip initialization
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    });
+</script>
+
+<style>
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .text-white-80 {
+        color: rgba(255,255,255,0.8);
+    }
+    .icon-circle {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .hover-lift {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hover-lift:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.75rem 1.5rem rgba(0,0,0,0.1) !important;
+    }
+    .badge {
+        font-weight: 500;
+        font-size: 0.85rem;
+    }
+    .text-truncate {
+        max-width: 200px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+</style>
+{% endblock %}

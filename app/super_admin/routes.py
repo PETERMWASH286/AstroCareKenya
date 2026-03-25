@@ -354,7 +354,37 @@ def create_hospital():
     ('admin:approve_lpo', 'Admin & Director', 'Approve Local Purchase Orders (LPOs)'),
     ('admin:approve_payments', 'Admin & Director', 'Approve Payments'),
     ('admin:approve_payroll', 'Admin & Director', 'Approve processed payrolls'),
+    
+        # Operations Management
+    ('operations:dashboard', 'Operations Management', 'View Operations Dashboard'),
+    ('operations:kitchen', 'Operations Management', 'Access Kitchen Management module'),
+    ('operations:store', 'Operations Management', 'Access Store Management module'),
+    ('operations:farm', 'Operations Management', 'Access Farm Management module'),
+    ('operations:fleet', 'Operations Management', 'Access Fleet Management module'),
+    ('operations:reports', 'Operations Management', 'View Operations Reports'),
+        # Operations Management – Supplier Management
+    ('operations:supplier', 'Operations Management', 'Access Supplier Management module'),
 
+    # Operations Management – Account Management (Petty Cash)
+    ('operations:account', 'Operations Management', 'Access Account Management (Petty Cash) module'),
+
+    
+    ('operations:procurement', 'Operations Management', 'Access Procurement & Inventory module'),
+
+# Requests
+('procurement:requests:view', 'Operations Management', 'View Procurement Requests'),
+('procurement:requests:create', 'Operations Management', 'Create Procurement Requests'),
+('procurement:requests:approve', 'Operations Management', 'Approve Procurement Requests'),
+
+# Purchase Orders
+('procurement:orders:view', 'Operations Management', 'View Purchase Orders'),
+('procurement:orders:create', 'Operations Management', 'Create Purchase Orders'),
+
+# Receiving
+('procurement:receiving:view', 'Operations Management', 'View Goods Receiving'),
+('procurement:receiving:record', 'Operations Management', 'Record Received Goods'),
+
+    
             ]
             # --- Privileges ---
             created = 0

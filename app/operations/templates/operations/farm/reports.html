@@ -1,0 +1,483 @@
+{% extends "base.html" %}
+
+{% block title %}Farm Reports{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Header -->
+    <div class="bg-gradient-primary text-white p-4 rounded-4 mb-4 shadow-sm">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="display-6 fw-bold">Farm Reports</h1>
+                <p class="text-white-80">Comprehensive analytics and insights</p>
+            </div>
+            <div>
+                <a href="{{ url_for('operations_web_bp.farm_inventory') }}" class="btn btn-light rounded-pill me-2">
+                    <i class="fas fa-boxes me-2"></i>Inventory
+                </a>
+                <a href="{{ url_for('operations_web_bp.farm_revenue') }}" class="btn btn-light rounded-pill">
+                    <i class="fas fa-chart-line me-2"></i>Revenue
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Date Filter -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+            <h6 class="text-uppercase fw-bold text-primary"><i class="fas fa-calendar-alt me-2"></i>Date Range</h6>
+        </div>
+        <div class="card-body p-4">
+            <form method="GET" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">From Date</label>
+                    <input type="date" name="start_date" class="form-control" value="{{ start_date or '' }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">To Date</label>
+                    <input type="date" name="end_date" class="form-control" value="{{ end_date or '' }}">
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100"><i class="fas fa-sync-alt me-2"></i>Apply</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Summary Cards (Row 1) -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-primary mb-1">Total Revenue</p>
+                            <h2 class="mb-0 fw-bold">KES {{ "{:,.2f}".format(total_revenue) }}</h2>
+                        </div>
+                        <div class="icon-circle bg-primary bg-opacity-10">
+                            <i class="fas fa-chart-line text-primary fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-danger mb-1">Total Expenses</p>
+                            <h2 class="mb-0 fw-bold">KES {{ "{:,.2f}".format(total_expenses) }}</h2>
+                        </div>
+                        <div class="icon-circle bg-danger bg-opacity-10">
+                            <i class="fas fa-receipt text-danger fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-success mb-1">Net Profit</p>
+                            <h2 class="mb-0 fw-bold {% if net_profit >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                KES {{ "{:,.2f}".format(net_profit) }}
+                            </h2>
+                        </div>
+                        <div class="icon-circle bg-success bg-opacity-10">
+                            <i class="fas fa-chart-line text-success fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-info mb-1">Profit Margin</p>
+                            <h2 class="mb-0 fw-bold">{{ "{:.1f}".format(profit_margin) }}%</h2>
+                        </div>
+                        <div class="icon-circle bg-info bg-opacity-10">
+                            <i class="fas fa-percent text-info fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Second Row: Inventory & Livestock -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <h6 class="text-uppercase fw-bold text-primary mb-3">Inventory (Inputs)</h6>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Total Quantity:</span>
+                        <strong>{{ "{:,.2f}".format(total_input_qty) }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Total Value:</span>
+                        <strong>KES {{ "{:,.2f}".format(total_input_value) }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Low Stock Items:</span>
+                        <span class="badge bg-warning text-dark">{{ low_stock_count }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <h6 class="text-uppercase fw-bold text-primary mb-3">Harvest (Inventory)</h6>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Total Quantity:</span>
+                        <strong>{{ "{:,.2f}".format(total_harvest_qty) }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Total Value:</span>
+                        <strong>KES {{ "{:,.2f}".format(total_harvest_value) }}</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <h6 class="text-uppercase fw-bold text-primary mb-3">Livestock</h6>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Total Heads:</span>
+                        <strong>{{ total_livestock_count }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Purchase Value:</span>
+                        <strong>KES {{ "{:,.2f}".format(total_livestock_value) }}</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Third Row: Crops & Harvests -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <h6 class="text-uppercase fw-bold text-primary mb-3">Crops</h6>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Total Area (ha):</span>
+                        <strong>{{ "{:,.2f}".format(total_crop_area) }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Total Planted Quantity:</span>
+                        <strong>{{ "{:,.2f}".format(total_planted_qty) }}</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <h6 class="text-uppercase fw-bold text-primary mb-3">Harvest Records</h6>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Total Harvested (Qty):</span>
+                        <strong>{{ "{:,.2f}".format(total_harvest_record_qty) }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Est. Harvest Value:</span>
+                        <strong>KES {{ "{:,.2f}".format(total_harvest_value) }}</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row g-4 mb-5">
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h6 class="text-uppercase fw-bold text-primary"><i class="fas fa-chart-line me-2"></i>Monthly Trends (Last 12 Months)</h6>
+                </div>
+                <div class="card-body p-4">
+                    <canvas id="trendsChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="row g-4">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm rounded-4">
+                        <div class="card-header bg-transparent border-0 pt-4 px-4">
+                            <h6 class="text-uppercase fw-bold text-primary"><i class="fas fa-chart-pie me-2"></i>Revenue by Source</h6>
+                        </div>
+                        <div class="card-body p-4">
+                            <canvas id="revenueSourceChart" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 mt-4">
+                    <div class="card border-0 shadow-sm rounded-4">
+                        <div class="card-header bg-transparent border-0 pt-4 px-4">
+                            <h6 class="text-uppercase fw-bold text-primary"><i class="fas fa-chart-pie me-2"></i>Expenses by Category</h6>
+                        </div>
+                        <div class="card-body p-4">
+                            <canvas id="expenseCategoryChart" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Data Row -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h6 class="text-uppercase fw-bold text-primary"><i class="fas fa-clock me-2"></i>Recent Expenses</h6>
+                </div>
+                <div class="card-body p-4">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Category</th>
+                                    <th>Description</th>
+                                    <th>Amount</th>
+                                </thead>
+                            <tbody>
+                                {% for exp in recent_expenses %}
+                                <tr>
+                                    <td>{{ exp.date.strftime('%Y-%m-%d') }}</td>
+                                    <td>{{ exp.category or '—' }}</td>
+                                    <td>{{ exp.description[:50] }}</td>
+                                    <td class="text-danger">KES {{ "{:,.2f}".format(exp.amount) }}</td>
+                                </tr>
+                                {% else %}
+                                <tr><td colspan="4" class="text-center">No expenses</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h6 class="text-uppercase fw-bold text-primary"><i class="fas fa-clock me-2"></i>Recent Revenue</h6>
+                </div>
+                <div class="card-body p-4">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Source</th>
+                                    <th>Description</th>
+                                    <th>Amount</th>
+                                </thead>
+                            <tbody>
+                                {% for rev in recent_revenues %}
+                                <tr>
+                                    <td>{{ rev.date.strftime('%Y-%m-%d') }}</td>
+                                    <td>{{ rev.source|title }}</td>
+                                    <td>{{ rev.description[:50] }}</td>
+                                    <td class="text-success">KES {{ "{:,.2f}".format(rev.total_amount) }}</td>
+                                </tr>
+                                {% else %}
+                                <tr><td colspan="4" class="text-center">No revenue</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Low Stock Alerts -->
+    {% if low_stock_inputs %}
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+            <h6 class="text-uppercase fw-bold text-danger"><i class="fas fa-exclamation-triangle me-2"></i>Low Stock Alerts</h6>
+        </div>
+        <div class="card-body p-4">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Quantity</th>
+                            <th>Unit</th>
+                            <th>Reorder Level</th>
+                            <th>Status</th>
+                        </thead>
+                    <tbody>
+                        {% for item in low_stock_inputs %}
+                        <tr>
+                            <td class="fw-bold">{{ item.name }}</td>
+                            <td class="text-danger">{{ item.quantity }}</td>
+                            <td>{{ item.unit }}</td>
+                            <td>{{ item.reorder_level }}</td>
+                            <td><span class="badge bg-warning text-dark">{{ item.status }}</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Top Revenue Records -->
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+            <h6 class="text-uppercase fw-bold text-primary"><i class="fas fa-trophy me-2"></i>Top Revenue Records</h6>
+        </div>
+        <div class="card-body p-4">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Source</th>
+                            <th>Description</th>
+                            <th>Customer</th>
+                            <th>Total Amount</th>
+                        </thead>
+                    <tbody>
+                        {% for rev in top_revenues %}
+                        <tr>
+                            <td>{{ rev.date.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ rev.source|title }}</td>
+                            <td>{{ rev.description[:60] }}</td>
+                            <td>{{ rev.customer or '—' }}</td>
+                            <td class="text-success">KES {{ "{:,.2f}".format(rev.total_amount) }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="5" class="text-center">No revenue records</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Monthly trends line chart
+        const ctx = document.getElementById('trendsChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: {{ monthly_labels|tojson }},
+                datasets: [
+                    {
+                        label: 'Revenue (KES)',
+                        data: {{ monthly_revenue|tojson }},
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    },
+                    {
+                        label: 'Expenses (KES)',
+                        data: {{ monthly_expenses|tojson }},
+                        borderColor: '#ef4444',
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    },
+                    {
+                        label: 'Profit (KES)',
+                        data: {{ monthly_profit|tojson }},
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { position: 'top' }
+                }
+            }
+        });
+
+        // Revenue by source pie chart
+        const ctx2 = document.getElementById('revenueSourceChart').getContext('2d');
+        new Chart(ctx2, {
+            type: 'pie',
+            data: {
+                labels: {{ revenue_sources_labels|tojson }},
+                datasets: [{
+                    data: {{ revenue_sources_values|tojson }},
+                    backgroundColor: ['#10b981', '#f59e0b', '#8b5cf6']
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'right' }
+                }
+            }
+        });
+
+        // Expenses by category pie chart
+        const ctx3 = document.getElementById('expenseCategoryChart').getContext('2d');
+        new Chart(ctx3, {
+            type: 'pie',
+            data: {
+                labels: {{ expense_categories_labels|tojson }},
+                datasets: [{
+                    data: {{ expense_categories_values|tojson }},
+                    backgroundColor: ['#ef4444', '#f97316', '#facc15', '#22c55e', '#06b6d4', '#6366f1']
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'right' }
+                }
+            }
+        });
+    });
+</script>
+
+<style>
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .text-white-80 {
+        color: rgba(255,255,255,0.8);
+    }
+    .icon-circle {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .hover-lift {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hover-lift:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.75rem 1.5rem rgba(0,0,0,0.1) !important;
+    }
+</style>
+{% endblock %}

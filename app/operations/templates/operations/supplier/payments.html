@@ -1,0 +1,580 @@
+{% extends "base.html" %}
+
+{% block title %}Supplier Payments{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Header -->
+    <div class="bg-gradient-primary text-white p-4 rounded-4 mb-4 shadow-sm">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+            <div>
+                <h1 class="display-6 fw-bold">Supplier Payments</h1>
+                <p class="text-white-80 mb-0">Manage supplier invoices and record payments</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-primary mb-1">Total Due</p>
+                            <h2 class="mb-0 fw-bold">KES {{ "{:,.2f}".format(grouped.values()|sum(attribute='total_due')) }}</h2>
+                        </div>
+                        <div class="icon-circle bg-primary bg-opacity-10">
+                            <i class="fas fa-credit-card text-primary fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-warning mb-1">Suppliers with Balance</p>
+                            <h2 class="mb-0 fw-bold">{{ grouped|length }}</h2>
+                        </div>
+                        <div class="icon-circle bg-warning bg-opacity-10">
+                            <i class="fas fa-truck text-warning fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-info mb-1">Recent Payments</p>
+                            <h2 class="mb-0 fw-bold">{{ recent_payments|length }}</h2>
+                        </div>
+                        <div class="icon-circle bg-info bg-opacity-10">
+                            <i class="fas fa-history text-info fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+            <h6 class="text-uppercase fw-bold text-primary"><i class="fas fa-filter me-2"></i>Filters</h6>
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Search</label>
+                    <input type="text" id="searchInput" class="form-control" placeholder="Invoice #, supplier, item...">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Supplier</label>
+                    <select id="supplierFilter" class="form-select">
+                        <option value="">All Suppliers</option>
+                        {% for supplier_id, data in grouped.items() %}
+                        <option value="{{ supplier_id }}">{{ data.supplier.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Status</label>
+                    <select id="statusFilter" class="form-select">
+                        <option value="">All</option>
+                        <option value="pending">Pending</option>
+                        <option value="partially_paid">Partially Paid</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button class="btn btn-secondary w-100" id="clearFilters">
+                        <i class="fas fa-times me-2"></i>Clear
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Outstanding Invoices Table -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+            <h6 class="text-uppercase fw-bold text-primary"><i class="fas fa-file-invoice me-2"></i>Outstanding Invoices</h6>
+        </div>
+        <div class="card-body p-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle" id="invoicesTable">
+                    <thead class="bg-light">
+                        的人
+                            <th>Invoice #</th>
+                            <th>Supplier</th>
+                            <th>Date</th>
+                            <th>Amount</th>
+                            <th>Paid</th>
+                            <th>Balance</th>
+                            <th>Due Date</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </thead>
+                    <tbody>
+                        {% for supplier_id, data in grouped.items() %}
+                            {% for inv in data.invoices %}
+                            <tr>
+                                <td class="fw-semibold">{{ inv.invoice_number }}</td>
+                                <td>{{ data.supplier.name }}</td>
+                                <td>{{ inv.invoice_date.strftime('%Y-%m-%d') }}</td>
+                                <td>KES {{ "{:,.2f}".format(inv.amount) }}</td>
+                                <td>KES {{ "{:,.2f}".format(inv.paid_amount|default(0)) }}</td>
+                                <td class="fw-bold {% if inv.balance_due > 0 %}text-danger{% endif %}">KES {{ "{:,.2f}".format(inv.balance_due) }}</td>
+                                <td>
+                                    {% if inv.due_date %}
+                                        {{ inv.due_date.strftime('%Y-%m-%d') }}
+                                        {% if inv.due_date < now.date() and inv.balance_due > 0 %}
+                                            <span class="badge bg-danger ms-1">Overdue</span>
+                                        {% endif %}
+                                    {% else %}—{% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ 'warning' if inv.status == 'pending' else 'info' }}">
+                                        {{ inv.status|replace('_', ' ')|title }}
+                                    </span>
+                                </td>
+                                <td>
+<button class="btn btn-sm btn-outline-info view-invoice-details"
+        data-invoice-id="{{ inv.id }}"
+        data-invoice-number="{{ inv.invoice_number }}"
+        data-supplier-name="{{ data.supplier.name }}"
+        data-order-id="{{ inv.order.id }}"
+        data-order-number="{{ inv.order.order_number }}"
+        data-order-date="{{ inv.order.order_date.strftime('%Y-%m-%d') }}"
+        data-expected-delivery="{{ inv.order.expected_delivery.strftime('%Y-%m-%d') if inv.order.expected_delivery else '' }}"
+        data-item-name="{{ inv.order.request.item_name }}"
+        data-quantity="{{ inv.order.request.quantity }}"
+        data-unit="{{ inv.order.request.unit }}"
+        data-unit-price="{{ inv.order.unit_price }}"
+        data-order-total="{{ inv.order.total_amount }}"
+        data-receiving-id="{{ inv.receiving_id }}"
+        data-amount="{{ inv.amount }}"
+        data-paid="{{ inv.paid_amount|default(0) }}"
+        data-balance="{{ inv.balance_due }}"
+        data-due-date="{{ inv.due_date.strftime('%Y-%m-%d') if inv.due_date else '' }}"
+        data-status="{{ inv.status }}"
+        data-notes="{{ inv.notes or '' }}"
+        data-invoice-date="{{ inv.invoice_date.strftime('%Y-%m-%d') }}">
+    <i class="fas fa-eye"></i> View
+</button>
+                                    <button class="btn btn-sm btn-primary pay-btn"
+                                            data-invoice-id="{{ inv.id }}"
+                                            data-invoice-number="{{ inv.invoice_number }}"
+                                            data-supplier-name="{{ data.supplier.name }}"
+                                            data-balance="{{ inv.balance_due }}">
+                                        <i class="fas fa-money-bill-wave"></i> Pay
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="9" class="text-center py-5 text-muted">No outstanding invoices.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Payments Table -->
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+            <h6 class="text-uppercase fw-bold text-primary"><i class="fas fa-history me-2"></i>Recent Payments</h6>
+        </div>
+        <div class="card-body p-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="bg-light">
+                        的人
+                            <th>Date</th>
+                            <th>Invoice #</th>
+                            <th>Supplier</th>
+                            <th>Amount</th>
+                            <th>Method</th>
+                            <th>Reference</th>
+                            <th>Notes</th>
+                            <th>Recorded By</th>
+                            <th>Actions</th>
+                        </thead>
+                    <tbody>
+                        {% for pmt in recent_payments %}
+                        <tr>
+                            <td>{{ pmt.payment_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td><a href="#">{{ pmt.invoice.invoice_number }}</a></td>
+                            <td>{{ pmt.supplier_account.supplier.name }}</td>
+                            <td class="fw-bold">KES {{ "{:,.2f}".format(pmt.amount) }}</td>
+                            <td><span class="badge bg-secondary">{{ pmt.payment_method|replace('_', ' ')|title }}</span></td>
+                            <td>{{ pmt.reference or '—' }}</td>
+                            <td>{{ pmt.notes or '—' }}</td>
+                            <td>{{ pmt.creator.full_name }}</td>
+                            <td>
+<button class="btn btn-sm btn-outline-info view-invoice-details"
+        data-invoice-id="{{ pmt.invoice.id }}"
+        data-invoice-number="{{ pmt.invoice.invoice_number }}"
+        data-supplier-name="{{ pmt.supplier_account.supplier.name }}"
+        data-order-number="{{ pmt.invoice.order.order_number }}"
+        data-order-date="{{ pmt.invoice.order.order_date.strftime('%Y-%m-%d') }}"
+        data-expected-delivery="{{ pmt.invoice.order.expected_delivery.strftime('%Y-%m-%d') if pmt.invoice.order.expected_delivery else '' }}"
+        data-item-name="{{ pmt.invoice.order.request.item_name }}"
+        data-quantity="{{ pmt.invoice.order.request.quantity }}"
+        data-unit="{{ pmt.invoice.order.request.unit }}"
+        data-unit-price="{{ pmt.invoice.order.unit_price }}"
+        data-order-total="{{ pmt.invoice.order.total_amount }}"
+        data-receiving-id="{{ pmt.invoice.receiving_id }}"
+        data-amount="{{ pmt.invoice.amount }}"
+        data-paid="{{ pmt.invoice.paid_amount|default(0) }}"
+        data-balance="{{ pmt.invoice.balance_due }}"
+        data-due-date="{{ pmt.invoice.due_date.strftime('%Y-%m-%d') if pmt.invoice.due_date else '' }}"
+        data-status="{{ pmt.invoice.status }}"
+        data-notes="{{ pmt.invoice.notes or '' }}"
+        data-invoice-date="{{ pmt.invoice.invoice_date.strftime('%Y-%m-%d') }}">
+    <i class="fas fa-eye"></i> View Invoice
+</button>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="9" class="text-center py-5 text-muted">No payments recorded yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Invoice Details Modal -->
+<div class="modal fade" id="invoiceDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="fas fa-file-invoice me-2"></i>Invoice Details</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Invoice Number</label>
+                        <p id="modalInvoiceNumber" class="form-control-plaintext"></p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Supplier</label>
+                        <p id="modalSupplier" class="form-control-plaintext"></p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Purchase Order</label>
+                        <p id="modalOrderNumber" class="form-control-plaintext"></p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Receiving ID</label>
+                        <p id="modalReceivingId" class="form-control-plaintext"></p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Invoice Date</label>
+                        <p id="modalInvoiceDate" class="form-control-plaintext"></p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Due Date</label>
+                        <p id="modalDueDate" class="form-control-plaintext"></p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Total Amount</label>
+                        <p id="modalAmount" class="form-control-plaintext"></p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Paid Amount</label>
+                        <p id="modalPaid" class="form-control-plaintext"></p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Balance Due</label>
+                        <p id="modalBalance" class="form-control-plaintext text-danger fw-bold"></p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Status</label>
+                        <p id="modalStatus" class="form-control-plaintext"><span class="badge"></span></p>
+                    </div>
+                    <div class="col-12 mb-3">
+                        <label class="form-label fw-bold">Notes</label>
+                        <p id="modalNotes" class="form-control-plaintext text-muted"></p>
+                    </div>
+                </div>
+                <!-- Order Details Section -->
+<div class="mt-4">
+    <h6 class="text-primary mb-3"><i class="fas fa-truck me-2"></i>Purchase Order Details</h6>
+    <div class="row">
+        <div class="col-md-6 mb-2">
+            <label class="form-label fw-bold">Order Number</label>
+            <p id="modalOrderNumber" class="form-control-plaintext"></p>
+        </div>
+        <div class="col-md-6 mb-2">
+            <label class="form-label fw-bold">Order Date</label>
+            <p id="modalOrderDate" class="form-control-plaintext"></p>
+        </div>
+        <div class="col-md-6 mb-2">
+            <label class="form-label fw-bold">Expected Delivery</label>
+            <p id="modalExpectedDelivery" class="form-control-plaintext"></p>
+        </div>
+        <div class="col-md-6 mb-2">
+            <label class="form-label fw-bold">Item</label>
+            <p id="modalItemName" class="form-control-plaintext"></p>
+        </div>
+        <div class="col-md-4 mb-2">
+            <label class="form-label fw-bold">Quantity</label>
+            <p id="modalQuantity" class="form-control-plaintext"></p>
+        </div>
+        <div class="col-md-4 mb-2">
+            <label class="form-label fw-bold">Unit Price</label>
+            <p id="modalUnitPrice" class="form-control-plaintext"></p>
+        </div>
+        <div class="col-md-4 mb-2">
+            <label class="form-label fw-bold">Order Total</label>
+            <p id="modalOrderTotal" class="form-control-plaintext"></p>
+        </div>
+    </div>
+</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Modal -->
+<div class="modal fade" id="paymentModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="POST">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title"><i class="fas fa-money-bill-wave me-2"></i>Record Payment</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="make_payment">
+                    <input type="hidden" name="invoice_id" id="invoiceId">
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i> Upon payment, the supplier's account balance will be reduced and the invoice status updated.
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Invoice Number</label>
+                        <p class="form-control-plaintext fw-bold" id="invoiceNumber"></p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Supplier</label>
+                        <p class="form-control-plaintext" id="supplierName"></p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Balance Due</label>
+                        <p class="form-control-plaintext text-danger fw-bold" id="balanceDue"></p>
+                    </div>
+<div class="mb-3">
+    <label class="form-label">Payment Amount *</label>
+    <input type="number" name="amount" id="paymentAmount" step="0.01" min="0.01" class="form-control" required>
+    <small class="text-muted" id="amountHint"></small>
+</div>
+<div class="mb-3">
+    <label class="form-label">Transaction Cost (e.g., Bank Fees)</label>
+    <input type="number" name="transaction_cost" id="transactionCost" step="0.01" min="0" value="0" class="form-control">
+    <small class="text-muted">Additional cost deducted from petty cash (e.g., M‑Pesa fee)</small>
+</div>
+                    <div class="mb-3">
+                        <label class="form-label">Payment Method</label>
+                        <select name="payment_method" class="form-select" required>
+                            <option value="">Select method</option>
+                            <option value="cash">Cash</option>
+                            <option value="bank_transfer">Bank Transfer</option>
+                            <option value="cheque">Cheque</option>
+                            <option value="mobile_money">Mobile Money</option>
+                        </select>
+                    </div>
+
+                    <!-- Petty Cash Account Selection -->
+                    <div class="mb-3">
+                        <label class="form-label">Petty Cash Account (Source of Funds)</label>
+                        <select name="petty_cash_account_id" class="form-select" required>
+                            <option value="">Select petty cash account</option>
+                            {% for pc in petty_cash_accounts %}
+                            <option value="{{ pc.id }}">{{ pc.name }} (Balance: {{ "{:,.2f}".format(pc.current_balance) }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Reference Number</label>
+                        <input type="text" name="reference" class="form-control" placeholder="e.g., Cheque #, Transaction ID">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Notes</label>
+                        <textarea name="notes" class="form-control" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Record Payment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // --- Filtering logic (unchanged) ---
+        const searchInput = document.getElementById('searchInput');
+        const supplierFilter = document.getElementById('supplierFilter');
+        const statusFilter = document.getElementById('statusFilter');
+        const clearBtn = document.getElementById('clearFilters');
+        const rows = document.querySelectorAll('#invoicesTable tbody tr');
+
+        function filterTable() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const selectedSupplier = supplierFilter.value;
+            const selectedStatus = statusFilter.value;
+
+            rows.forEach(row => {
+                const invoiceNumber = row.cells[0]?.textContent.toLowerCase() || '';
+                const supplier = row.cells[1]?.textContent.toLowerCase() || '';
+                const status = row.cells[7]?.textContent.trim().toLowerCase() || '';
+                const supplierMatch = !selectedSupplier || row.cells[1]?.textContent === supplierFilter.options[supplierFilter.selectedIndex]?.text;
+                const statusMatch = !selectedStatus || status.includes(selectedStatus);
+                const searchMatch = invoiceNumber.includes(searchTerm) || supplier.includes(searchTerm);
+                row.style.display = (searchMatch && supplierMatch && statusMatch) ? '' : 'none';
+            });
+        }
+
+        searchInput.addEventListener('keyup', filterTable);
+        supplierFilter.addEventListener('change', filterTable);
+        statusFilter.addEventListener('change', filterTable);
+        clearBtn.addEventListener('click', function() {
+            searchInput.value = '';
+            supplierFilter.value = '';
+            statusFilter.value = '';
+            filterTable();
+        });
+
+        // --- Invoice Details Modal (populate all fields) ---
+        const viewButtons = document.querySelectorAll('.view-invoice-details');
+        viewButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                // Invoice details
+                const invoiceNumber = this.dataset.invoiceNumber;
+                const supplierName = this.dataset.supplierName;
+                const orderNumber = this.dataset.orderNumber;
+                const receivingId = this.dataset.receivingId;
+                const amount = parseFloat(this.dataset.amount);
+                const paid = parseFloat(this.dataset.paid);
+                const balance = parseFloat(this.dataset.balance);
+                const dueDate = this.dataset.dueDate;
+                const status = this.dataset.status;
+                const notes = this.dataset.notes || '—';
+                const invoiceDate = this.dataset.invoiceDate;
+
+                document.getElementById('modalInvoiceNumber').textContent = invoiceNumber;
+                document.getElementById('modalSupplier').textContent = supplierName;
+                document.getElementById('modalOrderNumber').textContent = orderNumber || '—';
+                document.getElementById('modalReceivingId').textContent = receivingId || '—';
+                document.getElementById('modalInvoiceDate').textContent = invoiceDate;
+                document.getElementById('modalDueDate').textContent = dueDate || '—';
+                document.getElementById('modalAmount').textContent = `KES ${amount.toFixed(2)}`;
+                document.getElementById('modalPaid').textContent = `KES ${paid.toFixed(2)}`;
+                document.getElementById('modalBalance').textContent = `KES ${balance.toFixed(2)}`;
+
+                // Status badge
+                const statusSpan = document.getElementById('modalStatus').querySelector('.badge');
+                if (status === 'pending') {
+                    statusSpan.className = 'badge bg-warning';
+                    statusSpan.textContent = 'Pending';
+                } else if (status === 'partially_paid') {
+                    statusSpan.className = 'badge bg-info';
+                    statusSpan.textContent = 'Partially Paid';
+                } else {
+                    statusSpan.className = 'badge bg-success';
+                    statusSpan.textContent = 'Paid';
+                }
+                document.getElementById('modalNotes').textContent = notes;
+
+                // Order details (new)
+                document.getElementById('modalOrderDate').textContent = this.dataset.orderDate || '—';
+                document.getElementById('modalExpectedDelivery').textContent = this.dataset.expectedDelivery || '—';
+                document.getElementById('modalItemName').textContent = this.dataset.itemName || '—';
+                const quantity = parseFloat(this.dataset.quantity) || 0;
+                const unit = this.dataset.unit || '';
+                document.getElementById('modalQuantity').textContent = `${quantity} ${unit}`;
+                const unitPrice = parseFloat(this.dataset.unitPrice) || 0;
+                document.getElementById('modalUnitPrice').textContent = `KES ${unitPrice.toFixed(2)}`;
+                const orderTotal = parseFloat(this.dataset.orderTotal) || 0;
+                document.getElementById('modalOrderTotal').textContent = `KES ${orderTotal.toFixed(2)}`;
+
+                new bootstrap.Modal(document.getElementById('invoiceDetailsModal')).show();
+            });
+        });
+
+        // --- Payment Modal (unchanged) ---
+        const payButtons = document.querySelectorAll('.pay-btn');
+        payButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const invoiceId = this.dataset.invoiceId;
+                const invoiceNumber = this.dataset.invoiceNumber;
+                const supplierName = this.dataset.supplierName;
+                const balance = parseFloat(this.dataset.balance);
+
+                document.getElementById('invoiceId').value = invoiceId;
+                document.getElementById('invoiceNumber').textContent = invoiceNumber;
+                document.getElementById('supplierName').textContent = supplierName;
+                document.getElementById('balanceDue').textContent = `KES ${balance.toFixed(2)}`;
+                const amountInput = document.getElementById('paymentAmount');
+                amountInput.max = balance;
+                amountInput.value = balance;
+                document.getElementById('amountHint').textContent = `Max: KES ${balance.toFixed(2)}`;
+                new bootstrap.Modal(document.getElementById('paymentModal')).show();
+            });
+        });
+    });
+</script>
+
+<style>
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .text-white-80 {
+        color: rgba(255,255,255,0.8);
+    }
+    .icon-circle {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .hover-lift {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hover-lift:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.75rem 1.5rem rgba(0,0,0,0.1) !important;
+    }
+    .badge {
+        font-weight: 500;
+        font-size: 0.85rem;
+    }
+    .table > :not(caption) > * > * {
+        vertical-align: middle;
+    }
+</style>
+{% endblock %}

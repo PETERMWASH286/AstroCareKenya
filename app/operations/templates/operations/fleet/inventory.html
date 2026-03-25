@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}Fleet Inventory{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Header -->
+    <div class="bg-gradient-primary text-white p-4 rounded-4 mb-4 shadow-sm">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="display-6 fw-bold">Fleet Inventory</h1>
+                <p class="text-white-80">Manage spare parts and consumables for vehicles</p>
+            </div>
+            <div>
+                <button class="btn btn-light rounded-pill" data-bs-toggle="modal" data-bs-target="#addItemModal">
+                    <i class="fas fa-plus-circle me-2"></i>Add Item
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-primary mb-1">Total Items</p>
+                            <h2 class="mb-0 fw-bold">{{ total_items }}</h2>
+                        </div>
+                        <div class="icon-circle bg-primary bg-opacity-10">
+                            <i class="fas fa-boxes text-primary fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-info mb-1">Total Quantity</p>
+                            <h2 class="mb-0 fw-bold">{{ total_quantity|round|int }}</h2>
+                        </div>
+                        <div class="icon-circle bg-info bg-opacity-10">
+                            <i class="fas fa-weight text-info fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-warning mb-1">Low Stock Items</p>
+                            <h2 class="mb-0 fw-bold">{{ low_stock_count }}</h2>
+                        </div>
+                        <div class="icon-circle bg-warning bg-opacity-10">
+                            <i class="fas fa-exclamation-triangle text-warning fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inventory Table -->
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+            <h6 class="text-uppercase fw-bold text-primary"><i class="fas fa-list me-2"></i>Fleet Inventory</h6>
+        </div>
+        <div class="card-body p-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="bg-light">
+                         
+                            <th>Item Name</th>
+                            <th>Quantity</th>
+                            <th>Unit</th>
+                            <th>Reorder Level</th>
+                            <th>Location</th>
+                            <th>Notes</th>
+                            <th>Actions</th>
+                         
+                    </thead>
+                    <tbody>
+                        {% for item in items %}
+                         
+                            <td class="fw-semibold">{{ item.name }}</td>
+                            <td class="{% if item.quantity <= item.reorder_level %}text-danger fw-bold{% endif %}">
+                                {{ "{:,.2f}".format(item.quantity) }}
+                            </td>
+                            <td>{{ item.unit }}</td>
+                            <td>{{ item.reorder_level }}</td>
+                            <td>{{ item.location or '—' }}</td>
+                            <td>{{ item.notes or '—' }}</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary edit-item" data-id="{{ item.id }}" data-name="{{ item.name }}" data-quantity="{{ item.quantity }}" data-unit="{{ item.unit }}" data-reorder="{{ item.reorder_level }}" data-location="{{ item.location or '' }}" data-notes="{{ item.notes or '' }}">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary adjust-stock" data-id="{{ item.id }}" data-name="{{ item.name }}" data-current="{{ item.quantity }}">
+                                    <i class="fas fa-chart-line"></i> Adjust
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger delete-item" data-id="{{ item.id }}" data-name="{{ item.name }}">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
+                            </td>
+                         
+                        {% else %}
+                         
+                            <td colspan="7" class="text-center py-5 text-muted">No items in inventory. Click "Add Item" to start.</td>
+                         
+                        {% endfor %}
+                    </tbody>
+                 
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Item Modal (similar to kitchen) -->
+<!-- Edit Item Modal -->
+<!-- Adjust Stock Modal -->
+<!-- Delete Confirmation Modal -->
+<!-- JavaScript (similar to kitchen) -->
+{% endblock %}

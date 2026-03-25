@@ -8,18 +8,21 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h1 class="display-6 fw-bold text-gradient">Cash Management</h1>
-            <p class="text-muted">Manage cash accounts (paybill, drawers) and transfer to bank</p>
+            <p class="text-muted">Manage cash accounts (paybill, drawers), petty cash, and transfer to bank</p>
         </div>
         <div>
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCashAccountModal">
+            <button class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#addCashAccountModal">
                 <i class="fas fa-plus-circle me-2"></i>New Cash Account
+            </button>
+            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addPettyCashModal">
+                <i class="fas fa-coins me-2"></i>New Petty Cash
             </button>
         </div>
     </div>
 
-    <!-- Summary Cards -->
+    <!-- Summary Cards (update to include petty cash) -->
     <div class="row g-4 mb-5">
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
                 <div class="card-body p-4">
                     <div class="d-flex align-items-center">
@@ -34,31 +37,46 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
                 <div class="card-body p-4">
                     <div class="d-flex align-items-center">
                         <div class="flex-grow-1">
-                            <p class="text-uppercase small fw-bold text-success mb-1">Cash Accounts</p>
-                            <h2 class="mb-0 fw-bold">{{ cash_accounts|length }}</h2>
+                            <p class="text-uppercase small fw-bold text-success mb-1">Petty Cash</p>
+                            <h2 class="mb-0 fw-bold">KSh {{ "{:,.2f}".format(petty_cash_accounts|sum(attribute='current_balance')) }}</h2>
                         </div>
                         <div class="icon-circle bg-success bg-opacity-10">
-                            <i class="fas fa-list text-success fa-2x"></i>
+                            <i class="fas fa-coins text-success fa-2x"></i>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
                 <div class="card-body p-4">
                     <div class="d-flex align-items-center">
                         <div class="flex-grow-1">
-                            <p class="text-uppercase small fw-bold text-info mb-1">Bank Accounts</p>
-                            <h2 class="mb-0 fw-bold">{{ bank_accounts|length }}</h2>
+                            <p class="text-uppercase small fw-bold text-info mb-1">Cash Accounts</p>
+                            <h2 class="mb-0 fw-bold">{{ cash_accounts|length }}</h2>
                         </div>
                         <div class="icon-circle bg-info bg-opacity-10">
-                            <i class="fas fa-university text-info fa-2x"></i>
+                            <i class="fas fa-list text-info fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-warning mb-1">Bank Accounts</p>
+                            <h2 class="mb-0 fw-bold">{{ bank_accounts|length }}</h2>
+                        </div>
+                        <div class="icon-circle bg-warning bg-opacity-10">
+                            <i class="fas fa-university text-warning fa-2x"></i>
                         </div>
                     </div>
                 </div>
@@ -66,7 +84,7 @@
         </div>
     </div>
 
-    <!-- Cash Accounts Section -->
+    <!-- Cash Accounts Section (unchanged) -->
     <div class="card border-0 shadow-sm rounded-4 mb-4">
         <div class="card-header bg-transparent border-0 pt-4 px-4">
             <h6 class="text-uppercase fw-bold text-primary"><i class="fas fa-piggy-bank me-2"></i>Cash Accounts</h6>
@@ -100,7 +118,7 @@
                             </td>
                         </tr>
 
-                        <!-- Transfer Modal for this account -->
+                        <!-- Transfer Modal for this account (to bank) -->
                         <div class="modal fade" id="transferModal{{ acc.id }}" tabindex="-1" aria-hidden="true">
                             <div class="modal-dialog">
                                 <div class="modal-content">
@@ -152,7 +170,94 @@
         </div>
     </div>
 
-    <!-- Bank Accounts Section -->
+    <!-- NEW: Petty Cash Accounts Section -->
+<!-- NEW: Petty Cash Accounts Section -->
+<div class="card border-0 shadow-sm rounded-4 mb-4">
+    <div class="card-header bg-transparent border-0 pt-4 px-4">
+        <h6 class="text-uppercase fw-bold text-success"><i class="fas fa-coins me-2"></i>Petty Cash Accounts</h6>
+    </div>
+    <div class="card-body p-4">
+        {% if petty_cash_accounts %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="bg-light">
+                    <tr>
+                        <th>Name</th>
+                        <th>Account Number</th>   <!-- New column -->
+                        <th>Type</th>
+                        <th class="text-end">Balance (KES)</th>
+                        <th>Description</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pc in petty_cash_accounts %}
+                    <tr>
+                        <td class="fw-semibold">{{ pc.name }}</td>
+                        <td>{{ pc.account_number or 'N/A' }}</td>  <!-- New data -->
+                        <td>{{ pc.account_type }}</td>
+                        <td class="text-end">{{ "{:,.2f}".format(pc.current_balance) }}</td>
+                        <td>{{ pc.description or '' }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#pettyTransferModal{{ pc.id }}">
+                                <i class="fas fa-exchange-alt"></i> Transfer In
+                            </button>
+                        </td>
+                    </tr>
+
+                    <!-- Transfer Modal for this petty cash account (unchanged) -->
+                    <div class="modal fade" id="pettyTransferModal{{ pc.id }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Transfer to {{ pc.name }}</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <form method="POST">
+                                    <div class="modal-body">
+                                        <input type="hidden" name="action" value="transfer_to_petty">
+                                        <input type="hidden" name="petty_cash_account_id" value="{{ pc.id }}">
+                                        <div class="mb-3">
+                                            <label class="form-label">Source Cash Account</label>
+                                            <select name="cash_account_id" class="form-select" required>
+                                                <option value="">Select cash account</option>
+                                                {% for ca in cash_accounts %}
+                                                <option value="{{ ca.id }}">{{ ca.name }} (Balance: {{ "{:,.2f}".format(ca.current_balance) }})</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Amount (KES)</label>
+                                            <input type="number" name="amount" step="0.01" min="0.01" class="form-control" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Description / Purpose</label>
+                                            <textarea name="description" class="form-control" rows="2" placeholder="e.g., Petty cash replenishment for office supplies" required></textarea>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Batch Reference (optional)</label>
+                                            <input type="text" name="batch_ref" class="form-control" placeholder="e.g., PC-001">
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="submit" class="btn btn-success">Transfer</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted text-center py-4">No petty cash accounts yet. Click "New Petty Cash" to create one.</p>
+        {% endif %}
+    </div>
+</div>
+
+    <!-- Bank Accounts Section (unchanged) -->
     <div class="card border-0 shadow-sm rounded-4 mb-4">
         <div class="card-header bg-transparent border-0 pt-4 px-4">
             <h6 class="text-uppercase fw-bold text-primary"><i class="fas fa-university me-2"></i>Bank Accounts</h6>
@@ -189,7 +294,7 @@
         </div>
     </div>
 
-    <!-- Recent Transactions -->
+    <!-- Recent Transactions (updated to show petty cash transfers) -->
     <div class="card border-0 shadow-sm rounded-4">
         <div class="card-header bg-transparent border-0 pt-4 px-4">
             <h6 class="text-uppercase fw-bold text-primary"><i class="fas fa-history me-2"></i>Recent Cash Transactions</h6>
@@ -215,7 +320,7 @@
                         <tr>
                             <td>{{ tx.initiated_at.strftime('%Y-%m-%d %H:%M') }}</td>
                             <td>{{ tx.transaction_ref }}</td>
-                            <td><span class="badge bg-{{ 'success' if tx.transaction_type=='deposit' else 'warning' if tx.transaction_type=='withdrawal' else 'info' }}">{{ tx.transaction_type|replace('_',' ')|title }}</span></td>
+                            <td><span class="badge bg-{{ 'success' if tx.transaction_type=='deposit' else 'warning' if tx.transaction_type=='withdrawal' else 'info' if tx.transaction_type=='bank_transfer' else 'secondary' }}">{{ tx.transaction_type|replace('_',' ')|title }}</span></td>
                             <td>{{ tx.description }}</td>
                             <td class="text-end fw-bold">{{ "{:,.2f}".format(tx.amount) }}</td>
                             <td>{% if tx.source_account %}{{ tx.source_account.name }}{% elif tx.source_transaction %}(M‑Pesa){% else %}—{% endif %}</td>
@@ -233,7 +338,7 @@
     </div>
 </div>
 
-<!-- Add Cash Account Modal -->
+<!-- Add Cash Account Modal (unchanged) -->
 <div class="modal fade" id="addCashAccountModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -273,6 +378,51 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary">Create Account</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add Petty Cash Modal -->
+<div class="modal fade" id="addPettyCashModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Petty Cash Account</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="add_petty_cash_account">
+                    <div class="mb-3">
+                        <label class="form-label">Account Name</label>
+                        <input type="text" name="name" class="form-control" required placeholder="e.g., Office Petty Cash, Reception Petty Cash">
+                    </div>
+                    <div class="mb-3">
+    <label class="form-label">Account Number</label>
+    <input type="text" name="account_number" class="form-control" required placeholder="e.g., 07938390030 (for M-Pesa) or PC-001">
+</div>
+                    <div class="mb-3">
+                        <label class="form-label">Account Type</label>
+                        <select name="account_type" class="form-select" required>
+                            <option value="petty_cash">Petty Cash</option>
+                            <option value="advance">Advance</option>
+                            <option value="float">Float</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Initial Balance (KES)</label>
+                        <input type="number" name="initial_balance" step="0.01" value="0" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea name="description" class="form-control" rows="2" placeholder="Purpose of this petty cash fund"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Create Petty Cash</button>
                 </div>
             </form>
         </div>

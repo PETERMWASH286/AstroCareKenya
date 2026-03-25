@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+
+{% block title %}Petty Cash Ledger{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <!-- Header -->
+    <div class="bg-gradient-primary text-white p-4 rounded-4 mb-4 shadow-sm">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+            <div>
+                <h1 class="display-6 fw-bold">Petty Cash Ledger</h1>
+                <p class="text-white-80 mb-0">Complete transaction history with running balance</p>
+            </div>
+            <div class="mt-3 mt-md-0">
+                <a href="{{ url_for('operations_web_bp.petty_cash_balance') }}" class="btn btn-light rounded-pill">
+                    <i class="fas fa-chart-line me-2"></i>View Balance Summary
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Form -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+            <h6 class="text-uppercase fw-bold text-primary"><i class="fas fa-filter me-2"></i>Filter Transactions</h6>
+        </div>
+        <div class="card-body p-4">
+            <form method="GET" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Petty Cash Account</label>
+                    <select name="account_id" class="form-select">
+                        <option value="">All Accounts</option>
+                        {% for acc in accounts %}
+                        <option value="{{ acc.id }}" {% if selected_account == acc.id %}selected{% endif %}>
+                            {{ acc.name }} ({{ acc.account_number or 'No#' }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">From Date</label>
+                    <input type="date" name="start_date" class="form-control" value="{{ start_date or '' }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">To Date</label>
+                    <input type="date" name="end_date" class="form-control" value="{{ end_date or '' }}">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100 rounded-pill">
+                        <i class="fas fa-search me-2"></i>Apply
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-success mb-1">Total Debits</p>
+                            <h2 class="mb-0 fw-bold">KES {{ "{:,.2f}".format(total_debits) }}</h2>
+                            <small class="text-muted">Money added to petty cash</small>
+                        </div>
+                        <div class="icon-circle bg-success bg-opacity-10">
+                            <i class="fas fa-arrow-up text-success fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-danger mb-1">Total Credits</p>
+                            <h2 class="mb-0 fw-bold">KES {{ "{:,.2f}".format(total_credits) }}</h2>
+                            <small class="text-muted">Money spent from petty cash</small>
+                        </div>
+                        <div class="icon-circle bg-danger bg-opacity-10">
+                            <i class="fas fa-arrow-down text-danger fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100 rounded-4 hover-lift">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-uppercase small fw-bold text-primary mb-1">Closing Balance</p>
+                            <h2 class="mb-0 fw-bold">KES {{ "{:,.2f}".format(closing_balance) }}</h2>
+                            <small class="text-muted">Current petty cash balance</small>
+                        </div>
+                        <div class="icon-circle bg-primary bg-opacity-10">
+                            <i class="fas fa-coins text-primary fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ledger Table -->
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <h6 class="text-uppercase fw-bold text-primary"><i class="fas fa-book me-2"></i>Transaction Ledger</h6>
+                <div class="col-md-3">
+                    <input type="text" id="ledgerSearch" class="form-control form-control-sm" placeholder="Search entries...">
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle" id="ledgerTable">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>Reference</th>
+                            <th>Account</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                            <th class="text-end">Debit (KES)</th>
+                            <th class="text-end">Credit (KES)</th>
+                            <th class="text-end">Balance (KES)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in ledger_entries %}
+                        <tr>
+                            <td>{{ entry.date.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td><code>{{ entry.reference }}</code></td>
+                            <td>{{ entry.account_name }}</td>
+                            <td><span class="badge bg-{{ 'success' if entry.type in ('deposit','transfer_in') else 'danger' }}">{{ entry.type|replace('_',' ')|title }}</span></td>
+                            <td>{{ entry.description }}</td>
+                            <td class="text-end text-success">{{ "{:,.2f}".format(entry.debit) if entry.debit else '—' }}</td>
+                            <td class="text-end text-danger">{{ "{:,.2f}".format(entry.credit) if entry.credit else '—' }}</td>
+                            <td class="text-end fw-bold">{{ "{:,.2f}".format(entry.balance) }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="8" class="text-center py-5 text-muted">No transactions found for the selected filters.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+$(document).ready(function() {
+    // Search functionality
+    $('#ledgerSearch').on('keyup', function() {
+        var value = $(this).val().toLowerCase();
+        $('#ledgerTable tbody tr').filter(function() {
+            $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
+        });
+    });
+
+    // Optional: initialize DataTable for more advanced sorting (if desired)
+    // $('#ledgerTable').DataTable({
+    //     order: [[0, 'asc']],
+    //     pageLength: 50,
+    //     language: { search: "Filter:" }
+    // });
+});
+</script>
+
+<!-- Custom CSS -->
+<style>
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .text-white-80 {
+        color: rgba(255,255,255,0.8);
+    }
+    .icon-circle {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .hover-lift {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hover-lift:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.75rem 1.5rem rgba(0,0,0,0.1) !important;
+    }
+    .badge {
+        font-weight: 500;
+        font-size: 0.85rem;
+    }
+    code {
+        font-size: 0.85rem;
+        background: #f8f9fa;
+        padding: 0.2rem 0.4rem;
+        border-radius: 0.25rem;
+    }
+</style>
+{% endblock %}

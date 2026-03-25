@@ -13,11 +13,12 @@ from sqlalchemy import and_, extract, func
 
 from app.asset_management.models import Asset
 from app.auth.models import Role, User
-from app.finance.models import BankAccount, BankStatement, BankStatementLine, BankTransaction, CashAccount, CashTransaction, ClaimResponse, Expense, ExpenseCategory, FinanceConversation, FinanceMessage, Insurance, InsuranceClaim, InsuranceService, Invoice, InvoiceItem, Payment, PayrollPayment, SalesReport, SalesReportItem
+from app.finance.models import BankAccount, BankStatement, BankStatementLine, BankTransaction, CashAccount, CashTransaction, ClaimResponse, Expense, ExpenseCategory, FinanceConversation, FinanceMessage, Insurance, InsuranceClaim, InsuranceService, Invoice, InvoiceItem, Payment, PayrollPayment, PettyCash, SalesReport, SalesReportItem
 from sqlalchemy.exc import IntegrityError
 
 from app.hr.models import DeductionType, EmployeeDeductionAssignment, LoanRepayment, PaymentMethod, Payroll, PayrollLoan, Payslip, PayslipDeduction, PayslipEarning, StatutoryLiability
 from app.lab.models import LabInventory
+from app.operations.models import PettyCashRequest
 from app.pharmacy.models import PharmacyInventory
 from app.radiology.models import RadiologyInventory
 from app.store.models import LPO, ExternalOrder, PaymentRequest, PurchaseOrder, Requisition, Stock, Supplier, SupplierAccount, SupplierInvoice, SupplierTransaction
@@ -1877,6 +1878,63 @@ def manage_orders():
         return redirect(url_for('finance_web_bp.financial_dashboard'))
 
 
+
+@finance_web_bp.route('/petty-cash-requests', methods=['GET', 'POST'])
+@login_required
+def petty_cash_requests():
+    """View and manage petty cash requests (finance view)."""
+
+    if request.method == 'POST':
+        action = request.form.get('action')
+
+        if action == 'approve':
+            request_id = request.form.get('request_id')
+            notes = request.form.get('approval_notes', '')
+            req = PettyCashRequest.query.get_or_404(request_id)
+            if req.status != 'pending':
+                flash('This request has already been processed.', 'danger')
+                return redirect(url_for('finance_web_bp.petty_cash_requests'))
+            req.status = 'approved'
+            req.approved_by = current_user.id
+            req.approved_at = datetime.utcnow()
+            req.approval_notes = notes
+            db.session.commit()
+            flash(f'Request #{req.id} approved.', 'success')
+            return redirect(url_for('finance_web_bp.petty_cash_requests'))
+
+        elif action == 'deny':
+            request_id = request.form.get('request_id')
+            reason = request.form.get('denial_reason')
+            req = PettyCashRequest.query.get_or_404(request_id)
+            if req.status != 'pending':
+                flash('This request has already been processed.', 'danger')
+                return redirect(url_for('finance_web_bp.petty_cash_requests'))
+            req.status = 'denied'
+            req.approved_by = current_user.id
+            req.approved_at = datetime.utcnow()
+            req.approval_notes = reason
+            db.session.commit()
+            flash(f'Request #{req.id} denied.', 'warning')
+            return redirect(url_for('finance_web_bp.petty_cash_requests'))
+
+    # GET: display requests
+    accounts = PettyCash.query.filter_by(is_active=True).order_by(PettyCash.name).all()
+    pending_requests = PettyCashRequest.query.filter_by(status='pending').order_by(PettyCashRequest.created_at.desc()).all()
+    processed_requests = PettyCashRequest.query.filter(PettyCashRequest.status.in_(['approved', 'denied'])).order_by(PettyCashRequest.created_at.desc()).all()
+
+    total_pending = len(pending_requests)
+    total_approved = sum(1 for r in processed_requests if r.status == 'approved')
+    total_denied = len(processed_requests) - total_approved
+
+    return render_template(
+        'petty_cash_requests.html',
+        accounts=accounts,
+        pending_requests=pending_requests,
+        processed_requests=processed_requests,
+        total_pending=total_pending,
+        total_approved=total_approved,
+        total_denied=total_denied,
+    )
 
 
 @finance_web_bp.route('/approve-order/<int:order_id>')
@@ -6921,7 +6979,7 @@ def stock_pricing():
 @login_required
 def cash_management():
     from datetime import datetime
-    from app.finance.models import CashAccount, BankAccount, CashTransaction
+    from app.finance.models import CashAccount, BankAccount, CashTransaction, PettyCash, PettyCashTransaction
 
     # Handle form submissions
     if request.method == 'POST':
@@ -6952,7 +7010,31 @@ def cash_management():
             flash(f'Cash account "{name}" created successfully.', 'success')
             return redirect(url_for('finance_web_bp.cash_management'))
 
-        # --- Transfer from cash account to bank ---
+        # --- Add new petty cash account ---
+        elif action == 'add_petty_cash_account':
+            name = request.form.get('name')
+            account_type = request.form.get('account_type')
+            account_number = request.form.get('account_number')          # NEW
+            initial_balance = float(request.form.get('initial_balance', 0))
+            description = request.form.get('description')
+
+            if not name or not account_type:
+                flash('Name and account type are required.', 'danger')
+                return redirect(url_for('finance_web_bp.cash_management'))
+
+            petty_cash = PettyCash(
+                name=name,
+                account_type=account_type,
+                account_number=account_number,
+                current_balance=initial_balance,
+                description=description,
+                is_active=True
+            )
+            db.session.add(petty_cash)
+            db.session.commit()
+            flash(f'Petty cash account "{name}" created successfully.', 'success')
+            return redirect(url_for('finance_web_bp.cash_management'))
+
         # --- Transfer from cash account to bank ---
         elif action == 'transfer_to_bank':
             cash_account_id = request.form.get('cash_account_id')
@@ -6972,7 +7054,7 @@ def cash_management():
                 flash('Insufficient balance in cash account.', 'danger')
                 return redirect(url_for('finance_web_bp.cash_management'))
 
-            # Create cash transaction instance without reference
+            # Create cash transaction instance
             cash_tx = CashTransaction(
                 transaction_type='bank_transfer',
                 amount=amount,
@@ -6984,32 +7066,132 @@ def cash_management():
                 batch_number=batch_ref,
                 initiated_by=current_user.id
             )
-            # Generate reference after type is set
             cash_tx.transaction_ref = cash_tx.generate_ref()
             db.session.add(cash_tx)
 
-            # Update cash account balance (decrease)
+            # Update balances
             cash_account.current_balance -= amount
-            db.session.add(cash_account)
-
-            # Update bank account balance (increase)
             bank_account.current_balance += amount
+            db.session.add(cash_account)
             db.session.add(bank_account)
 
             db.session.commit()
             flash(f'Successfully transferred {amount} to {bank_account.bank_name}.', 'success')
             return redirect(url_for('finance_web_bp.cash_management'))
 
+        # --- Transfer from cash account to petty cash ---
+        # --- Transfer from cash account to petty cash ---
+        elif action == 'transfer_to_petty':
+            cash_account_id = request.form.get('cash_account_id')
+            petty_cash_account_id = request.form.get('petty_cash_account_id')
+            amount = float(request.form.get('amount'))
+            description = request.form.get('description', '')
+            batch_ref = request.form.get('batch_ref')
+
+            cash_account = CashAccount.query.get(cash_account_id)
+            petty_cash = PettyCash.query.get(petty_cash_account_id)
+
+            if not cash_account or not petty_cash:
+                flash('Invalid cash or petty cash account.', 'danger')
+                return redirect(url_for('finance_web_bp.cash_management'))
+
+            if cash_account.current_balance < amount:
+                flash('Insufficient balance in cash account.', 'danger')
+                return redirect(url_for('finance_web_bp.cash_management'))
+
+            # 1. Create PettyCashTransaction (transfer in)
+            petty_tx = PettyCashTransaction(
+                transaction_type='transfer_in',
+                amount=amount,
+                description=description,
+                source_cash_account_id=cash_account.id,
+                dest_petty_cash_account_id=petty_cash.id,
+                status='completed',
+                completed_at=datetime.utcnow(),
+                batch_number=batch_ref,
+                initiated_by=current_user.id
+            )
+            petty_tx.transaction_ref = petty_tx.generate_ref()
+            db.session.add(petty_tx)
+
+            # 2. Create CashTransaction (outflow)
+            cash_tx = CashTransaction(
+                transaction_type='petty_transfer',
+                amount=amount,
+                description=description,
+                source_cash_account_id=cash_account.id,
+                dest_petty_cash_account_id=petty_cash.id,
+                status='completed',
+                completed_at=datetime.utcnow(),
+                batch_number=batch_ref,
+                initiated_by=current_user.id
+            )
+            cash_tx.transaction_ref = cash_tx.generate_ref()
+            db.session.add(cash_tx)
+
+            # 3. Create Expense record
+            from app.user_management.models import Department
+
+            def get_or_create_category(name, desc, dept_name):
+                cat = ExpenseCategory.query.filter_by(name=name).first()
+                if not cat:
+                    cat = ExpenseCategory(name=name, description=desc, is_active=True, department=dept_name)
+                    db.session.add(cat)
+                    db.session.commit()
+                return cat
+
+            def get_or_create_department(name):
+                dept = Department.query.filter_by(name=name).first()
+                if not dept:
+                    dept = Department(name=name)
+                    db.session.add(dept)
+                    db.session.commit()
+                return dept
+
+            petty_category = get_or_create_category("Petty Cash", "Transfers to petty cash accounts", "Operations")
+            ops_dept = get_or_create_department("Operations")
+
+            expense = Expense(
+                expense_date=datetime.utcnow(),
+                amount=amount,
+                description=f"Transfer to petty cash: {description}",
+                payment_method='cash',
+                reference_number=cash_tx.transaction_ref,
+                category_id=petty_category.id,
+                department_id=ops_dept.id,
+                initiated_by=current_user.id,
+                status='paid',
+                account_type='cash',
+                account_id=cash_account.id,
+                expense_type='operational',
+                priority='medium',
+                tax_amount=0,
+                tax_rate=0
+            )
+            db.session.add(expense)
+
+            # Update balances
+            cash_account.current_balance -= amount
+            petty_cash.current_balance += amount
+            db.session.add(cash_account)
+            db.session.add(petty_cash)
+
+            db.session.commit()
+            flash(f'Successfully transferred {amount} to petty cash account "{petty_cash.name}".', 'success')
+            return redirect(url_for('finance_web_bp.cash_management'))
+
     # GET request – fetch data
     cash_accounts = CashAccount.query.filter_by(is_active=True).all()
     bank_accounts = BankAccount.query.filter_by(is_active=True).all()
-    # Get recent transactions (last 50)
+    petty_cash_accounts = PettyCash.query.filter_by(is_active=True).all()
     recent_transactions = CashTransaction.query.order_by(CashTransaction.initiated_at.desc()).limit(50).all()
+    # Optionally, also fetch recent petty cash transactions for a combined view, but keep separate for now
 
     return render_template(
         'cash_management.html',
         cash_accounts=cash_accounts,
         bank_accounts=bank_accounts,
+        petty_cash_accounts=petty_cash_accounts,
         recent_transactions=recent_transactions
     )
     
@@ -7170,11 +7352,11 @@ def bank_accounts_management():
 @finance_web_bp.route('/general-ledger')
 @login_required
 def general_ledger():
-    """Show all cash and bank accounts with current balances."""
+    """Show all cash, bank, and petty cash accounts with current balances."""
     cash_accounts = CashAccount.query.filter_by(is_active=True).all()
     bank_accounts = BankAccount.query.filter_by(is_active=True).all()
+    petty_cash_accounts = PettyCash.query.filter_by(is_active=True).all()
 
-    # Combine both types with a type indicator
     accounts = []
     for ca in cash_accounts:
         accounts.append({
@@ -7194,10 +7376,17 @@ def general_ledger():
             'balance': ba.current_balance,
             'currency': 'KES'  # or ba.currency if added
         })
+    for pc in petty_cash_accounts:
+        accounts.append({
+            'id': pc.id,
+            'type': 'petty_cash',
+            'name': pc.name,
+            'account_number': pc.account_number,
+            'balance': pc.current_balance,
+            'currency': pc.currency
+        })
 
-    # Optionally sort by name
     accounts.sort(key=lambda x: x['name'])
-
     return render_template('general_ledger.html', accounts=accounts)
 
 
@@ -7275,6 +7464,40 @@ def cash_account_ledger(account_id):
     )
     
     
+@finance_web_bp.route('/petty-cash-account/<int:account_id>/ledger')
+@login_required
+def petty_cash_account_ledger(account_id):
+    from datetime import datetime
+    account = PettyCash.query.get_or_404(account_id)
+    entries = account.get_ledger_entries()
+
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    if start_date:
+        start = datetime.strptime(start_date, '%Y-%m-%d')
+        entries = [e for e in entries if e['date'] and e['date'].date() >= start.date()]
+    if end_date:
+        end = datetime.strptime(end_date, '%Y-%m-%d')
+        entries = [e for e in entries if e['date'] and e['date'].date() <= end.date()]
+
+    total_debits = sum(e['debit'] for e in entries)
+    total_credits = sum(e['credit'] for e in entries)
+    opening_balance = account.current_balance - (total_debits - total_credits)
+    closing_balance = account.current_balance
+
+    return render_template(
+        'account_ledger.html',
+        account=account,
+        entries=entries,
+        account_type='Petty Cash',
+        total_debits=total_debits,
+        total_credits=total_credits,
+        opening_balance=opening_balance,
+        closing_balance=closing_balance,
+        start_date=start_date,
+        end_date=end_date
+    )    
+
     
 # ----------------------------------------------------------------------
 # Financial Statements
