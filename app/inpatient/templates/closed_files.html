@@ -1,0 +1,353 @@
+{% extends "base.html" %}
+{% block title %}Closed Files{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    {# ── Header ── #}
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+        <div>
+            <h1 class="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">
+                <i class="fas fa-archive mr-2 text-indigo-500"></i>Closed Files
+            </h1>
+            <p class="text-gray-500 dark:text-gray-400 mt-1">View completed inpatient records</p>
+        </div>
+        <div class="text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full">
+            <i class="fas fa-folder-open mr-1"></i> {{ files|length }} records
+        </div>
+    </div>
+
+    {# ── Stats Cards ── #}
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-3 flex items-center justify-between transition hover:shadow-md">
+            <div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total Closed</p>
+                <p class="text-xl font-bold text-gray-800 dark:text-white">{{ files|length }}</p>
+            </div>
+            <div class="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center">
+                <i class="fas fa-archive text-indigo-600 dark:text-indigo-300 text-sm"></i>
+            </div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-3 flex items-center justify-between transition hover:shadow-md">
+            <div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">With Discharge</p>
+                <p class="text-xl font-bold text-emerald-600 dark:text-emerald-400">{{ files|selectattr('discharge')|list|length }}</p>
+            </div>
+            <div class="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center">
+                <i class="fas fa-check-circle text-emerald-600 dark:text-emerald-300 text-sm"></i>
+            </div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-3 flex items-center justify-between transition hover:shadow-md">
+            <div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Theatre Notes</p>
+                <p class="text-xl font-bold text-purple-600 dark:text-purple-400">{{ files|selectattr('theatre_notes')|list|length }}</p>
+            </div>
+            <div class="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center">
+                <i class="fas fa-notes-medical text-purple-600 dark:text-purple-300 text-sm"></i>
+            </div>
+        </div>
+    </div>
+
+    {# ── Table ── #}
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-gray-50 dark:bg-gray-700/40">
+                    <tr>
+                        <th class="px-4 py-2.5 text-left font-medium text-gray-500 dark:text-gray-300 text-xs uppercase tracking-wider">File #</th>
+                        <th class="px-4 py-2.5 text-left font-medium text-gray-500 dark:text-gray-300 text-xs uppercase tracking-wider">Patient</th>
+                        <th class="px-4 py-2.5 text-left font-medium text-gray-500 dark:text-gray-300 text-xs uppercase tracking-wider">Admission</th>
+                        <th class="px-4 py-2.5 text-left font-medium text-gray-500 dark:text-gray-300 text-xs uppercase tracking-wider">Ward</th>
+                        <th class="px-4 py-2.5 text-left font-medium text-gray-500 dark:text-gray-300 text-xs uppercase tracking-wider">Closed</th>
+                        <th class="px-4 py-2.5 text-center font-medium text-gray-500 dark:text-gray-300 text-xs uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                    {% for file in files %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition duration-150">
+                        <td class="px-4 py-3 font-mono text-sm font-medium text-gray-900 dark:text-white">{{ file.file_number }}</td>
+                        <td class="px-4 py-3">
+                            <div class="flex items-center gap-2">
+                                <div class="w-7 h-7 rounded-full bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center flex-shrink-0">
+                                    <i class="fas fa-user text-indigo-600 dark:text-indigo-300 text-xs"></i>
+                                </div>
+                                <span class="font-medium text-gray-800 dark:text-white">{{ file.patient.full_name }}</span>
+                            </div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400">{{ file.patient.reg_no }}</div>
+                        </td>
+                        <td class="px-4 py-3 text-gray-600 dark:text-gray-300">{{ file.admission_date }}</td>
+                        <td class="px-4 py-3 text-gray-600 dark:text-gray-300">{{ file.ward }}</td>
+                        <td class="px-4 py-3 text-gray-600 dark:text-gray-300">{{ file.closed_date }}</td>
+                        <td class="px-4 py-3 text-center">
+                            <button onclick="openFileDetails({{ loop.index0 }})" class="inline-flex items-center px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs shadow-sm hover:shadow transition">
+                                <i class="fas fa-eye mr-1"></i> View
+                            </button>
+                            <button onclick="printFile({{ loop.index0 }})" class="ml-1 inline-flex items-center px-2 py-1 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-200 rounded-lg text-xs transition">
+                                <i class="fas fa-print"></i>
+                            </button>
+                            <button onclick="downloadFile({{ loop.index0 }})" class="ml-1 inline-flex items-center px-2 py-1 bg-red-100 dark:bg-red-900/40 hover:bg-red-200 dark:hover:bg-red-800/60 text-red-700 dark:text-red-300 rounded-lg text-xs transition">
+                                <i class="fas fa-file-pdf"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="px-4 py-6 text-center text-gray-500 dark:text-gray-400">
+                            <i class="fas fa-archive text-2xl mb-2 block"></i>
+                            No closed files yet.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{# ── File Details Modal ── #}
+<div id="fileModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm transition-opacity duration-300 hidden">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-y-auto p-6 transform transition-transform scale-95">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-2xl font-bold text-gray-800 dark:text-white" id="modalTitle">File Details</h2>
+            <button onclick="closeFileModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+
+        <!-- Dynamic content -->
+        <div id="fileDetailsContent">
+            <div class="flex justify-center py-8">
+                <i class="fas fa-spinner fa-spin text-2xl text-indigo-500"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# ── Toast Container ── #}
+<div id="toastContainer" class="fixed bottom-4 right-4 space-y-2 z-50"></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const filesData = {{ files|tojson|safe }};
+
+    // ── Open File Modal ──
+    window.openFileDetails = function(index) {
+        const file = filesData[index];
+        if (!file) return;
+
+        const modal = document.getElementById('fileModal');
+        const content = document.getElementById('fileDetailsContent');
+
+        // Build HTML
+        let html = `
+            <!-- Patient & Admission Info -->
+            <div class="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl p-4 mb-4 border border-indigo-100 dark:border-indigo-800/30">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-xs font-medium text-gray-400 uppercase tracking-wider">Patient</p>
+                        <p class="font-semibold text-gray-800 dark:text-white">${file.patient.full_name}</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-300">Reg: ${file.patient.reg_no}</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-300">Phone: ${file.patient.phone || 'N/A'}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-medium text-gray-400 uppercase tracking-wider">Admission</p>
+                        <p class="text-gray-800 dark:text-white">File: ${file.file_number}</p>
+                        <p class="text-gray-800 dark:text-white">Admitted: ${file.admission_date}</p>
+                        <p class="text-gray-800 dark:text-white">Ward: ${file.ward}</p>
+                        <p class="text-gray-800 dark:text-white">Closed: ${file.closed_date}</p>
+                        <p class="text-gray-800 dark:text-white">Reason: ${file.reason || '—'}</p>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // ── Discharge Summary ──
+        if (file.discharge) {
+            const d = file.discharge;
+            html += `
+                <div class="mb-4">
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center gap-2">
+                        <i class="fas fa-sign-out-alt text-red-500"></i> Discharge Summary
+                    </h3>
+                    <div class="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-4 border border-gray-200 dark:border-gray-700 mt-2">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                            <div><strong>Final Diagnosis:</strong> ${d.final_diagnosis || '—'}</div>
+                            <div><strong>Discharge Date:</strong> ${d.discharge_date ? new Date(d.discharge_date).toLocaleDateString() : '—'}</div>
+                            <div><strong>Condition:</strong> ${d.patient_condition || '—'}</div>
+                            <div><strong>Doctor:</strong> ${d.doctor_name || '—'}</div>
+                            <div class="md:col-span-2"><strong>History:</strong> ${d.history || '—'}</div>
+                            <div class="md:col-span-2"><strong>Examination:</strong> ${d.examination || '—'}</div>
+                            <div class="md:col-span-2"><strong>Investigations:</strong> ${d.investigations || '—'}</div>
+                            <div class="md:col-span-2"><strong>Treatment Given:</strong> ${d.treatment_given || '—'}</div>
+                            <div class="md:col-span-2"><strong>Advice:</strong> ${d.advice || '—'}</div>
+                            <div class="md:col-span-2"><strong>Recommendations:</strong> ${d.recommendations || '—'}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ── Theatre Notes ──
+        if (file.theatre_notes) {
+            const tn = file.theatre_notes;
+            html += `
+                <div class="mb-4">
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center gap-2">
+                        <i class="fas fa-notes-medical text-purple-500"></i> Theatre Notes
+                    </h3>
+                    <div class="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-4 border border-gray-200 dark:border-gray-700 mt-2">
+                        <div class="text-sm">
+                            <p><strong>Data:</strong></p>
+                            <pre class="whitespace-pre-wrap bg-white dark:bg-gray-800 p-3 rounded-lg text-sm border border-gray-200 dark:border-gray-700">${JSON.stringify(tn.data, null, 2)}</pre>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ── Treatment Plan ──
+        if (file.treatment_plan) {
+            const tp = file.treatment_plan;
+            html += `
+                <div class="mb-4">
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center gap-2">
+                        <i class="fas fa-prescription-bottle-alt text-green-500"></i> Treatment Plan
+                    </h3>
+                    <div class="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-4 border border-gray-200 dark:border-gray-700 mt-2">
+                        <div class="text-sm">
+                            ${tp.notes ? `<p><strong>Notes:</strong> ${tp.notes}</p>` : ''}
+                            ${tp.medications && tp.medications.length > 0 ? `
+                                <p><strong>Medications:</strong></p>
+                                <ul class="list-disc list-inside">
+                                    ${tp.medications.map(m => `<li>${m.drug_id} - Dose: ${m.dose}, Freq: ${m.frequency}, Duration: ${m.duration || 'N/A'}, Qty: ${m.quantity}</li>`).join('')}
+                                </ul>
+                            ` : '<p>No medications recorded.</p>'}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ── Invoices ──
+        if (file.invoices && file.invoices.length > 0) {
+            html += `
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center gap-2">
+                        <i class="fas fa-file-invoice-dollar text-amber-500"></i> Invoices
+                    </h3>
+                    <div class="overflow-x-auto mt-2">
+                        <table class="w-full text-sm border border-gray-200 dark:border-gray-700 rounded-lg">
+                            <thead class="bg-gray-50 dark:bg-gray-700/40">
+                                <tr>
+                                    <th class="px-4 py-2 text-left font-medium">#</th>
+                                    <th class="px-4 py-2 text-left font-medium">Type</th>
+                                    <th class="px-4 py-2 text-right font-medium">Amount</th>
+                                    <th class="px-4 py-2 text-right font-medium">Paid</th>
+                                    <th class="px-4 py-2 text-right font-medium">Balance</th>
+                                    <th class="px-4 py-2 text-center font-medium">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${file.invoices.map(inv => `
+                                    <tr class="border-b border-gray-200 dark:border-gray-700">
+                                        <td class="px-4 py-2 font-mono">${inv.invoice_number}</td>
+                                        <td class="px-4 py-2 capitalize">${inv.invoice_type}</td>
+                                        <td class="px-4 py-2 text-right">Ksh ${inv.grand_total.toFixed(2)}</td>
+                                        <td class="px-4 py-2 text-right">Ksh ${inv.paid_amount.toFixed(2)}</td>
+                                        <td class="px-4 py-2 text-right font-bold ${(inv.grand_total - inv.paid_amount) <= 0 ? 'text-emerald-600' : 'text-amber-600'}">Ksh ${(inv.grand_total - inv.paid_amount).toFixed(2)}</td>
+                                        <td class="px-4 py-2 text-center">
+                                            <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium
+                                                ${inv.payment_status === 'paid' ? 'bg-emerald-100 text-emerald-700' :
+                                                  inv.payment_status === 'partially_paid' ? 'bg-orange-100 text-orange-700' :
+                                                  'bg-red-100 text-red-700'}">
+                                                ${inv.payment_status.replace('_', ' ')}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        content.innerHTML = html;
+        modal.classList.remove('hidden');
+    };
+
+    window.closeFileModal = function() {
+        document.getElementById('fileModal').classList.add('hidden');
+    };
+
+    // ── Print File ──
+    window.printFile = function(index) {
+        openFileDetails(index);
+        setTimeout(() => {
+            const content = document.getElementById('fileDetailsContent');
+            const printWin = window.open('', '_blank');
+            printWin.document.write(`
+                <html>
+                    <head><title>Closed File</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 20px; background: white; color: black; }
+                        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+                        th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }
+                        .text-right { text-align: right; }
+                        .text-center { text-align: center; }
+                        .font-bold { font-weight: bold; }
+                        .bg-gray-50 { background: #f9f9f9; }
+                        .rounded-xl { border-radius: 8px; }
+                        .border { border: 1px solid #ddd; }
+                        .p-4 { padding: 16px; }
+                        .mb-4 { margin-bottom: 16px; }
+                        .mt-2 { margin-top: 8px; }
+                        .grid { display: grid; }
+                        .grid-cols-2 { grid-template-columns: 1fr 1fr; }
+                        .gap-4 { gap: 16px; }
+                        pre { white-space: pre-wrap; background: #f5f5f5; padding: 12px; border-radius: 8px; }
+                    </style>
+                    </head>
+                    <body>
+                        ${content.innerHTML}
+                    </body>
+                </html>
+            `);
+            printWin.document.close();
+            setTimeout(() => { printWin.print(); }, 500);
+        }, 300);
+    };
+
+    // ── Download PDF (placeholder) ──
+    window.downloadFile = function(index) {
+        showToast('PDF download coming soon.', 'info');
+    };
+
+    // ── Toast System ──
+    function showToast(message, type = 'success') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        const bg = type === 'success' ? 'bg-green-600' : type === 'error' ? 'bg-red-600' : 'bg-amber-500';
+        toast.className = `px-3 py-1.5 rounded-lg shadow-lg text-white ${bg} transition-all duration-300 transform translate-x-0 mb-1.5 text-sm`;
+        toast.textContent = message;
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(20px)';
+            setTimeout(() => toast.remove(), 300);
+        }, 4000);
+    }
+
+    // ── Close modal on backdrop click ──
+    document.getElementById('fileModal').addEventListener('click', function(e) {
+        if (e.target === this) closeFileModal();
+    });
+
+});
+</script>
+
+<style>
+tr { transition: background 0.15s ease; }
+pre { max-height: 300px; overflow: auto; }
+</style>
+{% endblock %}

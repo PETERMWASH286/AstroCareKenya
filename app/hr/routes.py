@@ -20,7 +20,7 @@ from flask_login import login_required, current_user
 from datetime import datetime, date, timedelta
 from decimal import Decimal
 from .models import (
-    AppealStatus, Candidate, DisciplinaryAction, DisciplinaryActionStatus, DisciplinaryActionType, DisciplinaryAppeal, DisciplinaryCase, DisciplinaryCaseStatus, DisciplinaryCaseType, DisciplinaryDocument, DisciplinaryHearing, DisciplinaryInvestigation, DisciplinaryPolicy, DisciplinaryReport, DisciplinarySeverity, EmployeeDeductionAssignment, HearingParticipant, HearingStatus, Interview, InterviewPanel, InterviewPanelMember, InterviewScore, InvestigationEvidence, InvestigationStatus, JobCategory, JobPosting, OfferLetter, PaymentMethod, PayrollPeriod, Payroll, Payslip, EarningType, DeductionType,
+    AppealStatus, Candidate, DisciplinaryAction, DisciplinaryActionStatus, DisciplinaryActionType, DisciplinaryAppeal, DisciplinaryCase, DisciplinaryCaseStatus, DisciplinaryCaseType, DisciplinaryDocument, DisciplinaryHearing, DisciplinaryInvestigation, DisciplinaryPolicy, DisciplinaryReport, DisciplinarySeverity, EmployeeDeductionAssignment, HearingParticipant, HearingStatus, Interview, InterviewPanel, InterviewPanelMember, InterviewScore, InvestigationEvidence, InvestigationStatus, JobCategory, JobPosting, LeaveAllocation, OfferLetter, PaymentMethod, PayrollPeriod, Payroll, Payslip, EarningType, DeductionType,
     PayslipEarning, PayslipDeduction, PAYEBand, NHIFRate, NSSFRate,
     EmployeePayrollInfo, PayrollAdjustment, PayrollLoan, LoanRepayment, panel_job_postings,
     PayrollReport, DutyShift, DutyRota, DutyAssignment, AttendanceRecord, LeaveRequest, LeaveType, PolicyCategory, SHARate
@@ -9517,3 +9517,239 @@ def update_offer_status(offer_id):
     
     flash(f'Offer status updated to {new_status}.', 'success')
     return redirect(url_for('hr_web.view_job_offer', offer_id=offer_id))    
+
+
+
+
+@hr_web_bp.route('/leave/request')
+@login_required
+def leave_request():
+    """Request a new leave."""
+    return render_template('leave-management/leave_request.html')
+
+@hr_web_bp.route('/leave/requests')
+@login_required
+def leave_requests():
+    """View all leave requests (for staff or admin)."""
+    return render_template('leave-management/leave_requests.html')
+
+@hr_web_bp.route('/leave/balances')
+@login_required
+def leave_balances():
+    """View leave balances for staff."""
+    return render_template('leave-management/leave_balances.html')
+
+@hr_web_bp.route('/leave/calendar')
+@login_required
+def leave_calendar():
+    """View a calendar of leave schedules."""
+    return render_template('leave-management/leave_calendar.html')
+
+
+@hr_web_bp.route('/leave/types', methods=['GET', 'POST'])
+@login_required
+def leave_types():
+    if not current_user.has_privilege('hr:leave:types'):
+        flash('You do not have permission to manage leave types.', 'danger')
+        return redirect(url_for('main.dashboard'))
+
+    if request.method == 'POST':
+        action = request.form.get('action')
+
+        if action == 'add':
+            name = request.form.get('name')
+            code = request.form.get('code')
+            is_paid = request.form.get('is_paid') == '1'
+            max_days = request.form.get('max_days_per_year')
+            requires_doc = request.form.get('requires_document') == '1'
+            description = request.form.get('description')
+
+            if not all([name, code, max_days]):
+                flash('Name, code, and maximum days are required.', 'danger')
+                return redirect(url_for('hr_web.leave_types'))
+
+            lt = LeaveType(
+                name=name,
+                code=code.upper(),
+                is_paid=is_paid,
+                max_days_per_year=float(max_days),
+                requires_document=requires_doc,
+                description=description,
+                is_active=True
+            )
+            db.session.add(lt)
+            db.session.commit()
+            flash(f'Leave type "{name}" added.', 'success')
+            return redirect(url_for('hr_web.leave_types'))
+
+        elif action == 'edit':
+            lt_id = request.form.get('leave_type_id')
+            lt = LeaveType.query.get_or_404(lt_id)
+            lt.name = request.form.get('name')
+            lt.code = request.form.get('code').upper()
+            lt.is_paid = request.form.get('is_paid') == '1'
+            lt.max_days_per_year = float(request.form.get('max_days_per_year'))
+            lt.requires_document = request.form.get('requires_document') == '1'
+            lt.description = request.form.get('description')
+            db.session.commit()
+            flash(f'Leave type "{lt.name}" updated.', 'success')
+            return redirect(url_for('hr_web.leave_types'))
+
+        elif action == 'toggle':
+            lt_id = request.form.get('leave_type_id')
+            lt = LeaveType.query.get_or_404(lt_id)
+            lt.is_active = not lt.is_active
+            db.session.commit()
+            status = 'activated' if lt.is_active else 'deactivated'
+            flash(f'Leave type "{lt.name}" {status}.', 'success')
+            return redirect(url_for('hr_web.leave_types'))
+
+        elif action == 'delete':
+            lt_id = request.form.get('leave_type_id')
+            lt = LeaveType.query.get_or_404(lt_id)
+            # Check if there are existing allocations/requests? For simplicity, we delete if none
+            if lt.allocations.first() or lt.requests.first():
+                flash(f'Cannot delete "{lt.name}" because it has existing allocations or requests.', 'danger')
+            else:
+                db.session.delete(lt)
+                db.session.commit()
+                flash(f'Leave type "{lt.name}" deleted.', 'info')
+            return redirect(url_for('hr_web.leave_types'))
+
+    # GET – display
+    leave_types = LeaveType.query.order_by(LeaveType.name).all()
+    return render_template('leave-management/leave_types.html', leave_types=leave_types)
+
+@hr_web_bp.route('/leave/approvals')
+@login_required
+def leave_approvals():
+    """Approve or reject pending leave requests."""
+    return render_template('leave-management/leave_approvals.html')
+
+@hr_web_bp.route('/leave/reports')
+@login_required
+def leave_reports():
+    """Generate reports on leave usage."""
+    return render_template('leave-management/leave_reports.html')
+
+
+
+
+
+@hr_web_bp.route('/leave/manage', methods=['GET', 'POST'])
+@login_required
+def leave_manage():
+    if request.method == 'POST':
+        action = request.form.get('action')
+
+        # --- Individual allocation ---
+        if action == 'allocate_individual':
+            employee_id = request.form.get('employee_id')
+            leave_type_id = request.form.get('leave_type_id')
+            start_date_str = request.form.get('start_date')
+            days = float(request.form.get('days', 0))
+            notes = request.form.get('notes')
+
+            if not all([employee_id, leave_type_id, start_date_str, days]):
+                flash('All fields are required.', 'danger')
+                return redirect(url_for('hr_web.leave_manage'))
+
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            end_date = start_date + timedelta(days=int(days) - 1)
+            reason = f"Leave allocation by HR"  # or use notes as reason
+
+            # Create approved leave request
+            leave_req = LeaveRequest(
+                employee_id=employee_id,
+                leave_type_id=leave_type_id,
+                start_date=start_date,
+                end_date=end_date,
+                days_requested=days,
+                reason=notes or reason,
+                status='approved',
+                approved_by=current_user.id,
+                approved_at=datetime.utcnow(),
+                approval_notes='Allocated by HR'
+            )
+            db.session.add(leave_req)
+            db.session.commit()
+
+            flash('Leave allocated successfully.', 'success')
+            # Redirect back to same department and year
+            return redirect(url_for('hr_web.leave_manage',
+                                    department=request.form.get('department_id'),
+                                    year=start_date.year))
+
+        # --- Bulk allocation by department ---
+        elif action == 'allocate_department':
+            department_id = request.form.get('department_id')
+            leave_type_id = request.form.get('leave_type_id')
+            start_date_str = request.form.get('start_date')
+            days = float(request.form.get('days', 0))
+            notes = request.form.get('notes')
+
+            if not all([department_id, leave_type_id, start_date_str, days]):
+                flash('All fields are required.', 'danger')
+                return redirect(url_for('hr_web.leave_manage'))
+
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            end_date = start_date + timedelta(days=int(days) - 1)
+
+            employees = User.query.filter_by(department_id=department_id, is_active=True).all()
+            if not employees:
+                flash('No active employees found in this department.', 'warning')
+                return redirect(url_for('hr_web.leave_manage'))
+
+            count = 0
+            for emp in employees:
+                leave_req = LeaveRequest(
+                    employee_id=emp.id,
+                    leave_type_id=leave_type_id,
+                    start_date=start_date,
+                    end_date=end_date,
+                    days_requested=days,
+                    reason=notes or f"Bulk allocation for department",
+                    status='approved',
+                    approved_by=current_user.id,
+                    approved_at=datetime.utcnow(),
+                    approval_notes='Bulk allocation by HR'
+                )
+                db.session.add(leave_req)
+                count += 1
+            db.session.commit()
+            flash(f'Leave allocated to {count} employees.', 'success')
+            return redirect(url_for('hr_web.leave_manage',
+                                    department=department_id,
+                                    year=start_date.year))
+
+        else:
+            flash('Invalid action.', 'danger')
+            return redirect(url_for('hr_web.leave_manage'))
+
+    # --- GET: display form for department selection ---
+    year = request.args.get('year', datetime.utcnow().year, type=int)
+    department_id = request.args.get('department', type=int)
+
+    employees = []
+    if department_id:
+        employees = User.query.filter_by(department_id=department_id, is_active=True).order_by(User.full_name).all()
+
+    leave_types = LeaveType.query.filter_by(is_active=True).all()
+    departments = Department.query.order_by(Department.name).all()
+
+    return render_template(
+        'leave-management/leave_manage.html',
+        year=year,
+        employees=employees,
+        leave_types=leave_types,
+        departments=departments,
+        selected_department=department_id
+    )
+    
+    
+
+@hr_web_bp.route('/leave/offs')
+@login_required
+def leave_offs():
+    """Manage public holidays, rest days, and company offs."""
+    return render_template('hr/leave_offs.html')

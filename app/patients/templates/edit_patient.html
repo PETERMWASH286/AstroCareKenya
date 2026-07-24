@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+{% block title %}Edit Patient – {{ patient.full_name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+  <!-- Header -->
+  <div class="mb-8 flex items-center justify-between">
+    <div>
+      <h1 class="text-3xl font-semibold text-gray-900 dark:text-white">Edit Patient</h1>
+      <p class="mt-1 text-gray-600 dark:text-gray-400">
+        Update details for <span class="font-medium">{{ patient.full_name }}</span>
+        <span class="ml-2 px-2 py-0.5 bg-gray-200 dark:bg-gray-700 text-xs rounded-full">{{ patient.reg_no }}</span>
+      </p>
+    </div>
+    <a href="{{ url_for('patients_web.view_patients') }}"
+       class="inline-flex items-center px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg text-sm transition">
+      <i class="fas fa-arrow-left mr-2"></i> Back to Registry
+    </a>
+  </div>
+
+  <!-- Main Form Card -->
+  <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-lg overflow-hidden">
+
+    <form method="POST" action="{{ url_for('patients_web.edit_patient_details', patient_id=patient.id) }}"
+          class="space-y-8 p-6 md:p-8">
+
+      {{ form.hidden_tag() if form else '' }}
+
+      <!-- ====== SECTION: Personal Information ====== -->
+      <div>
+        <h2 class="text-xl font-medium text-gray-800 dark:text-gray-100 flex items-center gap-2">
+          <i class="fas fa-user-circle text-indigo-500"></i> Personal Information
+        </h2>
+        <hr class="my-4 border-gray-200 dark:border-gray-700">
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+          <!-- Reg No (read‑only) -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Registration Number</label>
+            <input type="text" value="{{ patient.reg_no }}" readonly
+                   class="mt-1 w-full px-4 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-300 cursor-not-allowed">
+          </div>
+
+          <!-- First Name -->
+          <div>
+            <label for="first_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">First Name *</label>
+            <input type="text" id="first_name" name="first_name" value="{{ patient.first_name }}"
+                   class="mt-1 w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-800 dark:text-white">
+          </div>
+
+          <!-- Last Name -->
+          <div>
+            <label for="last_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Last Name *</label>
+            <input type="text" id="last_name" name="last_name" value="{{ patient.last_name }}"
+                   class="mt-1 w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-800 dark:text-white">
+          </div>
+
+          <!-- Date of Birth -->
+          <div>
+            <label for="dob" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Date of Birth *</label>
+            <input type="date" id="dob" name="dob" value="{{ patient.date_of_birth.strftime('%Y-%m-%d') }}"
+                   class="mt-1 w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-800 dark:text-white">
+          </div>
+
+          <!-- Age (auto‑calculated) -->
+          <div>
+            <label for="age" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Age</label>
+            <input type="number" id="age" name="age" value="{{ patient.age }}"
+                   class="mt-1 w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-800 dark:text-white">
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Auto‑calculated from DOB</p>
+          </div>
+
+          <!-- Gender -->
+          <div>
+            <label for="gender" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Gender *</label>
+            <select id="gender" name="gender"
+                    class="mt-1 w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-800 dark:text-white">
+              <option value="">Select</option>
+              <option value="Male" {% if patient.gender == 'Male' %}selected{% endif %}>Male</option>
+              <option value="Female" {% if patient.gender == 'Female' %}selected{% endif %}>Female</option>
+              <option value="Other" {% if patient.gender == 'Other' %}selected{% endif %}>Other</option>
+            </select>
+          </div>
+
+          <!-- Phone -->
+          <div>
+            <label for="phone" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Phone *</label>
+            <input type="tel" id="phone" name="phone" value="{{ patient.phone }}"
+                   class="mt-1 w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-800 dark:text-white">
+          </div>
+
+          <!-- Email -->
+          <div>
+            <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
+            <input type="email" id="email" name="email" value="{{ patient.email or '' }}"
+                   class="mt-1 w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-800 dark:text-white">
+          </div>
+
+          <!-- Marital Status -->
+          <div>
+            <label for="marital_status" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Marital Status</label>
+            <select id="marital_status" name="marital_status"
+                    class="mt-1 w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-800 dark:text-white">
+              <option value="">Select</option>
+              <option value="Single" {% if patient.marital_status == 'Single' %}selected{% endif %}>Single</option>
+              <option value="Married" {% if patient.marital_status == 'Married' %}selected{% endif %}>Married</option>
+              <option value="Divorced" {% if patient.marital_status == 'Divorced' %}selected{% endif %}>Divorced</option>
+              <option value="Widowed" {% if patient.marital_status == 'Widowed' %}selected{% endif %}>Widowed</option>
+            </select>
+          </div>
+
+          <!-- National ID -->
+          <div>
+            <label for="national_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">National ID</label>
+            <input type="text" id="national_id" name="national_id" value="{{ patient.national_id or '' }}"
+                   class="mt-1 w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-800 dark:text-white">
+          </div>
+
+          <!-- Guardian ID -->
+          <div>
+            <label for="guardian_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Guardian ID</label>
+            <input type="text" id="guardian_id" name="guardian_id" value="{{ patient.guardian_id or '' }}"
+                   class="mt-1 w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-800 dark:text-white">
+          </div>
+
+          <!-- ===== NEW: MOH Patient IP Number ===== -->
+          <div>
+            <label for="moh_ip_number" class="block text-sm font-medium text-gray-700 dark:text-gray-300">MOH Patient IP Number</label>
+            <input type="text" id="moh_ip_number" name="moh_ip_number" value="{{ patient.moh_ip_number or '' }}"
+                   class="mt-1 w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-800 dark:text-white">
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Ministry of Health Inpatient (IP) unique identifier</p>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ====== SECTION: Address ====== -->
+      <div>
+        <h2 class="text-xl font-medium text-gray-800 dark:text-gray-100 flex items-center gap-2">
+          <i class="fas fa-map-marker-alt text-green-500"></i> Address & Location
+        </h2>
+        <hr class="my-4 border-gray-200 dark:border-gray-700">
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label for="county" class="block text-sm font-medium text-gray-700 dark:text-gray-300">County</label>
+            <input type="text" id="county" name="county" value="{{ patient.county or '' }}"
+                   class="mt-1 w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-800 dark:text-white">
+          </div>
+          <div>
+            <label for="subcounty" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Sub‑County</label>
+            <input type="text" id="subcounty" name="subcounty" value="{{ patient.subcounty or '' }}"
+                   class="mt-1 w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-800 dark:text-white">
+          </div>
+          <div>
+            <label for="ward" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Ward</label>
+            <input type="text" id="ward" name="ward" value="{{ patient.ward or '' }}"
+                   class="mt-1 w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-800 dark:text-white">
+          </div>
+          <div>
+            <label for="residence" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Residence / Village</label>
+            <input type="text" id="residence" name="residence" value="{{ patient.residence or '' }}"
+                   class="mt-1 w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-800 dark:text-white">
+          </div>
+        </div>
+      </div>
+
+      <!-- ====== SECTION: Next of Kin ====== -->
+      <div>
+        <h2 class="text-xl font-medium text-gray-800 dark:text-gray-100 flex items-center gap-2">
+          <i class="fas fa-address-book text-amber-500"></i> Next of Kin
+        </h2>
+        <hr class="my-4 border-gray-200 dark:border-gray-700">
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label for="kin_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Full Name</label>
+            <input type="text" id="kin_name" name="kin_name" value="{{ patient.kin_name or '' }}"
+                   class="mt-1 w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-800 dark:text-white">
+          </div>
+          <div>
+            <label for="kin_relationship" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Relationship</label>
+            <input type="text" id="kin_relationship" name="kin_relationship" value="{{ patient.kin_relationship or '' }}"
+                   class="mt-1 w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-800 dark:text-white">
+          </div>
+          <div>
+            <label for="kin_phone" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Phone</label>
+            <input type="tel" id="kin_phone" name="kin_phone" value="{{ patient.kin_phone or '' }}"
+                   class="mt-1 w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-800 dark:text-white">
+          </div>
+          <div>
+            <label for="kin_email" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
+            <input type="email" id="kin_email" name="kin_email" value="{{ patient.kin_email or '' }}"
+                   class="mt-1 w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-800 dark:text-white">
+          </div>
+        </div>
+      </div>
+
+      <!-- ====== SECTION: Payment & Insurance ====== -->
+      <div>
+        <h2 class="text-xl font-medium text-gray-800 dark:text-gray-100 flex items-center gap-2">
+          <i class="fas fa-credit-card text-blue-500"></i> Payment & Insurance
+        </h2>
+        <hr class="my-4 border-gray-200 dark:border-gray-700">
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label for="payment_method" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Payment Method</label>
+            <select id="payment_method" name="payment_method"
+                    class="mt-1 w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-800 dark:text-white">
+              <option value="">Select</option>
+              <option value="Cash" {% if patient.payment_method == 'Cash' %}selected{% endif %}>Cash</option>
+              <option value="Insurance" {% if patient.payment_method == 'Insurance' %}selected{% endif %}>Insurance</option>
+              <option value="M-Pesa" {% if patient.payment_method == 'M-Pesa' %}selected{% endif %}>M‑Pesa</option>
+              <option value="Bank Transfer" {% if patient.payment_method == 'Bank Transfer' %}selected{% endif %}>Bank Transfer</option>
+              <option value="Other" {% if patient.payment_method == 'Other' %}selected{% endif %}>Other</option>
+            </select>
+          </div>
+          <div>
+            <label for="insurance_provider" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Insurance Provider</label>
+            <input type="text" id="insurance_provider" name="insurance_provider" value="{{ patient.insurance_provider or '' }}"
+                   class="mt-1 w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-800 dark:text-white">
+          </div>
+          <div>
+            <label for="insurance_number" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Insurance Number</label>
+            <input type="text" id="insurance_number" name="insurance_number" value="{{ patient.insurance_number or '' }}"
+                   class="mt-1 w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-800 dark:text-white">
+          </div>
+        </div>
+      </div>
+
+      <!-- ====== Actions ====== -->
+      <div class="flex flex-col sm:flex-row justify-end gap-4 pt-6 border-t border-gray-200 dark:border-gray-700">
+        <a href="{{ url_for('patients_web.view_patients') }}"
+           class="inline-flex justify-center items-center px-6 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg text-sm font-medium transition">
+          Cancel
+        </a>
+        <button type="submit"
+                class="inline-flex justify-center items-center px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium shadow-md transition transform hover:scale-[1.02]">
+          <i class="fas fa-save mr-2"></i> Update Patient
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+<!-- Small script to auto‑calculate age from DOB -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const dobInput = document.getElementById('dob');
+    const ageInput = document.getElementById('age');
+
+    function calculateAge(birthDate) {
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const m = today.getMonth() - birthDate.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      return age;
+    }
+
+    dobInput.addEventListener('change', function() {
+      if (this.value) {
+        const birth = new Date(this.value);
+        if (!isNaN(birth)) {
+          ageInput.value = calculateAge(birth);
+        }
+      }
+    });
+  });
+</script>
+{% endblock %}

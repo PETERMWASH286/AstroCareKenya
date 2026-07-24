@@ -1,0 +1,378 @@
+{% extends "base.html" %}
+{% block title %}Inpatient Discharge{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+  {# ── Header ── #}
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+    <div>
+      <h1 class="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">
+        <i class="fas fa-sign-out-alt mr-2 text-indigo-500"></i>Inpatient Discharge
+      </h1>
+      <p class="text-gray-500 dark:text-gray-400 mt-1">Select an admitted patient to start discharge process</p>
+    </div>
+    <a href="{{ url_for('inpatient_web_bp.dashboard') }}" 
+       class="inline-flex items-center px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-xl transition">
+      <i class="fas fa-arrow-left mr-2"></i> Dashboard
+    </a>
+  </div>
+
+  {# ── Filters ── #}
+  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 p-4 mb-6">
+    <div class="flex flex-col sm:flex-row gap-4">
+      <div class="flex-1 relative">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <i class="fas fa-search text-gray-400 dark:text-gray-500"></i>
+        </div>
+        <input type="text" id="searchInput" 
+               class="block w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-indigo-500 transition"
+               placeholder="Search by name, reg no, phone, or file no…">
+      </div>
+      <button id="resetFilters" class="px-4 py-2.5 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded-xl transition">
+        <i class="fas fa-undo mr-2"></i> Reset
+      </button>
+    </div>
+    <div class="text-sm text-gray-500 dark:text-gray-400 mt-2">
+      <span id="resultCount">{{ patients|length }}</span> admitted patients
+    </div>
+  </div>
+
+  {# ── Patient Table ── #}
+  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+        <thead class="bg-gray-50 dark:bg-gray-700/50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Admitted</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Reg No</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Patient</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Ward / Bed</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Diagnosis</th>
+            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Action</th>
+          </tr>
+        </thead>
+        <tbody id="patientTableBody" class="bg-white dark:bg-gray-800 divide-y divide-gray-100 dark:divide-gray-700">
+          {% for p in patients %}
+          <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition" data-patient-id="{{ p.patient_id }}" data-admission-id="{{ p.id }}" data-search="{{ p.reg_no }} {{ p.full_name }} {{ p.phone }} {{ p.file_number }}">
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">{{ p.admission_date }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{{ p.reg_no }}</td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="flex items-center">
+                <div class="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
+                  <i class="fas fa-user text-indigo-600 dark:text-indigo-300"></i>
+                </div>
+                <div class="ml-3">
+                  <div class="text-sm font-medium text-gray-800 dark:text-white">{{ p.full_name }}</div>
+                  <div class="text-xs text-gray-500 dark:text-gray-400">{{ p.age }} yrs · {{ p.gender }}</div>
+                </div>
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">{{ p.ward_name }} <span class="text-gray-400">/</span> {{ p.bed_number or '—' }}</td>
+            <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-300 max-w-xs truncate">{{ p.diagnosis or 'N/A' }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-center">
+              <button onclick="openDischargeModal({{ p.id }})" 
+                      class="inline-flex items-center px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs shadow-md hover:shadow-lg transition-all">
+                <i class="fas fa-sign-out-alt mr-1"></i> Discharge
+              </button>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="6" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+              <i class="fas fa-hospital-user text-3xl mb-2 block"></i>
+              No patients currently admitted.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{# ── Discharge Modal ── #}
+<div id="dischargeModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm transition-opacity duration-300 hidden">
+  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-y-auto p-6 transform transition-transform scale-95">
+
+    <div class="flex justify-between items-center mb-4 border-b border-gray-200 dark:border-gray-700 pb-4">
+      <div>
+        <h2 class="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+          <i class="fas fa-file-medical-alt text-amber-500"></i> Discharge Summary
+        </h2>
+        <p class="text-sm text-gray-500 dark:text-gray-400" id="modalPatientInfo">Loading patient...</p>
+      </div>
+      <button onclick="closeDischargeModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+        <i class="fas fa-times text-xl"></i>
+      </button>
+    </div>
+
+    <form id="dischargeForm" class="space-y-6">
+      <input type="hidden" id="dischargeAdmissionId">
+
+      <!-- Patient Details Banner -->
+      <div id="patientDetailsBanner" class="grid grid-cols-2 md:grid-cols-4 gap-3 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 p-4 rounded-xl border border-amber-200 dark:border-amber-800/30 text-sm">
+        <div><span class="font-medium text-gray-600 dark:text-gray-300">Reg No:</span> <span id="dispReg" class="text-gray-800 dark:text-white font-semibold">—</span></div>
+        <div><span class="font-medium text-gray-600 dark:text-gray-300">File No:</span> <span id="dispFile" class="text-gray-800 dark:text-white font-semibold">—</span></div>
+        <div><span class="font-medium text-gray-600 dark:text-gray-300">Admission:</span> <span id="dispAdmissionDate" class="text-gray-800 dark:text-white font-semibold">—</span></div>
+        <div><span class="font-medium text-gray-600 dark:text-gray-300">Discharge Date:</span> <span id="dispDischargeDate" class="text-gray-800 dark:text-white font-semibold">—</span></div>
+        <div><span class="font-medium text-gray-600 dark:text-gray-300">Ward:</span> <span id="dispWard" class="text-gray-800 dark:text-white font-semibold">—</span></div>
+        <div><span class="font-medium text-gray-600 dark:text-gray-300">Contact:</span> <span id="dispPhone" class="text-gray-800 dark:text-white font-semibold">—</span></div>
+        <div><span class="font-medium text-gray-600 dark:text-gray-300">Next of Kin:</span> <span id="dispKin" class="text-gray-800 dark:text-white font-semibold">—</span></div>
+        <div><span class="font-medium text-gray-600 dark:text-gray-300">SHA:</span> <span id="dispSHA" class="text-gray-800 dark:text-white font-semibold">—</span></div>
+      </div>
+
+      <!-- Clinical Sections (Two-Column) -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+            <i class="fas fa-stethoscope text-amber-500 mr-1"></i> A.) Final Diagnosis <span class="text-red-500">*</span>
+          </label>
+          <textarea id="finalDiagnosis" rows="2" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition" placeholder="Final diagnosis..."></textarea>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+            <i class="fas fa-history text-blue-500 mr-1"></i> B.) History and Presentation
+          </label>
+          <textarea id="history" rows="2" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition" placeholder="History..."></textarea>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+            <i class="fas fa-notes-medical text-green-500 mr-1"></i> C.) Examination Findings
+          </label>
+          <textarea id="examination" rows="2" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition" placeholder="Examination findings..."></textarea>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+            <i class="fas fa-flask text-purple-500 mr-1"></i> D.) Investigations & Results
+          </label>
+          <textarea id="investigations" rows="2" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition" placeholder="Investigations..."></textarea>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+            <i class="fas fa-syringe text-red-500 mr-1"></i> E.) Treatment Given
+          </label>
+          <textarea id="treatmentGiven" rows="2" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition" placeholder="Treatment given..."></textarea>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+            <i class="fas fa-heartbeat text-pink-500 mr-1"></i> F.) Patient Condition <span class="text-red-500">*</span>
+          </label>
+          <select id="patientCondition" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition">
+            <option value="Improved">Improved</option>
+            <option value="Unchanged">Unchanged</option>
+            <option value="Deteriorated">Deteriorated</option>
+            <option value="Critical">Critical</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Follow-up, Advice, Recommendations (two columns, Advice and Recommendations each taking one, follow-up also one) -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+            <i class="fas fa-clinic-medical text-indigo-500 mr-1"></i> G.) Follow Up Clinic
+          </label>
+          <input type="text" id="followUpClinic" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition" placeholder="Clinic name...">
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+            <i class="fas fa-comment-dots text-teal-500 mr-1"></i> H.) Advice to Patient
+          </label>
+          <textarea id="advice" rows="2" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition" placeholder="Advice..."></textarea>
+        </div>
+        <div class="md:col-span-2">
+          <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+            <i class="fas fa-list-ul text-yellow-500 mr-1"></i> I.) Recommendations
+          </label>
+          <textarea id="recommendations" rows="2" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition" placeholder="Recommendations..."></textarea>
+        </div>
+      </div>
+
+      <!-- Doctor Certification -->
+      <div class="border-t border-gray-200 dark:border-gray-700 pt-5 mt-2">
+        <h3 class="text-base font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
+          <i class="fas fa-user-md text-amber-500"></i> Certification
+        </h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div>
+            <label class="block text-xs font-medium text-gray-600 dark:text-gray-400">Doctor Name <span class="text-red-500">*</span></label>
+            <input type="text" id="doctorName" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition" placeholder="Name">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-600 dark:text-gray-400">Code</label>
+            <input type="text" id="code" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition" placeholder="Code">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-600 dark:text-gray-400">KMPDC No</label>
+            <input type="text" id="kmpdcNo" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition" placeholder="KMPDC">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-600 dark:text-gray-400">Discharge Date</label>
+            <input type="date" id="dischargeDate" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition">
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Actions -->
+      <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <button type="button" onclick="closeDischargeModal()" class="px-6 py-2.5 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded-xl transition text-sm font-medium">Cancel</button>
+        <button type="submit" class="px-6 py-2.5 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white rounded-xl shadow-md hover:shadow-lg transition flex items-center text-sm font-medium">
+          <i class="fas fa-check mr-2"></i> Discharge Patient
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# ── Toast container ── #}
+<div id="toastContainer" class="fixed bottom-4 right-4 space-y-2 z-50"></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // ── Search filter ──
+  const searchInput = document.getElementById('searchInput');
+  const resetBtn = document.getElementById('resetFilters');
+  const rows = document.querySelectorAll('#patientTableBody tr');
+  const resultCount = document.getElementById('resultCount');
+
+  function filterTable() {
+    const query = searchInput.value.trim().toLowerCase();
+    let visible = 0;
+    rows.forEach(row => {
+      const searchData = row.dataset.search?.toLowerCase() || '';
+      const match = !query || searchData.includes(query);
+      row.style.display = match ? '' : 'none';
+      if (match) visible++;
+    });
+    resultCount.textContent = visible;
+  }
+
+  searchInput.addEventListener('input', filterTable);
+  resetBtn.addEventListener('click', function() {
+    searchInput.value = '';
+    filterTable();
+    searchInput.focus();
+  });
+
+  // ── Modal functions ──
+  const modal = document.getElementById('dischargeModal');
+
+  window.openDischargeModal = function(admissionId) {
+    document.getElementById('dischargeAdmissionId').value = admissionId;
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('dischargeDate').value = today;
+    // Clear previous fields
+    document.querySelectorAll('#dischargeForm textarea, #dischargeForm input[type="text"]').forEach(el => el.value = '');
+    document.getElementById('patientCondition').value = 'Improved';
+
+    fetch(`/inpatient/api/admission/${admissionId}`)
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('modalPatientInfo').textContent = `${data.full_name} · ${data.reg_no}`;
+        document.getElementById('dispReg').textContent = data.reg_no;
+        document.getElementById('dispFile').textContent = data.file_number;
+        document.getElementById('dispAdmissionDate').textContent = data.admission_date;
+        document.getElementById('dispDischargeDate').textContent = today;
+        document.getElementById('dispWard').textContent = data.ward;
+        document.getElementById('dispPhone').textContent = data.phone;
+        document.getElementById('dispKin').textContent = data.next_of_kin ? `${data.next_of_kin} (${data.kin_phone})` : '—';
+        document.getElementById('dispSHA').textContent = data.insurance_number || 'N/A';
+        document.getElementById('finalDiagnosis').value = data.diagnosis || '';
+      })
+      .catch(err => {
+        console.error('Error fetching admission:', err);
+        showToast('Error loading patient details.', 'error');
+      });
+    modal.classList.remove('hidden');
+  };
+
+  window.closeDischargeModal = function() {
+    modal.classList.add('hidden');
+  };
+
+  // ── Form submission ──
+  document.getElementById('dischargeForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const payload = {
+      admission_id: parseInt(document.getElementById('dischargeAdmissionId').value),
+      final_diagnosis: document.getElementById('finalDiagnosis').value.trim(),
+      history: document.getElementById('history').value.trim(),
+      examination: document.getElementById('examination').value.trim(),
+      investigations: document.getElementById('investigations').value.trim(),
+      treatment_given: document.getElementById('treatmentGiven').value.trim(),
+      patient_condition: document.getElementById('patientCondition').value,
+      follow_up_clinic: document.getElementById('followUpClinic').value.trim(),
+      advice: document.getElementById('advice').value.trim(),
+      recommendations: document.getElementById('recommendations').value.trim(),
+      doctor_name: document.getElementById('doctorName').value.trim(),
+      code: document.getElementById('code').value.trim(),
+      kmpdc_no: document.getElementById('kmpdcNo').value.trim(),
+      discharge_date: document.getElementById('dischargeDate').value
+    };
+
+    if (!payload.final_diagnosis || !payload.doctor_name) {
+      showToast('Final Diagnosis and Doctor Name are required.', 'error');
+      return;
+    }
+
+    const submitBtn = this.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Processing...';
+
+    fetch('/inpatient/api/discharge', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        showToast(data.message, 'success');
+        closeDischargeModal();
+        const row = document.querySelector(`tr[data-admission-id="${payload.admission_id}"]`);
+        if (row) row.remove();
+        const visibleRows = document.querySelectorAll('#patientTableBody tr:not([style*="display: none"])').length;
+        resultCount.textContent = visibleRows;
+        if (visibleRows === 0) {
+          document.getElementById('patientTableBody').innerHTML = `
+            <tr><td colspan="6" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+              <i class="fas fa-check-circle text-3xl mb-2 block text-green-500"></i>
+              All patients discharged.
+            </td></tr>`;
+        }
+      } else {
+        showToast(data.error || 'Discharge failed.', 'error');
+      }
+    })
+    .catch(err => {
+      showToast('Network error. Please try again.', 'error');
+      console.error(err);
+    })
+    .finally(() => {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = '<i class="fas fa-check mr-2"></i> Discharge Patient';
+    });
+  });
+
+  // ── Toast system ──
+  function showToast(message, type = 'success') {
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    const bg = type === 'success' ? 'bg-green-600' : type === 'error' ? 'bg-red-600' : 'bg-amber-500';
+    toast.className = `px-4 py-2 rounded-lg shadow-lg text-white ${bg} transition-all duration-300 transform translate-x-0`;
+    toast.textContent = message;
+    container.appendChild(toast);
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateX(20px)';
+      setTimeout(() => toast.remove(), 300);
+    }, 4000);
+  }
+
+  modal.addEventListener('click', function(e) {
+    if (e.target === this) closeDischargeModal();
+  });
+});
+</script>
+{% endblock %}

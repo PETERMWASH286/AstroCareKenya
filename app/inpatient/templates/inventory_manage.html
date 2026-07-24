@@ -1,0 +1,392 @@
+{% extends "base.html" %}
+{% block title %}Manage Inpatient Inventory{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    {# ── Header ── #}
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div>
+            <h1 class="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">
+                <i class="fas fa-boxes mr-2 text-indigo-500"></i>Inventory Management
+            </h1>
+            <p class="text-gray-500 dark:text-gray-400 mt-1">Manage ward stock items, batch details, and reorder levels</p>
+        </div>
+        <button onclick="openAddModal()" class="inline-flex items-center px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg hover:shadow-xl transition transform hover:scale-[1.02]">
+            <i class="fas fa-plus mr-2"></i> Add Item
+        </button>
+    </div>
+
+    {# ── Filters ── #}
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 mb-6">
+        <form method="GET" class="flex flex-wrap items-center gap-4">
+            <div class="flex-1 min-w-[180px]">
+                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400">Search</label>
+                <input type="text" name="search" value="{{ search_query }}" placeholder="Name, batch, supplier..." class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div class="min-w-[150px]">
+                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400">Substore</label>
+                <select name="substore" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500">
+                    <option value="">All</option>
+                    {% for s in substores %}
+                    <option value="{{ s.id }}" {% if selected_substore == s.id %}selected{% endif %}>{{ s.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="min-w-[150px]">
+                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400">Category</label>
+                <select name="category" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500">
+                    <option value="">All</option>
+                    {% for c in categories %}
+                    <option value="{{ c }}" {% if selected_category == c %}selected{% endif %}>{{ c|title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="min-w-[150px]">
+                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400">Status</label>
+                <select name="status" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500">
+                    <option value="">All</option>
+                    <option value="low" {% if selected_status == 'low' %}selected{% endif %}>Low Stock</option>
+                    <option value="expiring" {% if selected_status == 'expiring' %}selected{% endif %}>Expiring Soon</option>
+                </select>
+            </div>
+            <div class="flex items-end gap-2">
+                <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow transition">
+                    <i class="fas fa-filter mr-2"></i> Apply
+                </button>
+                <a href="{{ url_for('inpatient_web_bp.inventory_manage') }}" class="px-4 py-2 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded-xl transition">
+                    <i class="fas fa-times"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+
+    {# ── Items Table ── #}
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-gray-50 dark:bg-gray-700/50">
+                    <tr>
+                        <th class="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-300">Item</th>
+                        <th class="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-300">Category</th>
+                        <th class="px-4 py-3 text-left font-medium text-gray-500 dark:text-gray-300">Substore</th>
+                        <th class="px-4 py-3 text-center font-medium text-gray-500 dark:text-gray-300">Qty</th>
+                        <th class="px-4 py-3 text-center font-medium text-gray-500 dark:text-gray-300">Threshold</th>
+                        <th class="px-4 py-3 text-center font-medium text-gray-500 dark:text-gray-300">Expiry</th>
+                        <th class="px-4 py-3 text-right font-medium text-gray-500 dark:text-gray-300">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                    {% for item in items %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
+                        <td class="px-4 py-3">
+                            <div class="font-medium text-gray-800 dark:text-white">{{ item.item_name }}</div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400">Batch: {{ item.batch_number or '—' }}</div>
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                                {{ item.category|title }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-gray-600 dark:text-gray-300">{{ item.substore.name }}</td>
+                        <td class="px-4 py-3 text-center">
+                            <span class="{% if item.quantity <= item.low_stock_threshold %}text-red-600 dark:text-red-400 font-bold{% endif %}">
+                                {{ item.quantity }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-center text-gray-500">{{ item.low_stock_threshold }}</td>
+                        <td class="px-4 py-3 text-center">
+                            {% if item.expiry_date %}
+                                {% set days_left = (item.expiry_date - now.date()).days if now else 0 %}
+                                <span class="{% if days_left <= 30 %}text-amber-600 dark:text-amber-400{% endif %}">
+                                    {{ item.expiry_date.strftime('%d-%b-%Y') }}
+                                </span>
+                            {% else %}
+                                <span class="text-gray-400">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-right">
+                            <button onclick="editItem({{ item.id }})" class="p-1.5 text-blue-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="deleteItem({{ item.id }})" class="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                            <i class="fas fa-box-open text-3xl mb-2 block"></i>
+                            No items found. Add your first inventory item.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {# ── Pagination ── #}
+        {% if pagination.pages > 1 %}
+        <div class="px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
+            <div class="text-sm text-gray-500 dark:text-gray-400">
+                Showing {{ pagination.first }} - {{ pagination.last }} of {{ pagination.total }}
+            </div>
+            <div class="flex gap-1">
+                {% if pagination.has_prev %}
+                <a href="{{ pagination.prev_link }}" class="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition">←</a>
+                {% endif %}
+                {% for p in pagination.iter_pages() %}
+                    {% if p %}
+                        <a href="{{ pagination.url_for(p) }}" class="px-3 py-1.5 rounded-lg {% if p == pagination.page %}bg-indigo-600 text-white{% else %}bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600{% endif %} transition">{{ p }}</a>
+                    {% else %}
+                        <span class="px-2 py-1.5 text-gray-400">…</span>
+                    {% endif %}
+                {% endfor %}
+                {% if pagination.has_next %}
+                <a href="{{ pagination.next_link }}" class="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition">→</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{# ── Add/Edit Modal ── #}
+<div id="itemModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm hidden">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-2xl font-bold text-gray-800 dark:text-white" id="modalTitle">Add Inventory Item</h2>
+            <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        <form id="itemForm" class="space-y-4">
+            <input type="hidden" id="itemId" name="id">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Item Name <span class="text-red-500">*</span></label>
+                    <input type="text" id="itemName" name="item_name" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Category <span class="text-red-500">*</span></label>
+                    <input type="text" id="category" name="category" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Substore <span class="text-red-500">*</span></label>
+                    <select id="substoreId" name="substore_id" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white" required>
+                        <option value="">Select</option>
+                        {% for s in substores %}
+                        <option value="{{ s.id }}">{{ s.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Quantity <span class="text-red-500">*</span></label>
+                    <input type="number" id="quantity" name="quantity" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white" required min="0">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Unit</label>
+                    <input type="text" id="unit" name="unit" value="piece" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Batch Number</label>
+                    <input type="text" id="batchNumber" name="batch_number" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Buying Price <span class="text-red-500">*</span></label>
+                    <input type="number" step="0.01" id="buyingPrice" name="buying_price" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white" required min="0">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Selling Price</label>
+                    <input type="number" step="0.01" id="sellingPrice" name="selling_price" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Low Stock Threshold</label>
+                    <input type="number" id="lowStockThreshold" name="low_stock_threshold" value="5" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Expiry Date</label>
+                    <input type="date" id="expiryDate" name="expiry_date" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Supplier</label>
+                    <input type="text" id="supplier" name="supplier" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Location</label>
+                    <input type="text" id="location" name="location" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Storage Conditions</label>
+                    <input type="text" id="storageConditions" name="storage_conditions" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white">
+                </div>
+            </div>
+            <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <button type="button" onclick="closeModal()" class="px-5 py-2.5 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded-xl transition">Cancel</button>
+                <button type="submit" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md hover:shadow-lg transition flex items-center">
+                    <i class="fas fa-save mr-2"></i> <span id="submitBtnText">Save</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# ── Toast Container ── #}
+<div id="toastContainer" class="fixed bottom-4 right-4 space-y-2 z-50"></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('itemModal');
+    const form = document.getElementById('itemForm');
+    const itemId = document.getElementById('itemId');
+    const modalTitle = document.getElementById('modalTitle');
+    const submitBtnText = document.getElementById('submitBtnText');
+    let currentAction = 'add';
+
+    // ── Open Add Modal ──
+    window.openAddModal = function() {
+        currentAction = 'add';
+        itemId.value = '';
+        form.reset();
+        document.getElementById('unit').value = 'piece';
+        document.getElementById('lowStockThreshold').value = 5;
+        modalTitle.textContent = 'Add Inventory Item';
+        submitBtnText.textContent = 'Save';
+        modal.classList.remove('hidden');
+    };
+
+    // ── Open Edit Modal ──
+    window.editItem = function(id) {
+        currentAction = 'edit';
+        itemId.value = id;
+        // Fetch item data
+        fetch(`/inpatient/api/inventory-item/${id}`)
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('itemName').value = data.item_name;
+                document.getElementById('category').value = data.category;
+                document.getElementById('substoreId').value = data.substore_id;
+                document.getElementById('quantity').value = data.quantity;
+                document.getElementById('unit').value = data.unit;
+                document.getElementById('batchNumber').value = data.batch_number || '';
+                document.getElementById('buyingPrice').value = data.buying_price;
+                document.getElementById('sellingPrice').value = data.selling_price || '';
+                document.getElementById('lowStockThreshold').value = data.low_stock_threshold;
+                document.getElementById('expiryDate').value = data.expiry_date || '';
+                document.getElementById('supplier').value = data.supplier || '';
+                document.getElementById('location').value = data.location || '';
+                document.getElementById('storageConditions').value = data.storage_conditions || '';
+                modalTitle.textContent = 'Edit Inventory Item';
+                submitBtnText.textContent = 'Update';
+                modal.classList.remove('hidden');
+            })
+            .catch(err => {
+                showToast('Error loading item data', 'error');
+                console.error(err);
+            });
+    };
+
+    // ── Close Modal ──
+    window.closeModal = function() {
+        modal.classList.add('hidden');
+    };
+
+    // ── Delete Item ──
+    window.deleteItem = function(id) {
+        if (!confirm('Delete this item permanently?')) return;
+        fetch('/inpatient/inventory-manage', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'delete', id: id })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                showToast(data.message, 'success');
+                window.location.reload();
+            } else {
+                showToast(data.message || 'Delete failed', 'error');
+            }
+        })
+        .catch(err => showToast('Network error', 'error'));
+    };
+
+    // ── Form Submit ──
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        const payload = Object.fromEntries(formData.entries());
+        payload.action = currentAction;
+        if (currentAction === 'edit') {
+            payload.id = itemId.value;
+        }
+
+        // Convert numeric fields
+        ['quantity', 'substore_id', 'buying_price', 'selling_price', 'low_stock_threshold'].forEach(f => {
+            if (payload[f] !== undefined && payload[f] !== '') {
+                payload[f] = parseFloat(payload[f]);
+            }
+        });
+
+        const submitBtn = this.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Saving...';
+
+        fetch('/inpatient/inventory-manage', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                showToast(data.message, 'success');
+                closeModal();
+                setTimeout(() => window.location.reload(), 500);
+            } else {
+                let errorMsg = 'Validation error';
+                if (data.errors) {
+                    errorMsg = Object.values(data.errors).flat().join(', ');
+                } else if (data.message) {
+                    errorMsg = data.message;
+                }
+                showToast(errorMsg, 'error');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-save mr-2"></i> ' + (currentAction === 'add' ? 'Save' : 'Update');
+            }
+        })
+        .catch(err => {
+            showToast('Network error', 'error');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-save mr-2"></i> ' + (currentAction === 'add' ? 'Save' : 'Update');
+        });
+    });
+
+    // ── Close modal on backdrop click ──
+    modal.addEventListener('click', function(e) {
+        if (e.target === this) closeModal();
+    });
+
+    // ── Toast System ──
+    function showToast(message, type = 'success') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        const bg = type === 'success' ? 'bg-green-600' : type === 'error' ? 'bg-red-600' : 'bg-amber-500';
+        toast.className = `px-4 py-2 rounded-lg shadow-lg text-white ${bg} transition-all duration-300 transform translate-x-0 mb-2`;
+        toast.textContent = message;
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(20px)';
+            setTimeout(() => toast.remove(), 300);
+        }, 4000);
+    }
+});
+</script>
+
+<style>
+#itemModal input:focus, #itemModal select:focus {
+    outline: none;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,473 @@
+{% extends "base.html" %}
+{% block title %}Manage Wards & Beds{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    {# ── Header with Stats ── #}
+    <div class="mb-8">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+                <h1 class="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">
+                    <i class="fas fa-hotel mr-2 text-indigo-500"></i>Wards & Beds
+                </h1>
+                <p class="text-gray-500 dark:text-gray-400 mt-1">Manage hospital wards, bed capacity, and occupancy</p>
+            </div>
+            <button onclick="openAddWardModal()" 
+                    class="inline-flex items-center px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02]">
+                <i class="fas fa-plus mr-2"></i> Add Ward
+            </button>
+        </div>
+
+{# ── Stats Cards ── #}
+{% set total_beds = 0 %}
+{% set occupied_beds = 0 %}
+{% for w in wards %}
+    {% set total_beds = total_beds + w.beds|length %}
+    {% for b in w.beds %}
+        {% if b.is_occupied %}
+            {% set occupied_beds = occupied_beds + 1 %}
+        {% endif %}
+    {% endfor %}
+{% endfor %}
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+    <!-- Total Wards -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 transition hover:shadow-md">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Total Wards</p>
+                <p class="text-2xl font-bold text-gray-800 dark:text-white">{{ wards|length }}</p>
+            </div>
+            <div class="w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
+                <i class="fas fa-building text-indigo-600 dark:text-indigo-300 text-xl"></i>
+            </div>
+        </div>
+    </div>
+    <!-- Total Beds -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 transition hover:shadow-md">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Total Beds</p>
+                <p class="text-2xl font-bold text-gray-800 dark:text-white">{{ total_beds }}</p>
+            </div>
+            <div class="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+                <i class="fas fa-bed text-blue-600 dark:text-blue-300 text-xl"></i>
+            </div>
+        </div>
+    </div>
+    <!-- Occupied -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 transition hover:shadow-md">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Occupied</p>
+                <p class="text-2xl font-bold text-red-600 dark:text-red-400">{{ occupied_beds }}</p>
+            </div>
+            <div class="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center">
+                <i class="fas fa-user-injured text-red-600 dark:text-red-300 text-xl"></i>
+            </div>
+        </div>
+    </div>
+    <!-- Available -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 transition hover:shadow-md">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Available</p>
+                <p class="text-2xl font-bold text-green-600 dark:text-green-400">{{ total_beds - occupied_beds }}</p>
+            </div>
+            <div class="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
+                <i class="fas fa-check-circle text-green-600 dark:text-green-300 text-xl"></i>
+            </div>
+        </div>
+    </div>
+</div>
+    </div>
+
+    {# ── Ward Cards Grid ── #}
+    <div id="wards-container" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        {% for ward in wards %}
+        <div class="ward-card bg-white dark:bg-gray-800 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700 overflow-hidden"
+             data-ward-id="{{ ward.id }}">
+            {# ─ Ward header ─ #}
+            <div class="p-5 border-b border-gray-100 dark:border-gray-700 flex justify-between items-start bg-gradient-to-br from-gray-50 to-white dark:from-gray-800 dark:to-gray-800">
+                <div>
+                    <h3 class="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                        <i class="fas fa-hospital text-indigo-500"></i>{{ ward.name }}
+                    </h3>
+                    <div class="flex flex-wrap gap-2 mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        <span><i class="fas fa-layer-group mr-1"></i>Floor: {{ ward.floor or 'N/A' }}</span>
+                        <span><i class="fas fa-users mr-1"></i>Capacity: {{ ward.capacity or 'N/A' }}</span>
+                        <span class="px-2 py-0.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs">
+                            {{ ward.beds|length }} beds
+                        </span>
+                    </div>
+                </div>
+                <div class="flex space-x-1">
+                    <button onclick="editWard({{ ward.id }})" 
+                            class="p-2 rounded-lg hover:bg-yellow-50 dark:hover:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 transition-colors" 
+                            title="Edit Ward">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button onclick="deleteWard({{ ward.id }})" 
+                            class="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 transition-colors" 
+                            title="Delete Ward">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
+            </div>
+
+            {# ─ Bed list ─ #}
+            <div class="p-4">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                        <i class="fas fa-bed text-indigo-400"></i> Beds
+                    </span>
+                    <button onclick="openAddBedModal({{ ward.id }})" 
+                            class="text-xs inline-flex items-center px-3 py-1.5 bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/60 transition-colors">
+                        <i class="fas fa-plus mr-1"></i> Add Bed
+                    </button>
+                </div>
+                <ul class="bed-list space-y-2 max-h-48 overflow-y-auto pr-1">
+                    {% for bed in ward.beds %}
+                    <li class="flex items-center justify-between bg-gray-50 dark:bg-gray-700/50 px-3 py-2 rounded-lg transition hover:bg-gray-100 dark:hover:bg-gray-700"
+                        data-bed-id="{{ bed.id }}">
+                        <span class="font-mono text-sm font-medium text-gray-700 dark:text-gray-200">{{ bed.bed_number }}</span>
+                        <span class="flex items-center gap-2">
+                            {% if bed.is_occupied %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-200">
+                                <i class="fas fa-circle text-red-500 dark:text-red-400 text-[6px] mr-1.5"></i> Occupied
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-200">
+                                <i class="fas fa-circle text-green-500 dark:text-green-400 text-[6px] mr-1.5"></i> Free
+                            </span>
+                            {% endif %}
+                        </span>
+                        <div class="flex space-x-1">
+                            <button onclick="editBed({{ bed.id }})" 
+                                    class="p-1.5 rounded hover:bg-yellow-50 dark:hover:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 transition-colors" 
+                                    title="Edit Bed">
+                                <i class="fas fa-edit text-xs"></i>
+                            </button>
+                            <button onclick="deleteBed({{ bed.id }})" 
+                                    class="p-1.5 rounded hover:bg-red-50 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 transition-colors" 
+                                    title="Delete Bed">
+                                <i class="fas fa-trash-alt text-xs"></i>
+                            </button>
+                        </div>
+                    </li>
+                    {% else %}
+                    <li class="text-center text-gray-400 dark:text-gray-500 text-sm py-4 italic">
+                        <i class="fas fa-bed-empty mr-1"></i> No beds configured
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-span-full text-center text-gray-500 dark:text-gray-400 py-12">
+            <i class="fas fa-hotel text-4xl mb-3 block text-gray-300 dark:text-gray-600"></i>
+            No wards created yet. Click <span class="font-medium text-indigo-600 dark:text-indigo-400">"Add Ward"</span> to start.
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+{# ── Modals ── #}
+<!-- Ward Modal -->
+<div id="wardModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm transition-opacity duration-300 hidden">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-6 transform transition-transform scale-95">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-2xl font-bold text-gray-800 dark:text-white" id="wardModalTitle">Add Ward</h2>
+            <button onclick="closeModal('wardModal')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        <form id="wardForm" class="space-y-5">
+            <input type="hidden" id="wardId">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ward Name <span class="text-red-500">*</span></label>
+                <input type="text" id="wardName" 
+                       class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white transition"
+                       placeholder="e.g., Medical Ward A" required>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Floor</label>
+                <input type="text" id="wardFloor" 
+                       class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white transition"
+                       placeholder="e.g., 2nd Floor">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Capacity</label>
+                <input type="number" id="wardCapacity" 
+                       class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white transition"
+                       placeholder="Number of beds">
+            </div>
+            <div>
+    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Substore</label>
+    <select id="wardSubstore" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white">
+        <option value="">-- Auto‑create new --</option>
+        {% for substore in substores %}
+        <option value="{{ substore.id }}">{{ substore.name }}</option>
+        {% endfor %}
+    </select>
+    <p class="text-xs text-gray-400 mt-1">Select an existing substore or leave blank to auto‑create</p>
+</div>
+            <div class="flex justify-end space-x-3 pt-2">
+                <button type="button" onclick="closeModal('wardModal')" 
+                        class="px-5 py-2.5 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded-xl transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" 
+                        class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md hover:shadow-lg transition-all">
+                    <i class="fas fa-save mr-2"></i> Save Ward
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Bed Modal -->
+<div id="bedModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm transition-opacity duration-300 hidden">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-6 transform transition-transform scale-95">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-2xl font-bold text-gray-800 dark:text-white" id="bedModalTitle">Add Bed</h2>
+            <button onclick="closeModal('bedModal')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        <form id="bedForm" class="space-y-5">
+            <input type="hidden" id="bedId">
+            <input type="hidden" id="bedWardId">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Bed Number <span class="text-red-500">*</span></label>
+                <input type="text" id="bedNumber" 
+                       class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white transition"
+                       placeholder="e.g., B-12" required>
+            </div>
+            <div class="flex justify-end space-x-3 pt-2">
+                <button type="button" onclick="closeModal('bedModal')" 
+                        class="px-5 py-2.5 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded-xl transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" 
+                        class="px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl shadow-md hover:shadow-lg transition-all">
+                    <i class="fas fa-save mr-2"></i> Save Bed
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# ── JavaScript ── #}
+<script>
+// (SAME AS BEFORE – all functions remain identical)
+// Only the styling has changed, so we keep the existing JS.
+
+function closeModal(id) {
+    document.getElementById(id).classList.add('hidden');
+}
+function openModal(id) {
+    document.getElementById(id).classList.remove('hidden');
+}
+function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `fixed bottom-4 right-4 px-4 py-2 rounded-lg shadow-lg text-white ${type === 'success' ? 'bg-green-600' : 'bg-red-600'} z-50 transition-opacity duration-500`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 500); }, 3000);
+}
+function fetchJSON(url, options = {}) {
+    return fetch(url, {
+        ...options,
+        headers: { 'Content-Type': 'application/json', ...options.headers },
+        body: options.body ? JSON.stringify(options.body) : undefined
+    }).then(res => res.json().then(data => ({ status: res.status, data })));
+}
+
+// ── Ward CRUD ──
+function openAddWardModal() {
+    document.getElementById('wardId').value = '';
+    document.getElementById('wardName').value = '';
+    document.getElementById('wardFloor').value = '';
+    document.getElementById('wardCapacity').value = '';
+    document.getElementById('wardModalTitle').textContent = 'Add Ward';
+    openModal('wardModal');
+}
+function editWard(wardId) {
+    const card = document.querySelector(`.ward-card[data-ward-id="${wardId}"]`);
+    const name = card.querySelector('h3').textContent.trim();
+    const floor = card.querySelector('.text-gray-500').textContent.replace('Floor: ', '').split(' · ')[0];
+    const capacity = card.querySelector('.text-gray-500').textContent.match(/Capacity: (\d+)/);
+    document.getElementById('wardId').value = wardId;
+    document.getElementById('wardName').value = name;
+    document.getElementById('wardFloor').value = floor;
+    document.getElementById('wardCapacity').value = capacity ? capacity[1] : '';
+    document.getElementById('wardModalTitle').textContent = 'Edit Ward';
+    openModal('wardModal');
+}
+function deleteWard(wardId) {
+    if (!confirm('Delete this ward and all its beds?')) return;
+    fetchJSON(`/inpatient/api/wards/${wardId}`, { method: 'DELETE' })
+        .then(({ status, data }) => {
+            if (status === 200) {
+                document.querySelector(`.ward-card[data-ward-id="${wardId}"]`).remove();
+                showToast('Ward deleted');
+            } else {
+                showToast(data.error || 'Error deleting ward', 'error');
+            }
+        });
+}
+document.getElementById('wardForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const id = document.getElementById('wardId').value;
+    const name = document.getElementById('wardName').value.trim();
+    const floor = document.getElementById('wardFloor').value.trim();
+    const capacity = parseInt(document.getElementById('wardCapacity').value) || null;
+    const url = id ? `/inpatient/api/wards/${id}` : '/inpatient/api/wards';
+    const method = id ? 'PUT' : 'POST';
+    fetchJSON(url, { method, body: { name, floor, capacity } })
+        .then(({ status, data }) => {
+            if (status === 200 || status === 201) {
+                closeModal('wardModal');
+                if (id) {
+                    const card = document.querySelector(`.ward-card[data-ward-id="${id}"]`);
+                    card.querySelector('h3').textContent = data.name;
+                    card.querySelector('.text-gray-500').textContent = `Floor: ${data.floor || 'N/A'} · Capacity: ${data.capacity || 'N/A'}`;
+                    card.dataset.wardId = data.id;
+                    showToast('Ward updated');
+                } else {
+                    const container = document.getElementById('wards-container');
+                    container.insertAdjacentHTML('beforeend', createWardCard(data));
+                    showToast('Ward added');
+                }
+            } else {
+                showToast(data.error || 'Error saving ward', 'error');
+            }
+        });
+});
+function createWardCard(ward) {
+    return `
+        <div class="ward-card bg-white dark:bg-gray-800 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700 overflow-hidden" data-ward-id="${ward.id}">
+            <div class="p-5 border-b border-gray-100 dark:border-gray-700 flex justify-between items-start bg-gradient-to-br from-gray-50 to-white dark:from-gray-800 dark:to-gray-800">
+                <div>
+                    <h3 class="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                        <i class="fas fa-hospital text-indigo-500"></i>${ward.name}
+                    </h3>
+                    <div class="flex flex-wrap gap-2 mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        <span><i class="fas fa-layer-group mr-1"></i>Floor: ${ward.floor || 'N/A'}</span>
+                        <span><i class="fas fa-users mr-1"></i>Capacity: ${ward.capacity || 'N/A'}</span>
+                    </div>
+                </div>
+                <div class="flex space-x-1">
+                    <button onclick="editWard(${ward.id})" class="p-2 rounded-lg hover:bg-yellow-50 dark:hover:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 transition-colors">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button onclick="deleteWard(${ward.id})" class="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 transition-colors">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-4">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                        <i class="fas fa-bed text-indigo-400"></i> Beds
+                    </span>
+                    <button onclick="openAddBedModal(${ward.id})" class="text-xs inline-flex items-center px-3 py-1.5 bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/60 transition-colors">
+                        <i class="fas fa-plus mr-1"></i> Add Bed
+                    </button>
+                </div>
+                <ul class="bed-list space-y-2 max-h-48 overflow-y-auto pr-1" data-ward-id="${ward.id}">
+                    <li class="text-center text-gray-400 dark:text-gray-500 text-sm py-4 italic">
+                        <i class="fas fa-bed-empty mr-1"></i> No beds configured
+                    </li>
+                </ul>
+            </div>
+        </div>
+    `;
+}
+
+// ── Bed CRUD ──
+function openAddBedModal(wardId) {
+    document.getElementById('bedId').value = '';
+    document.getElementById('bedWardId').value = wardId;
+    document.getElementById('bedNumber').value = '';
+    document.getElementById('bedModalTitle').textContent = 'Add Bed';
+    openModal('bedModal');
+}
+function editBed(bedId) {
+    const li = document.querySelector(`li[data-bed-id="${bedId}"]`);
+    const number = li.querySelector('span.font-mono').textContent;
+    const wardId = li.closest('.ward-card').dataset.wardId;
+    document.getElementById('bedId').value = bedId;
+    document.getElementById('bedWardId').value = wardId;
+    document.getElementById('bedNumber').value = number;
+    document.getElementById('bedModalTitle').textContent = 'Edit Bed';
+    openModal('bedModal');
+}
+function deleteBed(bedId) {
+    if (!confirm('Delete this bed?')) return;
+    fetchJSON(`/inpatient/api/beds/${bedId}`, { method: 'DELETE' })
+        .then(({ status, data }) => {
+            if (status === 200) {
+                const li = document.querySelector(`li[data-bed-id="${bedId}"]`);
+                if (li) li.remove();
+                showToast('Bed deleted');
+            } else {
+                showToast(data.error || 'Error deleting bed', 'error');
+            }
+        });
+}
+document.getElementById('bedForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const id = document.getElementById('bedId').value;
+    const wardId = parseInt(document.getElementById('bedWardId').value);
+    const bedNumber = document.getElementById('bedNumber').value.trim();
+    const url = id ? `/inpatient/api/beds/${id}` : '/inpatient/api/beds';
+    const method = id ? 'PUT' : 'POST';
+    fetchJSON(url, { method, body: { ward_id: wardId, bed_number: bedNumber } })
+        .then(({ status, data }) => {
+            if (status === 200 || status === 201) {
+                closeModal('bedModal');
+                const wardCard = document.querySelector(`.ward-card[data-ward-id="${wardId}"]`);
+                const bedList = wardCard.querySelector('.bed-list');
+                if (id) {
+                    const li = bedList.querySelector(`li[data-bed-id="${id}"]`);
+                    li.querySelector('span.font-mono').textContent = data.bed_number;
+                    showToast('Bed updated');
+                } else {
+                    const li = document.createElement('li');
+                    li.className = 'flex items-center justify-between bg-gray-50 dark:bg-gray-700/50 px-3 py-2 rounded-lg transition hover:bg-gray-100 dark:hover:bg-gray-700';
+                    li.dataset.bedId = data.id;
+                    li.innerHTML = `
+                        <span class="font-mono text-sm font-medium text-gray-700 dark:text-gray-200">${data.bed_number}</span>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-200">
+                            <i class="fas fa-circle text-green-500 dark:text-green-400 text-[6px] mr-1.5"></i> Free
+                        </span>
+                        <div class="flex space-x-1">
+                            <button onclick="editBed(${data.id})" class="p-1.5 rounded hover:bg-yellow-50 dark:hover:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 transition-colors">
+                                <i class="fas fa-edit text-xs"></i>
+                            </button>
+                            <button onclick="deleteBed(${data.id})" class="p-1.5 rounded hover:bg-red-50 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 transition-colors">
+                                <i class="fas fa-trash-alt text-xs"></i>
+                            </button>
+                        </div>
+                    `;
+                    const placeholder = bedList.querySelector('.text-gray-400');
+                    if (placeholder) placeholder.remove();
+                    bedList.appendChild(li);
+                    showToast('Bed added');
+                }
+            } else {
+                showToast(data.error || 'Error saving bed', 'error');
+            }
+        });
+});
+
+// Close modals on backdrop click
+document.querySelectorAll('.fixed.inset-0').forEach(modal => {
+    modal.addEventListener('click', function(e) {
+        if (e.target === this) this.classList.add('hidden');
+    });
+});
+</script>
+{% endblock %}

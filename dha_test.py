@@ -63,6 +63,7 @@ def test_api_connection(token):
             timeout=10  # Shorter timeout since token expires quickly
         )
         
+        
         logger.debug(f"API response status: {response.status_code}")
         logger.debug(f"API response headers: {response.headers}")
         logger.debug(f"API response content: {response.text[:500]}")
@@ -75,10 +76,12 @@ def test_api_connection(token):
             return {"status": "failure", "message": f"HTTP {response.status_code}", "response": response.text}
     except Exception as e:
         return {"status": "error", "message": str(e)}
-
 if __name__ == "__main__":
     print("=== Starting DHA Credentials Test ===")
     
+    
+    
+    print("The ")
     # Generate JWT token directly from credentials
     print("\n[1] Generating JWT token from credentials...")
     token = generate_jwt_token()
@@ -100,3 +103,8 @@ if __name__ == "__main__":
         print("✗ JWT token generation failed")
     
     print("\n=== Test Complete ===")
+
+
+
+
+

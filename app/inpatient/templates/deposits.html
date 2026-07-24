@@ -1,0 +1,402 @@
+{% extends "base.html" %}
+{% block title %}Inpatient Deposits{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    {# ── Header ── #}
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
+        <div>
+            <h1 class="text-2xl md:text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent flex items-center gap-2">
+                <i class="fas fa-hand-holding-usd text-indigo-500"></i> Inpatient Deposits
+            </h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Manage patient deposits against proforma invoices</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <span class="text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full">
+                <i class="fas fa-users mr-1"></i> {{ patients_count }} patients
+            </span>
+        </div>
+    </div>
+
+    {# ── Stats Cards ── #}
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-3 flex items-center justify-between transition hover:shadow-md">
+            <div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total Invoices</p>
+                <p class="text-xl font-bold text-gray-800 dark:text-white">Ksh {{ total_invoice_sum|currency }}</p>
+            </div>
+            <div class="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center">
+                <i class="fas fa-file-invoice text-indigo-600 dark:text-indigo-300 text-sm"></i>
+            </div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-3 flex items-center justify-between transition hover:shadow-md">
+            <div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total Deposits</p>
+                <p class="text-xl font-bold text-emerald-600 dark:text-emerald-400">Ksh {{ total_deposits_sum|currency }}</p>
+            </div>
+            <div class="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center">
+                <i class="fas fa-hand-holding-usd text-emerald-600 dark:text-emerald-300 text-sm"></i>
+            </div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-3 flex items-center justify-between transition hover:shadow-md">
+            <div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Outstanding Balance</p>
+                <p class="text-xl font-bold text-amber-600 dark:text-amber-400">Ksh {{ (total_invoice_sum - total_deposits_sum)|currency }}</p>
+            </div>
+            <div class="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center">
+                <i class="fas fa-coins text-amber-600 dark:text-amber-300 text-sm"></i>
+            </div>
+        </div>
+    </div>
+
+    {# ── Patient Table ── #}
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-gray-50 dark:bg-gray-700/40">
+                    <tr>
+                        <th class="px-4 py-2.5 text-left font-medium text-gray-500 dark:text-gray-300 text-xs uppercase tracking-wider">Patient</th>
+                        <th class="px-4 py-2.5 text-left font-medium text-gray-500 dark:text-gray-300 text-xs uppercase tracking-wider">Invoice #</th>
+                        <th class="px-4 py-2.5 text-right font-medium text-gray-500 dark:text-gray-300 text-xs uppercase tracking-wider">Invoice Total</th>
+                        <th class="px-4 py-2.5 text-right font-medium text-gray-500 dark:text-gray-300 text-xs uppercase tracking-wider">Deposits</th>
+                        <th class="px-4 py-2.5 text-right font-medium text-gray-500 dark:text-gray-300 text-xs uppercase tracking-wider">Balance</th>
+                        <th class="px-4 py-2.5 text-center font-medium text-gray-500 dark:text-gray-300 text-xs uppercase tracking-wider">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="patientTableBody" class="divide-y divide-gray-200 dark:divide-gray-700">
+                    {% for p in patients %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition duration-150" 
+                        data-admission-id="{{ p.admission_id }}" 
+                        data-invoice-id="{{ p.invoice_id }}"
+                        data-patient-name="{{ p.patient_name }}"
+                        data-reg-no="{{ p.reg_no }}"
+                        data-invoice-total="{{ p.invoice_total }}"
+                        data-total-deposited="{{ p.total_deposited }}"
+                        data-balance="{{ p.balance }}"
+                        data-deposit-count="{{ p.deposit_count }}">
+                        <td class="px-4 py-3">
+                            <div class="flex items-center gap-2">
+                                <div class="w-7 h-7 rounded-full bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center flex-shrink-0">
+                                    <i class="fas fa-user text-indigo-600 dark:text-indigo-300 text-xs"></i>
+                                </div>
+                                <span class="font-medium text-gray-800 dark:text-white">{{ p.patient_name }}</span>
+                            </div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400">{{ p.reg_no }} · {{ p.ward }} · {{ p.admission_date }}</div>
+                        </td>
+                        <td class="px-4 py-3 font-mono text-gray-600 dark:text-gray-300 text-xs">{{ p.invoice_number }}</td>
+                        <td class="px-4 py-3 text-right font-semibold text-gray-800 dark:text-white">Ksh {{ p.invoice_total|currency }}</td>
+                        <td class="px-4 py-3 text-right">
+                            <span class="text-emerald-600 dark:text-emerald-400 font-medium">Ksh {{ p.total_deposited|currency }}</span>
+                            <span class="text-gray-400 text-xs ml-1">({{ p.deposit_count }} deposits)</span>
+                        </td>
+                        <td class="px-4 py-3 text-right font-bold {% if p.balance <= 0 %}text-emerald-600 dark:text-emerald-400{% else %}text-amber-600 dark:text-amber-400{% endif %}">
+                            Ksh {{ p.balance|currency }}
+                        </td>
+                        <td class="px-4 py-3 text-center">
+                            <button onclick="openDepositModal({{ p.admission_id }})" class="inline-flex items-center px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs shadow-sm hover:shadow transition">
+                                <i class="fas fa-plus-circle mr-1"></i> Add Deposit
+                            </button>
+                            <button onclick="viewDeposits({{ p.admission_id }})" class="ml-1 inline-flex items-center px-2 py-1 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-200 rounded-lg text-xs transition">
+                                <i class="fas fa-history"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="px-4 py-6 text-center text-gray-500 dark:text-gray-400">
+                            <i class="fas fa-receipt text-2xl mb-2 block"></i>
+                            No patients with proforma invoices.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{# ── Add Deposit Modal ── #}
+<div id="depositModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity duration-300 hidden">
+    <div class="bg-white/95 dark:bg-gray-800/95 backdrop-blur-md rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-5 transform transition-all scale-95 border border-white/20 dark:border-gray-700/50">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                <i class="fas fa-hand-holding-usd text-indigo-500"></i> Add Deposit
+            </h2>
+            <button onclick="closeDepositModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                <i class="fas fa-times text-lg"></i>
+            </button>
+        </div>
+
+        <!-- Patient Info -->
+        <div id="modalPatientInfo" class="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl p-3 mb-4 border border-indigo-100 dark:border-indigo-800/30">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center">
+                        <i class="fas fa-user text-indigo-600 dark:text-indigo-300 text-sm"></i>
+                    </div>
+                    <div>
+                        <span class="font-semibold text-gray-800 dark:text-white" id="modalPatientName">—</span>
+                        <span class="text-sm text-gray-500 dark:text-gray-400 ml-2" id="modalPatientReg">—</span>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <span class="text-xs text-gray-500 dark:text-gray-400">Invoice Total</span>
+                    <p class="text-lg font-bold text-indigo-600 dark:text-indigo-400" id="modalInvoiceTotal">Ksh 0.00</p>
+                </div>
+            </div>
+            <div class="flex justify-between text-sm mt-1">
+                <span class="text-gray-500 dark:text-gray-400">Deposited: <span id="modalDeposited" class="font-medium text-emerald-600 dark:text-emerald-400">Ksh 0.00</span></span>
+                <span class="text-gray-500 dark:text-gray-400">Balance: <span id="modalBalance" class="font-medium text-amber-600 dark:text-amber-400">Ksh 0.00</span></span>
+            </div>
+        </div>
+
+        <!-- Deposit Form -->
+        <form id="depositForm" class="space-y-3">
+            <input type="hidden" id="depositAdmissionId">
+            <div>
+                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5">Amount (Ksh) <span class="text-red-500">*</span></label>
+                <input type="number" id="depositAmount" step="0.01" min="0.01" class="w-full px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 text-sm" placeholder="0.00" required>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5">Payment Method <span class="text-red-500">*</span></label>
+                <select id="depositPaymentMethod" class="w-full px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 text-sm" required>
+                    <option value="">Select...</option>
+                    <option value="Cash">Cash</option>
+                    <option value="M-Pesa">M-Pesa</option>
+                    <option value="Bank Transfer">Bank Transfer</option>
+                    <option value="Cheque">Cheque</option>
+                    <option value="Insurance">Insurance</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5">Reference / Transaction ID</label>
+                <input type="text" id="depositReference" class="w-full px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 text-sm" placeholder="e.g., M-Pesa code, cheque number">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-0.5">Notes</label>
+                <textarea id="depositNotes" rows="2" class="w-full px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 text-sm" placeholder="Additional info"></textarea>
+            </div>
+            <div class="flex justify-end space-x-2 pt-2">
+                <button type="button" onclick="closeDepositModal()" class="px-4 py-1.5 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded-lg transition text-sm">Cancel</button>
+                <button type="submit" class="inline-flex items-center px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm shadow-sm hover:shadow transition">
+                    <i class="fas fa-check mr-1.5"></i> Record Deposit
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# ── Deposit History Modal ── #}
+<div id="historyModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity duration-300 hidden">
+    <div class="bg-white/95 dark:bg-gray-800/95 backdrop-blur-md rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-5 transform transition-all scale-95 border border-white/20 dark:border-gray-700/50">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                <i class="fas fa-history text-indigo-500"></i> Deposit History
+            </h2>
+            <button onclick="closeHistoryModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                <i class="fas fa-times text-lg"></i>
+            </button>
+        </div>
+        <div id="historyContent">
+            <div class="flex justify-center py-8">
+                <i class="fas fa-spinner fa-spin text-2xl text-indigo-500"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# ── Toast Container ── #}
+<div id="toastContainer" class="fixed bottom-4 right-4 space-y-2 z-50"></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+    // ── Add Deposit Modal ──
+    const depositModal = document.getElementById('depositModal');
+    const historyModal = document.getElementById('historyModal');
+
+    function openDepositModal(admissionId) {
+        const row = document.querySelector(`tr[data-admission-id="${admissionId}"]`);
+        if (!row) {
+            showToast('Patient row not found.', 'error');
+            return;
+        }
+
+        // Read data from data attributes
+        const patientName = row.dataset.patientName;
+        const regNo = row.dataset.regNo;
+        const invoiceTotal = parseFloat(row.dataset.invoiceTotal) || 0;
+        const totalDeposited = parseFloat(row.dataset.totalDeposited) || 0;
+        const balance = parseFloat(row.dataset.balance) || 0;
+
+        document.getElementById('modalPatientName').textContent = patientName;
+        document.getElementById('modalPatientReg').textContent = regNo;
+        document.getElementById('modalInvoiceTotal').textContent = `Ksh ${invoiceTotal.toFixed(2)}`;
+        document.getElementById('modalDeposited').textContent = `Ksh ${totalDeposited.toFixed(2)}`;
+        document.getElementById('modalBalance').textContent = `Ksh ${balance.toFixed(2)}`;
+        document.getElementById('depositAdmissionId').value = admissionId;
+        document.getElementById('depositAmount').value = '';
+        document.getElementById('depositPaymentMethod').value = '';
+        document.getElementById('depositReference').value = '';
+        document.getElementById('depositNotes').value = '';
+
+        depositModal.classList.remove('hidden');
+    }
+
+    function closeDepositModal() {
+        depositModal.classList.add('hidden');
+    }
+
+    // ── Deposit Form Submit ──
+    document.getElementById('depositForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const admissionId = document.getElementById('depositAdmissionId').value;
+        const amount = parseFloat(document.getElementById('depositAmount').value);
+        const paymentMethod = document.getElementById('depositPaymentMethod').value;
+        const reference = document.getElementById('depositReference').value.trim();
+        const notes = document.getElementById('depositNotes').value.trim();
+
+        if (!admissionId || !amount || !paymentMethod) {
+            showToast('Please fill in all required fields.', 'error');
+            return;
+        }
+        if (amount <= 0) {
+            showToast('Amount must be greater than 0.', 'error');
+            return;
+        }
+
+        const btn = this.querySelector('button[type="submit"]');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Saving...';
+
+        fetch('{{ url_for("inpatient_web_bp.deposits") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                admission_id: parseInt(admissionId),
+                amount: amount,
+                payment_method: paymentMethod,
+                reference: reference,
+                notes: notes
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                showToast(data.message, 'success');
+                closeDepositModal();
+                // Update table row
+                const row = document.querySelector(`tr[data-admission-id="${admissionId}"]`);
+                if (row) {
+                    row.dataset.totalDeposited = data.total_deposited;
+                    row.dataset.balance = data.balance;
+                    const depositedCell = row.querySelector('td:nth-child(4)');
+                    const balanceCell = row.querySelector('td:nth-child(5)');
+                    depositedCell.innerHTML = `<span class="text-emerald-600 dark:text-emerald-400 font-medium">Ksh ${data.total_deposited.toFixed(2)}</span> <span class="text-gray-400 text-xs ml-1">(${data.deposit_count} deposits)</span>`;
+                    balanceCell.textContent = `Ksh ${data.balance.toFixed(2)}`;
+                    balanceCell.className = `px-4 py-3 text-right font-bold ${data.balance <= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`;
+                }
+            } else {
+                showToast(data.error || 'Failed to record deposit.', 'error');
+            }
+        })
+        .catch(err => {
+            showToast('Network error.', 'error');
+            console.error(err);
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-check mr-1.5"></i> Record Deposit';
+        });
+    });
+
+    // ── View Deposit History ──
+    function viewDeposits(admissionId) {
+        historyModal.classList.remove('hidden');
+        const content = document.getElementById('historyContent');
+        content.innerHTML = '<div class="flex justify-center py-8"><i class="fas fa-spinner fa-spin text-2xl text-indigo-500"></i></div>';
+
+        fetch(`/inpatient/api/deposit-history/${admissionId}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.deposits && data.deposits.length > 0) {
+                    let html = `
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead class="bg-gray-50 dark:bg-gray-700/40">
+                                    <tr>
+                                        <th class="px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-300">Date</th>
+                                        <th class="px-3 py-2 text-right font-medium text-gray-500 dark:text-gray-300">Amount</th>
+                                        <th class="px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-300">Method</th>
+                                        <th class="px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-300">Reference</th>
+                                        <th class="px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-300">Received By</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                    `;
+                    data.deposits.forEach(d => {
+                        html += `
+                            <tr class="border-b border-gray-200 dark:border-gray-700">
+                                <td class="px-3 py-2 text-gray-600 dark:text-gray-300">${new Date(d.deposit_date).toLocaleString()}</td>
+                                <td class="px-3 py-2 text-right font-medium text-emerald-600 dark:text-emerald-400">Ksh ${d.amount.toFixed(2)}</td>
+                                <td class="px-3 py-2 text-gray-600 dark:text-gray-300">${d.payment_method}</td>
+                                <td class="px-3 py-2 text-gray-600 dark:text-gray-300 font-mono text-xs">${d.reference || '—'}</td>
+                                <td class="px-3 py-2 text-gray-600 dark:text-gray-300">${d.received_by || '—'}</td>
+                            </tr>
+                        `;
+                    });
+                    html += '</tbody></table></div>';
+                    content.innerHTML = html;
+                } else {
+                    content.innerHTML = '<p class="text-center text-gray-500 dark:text-gray-400 py-8">No deposits recorded for this patient.</p>';
+                }
+            })
+            .catch(err => {
+                content.innerHTML = '<p class="text-center text-red-500 py-8">Error loading deposit history.</p>';
+                console.error(err);
+            });
+    }
+
+    function closeHistoryModal() {
+        historyModal.classList.add('hidden');
+    }
+
+    // ── Close modals on backdrop click ──
+    depositModal.addEventListener('click', function(e) {
+        if (e.target === this) closeDepositModal();
+    });
+    historyModal.addEventListener('click', function(e) {
+        if (e.target === this) closeHistoryModal();
+    });
+
+    // ── Toast System ──
+    function showToast(message, type = 'success') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        const bg = type === 'success' ? 'bg-green-600' : type === 'error' ? 'bg-red-600' : 'bg-amber-500';
+        toast.className = `px-3 py-1.5 rounded-lg shadow-lg text-white ${bg} transition-all duration-300 transform translate-x-0 mb-1.5 text-sm`;
+        toast.textContent = message;
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(20px)';
+            setTimeout(() => toast.remove(), 300);
+        }, 4000);
+    }
+
+    // ── Make functions globally accessible ──
+    window.openDepositModal = openDepositModal;
+    window.closeDepositModal = closeDepositModal;
+    window.viewDeposits = viewDeposits;
+    window.closeHistoryModal = closeHistoryModal;
+
+});
+</script>
+
+<style>
+tr { transition: background 0.15s ease; }
+#depositModal .bg-white\/95, #historyModal .bg-white\/95 { backdrop-filter: blur(8px); }
+</style>
+{% endblock %}

@@ -10,6 +10,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app import db
 from app.hr.models import HRInventory
+from app.inpatient.models import SubstoreInventory
 from app.lab.models import LabInventory
 from app.patients.models import Service
 from app.pharmacy.models import PharmacyInventory
@@ -441,6 +442,10 @@ def manage_stock_requests():
 
 
 # Updated route handler with issued_by and issue_date during collection
+from app.inpatient.models import SubstoreInventory
+from app.store.models import StockFlow
+from app.patients.models import Service
+
 @store_web_bp.route('/stock-requests/<uuid:request_id>/action', methods=['POST'])
 def handle_stock_request_action(request_id):
     req = StockRequest.query.get_or_404(request_id)
@@ -463,7 +468,6 @@ def handle_stock_request_action(request_id):
             if req.stock.current_stock < req.quantity_requested:
                 raise ValueError(f"Insufficient stock. Available: {req.stock.current_stock}")
 
-            # Log approval attempt
             log_inventory_action(
                 action='approval_attempt',
                 resource_type='stock_request',
@@ -472,14 +476,12 @@ def handle_stock_request_action(request_id):
                 module='stock_request'
             )
 
-            # Mark approved WITHOUT updating stock
             old_status = req.status
             req.status = 'approved'
             req.quantity_approved = req.quantity_requested
             req.approver_id = current_user.id
             req.approval_date = datetime.utcnow()
 
-            # Log successful approval
             log_inventory_action(
                 action='approved',
                 resource_type='stock_request',
@@ -496,21 +498,16 @@ def handle_stock_request_action(request_id):
                 module='stock_request'
             )
 
-            # NO stock deduction here
-            # NO inventory updates here
-            # NO stock flow records here
-        # ✅ Collect request (UPDATE stock, create stock flow, update department inventory)
+        # ✅ Collect request (UPDATE stock, create stock flow, update department/substore inventory)
         elif action == 'collect':
             if req.status != 'approved':
                 raise ValueError("Only approved requests can be collected")
 
             collected_by = data.get('collected_by', '').strip()
             collection_notes = data.get('collection_notes', '').strip()
-            
             if not collected_by:
                 raise ValueError("Collector name is required")
 
-            # Log collection attempt
             log_inventory_action(
                 action='collection_attempt',
                 resource_type='stock_request',
@@ -519,7 +516,6 @@ def handle_stock_request_action(request_id):
                 module='stock_request'
             )
 
-            # Verify stock availability
             stock = req.stock
             if stock.current_stock < req.quantity_approved:
                 log_inventory_action(
@@ -548,44 +544,97 @@ def handle_stock_request_action(request_id):
                 module='inventory'
             )
 
-            # Route into department-specific inventory
+            # ── Determine target inventory ──
             dept = req.department.lower()
             approved_qty = req.quantity_approved
 
-            # Determine target inventory model
-            if dept == "lab":
-                inv_model = LabInventory
-            elif dept == "pharmacy":
-                inv_model = PharmacyInventory
-            elif dept == "radiology":
-                inv_model = RadiologyInventory
-            elif dept == "hr":
-                inv_model = HRInventory   # if exists
-            else:
-                raise ValueError(f"Unknown department: {req.department}")
-
-            # Common data from stock
+            # Common data
             batch_number = stock.batch_number
             expiry_date = stock.expiration_date
-            buying_price = stock.unit_price          # cost price
-            selling_price = stock.selling_price      # set by finance (may be None)
+            buying_price = stock.unit_price
+            selling_price = stock.selling_price
             location = stock.location
             supplier_name = stock.supplier.name if stock.supplier else None
-            unit = stock.unit if hasattr(stock, 'unit') and stock.unit else 'piece'   # Use stock's unit if available
+            unit = stock.unit if hasattr(stock, 'unit') and stock.unit else 'piece'
 
-            # Default locations per department (used if stock.location is not provided)
             default_locations = {
                 'pharmacy': 'Pharmacy Store',
                 'lab': 'Laboratory Store',
                 'radiology': 'Radiology Store',
-                'hr': 'HR Store'
+                'hr': 'HR Store',
+                'inpatient': 'Ward Store'
             }
             final_location = location if location else default_locations.get(dept, 'General Store')
 
-            # For pharmacy, also handle Service
-            # For pharmacy, also handle Service
-            if dept == "pharmacy":
-                # Find or create Service for billing
+            service_id = None  # will be set for pharmacy
+
+            # ── Inpatient: use SubstoreInventory ──
+            if dept == "inpatient":
+                if not req.substore_id:
+                    raise ValueError("Inpatient requests must specify a substore for collection.")
+
+                inv = SubstoreInventory.query.filter_by(
+                    substore_id=req.substore_id,
+                    item_name=stock.name,
+                    batch_number=batch_number
+                ).first()
+
+                if not inv:
+                    inv = SubstoreInventory(
+                        substore_id=req.substore_id,
+                        item_name=stock.name,
+                        category=stock.category,
+                        quantity=approved_qty,
+                        unit=unit,
+                        buying_price=buying_price,
+                        selling_price=selling_price,
+                        batch_number=batch_number,
+                        expiry_date=expiry_date,
+                        supplier=supplier_name,
+                        location=final_location
+                    )
+                    db.session.add(inv)
+                    db.session.flush()
+                    log_inventory_action(
+                        action='substore_inventory_created',
+                        resource_type='substore_inventory',
+                        resource_id=inv.id,
+                        description=f"Created inpatient substore inventory for substore {req.substore_id}, batch {batch_number}",
+                        new_values={
+                            'item_name': stock.name,
+                            'batch': batch_number,
+                            'quantity': approved_qty,
+                            'buying_price': buying_price,
+                            'selling_price': selling_price,
+                            'expiry_date': expiry_date.isoformat() if expiry_date else None,
+                            'location': final_location,
+                            'substore_id': req.substore_id
+                        },
+                        module='inpatient'
+                    )
+                else:
+                    old_qty = inv.quantity
+                    inv.quantity += approved_qty
+                    if not inv.location:
+                        inv.location = final_location
+                    if inv.buying_price != buying_price:
+                        current_app.logger.warning(f"Buying price mismatch for batch {batch_number}: {inv.buying_price} vs {buying_price}")
+                    if inv.selling_price != selling_price and selling_price is not None:
+                        inv.selling_price = selling_price
+                    log_inventory_action(
+                        action='substore_inventory_updated',
+                        resource_type='substore_inventory',
+                        resource_id=inv.id,
+                        description=f"Updated inpatient substore inventory for substore {req.substore_id}, batch {batch_number}",
+                        old_values={'quantity': old_qty},
+                        new_values={'quantity': inv.quantity},
+                        module='inpatient'
+                    )
+
+                service_id = None  # no Service for substore items by default
+
+            # ── Pharmacy: use Service + PharmacyInventory ──
+            elif dept == "pharmacy":
                 service = Service.query.filter_by(name=stock.name, category='Pharmacy').first()
                 if not service:
                     service = Service(
@@ -611,7 +660,6 @@ def handle_stock_request_action(request_id):
                         module='finance'
                     )
                 else:
-                    # Update service price if changed (optional)
                     if service.price != selling_price:
                         old_price = service.price
                         service.price = selling_price or 0.0
@@ -625,7 +673,6 @@ def handle_stock_request_action(request_id):
                             module='finance'
                         )
 
-                # ✅ Update Service quantity_in_stock to match added inventory
                 old_qty = service.quantity_in_stock
                 service.quantity_in_stock += approved_qty
                 service.last_restocked = datetime.utcnow()
@@ -639,71 +686,114 @@ def handle_stock_request_action(request_id):
                     changed_fields=['quantity_in_stock', 'last_restocked'],
                     module='finance'
                 )
-
                 service_id = service.id
-            else:
-                service_id = None
 
-            # Update department inventory (batch‑sensitive)
-            inv = inv_model.query.filter_by(
-                item_name=stock.name,
-                batch_number=batch_number
-            ).first()
-
-            if not inv:
-                inv = inv_model(
+                # Update PharmacyInventory
+                inv_model = PharmacyInventory
+                inv = inv_model.query.filter_by(
                     item_name=stock.name,
-                    category=stock.category,
-                    quantity=approved_qty,
-                    unit=unit,
-                    buying_price=buying_price,
-                    selling_price=selling_price,
-                    batch_number=batch_number,
-                    expiry_date=expiry_date,
-                    supplier=supplier_name,
-                    location=final_location,          # Use default if no stock.location
-                    service_id=service_id if dept == "pharmacy" else None,
-                )
-                db.session.add(inv)
-                db.session.flush()
-                log_inventory_action(
-                    action='department_inventory_created',
-                    resource_type=inv_model.__name__.lower(),
-                    resource_id=inv.id,
-                    description=f"Created new {dept} inventory for batch {batch_number} of {stock.name}",
-                    new_values={
-                        'item_name': stock.name,
-                        'batch': batch_number,
-                        'quantity': approved_qty,
-                        'buying_price': buying_price,
-                        'selling_price': selling_price,
-                        'expiry_date': expiry_date.isoformat() if expiry_date else None,
-                        'location': final_location
-                    },
-                    module=dept
-                )
+                    batch_number=batch_number
+                ).first()
+                if not inv:
+                    inv = inv_model(
+                        item_name=stock.name,
+                        category=stock.category,
+                        quantity=approved_qty,
+                        unit=unit,
+                        buying_price=buying_price,
+                        selling_price=selling_price,
+                        batch_number=batch_number,
+                        expiry_date=expiry_date,
+                        supplier=supplier_name,
+                        location=final_location,
+                        service_id=service_id
+                    )
+                    db.session.add(inv)
+                    db.session.flush()
+                    log_inventory_action(
+                        action='pharmacy_inventory_created',
+                        resource_type='pharmacy_inventory',
+                        resource_id=inv.id,
+                        description=f"Created pharmacy inventory for batch {batch_number}",
+                        module='pharmacy'
+                    )
+                else:
+                    old_qty = inv.quantity
+                    inv.quantity += approved_qty
+                    if not inv.location:
+                        inv.location = final_location
+                    if inv.buying_price != buying_price:
+                        current_app.logger.warning(f"Buying price mismatch for batch {batch_number}: {inv.buying_price} vs {buying_price}")
+                    if inv.selling_price != selling_price and selling_price is not None:
+                        inv.selling_price = selling_price
+                    log_inventory_action(
+                        action='pharmacy_inventory_updated',
+                        resource_type='pharmacy_inventory',
+                        resource_id=inv.id,
+                        description=f"Updated pharmacy inventory for batch {batch_number}",
+                        old_values={'quantity': old_qty},
+                        new_values={'quantity': inv.quantity},
+                        module='pharmacy'
+                    )
+
+            # ── Other departments (Lab, Radiology, etc.) ──
             else:
-                old_qty = inv.quantity
-                inv.quantity += approved_qty
-                # If location not set, use default; otherwise keep existing
-                if not inv.location:
-                    inv.location = final_location
-                if inv.buying_price != buying_price:
-                    current_app.logger.warning(f"Buying price mismatch for batch {batch_number}: {inv.buying_price} vs {buying_price}")
-                if inv.selling_price != selling_price and selling_price is not None:
-                    inv.selling_price = selling_price
+                # Map to appropriate model
+                dept_model_map = {
+                    'lab': LabInventory,
+                    'radiology': RadiologyInventory,
+                    'hr': HRInventory,  # if exists
+                }
+                inv_model = dept_model_map.get(dept)
+                if not inv_model:
+                    raise ValueError(f"Unknown department: {req.department}")
 
-                log_inventory_action(
-                    action='department_inventory_updated',
-                    resource_type=inv_model.__name__.lower(),
-                    resource_id=inv.id,
-                    description=f"Updated {dept} inventory for batch {batch_number} of {stock.name}",
-                    old_values={'quantity': old_qty},
-                    new_values={'quantity': inv.quantity},
-                    module=dept
-                )
+                inv = inv_model.query.filter_by(
+                    item_name=stock.name,
+                    batch_number=batch_number
+                ).first()
+                if not inv:
+                    inv = inv_model(
+                        item_name=stock.name,
+                        category=stock.category,
+                        quantity=approved_qty,
+                        unit=unit,
+                        buying_price=buying_price,
+                        selling_price=selling_price,
+                        batch_number=batch_number,
+                        expiry_date=expiry_date,
+                        supplier=supplier_name,
+                        location=final_location
+                    )
+                    db.session.add(inv)
+                    db.session.flush()
+                    log_inventory_action(
+                        action=f'{dept}_inventory_created',
+                        resource_type=f'{dept}_inventory',
+                        resource_id=inv.id,
+                        description=f"Created {dept} inventory for batch {batch_number}",
+                        module=dept
+                    )
+                else:
+                    old_qty = inv.quantity
+                    inv.quantity += approved_qty
+                    if not inv.location:
+                        inv.location = final_location
+                    if inv.buying_price != buying_price:
+                        current_app.logger.warning(f"Buying price mismatch for batch {batch_number}: {inv.buying_price} vs {buying_price}")
+                    if inv.selling_price != selling_price and selling_price is not None:
+                        inv.selling_price = selling_price
+                    log_inventory_action(
+                        action=f'{dept}_inventory_updated',
+                        resource_type=f'{dept}_inventory',
+                        resource_id=inv.id,
+                        description=f"Updated {dept} inventory for batch {batch_number}",
+                        old_values={'quantity': old_qty},
+                        new_values={'quantity': inv.quantity},
+                        module=dept
+                    )
 
-            # Create stock flow records
+            # ── Stock Flow Records ──
             stock_flow_out = StockFlow(
                 stock_id=stock.id,
                 service_id=service_id,
@@ -722,18 +812,12 @@ def handle_stock_request_action(request_id):
             db.session.add_all([stock_flow_out, stock_flow_in])
             db.session.flush()
 
-            # Log stock flows
             log_inventory_action(
                 action='stock_flow_created',
                 resource_type='stock_flow',
                 resource_id=stock_flow_out.id,
-                description=f"Created outgoing stock flow for collection",
-                new_values={
-                    'stock_id': stock.id,
-                    'quantity_change': -req.quantity_approved,
-                    'flow_type': 'collection',
-                    'reference_id': req.id
-                },
+                description="Created outgoing stock flow for collection",
+                new_values={'stock_id': stock.id, 'quantity_change': -req.quantity_approved, 'flow_type': 'collection', 'reference_id': req.id},
                 module='inventory'
             )
             log_inventory_action(
@@ -741,12 +825,7 @@ def handle_stock_request_action(request_id):
                 resource_type='stock_flow',
                 resource_id=stock_flow_in.id,
                 description=f"Created incoming stock flow for department {dept}",
-                new_values={
-                    'service_id': service_id,
-                    'quantity_change': req.quantity_approved,
-                    'flow_type': 'collection',
-                    'reference_id': req.id
-                },
+                new_values={'service_id': service_id, 'quantity_change': req.quantity_approved, 'flow_type': 'collection', 'reference_id': req.id},
                 module=dept
             )
 
@@ -763,7 +842,6 @@ def handle_stock_request_action(request_id):
 
             db.session.commit()
 
-            # Log successful collection
             log_inventory_action(
                 action='collected',
                 resource_type='stock_request',
@@ -784,16 +862,14 @@ def handle_stock_request_action(request_id):
                 module='stock_request'
             )
 
-        # ✅ Reject request
+        # ── Reject request ──
         elif action == 'reject':
             if req.status != 'submitted':
                 raise ValueError("Only submitted requests can be rejected")
-
             reason = data.get('reason', '').strip()
             if not reason:
                 raise ValueError("Rejection reason is required")
 
-            # Log rejection attempt
             log_inventory_action(
                 action='rejection_attempt',
                 resource_type='stock_request',
@@ -808,7 +884,6 @@ def handle_stock_request_action(request_id):
             req.approver_id = current_user.id
             req.approval_date = datetime.utcnow()
 
-            # Log successful rejection
             log_inventory_action(
                 action='rejected',
                 resource_type='stock_request',
@@ -838,7 +913,6 @@ def handle_stock_request_action(request_id):
         # 🔐 Commit transaction
         db.session.commit()
 
-        # 📦 Log final success
         log_inventory_action(
             action=f'{action}_success',
             resource_type='stock_request',
@@ -847,18 +921,13 @@ def handle_stock_request_action(request_id):
             module='stock_request'
         )
 
-        # 📦 Log activity (good for audit trails)
-        current_app.logger.info(
-            f"Stock request {req.id} {action} by user {current_user.id}"
-        )
+        current_app.logger.info(f"Stock request {req.id} {action} by user {current_user.id}")
 
         return jsonify({'success': True, 'message': f'Request {action} successfully'})
 
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Action failed: {str(e)}")
-        
-        # Log the failure
         log_inventory_action(
             action=f'{action}_failed',
             resource_type='stock_request',
@@ -866,7 +935,6 @@ def handle_stock_request_action(request_id):
             description=f"Stock request {action} failed: {str(e)}",
             module='stock_request'
         )
-        
         return jsonify({'error': str(e)}), 400
 
     

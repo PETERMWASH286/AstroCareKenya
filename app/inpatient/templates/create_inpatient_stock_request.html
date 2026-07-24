@@ -1,0 +1,907 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header with Gradient Background -->
+    <div class="bg-gradient-to-r from-cyan-600 to-teal-700 rounded-xl p-6 shadow-lg mb-8">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-white">New Inpatient Stock Request</h1>
+                <p class="text-cyan-100 mt-1">Request inpatient consumables and reagents in bulk</p>
+            </div>
+            <div class="flex flex-col sm:flex-row gap-3">
+                <!-- New Request Item Button -->
+                <a href="{{ url_for('lab_web.request_new_item') }}" 
+                   class="flex items-center justify-center px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors font-medium shadow-md">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                    </svg>
+                    Request New Item
+                </a>
+                <!-- Back Button -->
+                <a href="{{ url_for('lab_web.request_stocks') }}" 
+                   class="flex items-center justify-center px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-colors font-medium">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 15l-3-3m0 0l3-3m-3 3h8M3 12a9 9 0 1118 0 9 9 0 01-18 0z"/>
+                    </svg>
+                    Back to Requests
+                </a>
+            </div>
+        </div>
+    </div>
+<!-- Substore Selection -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+            <h3 class="text-sm font-medium text-gray-700 flex items-center">
+                <svg class="w-5 h-5 text-indigo-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                </svg>
+                Main Store / Pharmacy
+                <span class="ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">Central Inventory</span>
+            </h3>
+            <p class="text-sm text-gray-500 mt-1">Select the substore you're requesting items for</p>
+        </div>
+        <div class="w-full md:w-64">
+            <select id="substoreSelect" name="substore_id" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                <option value="">-- Select a substore --</option>
+                {% for substore in substores %}
+                <option value="{{ substore.id }}">{{ substore.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+    
+    <!-- Substore Info (dynamic) -->
+    <div id="substoreInfo" class="mt-3 hidden">
+        <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-3 text-sm">
+            <div class="flex items-start gap-2">
+                <svg class="w-5 h-5 text-indigo-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <div>
+                    <span class="font-medium text-indigo-800">Selected Substore:</span>
+                    <span id="selectedSubstoreName" class="text-indigo-700">None</span>
+                    <div class="text-xs text-indigo-600 mt-1">Items will be issued to this substore on approval.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        
+        <!-- Left Column: Item Search & Form -->
+        <div class="xl:col-span-2">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                    <svg class="w-5 h-5 text-teal-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                    Add Items to Request
+                </h2>
+
+                <!-- Hidden original select for data -->
+                <select id="item_id" name="item_id" class="hidden">
+                    <option value="">Search for an item...</option>
+                    {% for item in items %}
+                    <option value="{{ item.id }}" 
+                            data-category="{{ item.category }}"
+                            data-sku="{{ item.sku }}"
+                            data-stock="{{ item.current_stock }}"
+                            data-restock="{{ item.last_restocked.strftime('%b %d, %Y') if item.last_restocked else 'N/A' }}"
+                            data-unit="{{ item.unit_of_measure }}">
+                        {{ item.name }} (SKU: {{ item.sku }}) - Stock: {{ item.current_stock }} {{ item.unit_of_measure }}
+                    </option>
+                    {% endfor %}
+                </select>
+
+                <form class="space-y-6" id="itemSearchForm">
+                    <!-- Enhanced Searchable Item Selection -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Search Inpatient Items
+                        </label>
+                        <div class="relative">
+                            <input type="text" id="itemSearch" 
+                                   placeholder="Type to search items (name, SKU, category)..." 
+                                   class="w-full p-3 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                </svg>
+                            </div>
+                            
+                            <!-- Search Results Dropdown -->
+                            <div id="searchResults" class="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg hidden max-h-60 overflow-y-auto">
+                                <!-- Results will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Item Details Panel -->
+                    <div id="itemDetailsPanel" class="bg-teal-50 p-4 rounded-lg border border-teal-100 hidden">
+                        <div class="flex justify-between items-start mb-3">
+                            <h3 class="font-semibold text-teal-800">Selected Item</h3>
+                            <span id="selectedItemName" class="text-lg font-bold text-gray-800"></span>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                            <div class="flex items-center">
+                                <svg class="w-4 h-4 text-teal-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"/>
+                                </svg>
+                                <div>
+                                    <span class="text-gray-600">Category:</span>
+                                    <span id="itemCategory" class="font-medium ml-1">-</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center">
+                                <svg class="w-4 h-4 text-teal-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                                <div>
+                                    <span class="text-gray-600">SKU:</span>
+                                    <span id="itemSKU" class="font-medium ml-1">-</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center">
+                                <svg class="w-4 h-4 text-teal-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/>
+                                </svg>
+                                <div>
+                                    <span class="text-gray-600">Current Stock:</span>
+                                    <span id="itemStock" class="font-medium ml-1">-</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center">
+                                <svg class="w-4 h-4 text-teal-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                                <div>
+                                    <span class="text-gray-600">Last Restocked:</span>
+                                    <span id="itemRestock" class="font-medium ml-1">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Add Form -->
+                    <div id="quickAddForm" class="hidden">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Quantity -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    Quantity
+                                </label>
+                                <input type="number" id="quickQuantity" 
+                                       class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500" 
+                                       placeholder="Qty" min="1" value="1">
+                            </div>
+                            
+                            <!-- Priority -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    Priority
+                                </label>
+                                <select id="quickPriority" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
+                                    <option value="low">Low</option>
+                                    <option value="medium" selected>Medium</option>
+                                    <option value="high">High</option>
+                                    <option value="urgent">Urgent</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Item Reason -->
+                        <div class="mt-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Reason for this Item
+                            </label>
+                            <textarea id="quickReason" 
+                                      class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500" 
+                                      rows="3" 
+                                      placeholder="Why do you need this specific item?"></textarea>
+                        </div>
+
+                        <!-- Add Button -->
+                        <div class="mt-4">
+                            <button type="button" id="addToRequestBtn" 
+                                    class="w-full bg-teal-600 text-white p-3 rounded-lg font-medium hover:bg-teal-700 transition-colors shadow-md flex items-center justify-center">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                </svg>
+                                Add to List
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Bulk Actions -->
+                <div class="border-t border-gray-200 pt-6 mt-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <button type="button" id="quickStockCheck" 
+                                class="p-3 border border-amber-300 bg-amber-50 text-amber-700 rounded-lg hover:bg-amber-100 transition-colors font-medium flex items-center justify-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            Check Low Stock Items
+                        </button>
+                        <button type="button" id="clearAllItems" 
+                                class="p-3 border border-red-300 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors font-medium flex items-center justify-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                            Clear All Items
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Request Cart -->
+        <div class="xl:col-span-1">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sticky top-4">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-lg font-semibold text-gray-800 flex items-center">
+                        <svg class="w-5 h-5 text-teal-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+                        </svg>
+                        Request Cart
+                        <span id="cartCount" class="ml-2 bg-teal-100 text-teal-800 text-xs px-2 py-1 rounded-full">0</span>
+                    </h2>
+                    <div class="text-sm text-gray-500" id="cartTotal">Total: 0 items</div>
+                </div>
+
+                <!-- Cart Items Table with Horizontal Scroll -->
+                <div class="overflow-x-auto">
+                    <div class="min-w-full inline-block align-middle">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reason</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cartItems" class="bg-white divide-y divide-gray-200">
+                                <!-- Cart items will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Empty Cart State -->
+                    <div id="emptyCart" class="text-center py-8">
+                        <svg class="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+                        </svg>
+                        <p class="text-gray-500">Your request cart is empty</p>
+                        <p class="text-sm text-gray-400 mt-1">Add items from the search panel</p>
+                    </div>
+                </div>
+
+                <!-- Request Summary -->
+                <div id="requestSummary" class="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-100 hidden">
+                    <h4 class="font-semibold text-blue-800 mb-2">Request Summary</h4>
+                    <div class="space-y-1 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Total Items:</span>
+                            <span id="summaryTotalItems" class="font-semibold">0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Urgent Items:</span>
+                            <span id="summaryUrgent" class="font-semibold text-red-600">0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">High Priority:</span>
+                            <span id="summaryHigh" class="font-semibold text-orange-600">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Final Request Form -->
+                <form method="POST" class="mt-6 space-y-4" id="bulkRequestForm">
+                    {{ form.hidden_tag() }}
+    <input type="hidden" name="substore_id" id="substoreHidden" value="">
+    <input type="hidden" name="bulk_items" id="bulkItemsData">                    
+                    <!-- Overall Request Notes (Optional) -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Additional Notes (Optional)
+                        </label>
+                        <textarea name="notes" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500" rows="2" placeholder="Any additional information about this request..."></textarea>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" id="submitBulkRequest" 
+                            class="w-full bg-gradient-to-r from-teal-600 to-cyan-700 text-white p-3 rounded-lg font-medium hover:from-teal-700 hover:to-cyan-800 transition-all shadow-md flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled>
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        Submit Bulk Request
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const itemSelect = document.getElementById('item_id');
+    const itemSearch = document.getElementById('itemSearch');
+    const searchResults = document.getElementById('searchResults');
+    const detailsPanel = document.getElementById('itemDetailsPanel');
+    
+    let allItems = [];
+    let debounceTimer;
+    let selectedItem = null;
+    const cartItems = [];
+
+    const substoreSelect = document.getElementById('substoreSelect');
+    const substoreHidden = document.getElementById('substoreHidden');
+
+    // ── Substore change sync ──
+    if (substoreSelect) {
+        substoreSelect.addEventListener('change', function() {
+            const selectedValue = this.value;
+            substoreHidden.value = selectedValue;
+            console.log('Substore selected:', selectedValue); // DEBUG
+
+            const substoreInfo = document.getElementById('substoreInfo');
+            const selectedSubstoreName = document.getElementById('selectedSubstoreName');
+            if (selectedValue) {
+                substoreInfo.classList.remove('hidden');
+                selectedSubstoreName.textContent = this.options[this.selectedIndex].text;
+            } else {
+                substoreInfo.classList.add('hidden');
+                selectedSubstoreName.textContent = 'None';
+            }
+        });
+    }
+
+    // ── Form submit handler (ensures substore_id is sent) ──
+    const bulkForm = document.getElementById('bulkRequestForm');
+    if (bulkForm) {
+        bulkForm.addEventListener('submit', function(e) {
+            // Always sync from select to hidden (in case user skipped change)
+            if (substoreSelect) {
+                substoreHidden.value = substoreSelect.value;
+            }
+
+            console.log('🔍 Submitting with substore_id:', substoreHidden.value);
+            console.log('📦 Form data:', new FormData(this).get('substore_id'));
+
+            // If still empty, block submission
+            if (!substoreHidden.value) {
+                e.preventDefault();
+                alert('⚠️ Please select a substore before submitting.');
+                return false;
+            }
+
+            // Success – allow submission
+            return true;
+        });
+    }
+
+    // Initialize items from select options
+    function initializeItems() {
+        allItems = Array.from(itemSelect.options).map(option => ({
+            id: option.value,
+            text: option.textContent,
+            name: option.textContent.split(' - ')[0],
+            category: option.dataset.category,
+            sku: option.dataset.sku,
+            stock: option.dataset.stock,
+            restock: option.dataset.restock,
+            unit_of_measure: option.dataset.unit || 'units'
+        })).filter(item => item.id); // Remove empty option
+    }
+
+    // Search function with debouncing
+    function performSearch(query) {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+            const results = allItems.filter(item => 
+                item.text.toLowerCase().includes(query.toLowerCase()) ||
+                item.sku.toLowerCase().includes(query.toLowerCase()) ||
+                item.category.toLowerCase().includes(query.toLowerCase())
+            );
+            displayResults(results);
+        }, 300);
+    }
+
+    // Display search results
+    function displayResults(results) {
+        searchResults.innerHTML = '';
+        
+        if (results.length === 0) {
+            const noResult = document.createElement('div');
+            noResult.className = 'p-3 text-gray-500 text-sm';
+            noResult.textContent = 'No items found';
+            searchResults.appendChild(noResult);
+        } else {
+            results.forEach(item => {
+                const resultItem = document.createElement('div');
+                resultItem.className = 'p-3 hover:bg-teal-50 cursor-pointer border-b border-gray-100 last:border-b-0';
+                resultItem.innerHTML = `
+                    <div class="font-medium text-gray-800">${item.name}</div>
+                    <div class="text-sm text-gray-600 mt-1">
+                        <span class="bg-gray-100 px-2 py-1 rounded">${item.sku}</span>
+                        <span class="ml-2">Stock: ${item.stock}</span>
+                    </div>
+                `;
+                
+                resultItem.addEventListener('click', () => {
+                    selectItem(item);
+                });
+                
+                searchResults.appendChild(resultItem);
+            });
+        }
+        
+        searchResults.classList.remove('hidden');
+    }
+
+    // Select an item from search results
+    function selectItem(item) {
+        selectedItem = item;
+        itemSearch.value = item.name;
+        searchResults.classList.add('hidden');
+        updateItemDetails(item);
+        showQuickAddForm();
+    }
+
+    // Update item details panel
+    function updateItemDetails(item) {
+        if (item && item.id) {
+            document.getElementById('selectedItemName').textContent = item.name;
+            document.getElementById('itemCategory').textContent = item.category || '-';
+            document.getElementById('itemSKU').textContent = item.sku || '-';
+            document.getElementById('itemStock').textContent = item.stock || '0';
+            document.getElementById('itemRestock').textContent = item.restock || '-';
+            detailsPanel.classList.remove('hidden');
+        } else {
+            detailsPanel.classList.add('hidden');
+        }
+    }
+
+    // Show quick add form
+    function showQuickAddForm() {
+        const quickAddForm = document.getElementById('quickAddForm');
+        if (quickAddForm) {
+            quickAddForm.classList.remove('hidden');
+            // Focus on quantity input
+            setTimeout(() => {
+                const quantityInput = document.getElementById('quickQuantity');
+                if (quantityInput) quantityInput.focus();
+            }, 100);
+        }
+    }
+
+    // Add to cart functionality
+    function setupCartFunctionality() {
+        const addToRequestBtn = document.getElementById('addToRequestBtn');
+        if (addToRequestBtn) {
+            addToRequestBtn.addEventListener('click', function() {
+                if (!selectedItem) return;
+
+                const quantity = parseInt(document.getElementById('quickQuantity').value) || 1;
+                const priority = document.getElementById('quickPriority').value;
+                const reason = document.getElementById('quickReason').value.trim();
+
+                if (!reason) {
+                    showNotification('Please provide a reason for this item', 'error');
+                    return;
+                }
+
+                const cartItem = {
+                    id: selectedItem.id,
+                    name: selectedItem.name,
+                    sku: selectedItem.sku,
+                    category: selectedItem.category,
+                    quantity: quantity,
+                    priority: priority,
+                    reason: reason,
+                    current_stock: selectedItem.stock,
+                    unit_of_measure: selectedItem.unit_of_measure
+                };
+
+                // Check if item already exists in cart
+                const existingIndex = cartItems.findIndex(item => item.id === cartItem.id);
+                if (existingIndex > -1) {
+                    cartItems[existingIndex].quantity += quantity;
+                    cartItems[existingIndex].reason = reason; // Update reason
+                    showNotification(`Updated quantity and reason for ${cartItem.name}`, 'info');
+                } else {
+                    cartItems.push(cartItem);
+                    showNotification(`Added ${cartItem.name} to request`, 'success');
+                }
+
+                updateCartDisplay();
+                resetQuickAddForm();
+            });
+        }
+
+        // Quick actions
+        const quickStockCheck = document.getElementById('quickStockCheck');
+        if (quickStockCheck) {
+            quickStockCheck.addEventListener('click', function() {
+                const lowStockItems = allItems.filter(item => {
+                    const currentStock = parseInt(item.stock) || 0;
+                    // Assuming min_stock_level is 5 if not available in data
+                    const minStock = 5;
+                    return currentStock <= minStock;
+                });
+                
+                if (lowStockItems.length > 0) {
+                    let addedCount = 0;
+                    lowStockItems.forEach(item => {
+                        if (!cartItems.find(cartItem => cartItem.id === item.id)) {
+                            const currentStock = parseInt(item.stock) || 0;
+                            const minStock = 5; // Default min stock level
+                            cartItems.push({
+                                id: item.id,
+                                name: item.name,
+                                sku: item.sku,
+                                category: item.category,
+                                quantity: Math.max(1, minStock - currentStock),
+                                priority: 'high',
+                                reason: 'Low stock - automatic restock request',
+                                current_stock: item.stock,
+                                unit_of_measure: item.unit_of_measure
+                            });
+                            addedCount++;
+                        }
+                    });
+                    updateCartDisplay();
+                    if (addedCount > 0) {
+                        showNotification(`Added ${addedCount} low stock items to request`, 'success');
+                    } else {
+                        showNotification('All low stock items are already in your request', 'info');
+                    }
+                } else {
+                    showNotification('No low stock items found!', 'info');
+                }
+            });
+        }
+
+        const clearAllItems = document.getElementById('clearAllItems');
+        if (clearAllItems) {
+            clearAllItems.addEventListener('click', function() {
+                if (cartItems.length > 0 && confirm('Are you sure you want to clear all items from your request?')) {
+                    cartItems.length = 0;
+                    updateCartDisplay();
+                    showNotification('All items cleared from request', 'info');
+                }
+            });
+        }
+    }
+
+    // Update cart display
+    function updateCartDisplay() {
+        const cartItemsContainer = document.getElementById('cartItems');
+        const emptyCart = document.getElementById('emptyCart');
+        const requestSummary = document.getElementById('requestSummary');
+        const submitBulkRequest = document.getElementById('submitBulkRequest');
+        
+        if (!cartItemsContainer) return;
+
+        cartItemsContainer.innerHTML = '';
+        
+        if (cartItems.length === 0) {
+            if (emptyCart) emptyCart.classList.remove('hidden');
+            if (requestSummary) requestSummary.classList.add('hidden');
+            if (submitBulkRequest) submitBulkRequest.disabled = true;
+        } else {
+            if (emptyCart) emptyCart.classList.add('hidden');
+            if (requestSummary) requestSummary.classList.remove('hidden');
+            if (submitBulkRequest) submitBulkRequest.disabled = false;
+
+            cartItems.forEach((item, index) => {
+                const row = document.createElement('tr');
+                const priorityColors = {
+                    'low': 'bg-green-100 text-green-800',
+                    'medium': 'bg-blue-100 text-blue-800',
+                    'high': 'bg-orange-100 text-orange-800',
+                    'urgent': 'bg-red-100 text-red-800'
+                };
+
+                row.innerHTML = `
+                    <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                        <div class="font-medium">${item.name}</div>
+                        <div class="text-xs text-gray-500">${item.sku}</div>
+                    </td>
+                    <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900">${item.quantity}</td>
+                    <td class="px-3 py-2 whitespace-nowrap">
+                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${priorityColors[item.priority]}">
+                            ${item.priority}
+                        </span>
+                    </td>
+                    <td class="px-3 py-2 text-sm text-gray-900 max-w-xs">
+                        <div class="line-clamp-2" title="${item.reason}">${item.reason}</div>
+                    </td>
+                    <td class="px-3 py-2 whitespace-nowrap text-right text-sm font-medium">
+                        <div class="flex space-x-1">
+                            <button type="button" data-index="${index}" class="edit-item-btn text-blue-600 hover:text-blue-900">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                </svg>
+                            </button>
+                            <button type="button" data-index="${index}" class="remove-item-btn text-red-600 hover:text-red-900">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                cartItemsContainer.appendChild(row);
+            });
+
+            // Add event listeners to remove buttons
+            document.querySelectorAll('.remove-item-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const index = parseInt(this.getAttribute('data-index'));
+                    removeFromCart(index);
+                });
+            });
+
+            // Add event listeners to edit buttons
+            document.querySelectorAll('.edit-item-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const index = parseInt(this.getAttribute('data-index'));
+                    editCartItem(index);
+                });
+            });
+
+            // Update summary
+            const urgentCount = cartItems.filter(item => item.priority === 'urgent').length;
+            const highCount = cartItems.filter(item => item.priority === 'high').length;
+            const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+            
+            const cartCount = document.getElementById('cartCount');
+            const cartTotal = document.getElementById('cartTotal');
+            const summaryTotalItems = document.getElementById('summaryTotalItems');
+            const summaryUrgent = document.getElementById('summaryUrgent');
+            const summaryHigh = document.getElementById('summaryHigh');
+
+            if (cartCount) cartCount.textContent = cartItems.length;
+            if (cartTotal) cartTotal.textContent = `Total: ${totalQuantity} units`;
+            if (summaryTotalItems) summaryTotalItems.textContent = cartItems.length;
+            if (summaryUrgent) summaryUrgent.textContent = urgentCount;
+            if (summaryHigh) summaryHigh.textContent = highCount;
+
+            // Update hidden form data
+            const bulkItemsData = document.getElementById('bulkItemsData');
+            if (bulkItemsData) {
+                bulkItemsData.value = JSON.stringify(cartItems);
+            }
+        }
+    }
+
+    // Edit item in cart
+    function editCartItem(index) {
+        if (index >= 0 && index < cartItems.length) {
+            const item = cartItems[index];
+            
+            // Create edit modal or use existing form
+            const newReason = prompt(`Edit reason for ${item.name}:`, item.reason);
+            if (newReason !== null) {
+                if (newReason.trim()) {
+                    cartItems[index].reason = newReason.trim();
+                    updateCartDisplay();
+                    showNotification(`Updated reason for ${item.name}`, 'success');
+                } else {
+                    showNotification('Reason cannot be empty', 'error');
+                }
+            }
+        }
+    }
+
+    // Remove item from cart
+    function removeFromCart(index) {
+        if (index >= 0 && index < cartItems.length) {
+            const removedItem = cartItems.splice(index, 1)[0];
+            updateCartDisplay();
+            showNotification(`Removed ${removedItem.name} from request`, 'info');
+        }
+    }
+
+    // Reset quick add form
+    function resetQuickAddForm() {
+        selectedItem = null;
+        itemSearch.value = '';
+        detailsPanel.classList.add('hidden');
+        const quickAddForm = document.getElementById('quickAddForm');
+        if (quickAddForm) quickAddForm.classList.add('hidden');
+        
+        const quickQuantity = document.getElementById('quickQuantity');
+        const quickPriority = document.getElementById('quickPriority');
+        const quickReason = document.getElementById('quickReason');
+        if (quickQuantity) quickQuantity.value = 1;
+        if (quickPriority) quickPriority.value = 'medium';
+        if (quickReason) quickReason.value = '';
+    }
+
+    // Show notification
+    function showNotification(message, type = 'info') {
+        // Create notification element
+        const notification = document.createElement('div');
+        const bgColor = type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500';
+        
+        notification.className = `fixed top-4 right-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-transform duration-300 translate-x-full`;
+        notification.innerHTML = `
+            <div class="flex items-center">
+                <span>${message}</span>
+            </div>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Animate in
+        setTimeout(() => {
+            notification.classList.remove('translate-x-full');
+        }, 100);
+        
+        // Remove after 3 seconds
+        setTimeout(() => {
+            notification.classList.add('translate-x-full');
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }, 3000);
+    }
+
+    // Event listeners for search
+    itemSearch.addEventListener('input', (e) => {
+        const query = e.target.value.trim();
+        if (query.length > 0) {
+            performSearch(query);
+        } else {
+            searchResults.classList.add('hidden');
+            detailsPanel.classList.add('hidden');
+            const quickAddForm = document.getElementById('quickAddForm');
+            if (quickAddForm) quickAddForm.classList.add('hidden');
+        }
+    });
+
+    itemSearch.addEventListener('focus', () => {
+        if (itemSearch.value.trim().length > 0) {
+            performSearch(itemSearch.value.trim());
+        }
+    });
+
+    // Close search results when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('#customSearch')) {
+            searchResults.classList.add('hidden');
+        }
+    });
+
+    // Keyboard navigation for search
+    itemSearch.addEventListener('keydown', (e) => {
+        const results = searchResults.querySelectorAll('div');
+        const activeResult = searchResults.querySelector('.bg-teal-100');
+        
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (activeResult) {
+                const next = activeResult.nextElementSibling;
+                if (next) {
+                    activeResult.classList.remove('bg-teal-100');
+                    next.classList.add('bg-teal-100');
+                }
+            } else if (results.length > 0) {
+                results[0].classList.add('bg-teal-100');
+            }
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (activeResult) {
+                const prev = activeResult.previousElementSibling;
+                if (prev) {
+                    activeResult.classList.remove('bg-teal-100');
+                    prev.classList.add('bg-teal-100');
+                }
+            }
+        } else if (e.key === 'Enter' && activeResult) {
+            e.preventDefault();
+            activeResult.click();
+        } else if (e.key === 'Escape') {
+            searchResults.classList.add('hidden');
+        }
+    });
+
+
+    // Initialize everything
+    function initialize() {
+        initializeItems();
+        setupCartFunctionality();
+        updateCartDisplay(); // Initial cart state
+    }
+
+    // Start the application
+    initialize();
+});
+</script>
+
+<style>
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+</style>
+
+<style>
+/* Custom styling for search results */
+#searchResults div:hover {
+    background-color: #f0fdfa !important;
+}
+
+#searchResults .bg-teal-100 {
+    background-color: #f0fdfa;
+    border-left: 3px solid #0d9488;
+}
+
+/* Smooth transitions */
+#itemDetailsPanel {
+    transition: all 0.3s ease-in-out;
+}
+
+#searchResults {
+    transition: opacity 0.2s ease-in-out;
+}
+
+/* Scrollbar styling */
+#searchResults::-webkit-scrollbar {
+    width: 6px;
+}
+
+#searchResults::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 0 0.5rem 0.5rem 0;
+}
+
+#searchResults::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+#searchResults::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+</style>
+
+<!-- Select2 Styling -->
+<style>
+    .select2-container--default .select2-selection--single {
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+        height: 48px;
+        padding: 0.5rem 1rem;
+    }
+    
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 36px;
+        padding-left: 0;
+    }
+    
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 46px;
+    }
+    
+    .select2-container--default .select2-results__option--highlighted[aria-selected] {
+        background-color: #0d9488;
+    }
+    
+    .select2-container--default .select2-results__option[aria-selected=true] {
+        background-color: #f0fdfa;
+    }
+</style>
+{% endblock %}

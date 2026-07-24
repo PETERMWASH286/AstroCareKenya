@@ -1,5 +1,5 @@
 import base64
-from flask_login import current_user
+from flask_login import current_user, login_required
 import requests
 from sqlalchemy import or_
 from flask import current_app, flash, g, redirect, render_template, request, jsonify, url_for
@@ -1509,20 +1509,106 @@ def vitals(reg_no):
     patient = Patient.query.filter_by(reg_no=reg_no).first_or_404()
     return render_template('vitals.html', patient=patient)
 
+
+
+@patients_web_bp.route('/edit-patient/<int:patient_id>', methods=['GET'])
+def edit_patient_by_id(patient_id):
+    patient = Patient.query.get_or_404(patient_id)
+    return render_template('edit_patient.html', patient=patient)
+
+
+
 @patients_web_bp.route('/edit-patient/<reg_no>', methods=['GET'])
-def edit_patient(reg_no):
+def edit_patient_by_reg(reg_no):
     patient = Patient.query.filter_by(reg_no=reg_no).first_or_404()
     return render_template('edit_patient.html', patient=patient)
+
 
 @patients_web_bp.route('/patient/<reg_no>', methods=['GET'])
 def view_patient(reg_no):
     patient = Patient.query.filter_by(reg_no=reg_no).first_or_404()
     return render_template('view_patient.html', patient=patient)
 
-@patients_web_bp.route('/edit-patient/<patient_id>', methods=['GET'])
-def edit_patient_details(reg_no):
-    patient = Patient.query.filter_by(reg_no=reg_no).first_or_404()
+@patients_web_bp.route('/edit-patient/<int:patient_id>', methods=['GET', 'POST'])
+@login_required
+def edit_patient_details(patient_id):
+    """Edit patient details - handles both GET (display form) and POST (update)."""
+    patient = Patient.query.get_or_404(patient_id)
+
+    # Optional: check permission to edit (if needed)
+    # if not current_user.has_privilege('patients:edit'):
+    #     abort(403)
+
+    if request.method == 'POST':
+        try:
+            # ----- Personal Information -----
+            patient.first_name = request.form.get('first_name', '').strip()
+            patient.last_name = request.form.get('last_name', '').strip()
+            patient.gender = request.form.get('gender')
+            patient.phone = request.form.get('phone', '').strip()
+            patient.email = request.form.get('email', '').strip() or None
+            patient.marital_status = request.form.get('marital_status')
+            patient.national_id = request.form.get('national_id', '').strip() or None
+            patient.guardian_id = request.form.get('guardian_id', '').strip() or None
+
+            # ----- Date of Birth & Age -----
+            dob_str = request.form.get('dob')
+            if dob_str:
+                try:
+                    patient.date_of_birth = datetime.strptime(dob_str, '%Y-%m-%d').date()
+                except ValueError:
+                    flash('Invalid date format for Date of Birth.', 'danger')
+                    return render_template('edit_patient.html', patient=patient)
+            # Age: if provided, use it; otherwise calculate from DOB
+            age_str = request.form.get('age')
+            if age_str and age_str.isdigit():
+                patient.age = int(age_str)
+            elif patient.date_of_birth:
+                # auto-calculate age (if you want to override)
+                today = datetime.utcnow().date()
+                patient.age = today.year - patient.date_of_birth.year - (
+                    (today.month, today.day) < (patient.date_of_birth.month, patient.date_of_birth.day)
+                )
+
+            # ----- Address -----
+            patient.county = request.form.get('county', '').strip() or None
+            patient.subcounty = request.form.get('subcounty', '').strip() or None
+            patient.ward = request.form.get('ward', '').strip() or None
+            patient.residence = request.form.get('residence', '').strip() or None
+
+            # ----- Next of Kin -----
+            patient.kin_name = request.form.get('kin_name', '').strip() or None
+            patient.kin_relationship = request.form.get('kin_relationship', '').strip() or None
+            patient.kin_phone = request.form.get('kin_phone', '').strip() or None
+            patient.kin_email = request.form.get('kin_email', '').strip() or None
+
+            # ----- Payment & Insurance -----
+            patient.payment_method = request.form.get('payment_method')
+            patient.insurance_provider = request.form.get('insurance_provider', '').strip() or None
+            patient.insurance_number = request.form.get('insurance_number', '').strip() or None
+
+            # ----- NEW: MOH Patient IP Number -----
+            patient.moh_ip_number = request.form.get('moh_ip_number', '').strip() or None
+
+            # Update timestamp
+            patient.updated_at = datetime.utcnow()
+
+            db.session.commit()
+            flash('Patient details updated successfully!', 'success')
+            return redirect(url_for('patients_web.view_patients'))
+
+        except Exception as e:
+            db.session.rollback()
+            flash(f'An error occurred while updating: {str(e)}', 'danger')
+            # Log the error (optional)
+            # current_app.logger.error(f"Error updating patient {patient_id}: {e}")
+            return render_template('edit_patient.html', patient=patient)
+
+    # GET request – display the edit form
     return render_template('edit_patient.html', patient=patient)
+
+
+
 
 @patients_web_bp.route('/patient/<patient_id>', methods=['GET'])
 def view_patient_details(reg_no):

@@ -1,0 +1,352 @@
+{% extends "base.html" %}
+{% block title %}Inpatient Inventory Dashboard{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    {# ── Header ── #}
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+        <div>
+            <h1 class="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">
+                <i class="fas fa-boxes mr-2 text-indigo-500"></i>Inpatient Inventory Dashboard
+            </h1>
+            <p class="text-gray-500 dark:text-gray-400 mt-1">Real‑time stock visibility across all wards and substores</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <a href="{{ url_for('inpatient_web_bp.inventory_requests') }}" 
+               class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md transition">
+                <i class="fas fa-plus-circle mr-2"></i> New Request
+            </a>
+            <a href="{{ url_for('inpatient_web_bp.manage_wards') }}" 
+               class="inline-flex items-center px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-xl transition">
+                <i class="fas fa-edit mr-2"></i> Manage Wards
+            </a>
+        </div>
+    </div>
+
+    {# ── Filter Bar ── #}
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 mb-6">
+        <div class="flex flex-wrap items-center gap-4">
+            <div class="flex-1 min-w-[200px]">
+                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Substore</label>
+                <select id="substoreFilter" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500">
+                    <option value="">All Substores</option>
+                    {% for s in substores %}
+                    <option value="{{ s.id }}" {% if selected_substore == s.id %}selected{% endif %}>{{ s.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="flex-1 min-w-[150px]">
+                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Category</label>
+                <select id="categoryFilter" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500">
+                    <option value="">All Categories</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat }}">{{ cat|title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="flex-1 min-w-[150px]">
+                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Status</label>
+                <select id="statusFilter" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500">
+                    <option value="">All Status</option>
+                    <option value="low">Low Stock</option>
+                    <option value="normal">Normal</option>
+                    <option value="expiring">Expiring Soon</option>
+                </select>
+            </div>
+            <div class="flex items-end">
+                <button id="applyFilters" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow transition">
+                    <i class="fas fa-filter mr-2"></i> Apply
+                </button>
+                <button id="clearFilters" class="ml-2 px-4 py-2 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded-xl transition">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {# ── Stats Cards ── #}
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 transition hover:shadow-md hover:scale-[1.02] duration-200">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Total Items</p>
+                    <p class="text-2xl font-bold text-gray-800 dark:text-white">{{ total_items }}</p>
+                </div>
+                <div class="w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center">
+                    <i class="fas fa-cubes text-indigo-600 dark:text-indigo-300 text-xl"></i>
+                </div>
+            </div>
+            <div class="mt-2 text-xs text-gray-400 dark:text-gray-500">Across {{ total_substores }} substores</div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 transition hover:shadow-md hover:scale-[1.02] duration-200">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Low Stock</p>
+                    <p class="text-2xl font-bold text-red-600 dark:text-red-400">{{ low_stock_count }}</p>
+                </div>
+                <div class="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/50 flex items-center justify-center">
+                    <i class="fas fa-exclamation-triangle text-red-600 dark:text-red-300 text-xl"></i>
+                </div>
+            </div>
+            <div class="mt-2 text-xs text-red-400 dark:text-red-300">Needs immediate reorder</div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 transition hover:shadow-md hover:scale-[1.02] duration-200">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Expiring Soon</p>
+                    <p class="text-2xl font-bold text-amber-600 dark:text-amber-400">{{ expiring_count }}</p>
+                </div>
+                <div class="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center">
+                    <i class="fas fa-calendar-times text-amber-600 dark:text-amber-300 text-xl"></i>
+                </div>
+            </div>
+            <div class="mt-2 text-xs text-amber-400 dark:text-amber-300">Within 30 days</div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5 transition hover:shadow-md hover:scale-[1.02] duration-200">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Pending Requests</p>
+                    <p class="text-2xl font-bold text-amber-600 dark:text-amber-400">{{ pending_requests }}</p>
+                </div>
+                <div class="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center">
+                    <i class="fas fa-clock text-amber-600 dark:text-amber-300 text-xl"></i>
+                </div>
+            </div>
+            <div class="mt-2 text-xs text-amber-400 dark:text-amber-300">Awaiting approval</div>
+        </div>
+    </div>
+
+    {# ── Charts (fixed height) ── #}
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Inventory by Substore</h3>
+                <span class="text-xs text-gray-400">{{ substore_labels|length }} substores</span>
+            </div>
+            <div class="relative" style="height: 220px;">
+                <canvas id="substoreChart"></canvas>
+            </div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Request Trend (7 Days)</h3>
+                <span class="text-xs text-gray-400">{{ trend_days|length }} days</span>
+            </div>
+            <div class="relative" style="height: 220px;">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    {# ── Low Stock & Expiring (with "View All" links) ── #}
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center gap-2">
+                    <i class="fas fa-exclamation-circle text-red-500"></i> Low Stock Items
+                    <span class="text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 px-2 py-0.5 rounded-full">{{ low_stock_items|length }}</span>
+                </h3>
+                {% if low_stock_items|length > 5 %}
+                <a href="{{ url_for('inpatient_web_bp.inventory_manage') }}?status=low" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">View All</a>
+                {% endif %}
+            </div>
+            {% if low_stock_items %}
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 dark:bg-gray-700/50">
+                        <tr><th class="px-3 py-2 text-left">Item</th><th class="px-3 py-2 text-center">Qty</th><th class="px-3 py-2 text-center">Threshold</th><th class="px-3 py-2 text-right">Substore</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for item in low_stock_items[:10] %}
+                        <tr class="border-b dark:border-gray-700">
+                            <td class="px-3 py-2 font-medium">{{ item.item_name }}</td>
+                            <td class="px-3 py-2 text-center text-red-600 dark:text-red-400">{{ item.quantity }}</td>
+                            <td class="px-3 py-2 text-center text-gray-500">{{ item.low_stock_threshold }}</td>
+                            <td class="px-3 py-2 text-right text-gray-600 dark:text-gray-400">{{ item.substore.name }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-gray-500 dark:text-gray-400 text-sm italic">✅ All items are adequately stocked.</p>
+            {% endif %}
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center gap-2">
+                    <i class="fas fa-calendar-times text-amber-500"></i> Expiring Soon
+                    <span class="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded-full">{{ expiring_items|length }}</span>
+                </h3>
+                {% if expiring_items|length > 5 %}
+                <a href="{{ url_for('inpatient_web_bp.inventory_manage') }}?status=expiring" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">View All</a>
+                {% endif %}
+            </div>
+            {% if expiring_items %}
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 dark:bg-gray-700/50">
+                        <tr><th class="px-3 py-2 text-left">Item</th><th class="px-3 py-2 text-center">Qty</th><th class="px-3 py-2 text-center">Expiry</th><th class="px-3 py-2 text-right">Substore</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for item in expiring_items[:10] %}
+                        <tr class="border-b dark:border-gray-700">
+                            <td class="px-3 py-2 font-medium">{{ item.item_name }}</td>
+                            <td class="px-3 py-2 text-center">{{ item.quantity }}</td>
+                            <td class="px-3 py-2 text-center text-amber-600 dark:text-amber-400">{{ item.expiry_date.strftime('%d-%b-%Y') }}</td>
+                            <td class="px-3 py-2 text-right text-gray-600 dark:text-gray-400">{{ item.substore.name }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-gray-500 dark:text-gray-400 text-sm italic">✅ No items expiring in the next 30 days.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    {# ── Recent Requests ── #}
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5">
+        <div class="flex justify-between items-center mb-3">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center gap-2">
+                <i class="fas fa-clipboard-list text-blue-500"></i> Recent Stock Requests
+                <span class="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full">{{ recent_requests|length }}</span>
+            </h3>
+            <a href="{{ url_for('inpatient_web_bp.inventory_requests') }}" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">View All</a>
+        </div>
+        {% if recent_requests %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-gray-50 dark:bg-gray-700/50">
+                    <tr><th class="px-3 py-2 text-left">Date</th><th class="px-3 py-2 text-left">Item</th><th class="px-3 py-2 text-center">Qty</th><th class="px-3 py-2 text-center">Status</th><th class="px-3 py-2 text-right">Substore</th></tr>
+                </thead>
+                <tbody>
+                    {% for req in recent_requests[:10] %}
+                    <tr class="border-b dark:border-gray-700">
+                        <td class="px-3 py-2">{{ req.created_at.strftime('%d-%b %H:%M') }}</td>
+                        <td class="px-3 py-2">{{ req.stock.name }}</td>
+                        <td class="px-3 py-2 text-center">{{ req.quantity_requested }}</td>
+                        <td class="px-3 py-2 text-center">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+                                {% if req.status == 'submitted' %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300
+                                {% elif req.status == 'approved' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300
+                                {% elif req.status == 'rejected' %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300
+                                {% elif req.status == 'fulfilled' %}bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300
+                                {% else %}bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300{% endif %}">
+                                {{ req.status|title }}
+                            </span>
+                        </td>
+                        <td class="px-3 py-2 text-right text-gray-600 dark:text-gray-400">{{ req.substore.name if req.substore else '—' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-gray-500 dark:text-gray-400 text-sm italic">No recent stock requests.</p>
+        {% endif %}
+    </div>
+</div>
+
+{# ── Chart.js ── #}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // ── Substore Chart ──
+    const ctx1 = document.getElementById('substoreChart').getContext('2d');
+    const chart1 = new Chart(ctx1, {
+        type: 'bar',
+        data: {
+            labels: {{ substore_labels|tojson }},
+            datasets: [{
+                label: 'Total Items',
+                data: {{ substore_data|tojson }},
+                backgroundColor: 'rgba(99, 102, 241, 0.7)',
+                borderColor: 'rgb(99, 102, 241)',
+                borderWidth: 1,
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { 
+                legend: { display: false },
+                tooltip: { callbacks: { label: (ctx) => `${ctx.raw} items` } }
+            },
+            scales: { 
+                y: { 
+                    beginAtZero: true,
+                    ticks: { stepSize: 1, font: { size: 10 } }
+                },
+                x: { ticks: { font: { size: 10 }, maxRotation: 45 } }
+            }
+        }
+    });
+
+    // ── Trend Chart ──
+    const ctx2 = document.getElementById('trendChart').getContext('2d');
+    const chart2 = new Chart(ctx2, {
+        type: 'line',
+        data: {
+            labels: {{ trend_days|tojson }},
+            datasets: [{
+                label: 'Requests',
+                data: {{ trend_counts|tojson }},
+                fill: true,
+                backgroundColor: 'rgba(99, 102, 241, 0.15)',
+                borderColor: 'rgb(99, 102, 241)',
+                tension: 0.3,
+                pointBackgroundColor: 'rgb(99, 102, 241)',
+                pointRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { 
+                legend: { display: false },
+                tooltip: { callbacks: { label: (ctx) => `${ctx.raw} requests` } }
+            },
+            scales: { 
+                y: { 
+                    beginAtZero: true,
+                    ticks: { stepSize: 1, font: { size: 10 } }
+                },
+                x: { ticks: { font: { size: 10 } } }
+            }
+        }
+    });
+
+    // ── Filter functionality ──
+    const applyBtn = document.getElementById('applyFilters');
+    const clearBtn = document.getElementById('clearFilters');
+    const substoreFilter = document.getElementById('substoreFilter');
+    const categoryFilter = document.getElementById('categoryFilter');
+    const statusFilter = document.getElementById('statusFilter');
+
+    applyBtn.addEventListener('click', function() {
+        const params = new URLSearchParams();
+        if (substoreFilter.value) params.set('substore', substoreFilter.value);
+        if (categoryFilter.value) params.set('category', categoryFilter.value);
+        if (statusFilter.value) params.set('status', statusFilter.value);
+        window.location.search = params.toString();
+    });
+
+    clearBtn.addEventListener('click', function() {
+        window.location.search = '';
+    });
+});
+</script>
+
+<style>
+/* ── Chart container fix ── */
+.relative canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+</style>
+{% endblock %}

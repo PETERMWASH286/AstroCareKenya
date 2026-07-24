@@ -282,91 +282,76 @@ class Stock(db.Model):
 
 class StockRequest(db.Model):
     __tablename__ = 'stock_requests'
-    __audit_trail__ = True  # Enable auditing
-   
+    __audit_trail__ = True
+
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
+
     # Requester Information
     requester_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    department = db.Column(db.String(100), nullable=False)  # e.g., "Pharmacy", "Surgery"
+    department = db.Column(db.String(100), nullable=False)          # e.g., "lab", "inpatient"
     required_by_date = db.Column(db.DateTime, nullable=True)
-    
+
     # Stock Item Details
     stock_id = db.Column(db.Integer, db.ForeignKey('stock.id'), nullable=False)
     batch_number = db.Column(db.String(50), nullable=False)
     expiration_date = db.Column(db.DateTime, nullable=False)
     location = db.Column(db.String(100), nullable=False)
-    
+
+    # ─── NEW: Link to Substore ─────────────────────────────────────────
+    substore_id = db.Column(db.Integer, db.ForeignKey('substores.id'), nullable=True)
+    # ────────────────────────────────────────────────────────────────────
+
     # Quantities
     quantity_requested = db.Column(db.Integer, nullable=False)
     quantity_approved = db.Column(db.Integer)
     quantity_issued = db.Column(db.Integer, default=0)
-    
+
     # Status Tracking
     status = db.Column(db.Enum(
-        'draft', 
-        'submitted', 
-        'approved', 
-        'rejected', 
-        'processing', 
-        'partially_issued', 
-        'fulfilled', 
-        'cancelled',
+        'draft', 'submitted', 'approved', 'rejected',
+        'processing', 'partially_issued', 'fulfilled', 'cancelled',
         name='request_status'
     ), default='draft', nullable=False)
-    
+
     # Priority System
     priority = db.Column(db.Enum(
-        'routine', 
-        'urgent', 
-        'emergency',
+        'routine', 'urgent', 'emergency',
         name='request_priority'
     ), default='routine', nullable=False)
-    
+
     # Approval Process
     approver_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     approval_date = db.Column(db.DateTime)
     approval_notes = db.Column(db.Text)
-    
+
     # Issuance Details
     issue_date = db.Column(db.DateTime)
     issued_by = db.Column(db.Integer, db.ForeignKey('user.id'))
     issue_reference = db.Column(db.String(50))
 
-    # ✅ Collection Details (NEW)
-    collected_by = db.Column(db.String(150), nullable=True)  # Full name of person collecting
-    collected_at = db.Column(db.DateTime, nullable=True)     # Date/time of collection
+    # Collection Details
+    collected_by = db.Column(db.String(150), nullable=True)
+    collected_at = db.Column(db.DateTime, nullable=True)
     collection_notes = db.Column(db.Text)
 
-    # ✅ Bulk Request Support (NEW)
+    # Bulk Request Support
     bulk_request_id = db.Column(db.String(36), db.ForeignKey('bulk_requests.id'), nullable=True)
     is_bulk = db.Column(db.Boolean, default=False)
 
     # Relationships
     stock = db.relationship('Stock', backref='requests')
-    requester = db.relationship(
-        'User', 
-        foreign_keys=[requester_id], 
-        back_populates='requested_stock'
-    )
-    approver = db.relationship(
-        'User', 
-        foreign_keys=[approver_id], 
-        back_populates='approved_stock'
-    )
-    issuer = db.relationship(
-        'User', 
-        foreign_keys=[issued_by], 
-        back_populates='issued_stock'
-    )
-    
-    # Indexes
+    requester = db.relationship('User', foreign_keys=[requester_id], back_populates='requested_stock')
+    approver = db.relationship('User', foreign_keys=[approver_id], back_populates='approved_stock')
+    issuer = db.relationship('User', foreign_keys=[issued_by], back_populates='issued_stock')
+    substore = db.relationship('Substore', foreign_keys=[substore_id])   # NEW
+
     __table_args__ = (
         db.Index('ix_stock_request_status', 'stock_id', 'status'),
         db.Index('ix_request_department', 'department', 'status'),
         db.Index('ix_batch_expiration', 'batch_number', 'expiration_date'),
+        db.Index('ix_request_substore', 'substore_id'),   # NEW
     )
 
     def __repr__(self):
@@ -387,18 +372,16 @@ class StockRequest(db.Model):
             'location': self.location,
             'requester': self.requester.full_name,
             'age': (datetime.utcnow() - self.created_at).days,
-            # ✅ Include collection info
+            'substore_id': self.substore_id,                      # NEW
+            'substore_name': self.substore.name if self.substore else None,  # NEW
             'collected_by': self.collected_by,
             'collected_at': self.collected_at.isoformat() if self.collected_at else None,
-            # ✅ Include issuance info
             'issued_by': self.issuer.full_name if self.issuer else None,
             'issue_date': self.issue_date.isoformat() if self.issue_date else None,
             'issue_reference': self.issue_reference,
-            # ✅ Bulk request info
             'is_bulk': self.is_bulk,
             'bulk_request_id': self.bulk_request_id
         }
-        
         
     def validate_stock_availability(self):
         """Check if requested stock is available, considering existing requests"""
@@ -424,39 +407,44 @@ class StockRequest(db.Model):
             
 class BulkRequest(db.Model):
     __tablename__ = 'bulk_requests'
-    
+
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
+
     # Requester Information
     requester_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     department = db.Column(db.String(100), nullable=False)
-    
+
+    # ─── NEW: Link to Substore ─────────────────────────────────────────
+    substore_id = db.Column(db.Integer, db.ForeignKey('substores.id'), nullable=True)
+    # ────────────────────────────────────────────────────────────────────
+
     # Bulk Request Details
     bulk_code = db.Column(db.String(50), unique=True, nullable=False, index=True)
     total_items = db.Column(db.Integer, nullable=False)
     total_quantity = db.Column(db.Integer, nullable=False)
     overall_priority = db.Column(db.Enum('routine', 'urgent', 'emergency', name='request_priority'), default='routine')
     notes = db.Column(db.Text)
-    
+
     # Status Tracking
     status = db.Column(db.Enum(
-        'draft', 'submitted', 'approved', 'rejected', 'processing', 
+        'draft', 'submitted', 'approved', 'rejected', 'processing',
         'partially_issued', 'fulfilled', 'cancelled', name='request_status'
     ), default='draft', nullable=False)
-    
+
     # Relationships
     requester = db.relationship('User', foreign_keys=[requester_id], backref='bulk_requests')
     stock_requests = db.relationship('StockRequest', backref='bulk_request', lazy='dynamic')
-    
+    substore = db.relationship('Substore', foreign_keys=[substore_id])   # NEW
+
     def generate_bulk_code(self):
         """Generate unique bulk request code"""
         prefix = self.department[:3].upper()
         date_str = datetime.utcnow().strftime("%y%m%d")
         random_str = str(uuid.uuid4())[:6].upper()
         return f"{prefix}-BULK-{date_str}-{random_str}"
-    
+
     def to_dict(self):
         return {
             'id': self.id,
@@ -468,8 +456,10 @@ class BulkRequest(db.Model):
             'overall_priority': self.overall_priority,
             'status': self.status,
             'notes': self.notes,
-            'requester': self.requester.full_name
-        }            
+            'requester': self.requester.full_name,
+            'substore_id': self.substore_id,                      # NEW
+            'substore_name': self.substore.name if self.substore else None,  # NEW
+        }  
             
 class ItemPurchaseRequest(db.Model):
     __tablename__ = 'item_purchase_requests'

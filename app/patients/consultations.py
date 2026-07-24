@@ -15,7 +15,7 @@ from sqlalchemy import exc, exists
 
 from app.finance.models import Insurance
 from app.lab.models import LabTestResult
-from .models import AIConversation, AIMessage, LabTest, Medication, Patient, Radiology, Service, ServiceDoctorAssignment, Visit, Consultation, Vitals
+from .models import AIConversation, AIMessage, InpatientTreatmentPlan, LabTest, Medication, Patient, Radiology, Service, ServiceDoctorAssignment, TheatreNotes, Visit, Consultation, Vitals
 
 consultations_web_bp = Blueprint(
     'consultations_web', __name__,
@@ -1178,7 +1178,145 @@ def add_treatment(visit_id):
         existing_lab_results=existing_lab_results 
     )
 
+@consultations_web_bp.route('/api/theatre-notes', methods=['POST'])
+def save_theatre_notes():
+    """Save or update theatre notes for a visit."""
+    if not request.is_json:
+        return jsonify({'error': 'JSON required'}), 400
 
+    data = request.get_json()
+    visit_id = data.get('visit_id')
+    if not visit_id:
+        return jsonify({'error': 'Visit ID required'}), 400
+
+    visit = Visit.query.get(visit_id)
+    if not visit:
+        return jsonify({'error': 'Visit not found'}), 404
+
+    # Remove internal fields before storing
+    note_data = {k: v for k, v in data.items() if k not in ['visit_id', 'note_type']}
+
+    # Optional: validate required fields (frontend already has required, but double-check)
+    required_fields = ['preop_icd', 'postop_diagnosis', 'operative_procedure', 'indication',
+                       'operative_findings', 'procedure_description', 'lead_surgeon', 'certified_by']
+    missing = [f for f in required_fields if not note_data.get(f)]
+    if missing:
+        return jsonify({'error': f'Missing required fields: {", ".join(missing)}'}), 400
+
+    # Check if theatre notes already exist for this visit
+    existing = TheatreNotes.query.filter_by(visit_id=visit_id).first()
+    try:
+        if existing:
+            existing.data = note_data
+            existing.updated_at = datetime.utcnow()
+            existing.created_by = current_user.id
+            db.session.commit()
+            return jsonify({'success': True, 'message': 'Theatre notes updated'}), 200
+        else:
+            theatre_note = TheatreNotes(
+                visit_id=visit_id,
+                data=note_data,
+                created_by=current_user.id
+            )
+            db.session.add(theatre_note)
+            db.session.commit()
+            return jsonify({'success': True, 'message': 'Theatre notes saved'}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+    
+    
+    
+@consultations_web_bp.route('/api/theatre-notes/<int:visit_id>', methods=['GET'])
+def get_theatre_notes(visit_id):
+    notes = TheatreNotes.query.filter_by(visit_id=visit_id).first()
+    if not notes:
+        return jsonify({'exists': False}), 200
+    return jsonify({
+        'exists': True,
+        'data': notes.data,
+        'created_at': notes.created_at.isoformat(),
+        'updated_at': notes.updated_at.isoformat(),
+        'author': notes.author.full_name if notes.author else None
+    }), 200
+
+
+@consultations_web_bp.route('/api/treatment-plan/<int:visit_id>', methods=['GET'])
+def get_treatment_plan(visit_id):
+    """Get the treatment plan for a visit."""
+    plan = InpatientTreatmentPlan.query.filter_by(visit_id=visit_id).first()
+    if not plan:
+        return jsonify({'exists': False}), 200
+    return jsonify({
+        'exists': True,
+        'medications': plan.medications,
+        'notes': plan.notes,
+        'updated_at': plan.updated_at.isoformat(),
+        'author': plan.author.full_name if plan.author else None
+    }), 200
+    
+    
+@consultations_web_bp.route('/api/treatment-plan', methods=['POST'])
+def save_treatment_plan():
+    """Save or update inpatient treatment plan."""
+    if not request.is_json:
+        return jsonify({'error': 'JSON required'}), 400
+
+    data = request.get_json()
+    visit_id = data.get('visit_id')
+    if not visit_id:
+        return jsonify({'error': 'Visit ID required'}), 400
+
+    visit = Visit.query.get(visit_id)
+    if not visit:
+        return jsonify({'error': 'Visit not found'}), 404
+
+    # Extract medication arrays
+    drug_ids = data.get('plan_drug[]', [])
+    doses = data.get('plan_drug_dose[]', [])
+    frequencies = data.get('plan_drug_frequency[]', [])
+    durations = data.get('plan_drug_duration[]', [])
+    quantities = data.get('plan_drug_quantity[]', [])
+    prices = data.get('plan_drug_price[]', [])
+    notes = data.get('planNotes', '').strip()
+
+    # Build medications list
+    medications = []
+    for i, drug_id in enumerate(drug_ids):
+        if not drug_id:
+            continue
+        medications.append({
+            'drug_id': int(drug_id),
+            'dose': doses[i] if i < len(doses) else '',
+            'frequency': frequencies[i] if i < len(frequencies) else 'OD',
+            'duration': int(durations[i]) if i < len(durations) and durations[i] else None,
+            'quantity': int(quantities[i]) if i < len(quantities) and quantities[i] else 1,
+            'price': float(prices[i]) if i < len(prices) and prices[i] else 0.0
+        })
+
+    # Check if plan exists
+    plan = InpatientTreatmentPlan.query.filter_by(visit_id=visit_id).first()
+    try:
+        if plan:
+            plan.medications = medications
+            plan.notes = notes
+            plan.updated_at = datetime.utcnow()
+            plan.created_by = current_user.id
+            db.session.commit()
+            return jsonify({'success': True, 'message': 'Treatment plan updated'}), 200
+        else:
+            plan = InpatientTreatmentPlan(
+                visit_id=visit_id,
+                medications=medications,
+                notes=notes,
+                created_by=current_user.id
+            )
+            db.session.add(plan)
+            db.session.commit()
+            return jsonify({'success': True, 'message': 'Treatment plan saved'}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
 
 @consultations_web_bp.route('/visits/<int:visit_id>/add-special-treatment', methods=['GET', 'POST'])
 def add_special_treatment(visit_id):

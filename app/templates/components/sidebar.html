@@ -705,6 +705,313 @@
     </ul>
 </li>
 {% endif %}
+
+{# ========== INPATIENT MODULE ========== #}
+{% if has_privilege('inpatient:dashboard') or has_privilege('inpatient:admission') or has_privilege('inpatient:treatment') or has_privilege('inpatient:closed_files') or has_privilege('inpatient:drugs_order') or has_privilege('inpatient:discharge_medication') or has_privilege('inpatient:charge_sheet') or has_privilege('inpatient:pharmacy_dispense') or has_privilege('inpatient:stock_return') or has_privilege('inpatient:laboratory') or has_privilege('inpatient:ward_bed_shift') or has_privilege('inpatient:investigations') or has_privilege('inpatient:deposits') or has_privilege('inpatient:sha_claims') or has_privilege('inpatient:discharge') or has_privilege('inpatient:invoices') or has_privilege('inpatient:settings') %}
+<li class="dropdown-group">
+    <button class="dropdown-btn flex items-center justify-between w-full p-3 rounded-lg hover:bg-blue-100 transition-all dark:hover:bg-gray-700 dark:text-gray-200 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <div class="flex items-center space-x-3">
+            <i class="fas fa-hospital-user text-blue-600 dark:text-blue-400"></i>
+            <span class="sidebar-text transition-opacity duration-300">Inpatient</span>
+        </div>
+        <i class="fas fa-chevron-down text-xs transition-transform duration-200 text-gray-400 dark:text-gray-500 sidebar-text"></i>
+    </button>
+    <ul class="dropdown-content ml-6 pl-3 border-l-2 border-blue-300 dark:border-blue-700 space-y-1 mt-1">
+
+        {# ---- Dashboard ---- #}
+        {% if has_privilege('inpatient:dashboard') %}
+        <li>
+            <a href="{{ url_for('inpatient_web_bp.dashboard') }}" 
+               class="flex items-center space-x-3 p-2 text-sm rounded-lg hover:bg-blue-200 transition-all dark:hover:bg-gray-600 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                <i class="fas fa-tachometer-alt text-blue-500"></i>
+                <span>Dashboard</span>
+            </a>
+        </li>
+        {% endif %}
+{# ---- Admissions Subgroup ---- #}
+{% if has_privilege('inpatient:admission') or has_privilege('inpatient:treatment') or has_privilege('inpatient:ward_bed_shift') or has_privilege('inpatient:discharge') or has_privilege('inpatient:closed_files') or has_privilege('inpatient:manage_wards') %}
+<li class="dropdown-subgroup">
+    <button class="dropdown-sub-btn flex items-center justify-between w-full p-2 text-sm rounded-lg hover:bg-blue-200 transition-all dark:hover:bg-gray-600 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400">
+        <div class="flex items-center space-x-3">
+            <i class="fas fa-user-plus text-green-600 dark:text-green-400"></i>
+            <span class="sidebar-text transition-opacity duration-300">Admissions</span>
+        </div>
+        <i class="fas fa-chevron-down text-xs transition-transform duration-200 text-gray-400 dark:text-gray-500"></i>
+    </button>
+    <ul class="dropdown-subcontent ml-4 pl-3 border-l-2 border-green-400 dark:border-green-600 space-y-1 mt-1">
+        {% if has_privilege('inpatient:admission') %}
+        <li>
+            <a href="{{ url_for('inpatient_web_bp.admission_form') }}" 
+               class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-green-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-300">
+                <i class="fas fa-address-card text-green-600"></i>
+                <span class="sidebar-text transition-opacity duration-300">Patient Admission Form</span>
+            </a>
+        </li>
+        {% endif %}
+        {% if has_privilege('inpatient:treatment') %}
+        <li>
+            <a href="{{ url_for('inpatient_web_bp.treatment_form') }}" 
+               class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-green-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-300">
+                <i class="fas fa-notes-medical text-blue-600"></i>
+                <span class="sidebar-text transition-opacity duration-300">Inpatient Treatment Form</span>
+            </a>
+        </li>
+        {% endif %}
+        {% if has_privilege('inpatient:ward_bed_shift') %}
+        <li>
+            <a href="{{ url_for('inpatient_web_bp.ward_bed_shift') }}" 
+               class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-green-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-300">
+                <i class="fas fa-bed text-indigo-600"></i>
+                <span class="sidebar-text transition-opacity duration-300">Ward Bed Shift</span>
+            </a>
+        </li>
+        {% endif %}
+        {% if has_privilege('inpatient:discharge') %}
+        <li>
+            <a href="{{ url_for('inpatient_web_bp.discharge') }}" 
+               class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-green-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-300">
+                <i class="fas fa-sign-out-alt text-red-600"></i>
+                <span class="sidebar-text transition-opacity duration-300">Patient Discharge</span>
+            </a>
+        </li>
+        {% endif %}
+        {% if has_privilege('inpatient:closed_files') %}
+        <li>
+            <a href="{{ url_for('inpatient_web_bp.closed_files') }}" 
+               class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-green-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-300">
+                <i class="fas fa-archive text-gray-600"></i>
+                <span class="sidebar-text transition-opacity duration-300">Inpatient Closed Files</span>
+            </a>
+        </li>
+        {% endif %}
+        {# ─── NEW: Manage Wards & Beds ─── #}
+        {% if has_privilege('inpatient:manage_wards') %}
+        <li>
+            <a href="{{ url_for('inpatient_web_bp.manage_wards') }}" 
+               class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-green-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-300">
+                <i class="fas fa-hotel text-green-600"></i>
+                <span class="sidebar-text transition-opacity duration-300">Manage Wards & Beds</span>
+            </a>
+        </li>
+        {% endif %}
+    </ul>
+</li>
+{% endif %}
+
+        {# ---- Pharmacy Subgroup ---- #}
+        {% if has_privilege('inpatient:drugs_order') or has_privilege('inpatient:discharge_medication') or has_privilege('inpatient:pharmacy_dispense') or has_privilege('inpatient:stock_return') %}
+        <li class="dropdown-subgroup">
+            <button class="dropdown-sub-btn flex items-center justify-between w-full p-2 text-sm rounded-lg hover:bg-blue-200 transition-all dark:hover:bg-gray-600 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-pills text-red-600 dark:text-red-400"></i>
+                    <span class="sidebar-text transition-opacity duration-300">Pharmacy</span>
+                </div>
+                <i class="fas fa-chevron-down text-xs transition-transform duration-200 text-gray-400 dark:text-gray-500"></i>
+            </button>
+            <ul class="dropdown-subcontent ml-4 pl-3 border-l-2 border-red-400 dark:border-red-600 space-y-1 mt-1">
+                {% if has_privilege('inpatient:drugs_order') %}
+                <li>
+                    <a href="{{ url_for('inpatient_web_bp.drugs_order') }}" 
+                       class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-red-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-red-300">
+                        <i class="fas fa-prescription text-red-600"></i>
+                        <span class="sidebar-text transition-opacity duration-300">Drugs Order Form</span>
+                    </a>
+                </li>
+                {% endif %}
+                {% if has_privilege('inpatient:discharge_medication') %}
+                <li>
+                    <a href="{{ url_for('inpatient_web_bp.discharge_medication') }}" 
+                       class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-red-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-red-300">
+                        <i class="fas fa-syringe text-red-600"></i>
+                        <span class="sidebar-text transition-opacity duration-300">Discharge Medication</span>
+                    </a>
+                </li>
+                {% endif %}
+                {% if has_privilege('inpatient:pharmacy_dispense') %}
+                <li>
+                    <a href="{{ url_for('inpatient_web_bp.pharmacy_dispense') }}" 
+                       class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-red-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-red-300">
+                        <i class="fas fa-dispensary text-orange-600"></i>
+                        <span class="sidebar-text transition-opacity duration-300">Pharmacy Dispense</span>
+                    </a>
+                </li>
+                {% endif %}
+                {% if has_privilege('inpatient:stock_return') %}
+                <li>
+                    <a href="{{ url_for('inpatient_web_bp.stock_return') }}" 
+                       class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-red-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-red-300">
+                        <i class="fas fa-undo-alt text-yellow-600"></i>
+                        <span class="sidebar-text transition-opacity duration-300">Stock Return</span>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </li>
+        {% endif %}
+
+        {# ---- Laboratory Subgroup ---- #}
+        {% if has_privilege('inpatient:laboratory') or has_privilege('inpatient:investigations') %}
+        <li class="dropdown-subgroup">
+            <button class="dropdown-sub-btn flex items-center justify-between w-full p-2 text-sm rounded-lg hover:bg-blue-200 transition-all dark:hover:bg-gray-600 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-flask text-purple-600 dark:text-purple-400"></i>
+                    <span class="sidebar-text transition-opacity duration-300">Laboratory</span>
+                </div>
+                <i class="fas fa-chevron-down text-xs transition-transform duration-200 text-gray-400 dark:text-gray-500"></i>
+            </button>
+            <ul class="dropdown-subcontent ml-4 pl-3 border-l-2 border-purple-400 dark:border-purple-600 space-y-1 mt-1">
+                {% if has_privilege('inpatient:laboratory') %}
+                <li>
+                    <a href="{{ url_for('inpatient_web_bp.laboratory') }}" 
+                       class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-purple-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-300">
+                        <i class="fas fa-microscope text-purple-600"></i>
+                        <span class="sidebar-text transition-opacity duration-300">Laboratory</span>
+                    </a>
+                </li>
+                {% endif %}
+                {% if has_privilege('inpatient:investigations') %}
+                <li>
+                    <a href="{{ url_for('inpatient_web_bp.investigations') }}" 
+                       class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-purple-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-300">
+                        <i class="fas fa-file-medical-alt text-purple-600"></i>
+                        <span class="sidebar-text transition-opacity duration-300">Other Investigations Request</span>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </li>
+        {% endif %}
+
+
+                {# ---- Inventory Management Subgroup (NEW) ---- #}
+        {% if has_privilege('inpatient:inventory_dashboard') or has_privilege('inpatient:inventory_manage') 
+            or has_privilege('inpatient:inventory_requests') or has_privilege('inpatient:inventory_flow') %}
+        <li class="dropdown-subgroup">
+            <button class="dropdown-sub-btn flex items-center justify-between w-full p-2 text-sm rounded-lg hover:bg-blue-200 transition-all dark:hover:bg-gray-600 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-boxes text-amber-600 dark:text-amber-400"></i>
+                    <span class="sidebar-text transition-opacity duration-300">Inventory Management</span>
+                </div>
+                <i class="fas fa-chevron-down text-xs transition-transform duration-200 text-gray-400 dark:text-gray-500"></i>
+            </button>
+            <ul class="dropdown-subcontent ml-4 pl-3 border-l-2 border-blue-400 dark:border-blue-600 space-y-1 mt-1">
+                {% if has_privilege('inpatient:inventory_dashboard') %}
+                <li>
+                    <a href="{{ url_for('inpatient_web_bp.inventory_dashboard') }}" 
+                       class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-blue-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                        <i class="fas fa-tachometer-alt text-blue-600 dark:text-blue-400"></i>
+                        <span class="sidebar-text transition-opacity duration-300">Inventory Dashboard</span>
+                    </a>
+                </li>
+                {% endif %}
+                
+                {% if has_privilege('inpatient:inventory_manage') %}
+                <li>
+                    <a href="{{ url_for('inpatient_web_bp.inventory_manage') }}" 
+                       class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-blue-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                        <i class="fas fa-boxes text-purple-600 dark:text-purple-400"></i>
+                        <span class="sidebar-text transition-opacity duration-300">Manage Inventory</span>
+                    </a>
+                </li>
+                {% endif %}
+                
+                {% if has_privilege('inpatient:inventory_requests') %}
+                <li>
+                    <a href="{{ url_for('inpatient_web_bp.inventory_requests') }}" 
+                       class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-blue-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                        <i class="fas fa-cart-arrow-down text-green-600 dark:text-green-400"></i>
+                        <span class="sidebar-text transition-opacity duration-300">Stock Requests</span>
+                    </a>
+                </li>
+                {% endif %}
+                
+                {% if has_privilege('inpatient:inventory_flow') %}
+                <li>
+                    <a href="{{ url_for('inpatient_web_bp.inventory_flow') }}" 
+                       class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-blue-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                        <i class="fas fa-exchange-alt text-red-600 dark:text-red-400"></i>
+                        <span class="sidebar-text transition-opacity duration-300">Stock Flow</span>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </li>
+        {% endif %}
+
+        {# ---- Billing & Claims Subgroup ---- #}
+        {% if has_privilege('inpatient:proforma_invoice') or has_privilege('inpatient:charge_sheet') or has_privilege('inpatient:deposits') or has_privilege('inpatient:sha_claims') or has_privilege('inpatient:invoices') %}
+        <li class="dropdown-subgroup">
+            <button class="dropdown-sub-btn flex items-center justify-between w-full p-2 text-sm rounded-lg hover:bg-blue-200 transition-all dark:hover:bg-gray-600 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-file-invoice-dollar text-amber-600 dark:text-amber-400"></i>
+                    <span class="sidebar-text transition-opacity duration-300">Billing & Claims</span>
+                </div>
+                <i class="fas fa-chevron-down text-xs transition-transform duration-200 text-gray-400 dark:text-gray-500"></i>
+            </button>
+            <ul class="dropdown-subcontent ml-4 pl-3 border-l-2 border-amber-400 dark:border-amber-600 space-y-1 mt-1">
+                {% if has_privilege('inpatient:proforma_invoice') %}
+                <li>
+                    <a href="{{ url_for('inpatient_web_bp.proforma_invoice') }}" 
+                       class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-amber-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-300">
+                        <i class="fas fa-file-invoice text-amber-600"></i>
+                        <span class="sidebar-text transition-opacity duration-300">Proforma Invoice</span>
+                    </a>
+                </li>
+                {% endif %}
+                {% if has_privilege('inpatient:charge_sheet') %}
+                <li>
+                    <a href="{{ url_for('inpatient_web_bp.charge_sheet') }}" 
+                       class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-amber-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-300">
+                        <i class="fas fa-clipboard-list text-amber-600"></i>
+                        <span class="sidebar-text transition-opacity duration-300">Charge Sheet</span>
+                    </a>
+                </li>
+                {% endif %}
+                {% if has_privilege('inpatient:deposits') %}
+                <li>
+                    <a href="{{ url_for('inpatient_web_bp.deposits') }}" 
+                       class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-amber-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-300">
+                        <i class="fas fa-hand-holding-usd text-amber-600"></i>
+                        <span class="sidebar-text transition-opacity duration-300">Inpatient Deposits</span>
+                    </a>
+                </li>
+                {% endif %}
+                {% if has_privilege('inpatient:sha_claims') %}
+                <li>
+                    <a href="{{ url_for('inpatient_web_bp.sha_claims') }}" 
+                       class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-amber-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-300">
+                        <i class="fas fa-hand-holding-heart text-amber-600"></i>
+                        <span class="sidebar-text transition-opacity duration-300">SHA Claims</span>
+                    </a>
+                </li>
+                {% endif %}
+                {% if has_privilege('inpatient:invoices') %}
+                <li>
+                    <a href="{{ url_for('inpatient_web_bp.invoices') }}" 
+                       class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-amber-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-300">
+                        <i class="fas fa-receipt text-amber-600"></i>
+                        <span class="sidebar-text transition-opacity duration-300">Invoices</span>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </li>
+        {% endif %}
+
+        {# ---- Settings ---- #}
+        {% if has_privilege('inpatient:settings') %}
+        <li>
+            <a href="{{ url_for('inpatient_web_bp.settings') }}" 
+               class="flex items-center space-x-3 p-2 text-sm rounded-lg hover:bg-blue-200 transition-all dark:hover:bg-gray-600 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                <i class="fas fa-cog text-gray-600 dark:text-gray-400"></i>
+                <span>Settings</span>
+            </a>
+        </li>
+        {% endif %}
+
+    </ul>
+</li>
+{% endif %}
 {# Human Resources Section #} 
 {% if has_privilege('hr:staff_add') or has_privilege('hr:staff_directory') or has_privilege('hr:staff_profiles') 
     or has_privilege('hr:attendance') or has_privilege('hr:payroll:salary') or has_privilege('hr:payroll:payslips')
@@ -788,7 +1095,101 @@
             </ul>
         </li>
         {% endif %} 
+{# Leave & Offs Management Subgroup #}
+{% if has_privilege('hr:leave:manage') or has_privilege('hr:leave:view') or has_privilege('hr:leave:balance') or has_privilege('hr:leave:calendar') or has_privilege('hr:leave:types') or has_privilege('hr:leave:approve') or has_privilege('hr:leave:reports') or has_privilege('hr:leave:offs') %}
+<li class="dropdown-subgroup">
+    <button class="dropdown-sub-btn flex items-center justify-between w-full p-2 text-sm rounded-lg hover:bg-blue-200 transition-all dark:hover:bg-gray-600 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400">
+        <div class="flex items-center space-x-3">
+            <i class="fas fa-calendar-alt text-pink-600 dark:text-pink-400"></i>
+            <span class="sidebar-text transition-opacity duration-300">Leave & Offs</span>
+        </div>
+        <i class="fas fa-chevron-down text-xs transition-transform duration-200 text-gray-400 dark:text-gray-500"></i>
+    </button>
+    <ul class="dropdown-subcontent ml-4 pl-3 border-l-2 border-blue-400 dark:border-blue-600 space-y-1 mt-1">
         
+        <!-- Manage Leave (allocate yearly leave) -->
+        {% if has_privilege('hr:leave:manage') %}
+        <li>
+            <a href="{{ url_for('hr_web.leave_manage') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-blue-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                <i class="fas fa-user-plus text-purple-600 dark:text-purple-400"></i>
+                <span class="sidebar-text transition-opacity duration-300">Manage Leave (Allocate)</span>
+            </a>
+        </li>
+        {% endif %}
+        
+        <!-- Leave Requests (view all requests) -->
+        {% if has_privilege('hr:leave:view') %}
+        <li>
+            <a href="{{ url_for('hr_web.leave_requests') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-blue-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                <i class="fas fa-list-alt text-green-600 dark:text-green-400"></i>
+                <span class="sidebar-text transition-opacity duration-300">Leave Requests</span>
+            </a>
+        </li>
+        {% endif %}
+        
+        <!-- Leave Balances (view employee balances) -->
+        {% if has_privilege('hr:leave:balance') %}
+        <li>
+            <a href="{{ url_for('hr_web.leave_balances') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-blue-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                <i class="fas fa-chart-simple text-purple-600 dark:text-purple-400"></i>
+                <span class="sidebar-text transition-opacity duration-300">Leave Balances</span>
+            </a>
+        </li>
+        {% endif %}
+        
+        <!-- Leave Calendar -->
+        {% if has_privilege('hr:leave:calendar') %}
+        <li>
+            <a href="{{ url_for('hr_web.leave_calendar') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-blue-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                <i class="fas fa-calendar-week text-amber-600 dark:text-amber-400"></i>
+                <span class="sidebar-text transition-opacity duration-300">Leave Calendar</span>
+            </a>
+        </li>
+        {% endif %}
+        
+        <!-- Leave Types (admin) -->
+        {% if has_privilege('hr:leave:types') %}
+        <li>
+            <a href="{{ url_for('hr_web.leave_types') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-blue-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                <i class="fas fa-tags text-indigo-600 dark:text-indigo-400"></i>
+                <span class="sidebar-text transition-opacity duration-300">Leave Types</span>
+            </a>
+        </li>
+        {% endif %}
+        
+        <!-- Approvals -->
+        {% if has_privilege('hr:leave:approve') %}
+        <li>
+            <a href="{{ url_for('hr_web.leave_approvals') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-blue-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                <i class="fas fa-check-double text-teal-600 dark:text-teal-400"></i>
+                <span class="sidebar-text transition-opacity duration-300">Approvals</span>
+            </a>
+        </li>
+        {% endif %}
+        
+        <!-- Reports -->
+        {% if has_privilege('hr:leave:reports') %}
+        <li>
+            <a href="{{ url_for('hr_web.leave_reports') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-blue-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                <i class="fas fa-chart-line text-red-600 dark:text-red-400"></i>
+                <span class="sidebar-text transition-opacity duration-300">Reports</span>
+            </a>
+        </li>
+        {% endif %}
+        
+        <!-- Manage Offs (public holidays, rest days) -->
+        {% if has_privilege('hr:leave:offs') %}
+        <li>
+            <a href="{{ url_for('hr_web.leave_offs') }}" class="flex items-center space-x-3 p-2 text-xs rounded-lg hover:bg-blue-300 transition-all dark:hover:bg-gray-500 dark:text-gray-300 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                <i class="fas fa-calendar-times text-pink-600 dark:text-pink-400"></i>
+                <span class="sidebar-text transition-opacity duration-300">Manage Offs</span>
+            </a>
+        </li>
+        {% endif %}
+        
+    </ul>
+</li>
+{% endif %}
         {# NEW: Disciplinary Services Subgroup #}
         {% if has_privilege('hr:disciplinary:cases') or has_privilege('hr:disciplinary:actions') or has_privilege('hr:disciplinary:reports') %}
         <li class="dropdown-subgroup">

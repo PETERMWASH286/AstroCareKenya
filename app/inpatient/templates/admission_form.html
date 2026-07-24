@@ -1,0 +1,359 @@
+{% extends "base.html" %}
+{% block title %}Patient Admission{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    {# ── Header ── #}
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+        <div>
+            <h1 class="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">
+                <i class="fas fa-user-plus mr-2 text-indigo-500"></i>Admit Patient
+            </h1>
+            <p class="text-gray-500 dark:text-gray-400 mt-1">Select a patient to start admission</p>
+        </div>
+        <a href="{{ url_for('patients_web.register_patient') }}" 
+           class="inline-flex items-center px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:scale-[1.02]">
+            <i class="fas fa-user-plus mr-2"></i> New Patient
+        </a>
+    </div>
+
+    {# ── Search & Results ── #}
+    <div class="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div class="relative flex-1 max-w-md">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <i class="fas fa-search text-gray-400 dark:text-gray-500"></i>
+            </div>
+            <input type="text" id="patientSearch" 
+                   class="block w-full pl-10 pr-10 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                   placeholder="Search by name, reg no, phone or MOH IP…">
+            <button id="clearSearch" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hidden">
+                <i class="fas fa-times-circle"></i>
+            </button>
+        </div>
+        <div class="text-sm text-gray-500 dark:text-gray-400">
+            <span id="visibleCount">{{ patients|length }}</span> / <span id="totalCount">{{ patients|length }}</span> patients
+        </div>
+    </div>
+
+    {# ── Patient Table ── #}
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-700/50 sticky top-0 z-10">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Reg No</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Patient</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Age / Gender</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Phone</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">MOH IP #</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="patientTableBody" class="bg-white dark:bg-gray-800 divide-y divide-gray-100 dark:divide-gray-700">
+                    {% for p in patients %}
+                    <tr class="patient-row hover:bg-gray-50 dark:hover:bg-gray-700/50 transition" data-patient-id="{{ p.id }}" data-search="{{ p.reg_no }} {{ p.full_name }} {{ p.phone }} {{ p.moh_ip or '' }}">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{{ p.reg_no }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
+                                    <i class="fas fa-user text-indigo-600 dark:text-indigo-300"></i>
+                                </div>
+                                <div class="ml-3">
+                                    <div class="text-sm font-medium text-gray-800 dark:text-white">{{ p.full_name }}</div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">{{ p.insurance }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                            {{ p.age or '?' }} yrs<br>
+                            <span class="text-xs text-gray-500 dark:text-gray-400">{{ p.gender or 'N/A' }}</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">{{ p.phone }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            {% if p.moh_ip %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-200">
+                                <i class="fas fa-check-circle mr-1 text-green-500"></i> {{ p.moh_ip }}
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-200">
+                                <i class="fas fa-times-circle mr-1 text-red-500"></i> Missing
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            {% if p.is_admitted %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200">
+                                <i class="fas fa-hospital mr-1"></i> Admitted
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+                                <i class="fas fa-clock mr-1"></i> Not Admitted
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                            {% if p.is_admitted %}
+                            <button disabled class="px-3 py-1.5 bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-lg cursor-not-allowed text-xs">
+                                Admitted
+                            </button>
+                            {% elif not p.moh_ip %}
+                            <button disabled class="px-3 py-1.5 bg-red-100 dark:bg-red-900/30 text-red-500 dark:text-red-300 rounded-lg cursor-not-allowed text-xs" title="MOH IP number required">
+                                <i class="fas fa-exclamation-triangle mr-1"></i> Missing IP
+                            </button>
+                            {% else %}
+                            <button onclick="openAdmitModal({{ p.id }})" 
+                                    class="inline-flex items-center px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs shadow-md hover:shadow-lg transition-all">
+                                <i class="fas fa-user-plus mr-1"></i> Admit
+                            </button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                            <i class="fas fa-users text-3xl mb-2 block"></i>
+                            No patients found.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{# ── Admission Modal (unchanged) ── #}
+<div id="admitModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm transition-opacity duration-300 hidden">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 transform transition-transform scale-95">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-2xl font-bold text-gray-800 dark:text-white" id="modalTitle">Admit Patient</h2>
+            <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        <div id="patientPreview" class="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 mb-4 text-sm">
+            <!-- filled by JS -->
+        </div>
+        <form id="admissionForm" class="space-y-5">
+            <input type="hidden" id="patientId">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ward <span class="text-red-500">*</span></label>
+                    <select id="wardId" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white">
+                        <option value="">Select Ward</option>
+                        {% for w in wards %}
+                        <option value="{{ w.id }}">{{ w.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Bed</label>
+                    <select id="bedId" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white">
+                        <option value="">Select Ward first</option>
+                    </select>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Diagnosis <span class="text-red-500">*</span></label>
+                    <textarea id="diagnosis" rows="3" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white" placeholder="Initial diagnosis"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Admitting Doctor <span class="text-red-500">*</span></label>
+                    <select id="doctorId" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white">
+                        <option value="">Select Doctor</option>
+                        {% for d in doctors %}
+                        <option value="{{ d.id }}">{{ d.full_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Assigned Nurse</label>
+                    <select id="nurseId" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white">
+                        <option value="">Select Nurse (optional)</option>
+                        {% for n in nurses %}
+                        <option value="{{ n.id }}">{{ n.full_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Admission Date & Time</label>
+                    <input type="datetime-local" id="admissionDate" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white">
+                </div>
+            </div>
+            <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <button type="button" onclick="closeModal()" class="px-5 py-2.5 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded-xl transition-colors">Cancel</button>
+                <button type="submit" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md hover:shadow-lg transition-all flex items-center">
+                    <i class="fas fa-check mr-2"></i> Admit Patient
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# ── JavaScript ── #}
+<script>
+    // ── Search / Filter ──
+    const searchInput = document.getElementById('patientSearch');
+    const clearBtn = document.getElementById('clearSearch');
+    const rows = document.querySelectorAll('.patient-row');
+    const visibleCount = document.getElementById('visibleCount');
+    const totalCount = document.getElementById('totalCount');
+    const noResultMsg = document.createElement('tr');
+    noResultMsg.id = 'noResultRow';
+    noResultMsg.innerHTML = `
+        <td colspan="7" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+            <i class="fas fa-search text-3xl mb-2 block"></i>
+            No patients match your search.
+        </td>
+    `;
+    const tableBody = document.getElementById('patientTableBody');
+
+    function filterTable() {
+        const query = searchInput.value.trim().toLowerCase();
+        let visible = 0;
+        rows.forEach(row => {
+            const searchData = row.dataset.search.toLowerCase();
+            const match = !query || searchData.includes(query);
+            row.style.display = match ? '' : 'none';
+            if (match) visible++;
+        });
+        // Update counter
+        visibleCount.textContent = visible;
+        // Show/hide "no results" row
+        const existingNoRow = document.getElementById('noResultRow');
+        if (visible === 0 && rows.length > 0) {
+            if (!existingNoRow) tableBody.appendChild(noResultMsg);
+        } else {
+            if (existingNoRow) existingNoRow.remove();
+        }
+        // Toggle clear button
+        clearBtn.classList.toggle('hidden', query === '');
+    }
+
+    searchInput.addEventListener('input', filterTable);
+    clearBtn.addEventListener('click', function() {
+        searchInput.value = '';
+        filterTable();
+        searchInput.focus();
+    });
+
+    // ── Modal functions (unchanged) ──
+    let currentPatientId = null;
+    const modal = document.getElementById('admitModal');
+    const form = document.getElementById('admissionForm');
+
+    function openAdmitModal(patientId) {
+        currentPatientId = patientId;
+        const row = document.querySelector(`tr[data-patient-id="${patientId}"]`);
+        const name = row.querySelector('.text-gray-800').textContent;
+        const reg = row.querySelector('.text-gray-900').textContent;
+        const phone = row.querySelector('.text-gray-600').textContent;
+
+        document.getElementById('patientId').value = patientId;
+        document.getElementById('patientPreview').innerHTML = `
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
+                    <i class="fas fa-user text-indigo-600 dark:text-indigo-300 text-xl"></i>
+                </div>
+                <div>
+                    <div class="font-semibold text-gray-800 dark:text-white">${name}</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400">${reg} · ${phone}</div>
+                </div>
+            </div>
+        `;
+        document.getElementById('wardId').value = '';
+        document.getElementById('bedId').innerHTML = '<option value="">Select Ward first</option>';
+        document.getElementById('diagnosis').value = '';
+        document.getElementById('doctorId').value = '';
+        document.getElementById('nurseId').value = '';
+        const now = new Date();
+        document.getElementById('admissionDate').value = now.toISOString().slice(0, 16);
+        modal.classList.remove('hidden');
+    }
+
+    function closeModal() {
+        modal.classList.add('hidden');
+        currentPatientId = null;
+    }
+
+    // Dynamic bed loading
+    document.getElementById('wardId').addEventListener('change', function() {
+        const wardId = this.value;
+        const bedSelect = document.getElementById('bedId');
+        if (!wardId) {
+            bedSelect.innerHTML = '<option value="">Select Ward first</option>';
+            return;
+        }
+        fetch(`/inpatient/api/beds-by-ward?ward_id=${wardId}`)
+            .then(res => res.json())
+            .then(data => {
+                bedSelect.innerHTML = '<option value="">Select Bed</option>';
+                data.forEach(bed => {
+                    const opt = document.createElement('option');
+                    opt.value = bed.id;
+                    opt.textContent = bed.bed_number;
+                    bedSelect.appendChild(opt);
+                });
+            })
+            .catch(() => {
+                bedSelect.innerHTML = '<option value="">Error loading beds</option>';
+            });
+    });
+
+    // Form submission (AJAX)
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const payload = {
+            patient_id: parseInt(document.getElementById('patientId').value),
+            ward_id: parseInt(document.getElementById('wardId').value),
+            bed_id: document.getElementById('bedId').value ? parseInt(document.getElementById('bedId').value) : null,
+            diagnosis: document.getElementById('diagnosis').value.trim(),
+            doctor_id: parseInt(document.getElementById('doctorId').value),
+            nurse_id: document.getElementById('nurseId').value ? parseInt(document.getElementById('nurseId').value) : null,
+            admission_date: document.getElementById('admissionDate').value
+        };
+        if (!payload.patient_id || !payload.ward_id || !payload.doctor_id || !payload.diagnosis) {
+            showToast('Please fill in all required fields.', 'error');
+            return;
+        }
+        fetch('{{ url_for("inpatient_web_bp.admission_form") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                showToast(data.message, 'success');
+                closeModal();
+                const row = document.querySelector(`tr[data-patient-id="${payload.patient_id}"]`);
+                const statusCell = row.querySelector('td:nth-child(6)');
+                statusCell.innerHTML = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200">
+                    <i class="fas fa-hospital mr-1"></i> Admitted
+                </span>`;
+                const actionCell = row.querySelector('td:last-child');
+                actionCell.innerHTML = `<button disabled class="px-3 py-1.5 bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-lg cursor-not-allowed text-xs">Admitted</button>`;
+            } else {
+                showToast(data.error || 'Admission failed.', 'error');
+            }
+        })
+        .catch(err => {
+            showToast('Network error. Please try again.', 'error');
+            console.error(err);
+        });
+    });
+
+    function showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        toast.className = `fixed bottom-4 right-4 px-4 py-2 rounded-lg shadow-lg text-white ${type === 'success' ? 'bg-green-600' : 'bg-red-600'} z-50 transition-opacity duration-500`;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 500); }, 4000);
+    }
+
+    modal.addEventListener('click', function(e) {
+        if (e.target === this) closeModal();
+    });
+</script>
+{% endblock %}

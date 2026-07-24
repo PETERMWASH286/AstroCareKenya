@@ -1,0 +1,446 @@
+{% extends "base.html" %}
+{% block title %}Inpatient Settings{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">
+            <i class="fas fa-cog mr-2 text-indigo-500"></i>Inpatient Settings
+        </h1>
+        <p class="text-gray-500 dark:text-gray-400 mt-1">Configure fees, defaults, and ward-specific charges</p>
+    </div>
+
+    {# ── Tabs ── #}
+    <div class="border-b border-gray-200 dark:border-gray-700 mb-6">
+        <nav class="flex flex-wrap gap-4" aria-label="Settings Tabs">
+            <button class="tab-btn px-4 py-2 text-sm font-medium border-b-2 border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400" data-tab="general">General</button>
+            <button class="tab-btn px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200" data-tab="ward-fees">Ward Bed Fees</button>
+            <button class="tab-btn px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200" data-tab="custom">Custom Settings</button>
+        </nav>
+    </div>
+
+    {# ── Tab Content: General ── #}
+    <div id="tab-general" class="tab-content">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+            <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">General Settings</h2>
+            <form id="generalSettingsForm" class="space-y-4">
+                {{ general_form.hidden_tag() }}
+                <input type="hidden" name="action" value="update_general">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        {{ general_form.default_admission_fee.label(class="block text-sm font-medium text-gray-700 dark:text-gray-300") }}
+                        {{ general_form.default_admission_fee(class="mt-1 w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white", id="default_admission_fee") }}
+                    </div>
+                    <div>
+                        {{ general_form.default_nursing_fee.label(class="block text-sm font-medium text-gray-700 dark:text-gray-300") }}
+                        {{ general_form.default_nursing_fee(class="mt-1 w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white", id="default_nursing_fee") }}
+                    </div>
+                    <div>
+                        {{ general_form.default_admin_fee.label(class="block text-sm font-medium text-gray-700 dark:text-gray-300") }}
+                        {{ general_form.default_admin_fee(class="mt-1 w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white", id="default_admin_fee") }}
+                    </div>
+                    <div>
+                        {{ general_form.max_stay_days.label(class="block text-sm font-medium text-gray-700 dark:text-gray-300") }}
+                        {{ general_form.max_stay_days(class="mt-1 w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white", id="max_stay_days") }}
+                    </div>
+                    <div>
+                        {{ general_form.default_discharge_fee.label(class="block text-sm font-medium text-gray-700 dark:text-gray-300") }}
+                        {{ general_form.default_discharge_fee(class="mt-1 w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white", id="default_discharge_fee") }}
+                    </div>
+                    <div>
+                        {{ general_form.default_consultation_fee.label(class="block text-sm font-medium text-gray-700 dark:text-gray-300") }}
+                        {{ general_form.default_consultation_fee(class="mt-1 w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white", id="default_consultation_fee") }}
+                    </div>
+                    <div class="md:col-span-2 flex items-center">
+                        {{ general_form.auto_generate_invoice_on_discharge(class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded", id="auto_generate_invoice_on_discharge") }}
+                        {{ general_form.auto_generate_invoice_on_discharge.label(class="ml-2 block text-sm text-gray-700 dark:text-gray-300") }}
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end">
+                    <button type="submit" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md hover:shadow-lg transition">
+                        <i class="fas fa-save mr-2"></i> Save General Settings
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {# ── Tab Content: Ward Bed Fees ── #}
+    <div id="tab-ward-fees" class="tab-content hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+            <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Ward Bed Fees</h2>
+            <form id="wardFeeForm" class="mb-6 p-4 bg-gray-50 dark:bg-gray-700/30 rounded-xl">
+                {{ ward_fee_form.hidden_tag() }}
+                <input type="hidden" name="action" value="update_ward_fee">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                        {{ ward_fee_form.ward_id.label(class="block text-sm font-medium text-gray-700 dark:text-gray-300") }}
+                        {{ ward_fee_form.ward_id(class="mt-1 w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white", id="ward_id") }}
+                    </div>
+                    <div>
+                        {{ ward_fee_form.admission_fee.label(class="block text-sm font-medium text-gray-700 dark:text-gray-300") }}
+                        {{ ward_fee_form.admission_fee(class="mt-1 w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white", id="admission_fee") }}
+                    </div>
+                    <div>
+                        {{ ward_fee_form.daily_bed_fee.label(class="block text-sm font-medium text-gray-700 dark:text-gray-300") }}
+                        {{ ward_fee_form.daily_bed_fee(class="mt-1 w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white", id="daily_bed_fee") }}
+                    </div>
+                    <div>
+                        {{ ward_fee_form.deposit_required.label(class="block text-sm font-medium text-gray-700 dark:text-gray-300") }}
+                        {{ ward_fee_form.deposit_required(class="mt-1 w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white", id="deposit_required") }}
+                    </div>
+                </div>
+                <div class="mt-4 flex justify-end">
+                    <button type="submit" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow transition">
+                        <i class="fas fa-save mr-2"></i> Save Ward Fee
+                    </button>
+                </div>
+            </form>
+
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-3">Current Ward Fees</h3>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 dark:bg-gray-700/50">
+                        <tr>
+                            <th class="px-4 py-2 text-left">Ward</th>
+                            <th class="px-4 py-2 text-center">Admission Fee</th>
+                            <th class="px-4 py-2 text-center">Daily Bed Fee</th>
+                            <th class="px-4 py-2 text-center">Deposit Required</th>
+                            <th class="px-4 py-2 text-right">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="wardFeesTableBody">
+                        {% for fee in ward_fees %}
+                        <tr class="border-b dark:border-gray-700" data-fee-id="{{ fee.id }}">
+                            <td class="px-4 py-2 font-medium">{{ fee.ward.name }}</td>
+                            <td class="px-4 py-2 text-center">Ksh {{ fee.admission_fee|currency }}</td>
+                            <td class="px-4 py-2 text-center">Ksh {{ fee.daily_bed_fee|currency }}</td>
+                            <td class="px-4 py-2 text-center">Ksh {{ fee.deposit_required|currency }}</td>
+                            <td class="px-4 py-2 text-right">
+                                <button class="delete-fee-btn text-red-400 hover:text-red-600" data-fee-id="{{ fee.id }}">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr id="noFeesRow">
+                            <td colspan="5" class="px-4 py-4 text-center text-gray-500 dark:text-gray-400">No ward fees configured.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {# ── Tab Content: Custom Settings ── #}
+    <div id="tab-custom" class="tab-content hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+            <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Custom Settings (Key-Value)</h2>
+            <form id="customSettingForm" class="mb-6 p-4 bg-gray-50 dark:bg-gray-700/30 rounded-xl">
+                {{ custom_form.hidden_tag() }}
+                <input type="hidden" name="action" value="add_custom">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        {{ custom_form.key.label(class="block text-sm font-medium text-gray-700 dark:text-gray-300") }}
+                        {{ custom_form.key(class="mt-1 w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white", id="custom_key") }}
+                    </div>
+                    <div>
+                        {{ custom_form.value.label(class="block text-sm font-medium text-gray-700 dark:text-gray-300") }}
+                        {{ custom_form.value(class="mt-1 w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white", id="custom_value") }}
+                    </div>
+                    <div>
+                        {{ custom_form.category.label(class="block text-sm font-medium text-gray-700 dark:text-gray-300") }}
+                        {{ custom_form.category(class="mt-1 w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white", id="custom_category") }}
+                    </div>
+                </div>
+                <div class="mt-2">
+                    {{ custom_form.description.label(class="block text-sm font-medium text-gray-700 dark:text-gray-300") }}
+                    {{ custom_form.description(class="mt-1 w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white", id="custom_description", rows=2) }}
+                </div>
+                <div class="mt-4 flex justify-end">
+                    <button type="submit" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow transition">
+                        <i class="fas fa-plus-circle mr-2"></i> Add Setting
+                    </button>
+                </div>
+            </form>
+
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-3">Current Custom Settings</h3>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 dark:bg-gray-700/50">
+                        <tr>
+                            <th class="px-4 py-2 text-left">Key</th>
+                            <th class="px-4 py-2 text-left">Value</th>
+                            <th class="px-4 py-2 text-left">Category</th>
+                            <th class="px-4 py-2 text-left">Description</th>
+                        </tr>
+                    </thead>
+                    <tbody id="customSettingsTableBody">
+                        {% for key, value in general_settings.items() %}
+                        <tr>
+                            <td class="px-4 py-2 font-mono text-sm">{{ key }}</td>
+                            <td class="px-4 py-2">{{ value }}</td>
+                            <td class="px-4 py-2 text-gray-500">general</td>
+                            <td class="px-4 py-2 text-gray-500">—</td>
+                        </tr>
+                        {% endfor %}
+                        {% for key, value in fee_settings.items() %}
+                        <tr>
+                            <td class="px-4 py-2 font-mono text-sm">{{ key }}</td>
+                            <td class="px-4 py-2">{{ value }}</td>
+                            <td class="px-4 py-2 text-gray-500">fees</td>
+                            <td class="px-4 py-2 text-gray-500">—</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{# ── Toast Container ── #}
+<div id="toastContainer" class="fixed bottom-4 right-4 space-y-2 z-50"></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+    // ── Tabs ──
+    const tabs = document.querySelectorAll('.tab-btn');
+    const contents = {
+        'general': document.getElementById('tab-general'),
+        'ward-fees': document.getElementById('tab-ward-fees'),
+        'custom': document.getElementById('tab-custom')
+    };
+
+    function activateTab(tabId) {
+        tabs.forEach(btn => {
+            btn.classList.remove('border-indigo-600', 'text-indigo-600', 'dark:border-indigo-400', 'dark:text-indigo-400');
+            btn.classList.add('text-gray-500', 'dark:text-gray-400');
+        });
+        const activeBtn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+        if (activeBtn) {
+            activeBtn.classList.remove('text-gray-500', 'dark:text-gray-400');
+            activeBtn.classList.add('border-indigo-600', 'text-indigo-600', 'dark:border-indigo-400', 'dark:text-indigo-400');
+        }
+        Object.keys(contents).forEach(id => {
+            contents[id].classList.add('hidden');
+        });
+        if (contents[tabId]) contents[tabId].classList.remove('hidden');
+    }
+
+    tabs.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const tabId = this.dataset.tab;
+            activateTab(tabId);
+            window.location.hash = tabId;
+        });
+    });
+
+    const hash = window.location.hash.replace('#', '');
+    if (hash && contents[hash]) activateTab(hash);
+
+    // ── Toast System ──
+    function showToast(message, type = 'success') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        const bg = type === 'success' ? 'bg-green-600' : type === 'error' ? 'bg-red-600' : 'bg-amber-500';
+        toast.className = `px-4 py-2 rounded-lg shadow-lg text-white ${bg} transition-all duration-300 transform translate-x-0 mb-2`;
+        toast.textContent = message;
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(20px)';
+            setTimeout(() => toast.remove(), 300);
+        }, 4000);
+    }
+
+    // ── Helper to get CSRF token ──
+    function getCsrfToken(form) {
+        const tokenInput = form.querySelector('input[name="csrf_token"]');
+        return tokenInput ? tokenInput.value : null;
+    }
+
+    // ── General Settings (AJAX) ──
+    document.getElementById('generalSettingsForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        const payload = Object.fromEntries(formData.entries());
+        const csrfToken = getCsrfToken(this);
+        if (csrfToken) payload.csrf_token = csrfToken;
+
+        fetch('{{ url_for("inpatient_web_bp.settings") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                showToast(data.message || 'General settings updated.', 'success');
+            } else {
+                const errorMsg = data.errors ? Object.values(data.errors).flat().join(', ') : (data.error || 'Validation error.');
+                showToast(errorMsg, 'error');
+            }
+        })
+        .catch(err => showToast('Network error.', 'error'));
+    });
+
+    // ── Ward Bed Fee (AJAX) ──
+    document.getElementById('wardFeeForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        const payload = Object.fromEntries(formData.entries());
+        const csrfToken = getCsrfToken(this);
+        if (csrfToken) payload.csrf_token = csrfToken;
+        payload.ward_id = parseInt(payload.ward_id);
+        payload.admission_fee = parseFloat(payload.admission_fee);
+        payload.daily_bed_fee = parseFloat(payload.daily_bed_fee);
+        payload.deposit_required = parseFloat(payload.deposit_required) || 0;
+
+        fetch('{{ url_for("inpatient_web_bp.settings") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                showToast(data.message, 'success');
+                // Update or add row in table
+                const wardName = document.getElementById('ward_id').options[document.getElementById('ward_id').selectedIndex].text;
+                const admissionFee = payload.admission_fee;
+                const dailyFee = payload.daily_bed_fee;
+                const deposit = payload.deposit_required;
+                const tbody = document.getElementById('wardFeesTableBody');
+                const noRow = document.getElementById('noFeesRow');
+                if (noRow) noRow.remove();
+
+                let existingRow = tbody.querySelector(`tr[data-fee-id="${data.fee_id || ''}"]`);
+                if (existingRow) {
+                    existingRow.querySelectorAll('td')[1].textContent = `Ksh ${admissionFee}`;
+                    existingRow.querySelectorAll('td')[2].textContent = `Ksh ${dailyFee}`;
+                    existingRow.querySelectorAll('td')[3].textContent = `Ksh ${deposit}`;
+                } else {
+                    const row = document.createElement('tr');
+                    row.className = 'border-b dark:border-gray-700';
+                    row.dataset.feeId = data.fee_id;
+                    row.innerHTML = `
+                        <td class="px-4 py-2 font-medium">${wardName}</td>
+                        <td class="px-4 py-2 text-center">Ksh ${admissionFee}</td>
+                        <td class="px-4 py-2 text-center">Ksh ${dailyFee}</td>
+                        <td class="px-4 py-2 text-center">Ksh ${deposit}</td>
+                        <td class="px-4 py-2 text-right">
+                            <button class="delete-fee-btn text-red-400 hover:text-red-600" data-fee-id="${data.fee_id}">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                    row.querySelector('.delete-fee-btn').addEventListener('click', deleteFeeHandler);
+                }
+                document.getElementById('admission_fee').value = '';
+                document.getElementById('daily_bed_fee').value = '';
+                document.getElementById('deposit_required').value = '';
+            } else {
+                const errorMsg = data.errors ? Object.values(data.errors).flat().join(', ') : (data.error || 'Validation error.');
+                showToast(errorMsg, 'error');
+            }
+        })
+        .catch(err => showToast('Network error.', 'error'));
+    });
+
+    // ── Delete Ward Fee (AJAX) ──
+    function deleteFeeHandler(e) {
+        const btn = e.currentTarget;
+        const feeId = btn.dataset.feeId;
+        if (!confirm('Remove this ward fee?')) return;
+
+        // Get CSRF token from the ward fee form (any form works)
+        const csrfToken = document.querySelector('input[name="csrf_token"]')?.value;
+
+        fetch('{{ url_for("inpatient_web_bp.settings") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'delete_ward_fee',
+                fee_id: parseInt(feeId),
+                csrf_token: csrfToken
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Ward fee removed.', 'success');
+                const row = document.querySelector(`tr[data-fee-id="${feeId}"]`);
+                if (row) row.remove();
+                if (document.getElementById('wardFeesTableBody').children.length === 0) {
+                    const tbody = document.getElementById('wardFeesTableBody');
+                    tbody.innerHTML = `<tr id="noFeesRow"><td colspan="5" class="px-4 py-4 text-center text-gray-500 dark:text-gray-400">No ward fees configured.</td></tr>`;
+                }
+            } else {
+                const errorMsg = data.errors ? Object.values(data.errors).flat().join(', ') : (data.error || 'Delete failed.');
+                showToast(errorMsg, 'error');
+            }
+        })
+        .catch(err => showToast('Network error.', 'error'));
+    }
+
+    document.querySelectorAll('.delete-fee-btn').forEach(btn => {
+        btn.addEventListener('click', deleteFeeHandler);
+    });
+
+    // ── Custom Settings (AJAX) ──
+    document.getElementById('customSettingForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        const payload = Object.fromEntries(formData.entries());
+        const csrfToken = getCsrfToken(this);
+        if (csrfToken) payload.csrf_token = csrfToken;
+
+        fetch('{{ url_for("inpatient_web_bp.settings") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                showToast(data.message, 'success');
+                const tbody = document.getElementById('customSettingsTableBody');
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="px-4 py-2 font-mono text-sm">${payload.key}</td>
+                    <td class="px-4 py-2">${payload.value}</td>
+                    <td class="px-4 py-2 text-gray-500">${payload.category}</td>
+                    <td class="px-4 py-2 text-gray-500">${payload.description || '—'}</td>
+                `;
+                tbody.appendChild(row);
+                document.getElementById('custom_key').value = '';
+                document.getElementById('custom_value').value = '';
+                document.getElementById('custom_description').value = '';
+                document.getElementById('custom_category').value = 'general';
+            } else {
+                const errorMsg = data.errors ? Object.values(data.errors).flat().join(', ') : (data.error || 'Validation error.');
+                showToast(errorMsg, 'error');
+            }
+        })
+        .catch(err => showToast('Network error.', 'error'));
+    });
+
+});
+</script>
+
+<style>
+.tab-btn {
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+.tab-btn:hover {
+    border-bottom-color: #6366f1;
+}
+</style>
+{% endblock %}

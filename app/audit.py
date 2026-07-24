@@ -49,6 +49,13 @@ def model_to_string(obj):
     return f"{obj.__class__.__name__}({pk_str})"
 
 
+
+
+def safenet_for_json(that):
+    return 0
+
+
+
 def serialize_for_json(data):
     """Recursively convert data into JSON-safe types."""
     if isinstance(data, dict):
@@ -93,6 +100,8 @@ def get_record_id(target):
     if isinstance(pk, tuple):
         return ",".join(map(str, pk))
     return str(pk)
+
+
 
 # -------------------------------------------------------------------
 # Core logger

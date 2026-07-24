@@ -310,6 +310,16 @@ def create_hospital():
             ('hr:disciplinary:reports', 'Disciplinary Services', 'View disciplinary reports'),
             ('hr:disciplinary:policies', 'Disciplinary Services', 'Manage disciplinary policies'),
             ('hr:disciplinary:appeals', 'Disciplinary Services', 'Handle appeals process'),
+            
+            # Leave & Offs Management
+('hr:leave:manage', 'Human Resources', 'Allocate yearly leave to employees (by department or individually)'),
+('hr:leave:view', 'Human Resources', 'View all leave requests'),
+('hr:leave:balance', 'Human Resources', 'View employee leave balances'),
+('hr:leave:calendar', 'Human Resources', 'View leave calendar'),
+('hr:leave:types', 'Human Resources', 'Manage leave types (e.g., annual, sick)'),
+('hr:leave:approve', 'Human Resources', 'Approve or reject leave requests'),
+('hr:leave:reports', 'Human Resources', 'Generate leave reports'),
+('hr:leave:offs', 'Human Resources', 'Manage off days (public holidays, rest days)'),
                         # Asset Management
             ('asset:manage', 'Asset Management', 'Manage hospital assets'),
             ('asset:track', 'Asset Management', 'Track asset locations'),
@@ -384,6 +394,32 @@ def create_hospital():
 ('procurement:receiving:view', 'Operations Management', 'View Goods Receiving'),
 ('procurement:receiving:record', 'Operations Management', 'Record Received Goods'),
 
+
+# ========== INPATIENT PRIVILEGES ==========
+('inpatient:dashboard', 'Inpatient', 'View Inpatient Dashboard'),
+('inpatient:admission', 'Inpatient', 'Access Patient Admission Form'),
+('inpatient:treatment', 'Inpatient', 'Access Inpatient Treatment Form'),
+('inpatient:closed_files', 'Inpatient', 'View Inpatient Closed Files'),
+('inpatient:drugs_order', 'Inpatient', 'Access Drugs Order Form'),
+('inpatient:discharge_medication', 'Inpatient', 'Access Discharge Medication'),
+('inpatient:charge_sheet', 'Inpatient', 'Access Charge Sheet'),
+('inpatient:pharmacy_dispense', 'Inpatient', 'Access Pharmacy Dispense'),
+('inpatient:stock_return', 'Inpatient', 'Access Stock Return'),
+('inpatient:laboratory', 'Inpatient', 'Access Laboratory'),
+('inpatient:ward_bed_shift', 'Inpatient', 'Access Ward Bed Shift'),
+('inpatient:investigations', 'Inpatient', 'Access Other Investigations Request'),
+('inpatient:deposits', 'Inpatient', 'Access Inpatient Deposits'),
+('inpatient:sha_claims', 'Inpatient', 'Access SHA Claims'),
+('inpatient:discharge', 'Inpatient', 'Access Patient Discharge'),
+('inpatient:invoices', 'Inpatient', 'Access Invoices'),
+('inpatient:settings', 'Inpatient', 'Configure Inpatient Module Settings'),
+('inpatient:proforma_invoice', 'Inpatient', 'Access Proforma Invoice'),
+('inpatient:manage_wards', 'Inpatient', 'Manage wards and beds configuration'),
+# Inpatient Inventory Management Privileges
+('inpatient:inventory_dashboard', 'Inpatient', 'View inpatient inventory dashboard'),
+('inpatient:inventory_manage', 'Inpatient', 'Manage inpatient inventory items'),
+('inpatient:inventory_requests', 'Inpatient', 'Create and view stock requests'),
+('inpatient:inventory_flow', 'Inpatient', 'View inventory movement and usage'),
     
             ]
             # --- Privileges ---

@@ -366,6 +366,19 @@
           <button type="button" class="tab-link" onclick="openTab(event, 'radiology')">Radiology</button>
         </nav>
       </div>
+{% if visit.visit_status == 'admitted' %}
+<div class="border-b border-gray-200 dark:border-gray-700">
+  <nav class="flex space-x-4 px-8" aria-label="Tabs">
+    <button type="button" class="tab-link" onclick="openTreatmentPlanModal()">
+      <i class="fas fa-notes-medical mr-1"></i> Treatment Plan
+    </button>
+    <button type="button" class="tab-link" onclick="openTheatreNotesModal()">
+      <i class="fas fa-sticky-note mr-1"></i> Theatre Notes
+    </button>
+  </nav>
+</div>
+
+{% endif %}
 
 <div id="notes" class="tab-content p-8">
     <div>
@@ -1224,6 +1237,308 @@ document.addEventListener('DOMContentLoaded', function() {
   <i class="fas fa-robot"></i>
 </button>
 
+
+<!-- Inpatient Treatment Plan Modal (compact with medication plan) -->
+<div id="treatmentPlanModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm transition-opacity duration-300 hidden">
+  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] overflow-y-auto p-4 transform transition-transform scale-95">
+    <div class="flex justify-between items-center mb-3">
+      <h2 class="text-xl font-bold text-gray-800 dark:text-white flex items-center">
+        <i class="fas fa-notes-medical text-blue-500 mr-2 text-lg"></i>Inpatient Treatment Plan
+      </h2>
+      <button onclick="closeModal('treatmentPlanModal')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+        <i class="fas fa-times text-lg"></i>
+      </button>
+    </div>
+
+    <form id="treatmentPlanForm" class="space-y-4">
+      <input type="hidden" id="planVisitId" value="{{ visit.id }}">
+
+      <!-- Medication Plan Section -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+        <div class="flex justify-between items-center mb-2">
+          <h3 class="text-sm font-semibold text-gray-800 dark:text-white flex items-center">
+            <i class="fas fa-pills text-green-500 mr-2"></i>Medication Plan
+          </h3>
+          <button type="button" onclick="addPlanDrug()" class="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300 rounded-lg hover:bg-green-200 dark:hover:bg-green-800 transition-colors text-xs">
+            <i class="fas fa-plus mr-1"></i>Add Drug
+          </button>
+        </div>
+
+        <!-- Compact headers -->
+        <div class="grid grid-cols-12 gap-2 items-center mb-1 font-semibold text-gray-600 dark:text-gray-400 text-xs">
+          <div class="col-span-4">Medication</div>
+          <div class="col-span-2">Dose</div>
+          <div class="col-span-2">Frequency</div>
+          <div class="col-span-2">Duration</div>
+          <div class="col-span-1">Qty</div>
+          <div class="col-span-1 text-right">Action</div>
+        </div>
+
+        <template id="planDrugTemplate">
+          <div class="plan-drug-entry grid grid-cols-12 gap-2 items-center mb-2 p-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700/50">
+            <div class="col-span-4">
+              <select class="plan-drug-select w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-blue-500 focus:border-blue-500" onchange="updatePlanDrugPrice(this)" name="plan_drug[]">
+                <option value="">Select</option>
+                {% for med in medications %}
+                <option value="{{ med.id }}" data-price="{{ med.price }}">{{ med.name }}</option>
+                {% endfor %}
+              </select>
+              <input type="hidden" name="plan_drug_price[]" value="">
+            </div>
+            <div class="col-span-2">
+              <input type="text" class="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-blue-500" placeholder="Dose" name="plan_drug_dose[]">
+            </div>
+            <div class="col-span-2">
+              <select class="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-blue-500" name="plan_drug_frequency[]">
+                <option value="OD">Once Daily</option>
+                <option value="BD">Twice Daily</option>
+                <option value="TDS">Thrice Daily</option>
+                <option value="QID">Four Times Daily</option>
+              </select>
+            </div>
+            <div class="col-span-2">
+              <input type="number" class="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-blue-500" placeholder="Days" name="plan_drug_duration[]" min="0">
+            </div>
+            <div class="col-span-1">
+              <input type="number" class="w-full px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-blue-500" placeholder="Qty" name="plan_drug_quantity[]" min="1" value="1">
+            </div>
+            <div class="col-span-1 flex justify-end">
+              <button type="button" onclick="removePlanDrug(this)" class="text-red-500 hover:text-red-700 dark:hover:text-red-400 p-1 rounded-full hover:bg-red-100 dark:hover:bg-red-900 transition-colors">
+                <i class="fas fa-times text-xs"></i>
+              </button>
+            </div>
+          </div>
+        </template>
+
+        <div id="planDrugContainer" class="space-y-2">
+          <!-- Existing medications (if any) would be rendered here -->
+        </div>
+
+        <div class="mt-3 pt-2 border-t border-gray-200 dark:border-gray-700">
+          <div class="flex justify-between items-center">
+            <span class="text-xs font-medium text-gray-700 dark:text-gray-300">Total Medication Cost:</span>
+            <span id="planTotalCost" class="text-sm font-bold text-green-600 dark:text-green-400">Ksh 0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Additional Notes (optional) -->
+      <div>
+        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-0.5">Clinical Notes</label>
+        <textarea id="planNotes" name="planNotes" rows="2" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white" placeholder="Any additional notes..."></textarea>
+      </div>
+
+      <div class="flex justify-end space-x-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+        <button type="button" onclick="closeModal('treatmentPlanModal')" class="px-4 py-2 text-sm bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded-lg transition">Cancel</button>
+        <button type="submit" class="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-md hover:shadow-lg transition flex items-center">
+          <i class="fas fa-save mr-2 text-xs"></i> Save Plan
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+<!-- Theatre Notes Modal (Modern Two‑Column) -->
+<div id="theatreNotesModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm transition-opacity duration-300 hidden">
+  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-y-auto transform transition-transform scale-95">
+    
+    <!-- Header with gradient accent -->
+    <div class="sticky top-0 z-10 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex justify-between items-center">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center shadow-lg">
+          <i class="fas fa-notes-medical text-white text-lg"></i>
+        </div>
+        <div>
+          <h2 class="text-xl font-bold text-gray-800 dark:text-white">SHA Theatre Notes</h2>
+          <p class="text-xs text-gray-500 dark:text-gray-400">Complete operative record</p>
+        </div>
+      </div>
+      <div class="flex items-center space-x-2">
+        <!-- PDF Download Icon (optional header version) -->
+        <button onclick="downloadTheatreNotesPDF()" class="text-gray-500 hover:text-teal-600 dark:text-gray-400 dark:hover:text-teal-400 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition" title="Download PDF">
+          <i class="fas fa-file-pdf text-lg"></i>
+        </button>
+        <button onclick="closeModal('theatreNotesModal')" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">
+          <i class="fas fa-times text-xl"></i>
+        </button>
+      </div>
+    </div>
+
+    <form id="theatreNotesForm" class="p-6 space-y-6">
+      <input type="hidden" id="noteVisitId2" value="{{ visit.id }}">
+
+      <!-- Patient Banner -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 bg-gradient-to-r from-teal-50 to-emerald-50 dark:from-teal-900/20 dark:to-emerald-900/20 p-4 rounded-xl border border-teal-100 dark:border-teal-800/30">
+        <div><span class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Patient</span><div class="font-semibold text-gray-800 dark:text-white">{{ visit.patient.full_name }}</div></div>
+        <div><span class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Age / Sex</span><div class="font-semibold text-gray-800 dark:text-white">{{ visit.patient.age }} yrs / {{ visit.patient.gender }}</div></div>
+        <div><span class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">SHA No.</span><div class="font-semibold text-gray-800 dark:text-white">{{ visit.patient.insurance_number or 'N/A' }}</div></div>
+        <div><span class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Admission</span><div class="font-semibold text-gray-800 dark:text-white">{{ visit.created_at.strftime('%d-%b-%Y') }}</div></div>
+      </div>
+
+      <!-- Two‑column grid for main fields -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        <!-- Left Column -->
+        <div class="space-y-5">
+          <!-- 1. Pre-Operative ICD-11 -->
+          <div class="form-group">
+            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+              <span class="inline-flex items-center"><span class="w-6 h-6 rounded-full bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 text-xs font-bold flex items-center justify-center mr-2">1</span> Pre‑Operative ICD‑11</span>
+            </label>
+            <input type="text" name="preop_icd" class="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition" placeholder="ICD‑11 code">
+          </div>
+
+          <!-- 2. Post-Operative Diagnosis -->
+          <div class="form-group">
+            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+              <span class="inline-flex items-center"><span class="w-6 h-6 rounded-full bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 text-xs font-bold flex items-center justify-center mr-2">2</span> Post‑Operative Diagnosis</span>
+            </label>
+            <input type="text" name="postop_diagnosis" class="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition" placeholder="Final diagnosis">
+          </div>
+
+          <!-- 3. Operative Procedure -->
+          <div class="form-group">
+            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+              <span class="inline-flex items-center"><span class="w-6 h-6 rounded-full bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 text-xs font-bold flex items-center justify-center mr-2">3</span> Operative Procedure</span>
+            </label>
+            <input type="text" name="operative_procedure" class="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition" placeholder="Procedure name">
+          </div>
+
+          <!-- 4. Indication for Surgery -->
+          <div class="form-group">
+            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+              <span class="inline-flex items-center"><span class="w-6 h-6 rounded-full bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 text-xs font-bold flex items-center justify-center mr-2">4</span> Indication for Surgery</span>
+            </label>
+            <textarea name="indication" rows="3" class="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition" placeholder="Brief reason and summary of findings"></textarea>
+          </div>
+
+          <!-- 5. Type of Anaesthesia -->
+          <div class="form-group">
+            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+              <span class="inline-flex items-center"><span class="w-6 h-6 rounded-full bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 text-xs font-bold flex items-center justify-center mr-2">5</span> Type of Anaesthesia</span>
+            </label>
+            <div class="grid grid-cols-2 gap-2 mb-2">
+              <label class="inline-flex items-center"><input type="checkbox" name="anaesthesia" value="General" class="rounded border-gray-300 text-teal-600 dark:border-gray-600 dark:bg-gray-700"><span class="ml-2 text-sm">General</span></label>
+              <label class="inline-flex items-center"><input type="checkbox" name="anaesthesia" value="Spinal" class="rounded border-gray-300 text-teal-600 dark:border-gray-600 dark:bg-gray-700"><span class="ml-2 text-sm">Spinal</span></label>
+              <label class="inline-flex items-center"><input type="checkbox" name="anaesthesia" value="Local" class="rounded border-gray-300 text-teal-600 dark:border-gray-600 dark:bg-gray-700"><span class="ml-2 text-sm">Local</span></label>
+              <label class="inline-flex items-center"><input type="checkbox" name="anaesthesia" value="Regional Block" class="rounded border-gray-300 text-teal-600 dark:border-gray-600 dark:bg-gray-700"><span class="ml-2 text-sm">Regional Block</span></label>
+            </div>
+            <input type="text" name="anaesthesia_other" class="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition" placeholder="Other (specify)">
+          </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="space-y-5">
+          <!-- 6. Operative Findings -->
+          <div class="form-group">
+            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+              <span class="inline-flex items-center"><span class="w-6 h-6 rounded-full bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 text-xs font-bold flex items-center justify-center mr-2">6</span> Operative Findings</span>
+            </label>
+            <textarea name="operative_findings" rows="3" class="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition" placeholder="Describe findings ruled during surgery"></textarea>
+          </div>
+
+          <!-- 7. Procedure Description -->
+          <div class="form-group">
+            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+              <span class="inline-flex items-center"><span class="w-6 h-6 rounded-full bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 text-xs font-bold flex items-center justify-center mr-2">7</span> Procedure Description</span>
+            </label>
+            <textarea name="procedure_description" rows="4" class="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition" placeholder="Detailed step‑by‑step summary of the surgery"></textarea>
+          </div>
+
+          <!-- 9-12 in a grid within right column -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div><label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1"><span class="inline-flex items-center"><span class="w-5 h-5 rounded-full bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 text-xs font-bold flex items-center justify-center mr-1">9</span> Specimen</span></label><input type="text" name="specimen" class="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition" placeholder="Details"></div>
+            <div><label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1"><span class="inline-flex items-center"><span class="w-5 h-5 rounded-full bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 text-xs font-bold flex items-center justify-center mr-1">10</span> Blood Loss</span></label><input type="text" name="blood_loss" class="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition" placeholder="e.g., 500 ml"></div>
+            <div><label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1"><span class="inline-flex items-center"><span class="w-5 h-5 rounded-full bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 text-xs font-bold flex items-center justify-center mr-1">11</span> Drains/Catheters</span></label><input type="text" name="drains" class="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition" placeholder="Type and number"></div>
+            <div><label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1"><span class="inline-flex items-center"><span class="w-5 h-5 rounded-full bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 text-xs font-bold flex items-center justify-center mr-1">12</span> Complications</span></label><input type="text" name="complications" class="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition" placeholder="Any issues"></div>
+          </div>
+
+          <!-- 13. Post-Operative Condition -->
+          <div class="form-group">
+            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+              <span class="inline-flex items-center"><span class="w-6 h-6 rounded-full bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 text-xs font-bold flex items-center justify-center mr-2">13</span> Post‑Operative Condition</span>
+            </label>
+            <textarea name="postop_condition" rows="2" class="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition" placeholder="Remarks on patient's condition"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- 8. Instrument / Swab Count (full width) -->
+      <div class="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-5 border border-gray-200 dark:border-gray-700">
+        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+          <span class="inline-flex items-center"><span class="w-6 h-6 rounded-full bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 text-xs font-bold flex items-center justify-center mr-2">8</span> Instrument / Swab Count</span>
+        </label>
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-sm border-collapse">
+            <thead>
+              <tr class="bg-gray-100 dark:bg-gray-600/50">
+                <th class="px-4 py-2 text-left font-medium text-gray-600 dark:text-gray-300">Item</th>
+                <th class="px-4 py-2 text-center font-medium text-gray-600 dark:text-gray-300">Beginning</th>
+                <th class="px-4 py-2 text-center font-medium text-gray-600 dark:text-gray-300">Ending</th>
+                <th class="px-4 py-2 text-left font-medium text-gray-600 dark:text-gray-300">Scrub Nurse</th>
+                <th class="px-4 py-2 text-left font-medium text-gray-600 dark:text-gray-300">Circulating Nurse</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200 dark:divide-gray-600">
+              <tr><td class="px-4 py-2 font-medium">Small Swabs</td><td class="px-2 py-2"><input type="number" name="swab_small_begin" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 focus:ring-teal-500"></td><td class="px-2 py-2"><input type="number" name="swab_small_end" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 focus:ring-teal-500"></td><td class="px-2 py-2"><input type="text" name="swab_small_scrub" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 focus:ring-teal-500"></td><td class="px-2 py-2"><input type="text" name="swab_small_circ" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 focus:ring-teal-500"></td></tr>
+              <tr><td class="px-4 py-2 font-medium">Abdominal</td><td class="px-2 py-2"><input type="number" name="swab_abdo_begin" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 focus:ring-teal-500"></td><td class="px-2 py-2"><input type="number" name="swab_abdo_end" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 focus:ring-teal-500"></td><td class="px-2 py-2"><input type="text" name="swab_abdo_scrub" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 focus:ring-teal-500"></td><td class="px-2 py-2"><input type="text" name="swab_abdo_circ" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 focus:ring-teal-500"></td></tr>
+              <tr><td class="px-4 py-2 font-medium">Sharps</td><td class="px-2 py-2"><input type="number" name="swab_sharps_begin" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 focus:ring-teal-500"></td><td class="px-2 py-2"><input type="number" name="swab_sharps_end" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 focus:ring-teal-500"></td><td class="px-2 py-2"><input type="text" name="swab_sharps_scrub" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 focus:ring-teal-500"></td><td class="px-2 py-2"><input type="text" name="swab_sharps_circ" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 focus:ring-teal-500"></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 14. Post-Operative Orders (full width) -->
+      <div class="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-5 border border-gray-200 dark:border-gray-700">
+        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+          <span class="inline-flex items-center"><span class="w-6 h-6 rounded-full bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 text-xs font-bold flex items-center justify-center mr-2">14</span> Post‑Operative Orders</span>
+        </label>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
+          <label class="inline-flex items-center"><input type="checkbox" name="orders" value="Vital signs monitoring" class="rounded border-gray-300 text-teal-600 dark:border-gray-600 dark:bg-gray-700"><span class="ml-2 text-sm">Vital signs monitoring</span></label>
+          <label class="inline-flex items-center"><input type="checkbox" name="orders" value="Analgesics" class="rounded border-gray-300 text-teal-600 dark:border-gray-600 dark:bg-gray-700"><span class="ml-2 text-sm">Analgesics</span></label>
+          <label class="inline-flex items-center"><input type="checkbox" name="orders" value="Antibiotics" class="rounded border-gray-300 text-teal-600 dark:border-gray-600 dark:bg-gray-700"><span class="ml-2 text-sm">Antibiotics</span></label>
+          <label class="inline-flex items-center"><input type="checkbox" name="orders" value="IV Fluids" class="rounded border-gray-300 text-teal-600 dark:border-gray-600 dark:bg-gray-700"><span class="ml-2 text-sm">IV Fluids</span></label>
+        </div>
+        <textarea name="specific_orders" rows="2" class="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition" placeholder="Specific orders (e.g., diet, activity, medications)"></textarea>
+      </div>
+
+      <!-- 15. Theatre Team / Certification (full width) -->
+      <div class="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-5 border border-gray-200 dark:border-gray-700">
+        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+          <span class="inline-flex items-center"><span class="w-6 h-6 rounded-full bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 text-xs font-bold flex items-center justify-center mr-2">15</span> Theatre Team / Certification</span>
+        </label>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div><label class="block text-xs text-gray-600 dark:text-gray-400 font-medium">Lead Surgeon</label><input type="text" name="lead_surgeon" class="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 dark:bg-gray-700 dark:text-white transition"></div>
+          <div><label class="block text-xs text-gray-600 dark:text-gray-400 font-medium">Assistant</label><input type="text" name="assistant" class="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 dark:bg-gray-700 dark:text-white transition"></div>
+          <div><label class="block text-xs text-gray-600 dark:text-gray-400 font-medium">Scrub Nurse</label><input type="text" name="scrub_nurse" class="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 dark:bg-gray-700 dark:text-white transition"></div>
+          <div><label class="block text-xs text-gray-600 dark:text-gray-400 font-medium">Circulating Nurse</label><input type="text" name="circulating_nurse" class="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 dark:bg-gray-700 dark:text-white transition"></div>
+          <div><label class="block text-xs text-gray-600 dark:text-gray-400 font-medium">Anaesthetist</label><input type="text" name="anaesthetist" class="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 dark:bg-gray-700 dark:text-white transition"></div>
+          <div><label class="block text-xs text-gray-600 dark:text-gray-400 font-medium">Certified By</label><input type="text" name="certified_by" class="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 dark:bg-gray-700 dark:text-white transition"></div>
+          <div><label class="block text-xs text-gray-600 dark:text-gray-400 font-medium">Reg No.</label><input type="text" name="reg_no" class="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 dark:bg-gray-700 dark:text-white transition"></div>
+          <div><label class="block text-xs text-gray-600 dark:text-gray-400 font-medium">Date</label><input type="date" name="cert_date" class="w-full px-4 py-3 text-sm border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-teal-500 dark:bg-gray-700 dark:text-white transition"></div>
+        </div>
+      </div>
+
+      <!-- Footer & Actions -->
+      <div class="flex items-center justify-between border-t border-gray-200 dark:border-gray-700 pt-6">
+        <div class="text-sm text-gray-500 dark:text-gray-400 flex items-center">
+          <i class="fas fa-check-circle text-teal-500 mr-2"></i> The above notes are complete and accurate.
+        </div>
+        <div class="flex space-x-3">
+          <!-- Download PDF Button -->
+          <button type="button" onclick="downloadTheatreNotesPDF()" class="px-6 py-2.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-xl transition text-sm font-medium border border-red-200 dark:border-red-800/30 flex items-center">
+            <i class="fas fa-file-pdf mr-2"></i> Download PDF
+          </button>
+          <button type="button" onclick="closeModal('theatreNotesModal')" class="px-6 py-2.5 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded-xl transition text-sm font-medium">Cancel</button>
+          <button type="submit" class="px-6 py-2.5 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white rounded-xl shadow-md hover:shadow-lg transition flex items-center text-sm font-medium">
+            <i class="fas fa-save mr-2"></i> Save Theatre Notes
+          </button>
+        </div>
+      </div>
+
+    </form>
+  </div>
+</div>
+
 <!-- AI Modal -->
 <div id="ai-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
     <div class="absolute inset-0 bg-gray-900 bg-opacity-75 transition-opacity duration-300"></div>
@@ -1499,6 +1814,296 @@ async function loadConversationHistory() {
     messageInput.addEventListener('blur', () => {
         messageInput.classList.remove('glow-border');
     });
+
+
+// ── Modal helpers ──
+function openModal(modalId) {
+  document.getElementById(modalId).classList.remove('hidden');
+}
+
+function closeModal(modalId) {
+  document.getElementById(modalId).classList.add('hidden');
+}
+
+// ── Open Theatre Notes Modal ──
+// ── Populate theatre notes form ──
+function populateTheatreNotes(data) {
+    // For text inputs and textareas
+    const fields = ['preop_icd', 'postop_diagnosis', 'operative_procedure', 'indication',
+                    'anaesthesia_other', 'operative_findings', 'procedure_description',
+                    'specimen', 'blood_loss', 'drains', 'complications', 'postop_condition',
+                    'specific_orders', 'lead_surgeon', 'assistant', 'scrub_nurse',
+                    'circulating_nurse', 'anaesthetist', 'certified_by', 'reg_no'];
+    
+    fields.forEach(field => {
+        const el = document.querySelector(`[name="${field}"]`);
+        if (el && data[field] !== undefined) {
+            el.value = data[field] || '';
+        }
+    });
+
+    // Date field
+    const dateEl = document.querySelector('[name="cert_date"]');
+    if (dateEl && data.cert_date) {
+        dateEl.value = data.cert_date;
+    }
+
+    // Checkboxes: anaesthesia
+    const anaesthesiaCheckboxes = document.querySelectorAll('[name="anaesthesia"]');
+    if (data.anaesthesia) {
+        const selected = data.anaesthesia.split(',').map(s => s.trim());
+        anaesthesiaCheckboxes.forEach(cb => {
+            cb.checked = selected.includes(cb.value);
+        });
+    }
+
+    // Checkboxes: orders
+    const ordersCheckboxes = document.querySelectorAll('[name="orders"]');
+    if (data.orders) {
+        const selected = data.orders.split(',').map(s => s.trim());
+        ordersCheckboxes.forEach(cb => {
+            cb.checked = selected.includes(cb.value);
+        });
+    }
+
+    // Swab count fields (table inputs)
+    const swabFields = ['swab_small_begin', 'swab_small_end', 'swab_small_scrub', 'swab_small_circ',
+                        'swab_abdo_begin', 'swab_abdo_end', 'swab_abdo_scrub', 'swab_abdo_circ',
+                        'swab_sharps_begin', 'swab_sharps_end', 'swab_sharps_scrub', 'swab_sharps_circ'];
+    swabFields.forEach(field => {
+        const el = document.querySelector(`[name="${field}"]`);
+        if (el && data[field] !== undefined) {
+            el.value = data[field] || '';
+        }
+    });
+}
+
+// ── Open Theatre Notes Modal ──
+function openTheatreNotesModal() {
+    const visitId = document.getElementById('noteVisitId2').value;
+    // Show a loading state if needed
+    // fetch existing notes
+    fetch(`/patients/api/theatre-notes/${visitId}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.exists) {
+                populateTheatreNotes(data.data);
+            } else {
+                // Clear the form (reset all fields)
+                const form = document.getElementById('theatreNotesForm');
+                form.reset();
+                // Reset date to today
+                const dateInput = document.querySelector('[name="cert_date"]');
+                if (dateInput) {
+                    const today = new Date().toISOString().split('T')[0];
+                    dateInput.value = today;
+                }
+            }
+            openModal('theatreNotesModal');
+        })
+        .catch(err => {
+            console.error('Error fetching theatre notes:', err);
+            // Still open the modal with empty form
+            const form = document.getElementById('theatreNotesForm');
+            form.reset();
+            openModal('theatreNotesModal');
+        });
+}
+// ── Plan Drug Management ──
+function addPlanDrug() {
+  const template = document.getElementById('planDrugTemplate');
+  const clone = template.content.cloneNode(true);
+  document.getElementById('planDrugContainer').appendChild(clone);
+  updatePlanTotalCost();
+}
+
+function removePlanDrug(btn) {
+  btn.closest('.plan-drug-entry').remove();
+  updatePlanTotalCost();
+}
+
+function updatePlanDrugPrice(select) {
+  const price = select.options[select.selectedIndex]?.dataset.price || 0;
+  const hidden = select.closest('.plan-drug-entry').querySelector('input[name="plan_drug_price[]"]');
+  if (hidden) hidden.value = price;
+  updatePlanTotalCost();
+}
+
+function updatePlanTotalCost() {
+  let total = 0;
+  document.querySelectorAll('.plan-drug-entry').forEach(row => {
+    const qty = parseInt(row.querySelector('input[name="plan_drug_quantity[]"]')?.value) || 0;
+    const price = parseFloat(row.querySelector('input[name="plan_drug_price[]"]')?.value) || 0;
+    total += qty * price;
+  });
+  document.getElementById('planTotalCost').textContent = `Ksh ${total.toFixed(2)}`;
+}
+
+// ── Form submission for Treatment Plan ──
+document.getElementById('treatmentPlanForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  const formData = new FormData(this);
+  const payload = {};
+
+  // Collect all form fields
+  for (let [key, value] of formData.entries()) {
+    if (key.startsWith('plan_drug')) {
+      if (!payload[key]) payload[key] = [];
+      payload[key].push(value);
+    } else {
+      payload[key] = value;
+    }
+  }
+
+  // Add visit_id
+  payload.visit_id = parseInt(document.getElementById('planVisitId').value);
+  payload.plan_type = 'medication'; // indicate this is a medication plan
+
+  // Send to server (adjust endpoint as needed)
+  fetch('/patients/api/treatment-plan', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      showToast('Treatment plan saved successfully.', 'success');
+      closeModal('treatmentPlanModal');
+    } else {
+      showToast(data.error || 'Failed to save.', 'error');
+    }
+  })
+  .catch(err => {
+    showToast('Network error.', 'error');
+    console.error(err);
+  });
+});
+
+// ── Open modal and optionally load existing data ──
+function openTreatmentPlanModal() {
+  const visitId = parseInt(document.getElementById('planVisitId').value);
+  const container = document.getElementById('planDrugContainer');
+  const notesField = document.getElementById('planNotes');
+
+  // Clear existing rows
+  container.innerHTML = '';
+  notesField.value = '';
+
+  // Fetch existing plan
+  fetch(`/patients/api/treatment-plan/${visitId}`)
+    .then(res => res.json())
+    .then(data => {
+      if (data.exists && data.medications) {
+        // Populate notes
+        if (data.notes) notesField.value = data.notes;
+        // Add drug rows
+        data.medications.forEach(med => {
+          addPlanDrug(); // creates a new row
+          const rows = container.querySelectorAll('.plan-drug-entry');
+          const lastRow = rows[rows.length - 1];
+          // Set values
+          const select = lastRow.querySelector('select[name="plan_drug[]"]');
+          select.value = med.drug_id;
+          // Trigger change to set price
+          select.dispatchEvent(new Event('change'));
+          lastRow.querySelector('input[name="plan_drug_dose[]"]').value = med.dose || '';
+          lastRow.querySelector('select[name="plan_drug_frequency[]"]').value = med.frequency || 'OD';
+          lastRow.querySelector('input[name="plan_drug_duration[]"]').value = med.duration || '';
+          lastRow.querySelector('input[name="plan_drug_quantity[]"]').value = med.quantity || 1;
+        });
+        updatePlanTotalCost();
+      }
+    })
+    .catch(err => console.error('Error loading plan:', err));
+
+  openModal('treatmentPlanModal');
+}
+// ── Close modal (same as before) ──
+function closeModal(modalId) {
+  document.getElementById(modalId).classList.add('hidden');
+}
+
+
+// ── Form submission for Theatre Notes ──
+document.getElementById('theatreNotesForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  const form = this;
+  const formData = new FormData(form);
+  const payload = {};
+  
+  // Collect all form fields
+  for (let [key, value] of formData.entries()) {
+    // Handle checkboxes (multiple values for same key)
+    if (key === 'anaesthesia' || key === 'orders') {
+      if (!payload[key]) payload[key] = [];
+      payload[key].push(value);
+    } else {
+      // If multiple values with same key (e.g., from table), concatenate or handle differently
+      // For simplicity, we take the last value (or you can handle as array)
+      // For table inputs, we'll treat as individual fields
+      payload[key] = value;
+    }
+  }
+  
+  // Add visit_id manually
+  payload.visit_id = parseInt(document.getElementById('noteVisitId2').value);
+  
+  // Add a default note_type (could be 'theatre' or derived)
+  payload.note_type = 'theatre';
+  
+  // Optional: convert checkbox arrays to comma-separated strings
+  if (payload.anaesthesia) payload.anaesthesia = payload.anaesthesia.join(', ');
+  if (payload.orders) payload.orders = payload.orders.join(', ');
+  
+  // Send to server
+  fetch('/patients/api/theatre-notes', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      showToast('Theatre notes saved successfully.', 'success');
+      closeModal('theatreNotesModal');
+    } else {
+      showToast(data.error || 'Failed to save.', 'error');
+    }
+  })
+  .catch(err => {
+    showToast('Network error.', 'error');
+    console.error(err);
+  });
+});
+
+function downloadTheatreNotesPDF() {
+  // Get visit ID (or other identifiers)
+  const visitId = document.getElementById('noteVisitId2').value;
+
+  // Option 1: Server-side PDF generation (recommended)
+  // window.location.href = '/api/theatre-notes/pdf?visit_id=' + visitId;
+
+  // Option 2: Client-side using html2pdf or jsPDF (example)
+  // const element = document.getElementById('theatreNotesModal').querySelector('form');
+  // html2pdf().from(element).save('theatre_notes.pdf');
+
+  // For now, show a placeholder alert
+  alert('PDF download functionality will be implemented.\n' +
+        'You can implement server-side PDF generation at:\n' +
+        '/api/theatre-notes/pdf?visit_id=' + visitId);
+}
+
+
+// ── Toast helper (reuse if already defined) ──
+function showToast(message, type = 'success') {
+  const toast = document.createElement('div');
+  const bg = type === 'success' ? 'bg-green-600' : type === 'error' ? 'bg-red-600' : 'bg-amber-500';
+  toast.className = `fixed bottom-4 right-4 px-4 py-2 rounded-lg shadow-lg text-white ${bg} z-50 transition-opacity duration-500`;
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 500); }, 4000);
+}
 </script>
 
 <style>

@@ -198,6 +198,7 @@ def reject_requisition(order_id):
         order.rejection_reason = rejection_reason
         order.rejected_by = current_user.id
         order.rejected_at = datetime.utcnow()
+
         order.updated_at = datetime.utcnow()
         
         db.session.commit()
@@ -210,6 +211,9 @@ def reject_requisition(order_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': f'Error rejecting requisition: {str(e)}'}), 400
+
+
+
 
 
 # View requisition details
@@ -332,14 +336,13 @@ def admin_reports():
     return render_template("super_admin/admin_reports.html", reports=reports)
 
 
+
 # ------------------- System Settings -------------------
 @admin_web.route("/settings")
 @login_required
 def system_settings():
     """System configuration (branding, policies, integrations, etc.)"""
     return render_template("super_admin/system_settings.html")
-
-
 
 
 @admin_web.route('/approve-payments')
@@ -384,6 +387,8 @@ def approve_payments():
                          pending_requests=pending_requests,
                          recent_approved=recent_approved,
                          stats=stats)
+    
+
 
 @admin_web.route('/payment-requests/<int:request_id>/director-review', methods=['POST'])
 @login_required
@@ -420,6 +425,8 @@ def director_approve_payment(request_id):
                 }), 400
                 
             message = 'Payment request approved and payment recorded in supplier invoice'
+            
+            
             
         elif action == 'reject':
             # Director rejects the payment request
@@ -477,6 +484,7 @@ def director_payment_details(request_id):
         supplier_account_id=supplier_account.id
     ).order_by(SupplierTransaction.transaction_date.desc()).limit(5).all()
     
+    
     details = {
         'payment_request': payment_request.to_dict(),
         'invoice': invoice.to_dict(),
@@ -515,6 +523,12 @@ def director_payment_details(request_id):
     
     return jsonify(details)
 
+
+
+
+
+
+
 @admin_web.route('/payment-requests/bulk-approve', methods=['POST'])
 @login_required
 def bulk_approve_payments():
@@ -543,6 +557,7 @@ def bulk_approve_payments():
             try:
                 payment_request = PaymentRequest.query.get(request_id)
                 
+                
                 if payment_request and payment_request.status == 'director_approval':
                     payment_request.approve_by_director(current_user.id, notes)
                     approved_count += 1
@@ -552,8 +567,12 @@ def bulk_approve_payments():
             except Exception as e:
                 errors.append(f"Request {request_id}: {str(e)}")
         
+        
         db.session.commit()
         
+        
+        
+
         return jsonify({
             'success': True,
             'message': f'Successfully approved {approved_count} payment requests',
@@ -630,6 +649,8 @@ def approve_payroll(payroll_id):
     payroll.status = 'Approved'
     payroll.approved_by = current_user.id
     payroll.approved_at = datetime.utcnow()
+
+
 
     # Update all associated payslips to 'Approved'
     for payslip in payroll.payslips:

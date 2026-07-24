@@ -259,6 +259,7 @@ class Patient(db.Model):
     marital_status= db.Column(db.String(64))
     national_id   = db.Column(db.String(64))
     guardian_id   = db.Column(db.String(64))
+    moh_ip_number = db.Column(db.String(50), nullable=True)  # MOH Inpatient Number
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -699,3 +700,38 @@ class AIMessage(db.Model):
 
     # Relationship
     conversation = db.relationship('AIConversation', back_populates='messages')
+    
+    
+    
+class TheatreNotes(db.Model):
+    __tablename__ = 'theatre_notes'
+    __audit_trail__ = True
+
+    id = db.Column(db.Integer, primary_key=True)
+    visit_id = db.Column(db.Integer, db.ForeignKey('visits.id'), nullable=False)
+    data = db.Column(db.JSON, nullable=False)  # stores all theatre note fields
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    visit = db.relationship('Visit', backref=db.backref('theatre_notes', lazy=True))
+    author = db.relationship('User', foreign_keys=[created_by])
+    
+    
+    
+class InpatientTreatmentPlan(db.Model):
+    __tablename__ = 'inpatient_treatment_plans'
+    __audit_trail__ = True
+
+    id = db.Column(db.Integer, primary_key=True)
+    visit_id = db.Column(db.Integer, db.ForeignKey('visits.id'), nullable=False, unique=True)
+    medications = db.Column(db.JSON, nullable=False, default=list)  # Array of medication objects
+    notes = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+
+    visit = db.relationship('Visit', backref=db.backref('treatment_plan', uselist=False))
+    author = db.relationship('User', foreign_keys=[created_by])
+
+    def __repr__(self):
+        return f"<InpatientTreatmentPlan {self.id} for Visit {self.visit_id}>"

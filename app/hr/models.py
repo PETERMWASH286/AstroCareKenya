@@ -486,39 +486,9 @@ class AttendanceRecord(db.Model):
     def __repr__(self):
         return f"<AttendanceRecord {self.employee.full_name} on {self.date} - {self.status.value}>"
 
-class LeaveType(db.Model):
-    __tablename__ = 'leave_types'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(50), nullable=False, unique=True)
-    code = db.Column(db.String(20), nullable=False, unique=True)
-    max_days = db.Column(db.Integer, nullable=False)
-    is_paid = db.Column(db.Boolean, default=True)
-    description = db.Column(db.Text)
-    
-    def __repr__(self):
-        return f"<LeaveType {self.name}>"
 
-class LeaveRequest(db.Model):
-    __tablename__ = 'leave_requests'
-    id = db.Column(db.Integer, primary_key=True)
-    employee_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    leave_type_id = db.Column(db.Integer, db.ForeignKey('leave_types.id'), nullable=False)
-    start_date = db.Column(db.Date, nullable=False)
-    end_date = db.Column(db.Date, nullable=False)
-    days_requested = db.Column(db.Integer, nullable=False)
-    status = db.Column(db.Enum('Pending', 'Approved', 'Rejected'), default='Pending')
-    reason = db.Column(db.Text, nullable=False)
-    approved_by = db.Column(db.Integer, db.ForeignKey('user.id'))
-    approved_at = db.Column(db.DateTime)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    employee = db.relationship('User', foreign_keys=[employee_id])
-    leave_type = db.relationship('LeaveType')
-    
-    def __repr__(self):
-        return f"<LeaveRequest {self.employee.full_name} for {self.leave_type.name}>"
-    
-    
+
     
     
     
@@ -1286,3 +1256,68 @@ class OfferLetter(db.Model):
         if self.expiry_date and datetime.utcnow() > self.expiry_date:
             return False
         return True    
+    
+    
+    
+    
+    
+    
+
+class LeaveType(db.Model):
+    __tablename__ = 'leave_types'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    code = db.Column(db.String(20), unique=True)   # e.g., ANNUAL, SICK
+    is_paid = db.Column(db.Boolean, default=True)
+    max_days_per_year = db.Column(db.Float, nullable=False)
+    requires_document = db.Column(db.Boolean, default=False)
+    is_active = db.Column(db.Boolean, default=True)
+    description = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<LeaveType {self.name}>'
+
+
+class LeaveAllocation(db.Model):
+    __tablename__ = 'leave_allocations'
+    id = db.Column(db.Integer, primary_key=True)
+    employee_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    leave_type_id = db.Column(db.Integer, db.ForeignKey('leave_types.id'), nullable=False)
+    year = db.Column(db.Integer, nullable=False)
+    days_allocated = db.Column(db.Float, nullable=False, default=0)
+    days_used = db.Column(db.Float, default=0)
+    notes = db.Column(db.Text)
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    employee = db.relationship('User', foreign_keys=[employee_id], backref='leave_allocations')
+    leave_type = db.relationship('LeaveType', backref='allocations')
+    creator = db.relationship('User', foreign_keys=[created_by], backref='created_leave_allocations')
+
+    @property
+    def days_remaining(self):
+        return self.days_allocated - self.days_used
+
+
+class LeaveRequest(db.Model):
+    __tablename__ = 'leave_requests'
+    id = db.Column(db.Integer, primary_key=True)
+    employee_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    leave_type_id = db.Column(db.Integer, db.ForeignKey('leave_types.id'), nullable=False)
+    start_date = db.Column(db.Date, nullable=False)
+    end_date = db.Column(db.Date, nullable=False)
+    days_requested = db.Column(db.Float, nullable=False)
+    reason = db.Column(db.Text, nullable=False)
+    attachment = db.Column(db.String(500))
+    status = db.Column(db.String(20), default='pending')
+    approved_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    approved_at = db.Column(db.DateTime, nullable=True)
+    approval_notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    employee = db.relationship('User', foreign_keys=[employee_id], backref='leave_requests')
+    leave_type = db.relationship('LeaveType', backref='requests')
+    approver = db.relationship('User', foreign_keys=[approved_by], backref='approved_leave_requests')

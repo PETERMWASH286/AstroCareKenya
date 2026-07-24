@@ -54,6 +54,7 @@ from app.board import board_bp
 from app.api.v1 import api_v1_bp
 from app.notifications import communications as comms_module
 from app.utils.notifications import notification_manager
+from app.inpatient import bp as inpatient_bp
 
 # Import error handlers module
 from app.errors import handlers as error_handlers
@@ -153,8 +154,17 @@ def time_ago(value):
     years = days // 365
     return f"{int(years)} years ago"
 
+
+
+
+
 def register_filters(app: Flask):
     app.jinja_env.filters['datetimeformat'] = datetimeformat
+    
+    
+
+
+
 def stock_request_context():
     return {
         'pending_stock_requests': StockRequest.query.filter_by(
@@ -390,6 +400,12 @@ def create_app(config_name='default'):
         # Simple JSON string escape for JS safety
         return json.dumps(value)
 
+
+
+
+
+
+
     app.jinja_env.filters['escapejs'] = escapejs_filter
     # Configure upload settings
     # Set correct upload path inside app/__init__.py
@@ -413,7 +429,8 @@ def create_app(config_name='default'):
     def help_docs(path='index.html'):
         # Absolute path to the MkDocs 'site' folder
         docs_path = os.path.abspath(os.path.join(current_app.root_path, '..', 'hms-docs', 'site'))
-
+        
+        
         # If path ends with a slash, serve index.html inside that folder
         if path.endswith('/'):
             path = os.path.join(path, 'index.html')
@@ -504,13 +521,13 @@ def load_user(user_id):
             user = User.query.get(int(user_id))
             # ADDED: Log the result of the user lookup and is_active status
             # ADDED: Print the result before returning
+
             return user
         except Exception as e:
             current_app.logger.error(f"Error loading user {user_id}: {e}")
             return None
     current_app.logger.info("load_user received None user_id, returning None.")
     return None
-
 
 
 
@@ -544,6 +561,12 @@ def register_blueprints(app):
 
     app.register_blueprint(asset_management_bp, url_prefix='/asset-management')
     app.register_blueprint(board_bp, url_prefix='/board')
+    
+        # ----- ADD THIS LINE -----
+    app.register_blueprint(inpatient_bp, url_prefix='/inpatient')
+
+
+
 # Add this with other blueprint registrations
     app.register_blueprint(comms_module.comms_web_bp)
     from app.main import main_bp
@@ -583,23 +606,33 @@ def register_error_handlers(app):
             return error_handlers.api_internal_error(error)
         return render_template('errors/500.html'), 500
 
+
+
     # --- JWT Error Handlers ---
     @jwt.unauthorized_loader
     def custom_unauthorized_response(callback):
         return jsonify({"message": "Missing or invalid token"}), 401
 
+
+
     @jwt.expired_token_loader
     def custom_expired_token_callback(jwt_header, jwt_payload):
          return jsonify({"message": "The token has expired", "expired_at": jwt_payload['exp']}), 401
+
+
 
     @jwt.invalid_token_loader
     def custom_invalid_token_callback(callback):
          return jsonify({"message": callback}), 422
 
+
+
     @jwt.user_lookup_error_loader
     def custom_user_lookup_error_callback(jwt_header, jwt_payload):
         identity = jwt_payload["sub"]
         return jsonify(f"User ID {identity} not found"), 401
+
+
 
     @jwt.token_verification_loader
     def custom_token_verification_loader(jwt_header, jwt_payload):
@@ -608,7 +641,8 @@ def register_error_handlers(app):
     @jwt.needs_fresh_token_loader
     def custom_needs_fresh_token_callback(jwt_header, jwt_payload):
         return jsonify({"message": "Fresh token required"}), 401
-
+    
+    
 
 def configure_logging(app):
     """Configure application logging."""
