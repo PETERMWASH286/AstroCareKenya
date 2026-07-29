@@ -1715,7 +1715,7 @@ async function loadConversationHistory() {
 }
 
     // ---------- Close Modal ----------
-    function closeModal() {
+    function closeAiModal() {
         aiModal.querySelector('.modal-content').classList.remove('scaleIn');
         aiModal.querySelector('.modal-content').classList.add('scaleOut');
         aiModal.querySelector('.bg-gray-900').classList.remove('fadeIn');
@@ -1728,7 +1728,7 @@ async function loadConversationHistory() {
         }, 300);
     }
 
-    closeAiButton.addEventListener('click', closeModal);
+    closeAiButton.addEventListener('click', closeAiModal);
     aiModal.addEventListener('click', (event) => {
         if (event.target === aiModal) {
             closeModal();
