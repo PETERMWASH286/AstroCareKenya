@@ -360,7 +360,6 @@ def api_search_patients():
     if not q:
         return jsonify([])
 
-    # search by first/last name, phone or reg_no
     pattern = f"%{q}%"
     matches = (
         Patient.query
@@ -377,21 +376,29 @@ def api_search_patients():
         .all()
     )
 
-    # serialize to JSON
     results = []
     for p in matches:
         results.append({
             'regNo': p.reg_no,
             'firstName': p.first_name,
             'lastName': p.last_name,
-            'dob': p.date_of_birth.isoformat(),
+            'dob': p.date_of_birth.isoformat() if p.date_of_birth else '',
+            'age': p.age,  # if you store age; or compute if needed
             'phone': p.phone,
             'email': p.email,
             'gender': p.gender,
             'kinName': p.kin_name,
             'kinRelationship': p.kin_relationship,
             'kinPhone': p.kin_phone,
-            'kinEmail': p.kin_email
+            'kinEmail': p.kin_email,
+            # 👇 Added missing fields
+            'county': p.county or '',
+            'subcounty': p.subcounty or '',
+            'ward': p.ward or '',
+            'residence': p.residence or '',
+            'nationalId': p.national_id or '',
+            'guardianId': p.guardian_id or '',
+            'maritalStatus': p.marital_status or '',
         })
     return jsonify(results)
 
